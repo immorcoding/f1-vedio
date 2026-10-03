@@ -1,8 +1,10 @@
-// 1989 McLaren-Honda MP4/5 (SEN #1, PRO #2), traced from "Alain Prost 1989 Belgian GP" by madagascarica,
-// Wikimedia Commons, CC BY 2.0: a near side-on race photo of the real 1989 car (the trace frame is that photo's car
-// cropped at x 650–1610, y 500–1040 and scaled ×2, `references/mclaren-1989/prost-1989-spa-2x.png`). Livery
-// boundaries, sidepod, mirrors and wheels cross-checked with the Honda Collection Hall MP4/5 photos by Morio
-// (CC BY-SA 3.0). Scale from the 1989 wheelbase, 2896 mm = 1072 px. See docs/assets/reference-register.md.
+// 1989 McLaren-Honda MP4/5 (SEN #1, PRO #2). Traced from a side-on photo of Senna's MP4/5B (#27, 1990) in the
+// Instituto Ayrton Senna display, Flickr, CC BY 2.0, rectified with a homography on the near wheels so both axles and
+// tyres stand at their real size (`references/mclaren-1989/mp45b-side-rectified.png`, 360 px per metre). The 5B
+// shares the 1989 tub, bodywork and livery; its wheelbase is 44 mm longer (2940 vs 2896 mm), under 2 % and kept.
+// 1989 details from 1989 race photos by lajotaylape (Flickr, CC BY-SA 2.0: Spa and Suzuka 1989), the Honda
+// Collection Hall photos by Morio (CC BY-SA 3.0): the taller "sail" front endplates, the sidepod grille.
+// See docs/assets/reference-register.md.
 //
 // Period car (ART-4): no halo, open cockpit with a small windscreen, 13-inch rims on tall Goodyear slicks with no
 // coloured band, period full-face helmets. The two team-mates share this spec and differ only in `driver`.
@@ -75,179 +77,184 @@ export const PRO_1989: Driver = {
   },
 };
 
-// Top view in metres (x forward from the rear end, y across). Wheelbase 2.896 m, track 1.82 m front / 1.67 m rear
-// (1989 figures); positions along the car from the side trace, widths from the front and rear Honda Collection Hall
-// photos. The MP4/5 is not the modern planform (CarSpec.top): one body in one piece, traced as one half, mirrored.
+// Top view in metres (x forward from the rear end, y across). Positions along the car from the side trace (front
+// axle 3.47 m, rear axle 0.53 m from the rear end, nose tip 4.13 m); track 1.82 m front / 1.67 m rear (1989 figures),
+// widths from the front and rear Honda Collection Hall photos. One body in one piece, traced as one half, mirrored.
 const PLAN_BODY = symmetric([
-  [0.06, 0.2],
-  [0.45, 0.26],
-  [0.62, 0.42],
-  [1.1, 0.62],
-  [1.55, 0.7],
+  [0.12, 0.2],
+  [0.55, 0.26],
+  [0.75, 0.4],
+  [1.15, 0.6],
+  [1.6, 0.7],
   [2.05, 0.7],
-  [2.2, 0.62],
-  [2.24, 0.42],
+  [2.18, 0.62],
+  [2.22, 0.42],
   [2.75, 0.4],
   [3.15, 0.3],
-  [3.7, 0.17],
-  [4.3, 0.12],
-  [4.6, 0.08],
+  [3.6, 0.17],
+  [3.95, 0.12],
+  [4.13, 0.07],
 ]);
 
 const MP4_5_PLAN: CarPlan = {
   // wishbones from the tub to each wheel
   suspension:
-    "M 3.12 0.24 L 3.28 0.78 M 3.42 0.2 L 3.28 0.78 M 3.12 -0.24 L 3.28 -0.78 M 3.42 -0.2 L 3.28 -0.78 " +
-    "M 0.62 0.36 L 0.38 0.66 M 0.2 0.22 L 0.38 0.66 M 0.62 -0.36 L 0.38 -0.66 M 0.2 -0.22 L 0.38 -0.66",
+    "M 3.3 0.26 L 3.47 0.78 M 3.62 0.2 L 3.47 0.78 M 3.3 -0.26 L 3.47 -0.78 M 3.62 -0.2 L 3.47 -0.78 " +
+    "M 0.78 0.38 L 0.53 0.66 M 0.3 0.22 L 0.53 0.66 M 0.78 -0.38 L 0.53 -0.66 M 0.3 -0.22 L 0.53 -0.66",
   sidepods: PLAN_BODY,
   // inlets in the front of the sidepods, the airbox above the driver's head
   inlets: [1, -1].map((s) =>
     symmetricSide(s, [
-      [2.04, 0.46],
-      [2.19, 0.44],
-      [2.17, 0.6],
-      [2.02, 0.66],
+      [2.02, 0.46],
+      [2.17, 0.44],
+      [2.15, 0.6],
+      [2.0, 0.66],
     ]),
   ),
-  airbox: roundedBox(2.1, 0, 0.14, 0.2),
+  airbox: roundedBox(1.92, 0, 0.14, 0.2),
   windscreen:
-    "M 2.7 -0.22 C 2.84 -0.14 2.84 0.14 2.7 0.22 L 2.77 0.22 C 2.92 0.12 2.92 -0.12 2.77 -0.22 Z",
+    "M 2.6 -0.22 C 2.74 -0.14 2.74 0.14 2.6 0.22 L 2.67 0.22 C 2.82 0.12 2.82 -0.12 2.67 -0.22 Z",
   // red mirror housings on short stalks
   mirrors: [
-    roundedBox(2.82, 0.42, 0.1, 0.16),
-    roundedBox(2.82, -0.42, 0.1, 0.16),
+    roundedBox(2.42, 0.42, 0.1, 0.16),
+    roundedBox(2.42, -0.42, 0.1, 0.16),
   ],
   outline: PLAN_BODY,
   livery: [
     // red nose top ending in a point, ahead of the cockpit
     {
-      d: "M 2.72 -0.39 L 3.15 -0.3 L 3.75 0 L 3.15 0.3 L 2.72 0.39 L 2.9 0 Z",
+      d: "M 2.4 -0.4 L 3.15 -0.3 L 3.45 0 L 3.15 0.3 L 2.4 0.4 L 2.62 0 Z",
       color: RED,
     },
     // red rear of the sidepods and engine cover, cut on the diagonal like the side view
     {
-      d: "M 0.06 -0.2 L 0.45 -0.26 L 0.62 -0.42 L 1.1 -0.62 L 1.25 -0.64 L 0.8 0 L 1.25 0.64 L 1.1 0.62 L 0.62 0.42 L 0.45 0.26 L 0.06 0.2 Z",
+      d: "M 0.12 -0.2 L 0.55 -0.26 L 0.75 -0.4 L 1.15 -0.6 L 1.32 -0.66 L 0.9 0 L 1.32 0.66 L 1.15 0.6 L 0.75 0.4 L 0.55 0.26 L 0.12 0.2 Z",
       color: RED,
     },
   ],
-  // the two halves of the front wing either side of the nose, which sits on top of it
+  // the two halves of the front wing either side of the nose, which sits on top of it; all white
   frontWing: {
     deck:
-      "M 4.05 -0.7 L 4.6 -0.7 L 4.6 -0.08 L 4.3 -0.12 L 4.05 -0.141 Z " +
-      "M 4.05 0.7 L 4.6 0.7 L 4.6 0.08 L 4.3 0.12 L 4.05 0.141 Z",
-    // the flap along the whole trailing edge, either side of the nose
+      "M 3.7 -0.7 L 4.22 -0.7 L 4.22 -0.07 L 3.95 -0.12 L 3.7 -0.15 Z " +
+      "M 3.7 0.7 L 4.22 0.7 L 4.22 0.07 L 3.95 0.12 L 3.7 0.15 Z",
     flap:
-      "M 4.06 -0.68 L 4.16 -0.68 L 4.16 -0.135 L 4.06 -0.14 Z " +
-      "M 4.06 0.68 L 4.16 0.68 L 4.16 0.135 L 4.06 0.14 Z",
-    endplates: "M 4.02 -0.7 L 4.62 -0.7 M 4.02 0.7 L 4.62 0.7",
+      "M 3.71 -0.68 L 3.81 -0.68 L 3.81 -0.145 L 3.71 -0.15 Z " +
+      "M 3.71 0.68 L 3.81 0.68 L 3.81 0.145 L 3.71 0.15 Z",
+    endplates: "M 3.68 -0.7 L 4.24 -0.7 M 3.68 0.7 L 4.24 0.7",
   },
   rearWing: {
-    top: "M 0 -0.5 L 0.6 -0.5 L 0.6 0.5 L 0 0.5 Z",
+    top: "M 0 -0.5 L 0.46 -0.5 L 0.46 0.5 L 0 0.5 Z",
     color: RED,
-    element: "M 0.36 -0.48 L 0.36 0.48",
+    element: "M 0.26 -0.48 L 0.26 0.48",
     // red endplates, as in the side view
-    endplates: "M -0.02 -0.52 L 0.62 -0.52 M -0.02 0.52 L 0.62 0.52",
+    endplates: "M -0.02 -0.52 L 0.48 -0.52 M -0.02 0.52 L 0.48 0.52",
     endplateColor: RED,
   },
   wheels: [
-    { x: 3.28, y: -0.91, length: 0.635, width: 0.3, steer: true },
-    { x: 3.28, y: 0.91, length: 0.635, width: 0.3, steer: true },
-    { x: 0.384, y: -0.835, length: 0.66, width: 0.38 },
-    { x: 0.384, y: 0.835, length: 0.66, width: 0.38 },
+    { x: 3.47, y: -0.91, length: 0.635, width: 0.3, steer: true },
+    { x: 3.47, y: 0.91, length: 0.635, width: 0.3, steer: true },
+    { x: 0.53, y: -0.835, length: 0.66, width: 0.38 },
+    { x: 0.53, y: 0.835, length: 0.66, width: 0.38 },
   ],
   cockpit:
-    "M 2.25 -0.24 C 2.4 -0.27 2.6 -0.26 2.72 -0.18 L 2.72 0.18 C 2.6 0.26 2.4 0.27 2.25 0.24 Z",
-  helmet: { x: 2.36, r: 0.13 },
+    "M 1.95 -0.24 C 2.1 -0.27 2.35 -0.26 2.55 -0.18 L 2.55 0.18 C 2.35 0.26 2.1 0.27 1.95 0.24 Z",
+  helmet: { x: 2.1, r: 0.13 },
 };
+
+// Rear endplate, red with the race number (ART-17: the far one is its perspective copy).
+const REAR_ENDPLATE = "M 1500 525 L 1665 518 L 1662 682 L 1500 700 Z";
 
 export const MP4_5: CarSpec = {
   name: "1989 McLaren-Honda MP4/5",
-  reference: "references/mclaren-1989/prost-1989-spa-2x.png",
-  frame: { x: 1826, ground: 732, k: 0.675 },
+  reference: "references/mclaren-1989/mp45b-side-rectified.png",
+  frame: { x: 1668, ground: 880, k: 250 / 360 },
   driver: SEN_1989,
   paint: {
     cover: "#f7f6f2",
-    chassis: "#efede8",
+    chassis: "#f1efea",
     sidepod: "#ebe9e3",
     undercut: "#151518",
     wing: "#f3f1ec",
-    frontDeck: "#ecebe5",
+    frontDeck: "#efede8",
     rearTop: "#f2f0eb",
     mirror: RED,
   },
   livery: [
-    // the chevron: red over the nose top and down the chassis flank in front of the cockpit
-    { d: "M 520 466 L 814 450 L 738 542 L 520 516 Z", color: RED },
-    // rear of the sidepod and engine cover, cut on the diagonal
+    // the chevron: red over the nose top and the chassis in front of the cockpit, cut on a diagonal at the back
+    { d: "M 540 600 L 806 590 L 728 694 L 556 698 Z", color: RED },
+    // red lower rear of the sidepod rising on the diagonal to the engine cover, round the gearbox
     {
-      d: "M 1322 676 L 1500 487 L 1560 490 L 1680 528 L 1780 540 L 1780 700 L 1322 700 Z",
+      d: "M 1190 702 L 1300 700 L 1380 652 L 1440 626 L 1520 616 L 1630 636 L 1630 840 L 1190 816 Z",
       color: RED,
     },
   ],
-  // red rear-wing endplate
-  wingLivery: [
-    { d: "M 1505 350 L 1824 348 L 1826 470 L 1650 470 Z", color: RED },
-  ],
-  // airbox intake lip above the driver's head
+  wingLivery: [],
   accents: [
+    // radiator outlet grille on the sidepod flank
     {
-      d: "M 1003 318 C 1005 311 1009 308 1018 308 L 1026 312 C 1018 330 1013 350 1012 372 L 1003 374 Z",
+      d: "M 1086 703 L 1190 702 L 1190 792 L 1089 793 Z",
+      color: "#2c2d31",
+    },
+    // airbox intake lip above the driver's head
+    {
+      d: "M 976 492 C 978 485 982 481 990 481 L 997 484 C 990 500 986 520 985 545 L 976 547 Z",
       color: "#1b1b1e",
     },
   ],
   nearWheels: [
-    { cx: 612, cy: 612, r: 120 },
-    { cx: 1684, cy: 610, r: 122 },
+    { cx: 420, cy: 766, r: 114 },
+    { cx: 1478, cy: 761, r: 119 },
   ],
   farWheels: [
-    { cx: 410, cy: 500, r: 116 },
-    { cx: 1468, cy: 514, r: 120 },
+    { cx: 650, cy: 645, r: 108 },
+    { cx: 1430, cy: 642, r: 112 },
   ],
-  rimR: 60,
+  rimR: 58,
   rim: "dark",
   // Goodyear slicks: plain black sidewalls (the lettering is a logo, ART-5), so no compound band.
   body:
-    "M 108 566 L 530 478 L 650 470 L 800 463 L 842 462 L 1003 458 L 1003 316 " +
-    "C 1004 310 1008 307 1016 306 L 1040 306 C 1160 318 1330 400 1530 492 L 1640 524 L 1770 540 L 1774 692 " +
-    "L 690 694 L 600 690 L 520 560 L 470 530 L 140 612 C 122 606 110 590 108 566 Z",
+    "M 180 778 C 260 750 360 700 450 660 C 520 630 590 612 640 606 L 760 598 L 800 600 L 832 630 L 975 632 " +
+    "L 975 500 C 976 488 980 482 990 481 L 1010 481 C 1120 488 1250 528 1400 590 L 1460 618 L 1610 640 " +
+    "L 1614 818 L 600 822 L 520 792 L 440 772 L 330 788 L 180 794 Z",
   regions: {
     cover:
-      "M 1003 300 L 1040 300 C 1160 312 1330 395 1540 490 L 1660 520 L 1660 562 L 1330 560 L 1003 552 Z",
-    sidepod: "M 1003 552 L 1330 560 L 1660 562 L 1700 700 L 1003 700 Z",
-    undercut: "M 560 540 L 735 540 L 1003 550 L 1003 700 L 560 700 Z",
+      "M 975 470 L 1010 470 C 1120 478 1250 520 1410 585 L 1470 615 L 1640 640 L 1640 692 L 870 690 L 870 636 L 975 636 Z",
+    sidepod: "M 870 690 L 1640 692 L 1640 840 L 870 840 Z",
+    undercut: "M 540 690 L 870 690 L 870 830 L 540 830 Z",
     chassis:
-      "M 90 560 L 530 470 L 1003 450 L 1003 552 L 735 540 L 480 560 L 300 640 L 90 640 Z",
+      "M 150 760 L 450 650 L 640 596 L 975 590 L 975 690 L 540 690 L 440 790 L 150 800 Z",
   },
   glints: [
-    "M 560 486 L 780 474 L 777 481 L 562 493 Z",
-    "M 1505 500 L 1522 502 L 1380 662 L 1362 662 Z",
+    "M 600 618 L 740 604 L 738 611 L 602 625 Z",
+    "M 1330 690 L 1440 634 L 1446 641 L 1337 697 Z",
   ],
-  floor: "M 690 690 L 1700 694 L 1696 706 L 696 702 Z",
+  floor: "M 600 814 L 1420 815 L 1418 829 L 604 828 Z",
   frontWing: {
-    near: "M 240 612 L 470 572 L 482 692 L 240 694 Z",
-    // far endplate: the near one seen further away (ART-17)
-    farFrom: { dx: -140, dy: -36, scale: 0.95 },
-    deck: "M 100 576 L 204 562 L 470 558 L 476 650 L 240 694 C 190 682 140 656 108 628 Z",
-    flap: { d: "M 200 562 L 470 556 L 472 574 L 204 580 Z", color: "#d9d6cf" },
+    // tall at the back, sloping down to the front, as on the 1989 car
+    near: "M 150 790 L 335 745 L 337 822 L 150 822 Z",
+    // far endplate: the near one seen across the car (ART-17)
+    farFrom: { dx: 290, dy: -150, scale: 0.85 },
+    deck: "M 150 792 L 335 758 L 560 660 L 445 668 C 330 700 220 745 150 792 Z",
+    // the whole wing is white on the real car (ART-12)
+    flap: { d: "M 330 760 L 560 662 L 566 672 L 336 772 Z", color: "#e9e7e1" },
   },
   rearWing: {
-    near: "M 1505 350 L 1824 348 L 1826 470 L 1650 470 Z",
-    top: "M 1496 324 L 1700 304 L 1828 334 L 1824 350 L 1505 352 Z",
+    near: REAR_ENDPLATE,
+    farFrom: { dx: -12, dy: -50, scale: 0.96 },
+    livery: [{ d: REAR_ENDPLATE, color: RED }],
+    top: "M 1486 478 L 1636 471 L 1665 518 L 1500 525 Z",
     elements: [],
-    pylon: "M 1600 470 L 1640 470 L 1650 525 L 1610 525 Z",
+    pylon: "M 1556 640 L 1590 640 L 1590 702 L 1556 702 Z",
   },
-  panelLines: [
-    "M 1003 552 L 1003 690",
-    "M 1006 552 C 1150 556 1260 558 1340 558",
-  ],
-  suspension: ["M 640 560 L 800 500", "M 650 640 L 820 610"],
+  panelLines: ["M 870 692 L 870 808", "M 872 690 C 1000 690 1150 692 1300 696"],
+  suspension: ["M 430 722 L 640 690", "M 440 790 L 640 760"],
   cockpit: {
-    opening: "M 896 444 L 1003 440 L 1003 460 L 896 462 Z",
+    opening: "M 836 602 L 975 596 L 975 634 L 836 634 Z",
   },
-  helmetAt: { cx: 955, cy: 408, r: 52 },
-  windscreen: "M 836 463 C 846 446 860 438 880 436 L 906 436 L 904 462 Z",
-  mirror: "M 770 452 L 808 448 L 810 466 L 772 470 Z M 790 470 L 794 480",
-  numberAt: { x: 1700, y: 445, size: 72 },
+  helmetAt: { cx: 921, cy: 581, r: 52 },
+  windscreen: "M 700 604 C 712 588 730 580 760 578 L 800 580 L 800 602 Z",
+  mirror: "M 788 600 L 816 598 L 818 622 L 790 624 Z M 803 624 L 805 634",
+  numberAt: { x: 1585, y: 660, size: 70 },
   top: { plan: MP4_5_PLAN },
 };
 

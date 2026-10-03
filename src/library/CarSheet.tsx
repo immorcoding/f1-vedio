@@ -67,13 +67,13 @@ export const SHEETS = {
     ],
     pxPerMetre: 190,
   },
-  // Suzuka: PRO above SEN (one MP4/5 spec, two drivers), 300 px per metre, each with its top view.
+  // Suzuka: PRO above SEN (one MP4/5 spec, two drivers), 340 px per metre, each with its top view.
   1989: {
     rows: [
-      { car: "MP45-PRO", x: 150, ground: 470 },
-      { car: "MP45-SEN", x: 150, ground: 980 },
+      { car: "MP45-PRO", x: 120, ground: 470 },
+      { car: "MP45-SEN", x: 120, ground: 980 },
     ],
-    pxPerMetre: 300,
+    pxPerMetre: 340,
     tops: [
       { car: "MP45-PRO", x: 1590, y: 160 },
       { car: "MP45-SEN", x: 1590, y: 670 },
