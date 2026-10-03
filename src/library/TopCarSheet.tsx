@@ -17,6 +17,31 @@ export const TOP_SHEET_2021: TopCarSheetProps = {
   ],
 };
 
+// Every traced car from above, two columns at 95 px per metre: for checking the top views side by side (ART-15).
+export const AllTopsSheet: React.FC = () => (
+  <AbsoluteFill style={{ backgroundColor: PAPER }}>
+    <svg width={1920} height={1080}>
+      {(Object.keys(CARS) as CarId[]).map((id, i) => {
+        const x = 80 + (i % 2) * 960;
+        const y = 110 + Math.floor(i / 2) * 210;
+        return (
+          <g key={id}>
+            <MangaCar
+              car={CARS[id]}
+              view="top"
+              at={{ x, y, pxPerMetre: 95 }}
+              state={{ heading: 0 }}
+            />
+            <text x={x + 600} y={y} fontFamily="Arial" fontSize={22} fill={INK}>
+              {id}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  </AbsoluteFill>
+);
+
 export const TopCarSheet: React.FC<TopCarSheetProps> = ({ rows }) => (
   <AbsoluteFill style={{ backgroundColor: PAPER }}>
     <svg width={1920} height={1080}>

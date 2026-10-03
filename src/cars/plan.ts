@@ -105,12 +105,14 @@ export const modernPlan = (car: CarSpec, marks: TopMarks = {}): CarPlan => {
       [hx - 0.2, 0.24],
     ]),
     livery,
+    // tub and nose; the nose runs forward over the front wing to its tip, at the wing's leading edge
     chassis: symmetric([
       [hx - 0.22, 0.3],
       [hx + 0.95, 0.31],
       [fa - 0.3, 0.17],
       [L - 0.55, 0.11],
-      [L - 0.2, 0.07],
+      [L - 0.2, 0.08],
+      [L - 0.07, 0.05],
     ]),
     accents,
     // sidepod inlets just behind the front of each pod

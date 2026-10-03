@@ -23,7 +23,6 @@ export const CarCheck: React.FC<CarCheckProps> = ({ car: carId, mode }) => {
     c.body,
     c.floor,
     fw.near,
-    fw.far,
     fw.deck,
     fw.flap.d,
     c.haloFar,

@@ -107,9 +107,9 @@ export type CarSpec = {
   frame: { x: number; ground: number; k: number };
   driver: Driver;
   paint: Paint;
-  // Livery colour blocks beyond the stripes, on the body and on the wings. No logos or text (ART-5).
+  // Livery colour blocks beyond the stripes, on the body. No logos or text (ART-5). Colour blocks on a wing endplate
+  // go in that wing's `livery`, so the far endplate carries them too (ART-17).
   livery: Accent[];
-  wingLivery: Accent[];
   accents: Accent[];
   haloAccent?: Accent;
   nearWheels: [Wheel, Wheel]; // front, rear
@@ -133,12 +133,11 @@ export type CarSpec = {
   floor: string;
   // Simplified front wing (ART-12): far and near endplates, and one wing surface between them drawn behind the
   // nose, with an accent-coloured flap running the whole trailing edge between the endplates (no diagonal stripes).
-  // The two endplates of a wing are one shape (ART-17): give `farFrom` and the renderer draws the far endplate as
-  // the perspective copy of the near one, colour blocks (`livery`) included. A traced `far` is only kept on the
-  // settled 2021 cars.
+  // The two endplates of a wing are one shape with the same colours (ART-17): the renderer draws the far endplate as
+  // the perspective copy (`farFrom`) of the near one, colour blocks (`livery`) included. The same holds for the rear
+  // wing.
   frontWing: {
     near: string;
-    far?: string;
     farFrom?: EndplateCopy;
     deck: string;
     flap: Accent;
@@ -146,10 +145,12 @@ export type CarSpec = {
   };
   rearWing: {
     near: string;
-    // the far rear endplate, where it shows above the near one
+    // the far rear endplate (the near one's perspective copy), drawn behind the wing surface (`top`)
     farFrom?: EndplateCopy;
     livery?: Accent[];
-    top: string;
+    // the wing elements between the endplates as the camera sees them from above; leave it out where the reference
+    // photo sees the wing edge-on
+    top?: string;
     elements: string[];
     pylon: string;
     beam?: string; // lower (beam) wing, where the car has one

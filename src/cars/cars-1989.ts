@@ -191,7 +191,6 @@ export const MP4_5: CarSpec = {
       color: RED,
     },
   ],
-  wingLivery: [],
   accents: [
     // radiator outlet grille on the sidepod flank
     {
