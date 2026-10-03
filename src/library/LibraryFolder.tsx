@@ -10,6 +10,7 @@ import { CarCheck } from "./CarCheck";
 import { CarSheet, SHEETS } from "./CarSheet";
 import { CAR_STATES_FRAMES, CarStates } from "./CarStates";
 import { KitSheet } from "./KitSheet";
+import { SuzukaTracksideSheet } from "./SceneSheets";
 import { TOP_SHEET_2021, TopCarSheet } from "./TopCarSheet";
 import { TRACK_SHEETS, TrackSheet } from "./TrackSheet";
 
@@ -44,6 +45,11 @@ export const LibraryFolder: React.FC = () => (
       {...SIZE}
     />
     <Still id="Scene-AbuDhabi2021-T5" component={T5Panel} {...SIZE} />
+    <Still
+      id="Scene-Suzuka1989-Trackside"
+      component={SuzukaTracksideSheet}
+      {...SIZE}
+    />
     {(Object.keys(TRACK_SHEETS) as TrackId[]).map((track) => (
       <Still
         key={track}
