@@ -80,6 +80,10 @@ export const WreckWorld: React.FC<{
   behindRails?: React.ReactNode;
   // close-ups: no light pool, the fire throws no glow over the whole panel
   noGlow?: boolean;
+  // varies the flames (the close-up panels each catch a different moment of the fire)
+  fireSeed?: string;
+  // false once GRO is out: the cockpit is empty
+  driver?: false;
 }> = ({
   cam,
   f,
@@ -88,6 +92,8 @@ export const WreckWorld: React.FC<{
   tonePrefix,
   behindRails,
   noGlow = false,
+  fireSeed = "",
+  driver,
 }) => {
   const p = noGlow
     ? { ...FIRE_PALETTES[palette], glow: null }
@@ -120,7 +126,7 @@ export const WreckWorld: React.FC<{
         w={back.w}
         h={back.h}
         frame={f}
-        seed="wreck-back"
+        seed={`wreck-back${fireSeed}`}
         palette={p}
         intensity={intensity}
       />
@@ -128,7 +134,7 @@ export const WreckWorld: React.FC<{
         car={VF20}
         facing="left"
         at={cellAt}
-        state={{ split: { front: CELL_POSE, show: "front" } }}
+        state={{ split: { front: CELL_POSE, show: "front" }, driver }}
       />
       {behindRails}
       <Guardrail
@@ -147,7 +153,7 @@ export const WreckWorld: React.FC<{
           w={front.w * 0.4}
           h={front.h * (k === 0 ? 1 : 0.75)}
           frame={f + 1 + k}
-          seed={`wreck-front${k}`}
+          seed={`wreck-front${k}${fireSeed}`}
           palette={p}
           intensity={intensity}
           smoke={false}
@@ -159,7 +165,7 @@ export const WreckWorld: React.FC<{
         w={gapFire.w}
         h={gapFire.h}
         frame={f + 2}
-        seed="wreck-gap"
+        seed={`wreck-gap${fireSeed}`}
         palette={p}
         intensity={intensity * 0.9}
         smoke={false}
@@ -370,7 +376,8 @@ export const HaloPanels: React.FC<PictureProps> = ({ f, palette }) => {
             <g clipPath={`url(#b35-p${i})`}>
               <WreckWorld
                 cam={cam}
-                f={f + i * 5}
+                f={f + i * 11}
+                fireSeed={`p${i}`}
                 palette={palette}
                 intensity={i === 3 ? 0.55 : 1}
                 noGlow

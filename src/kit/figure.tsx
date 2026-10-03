@@ -1,9 +1,9 @@
-// People in overalls, side view (ART-16): a jointed body at real proportions (1.80 m), dressed as a race driver,
-// doctor or marshal — overalls with seams and folds, gloves, boots, helmet — drawn limb by limb, far side first, with a
-// rim of firelight on the side towards the fire. No faces (ART-5): helmets, hoods or the back of the head only.
+// People in overalls, seen side-on (ART-16), the shared people module: a jointed body at real proportions (1.80 m)
+// dressed as a race driver, doctor, marshal or mechanic — loose overalls with seams and folds, gloves, boots, helmet or
+// hood — drawn far side first, with an optional rim of firelight. No faces (ART-5): helmets, hoods or the back of the head.
 // The walk is a gait cycle (thigh swing, knee bend, heel rise, counter-swinging arms) checked against Eadweard
 // Muybridge's "A man walking" plates (1887, public domain; docs/assets/reference-register.md).
-import { INK, PAPER } from "../../../kit/colors";
+import { INK, PAPER } from "./colors";
 
 type V = { x: number; y: number };
 const add = (a: V, b: V): V => ({ x: a.x + b.x, y: a.y + b.y });
@@ -59,13 +59,13 @@ const gaitLeg = (p: number, stride = 1): LegPose => ({
     ),
   knee: lerpTable(
     [
-      [0, 4],
+      [0, 8],
       [0.15, 16],
-      [0.4, 5],
+      [0.4, 10],
       [0.6, 38],
       [0.72, 60],
       [0.9, 20],
-      [1, 4],
+      [1, 8],
     ],
     p,
   ),
@@ -135,53 +135,55 @@ export type Outfit = {
     | { kind: "hood"; color: string };
 };
 
-// A limb as one smooth outline through its joints (hip–knee–ankle, shoulder–elbow–wrist), widths in metres at each
-// joint, with rounded ends: no visible seam at the knee or elbow.
-const chain = (P: (v: V) => string, pts: V[], widths: number[]) => {
+const lerp = (a: V, b: V, u: number): V => ({
+  x: a.x + (b.x - a.x) * u,
+  y: a.y + (b.y - a.y) * u,
+});
+
+// A smooth closed outline round a line of points with a width at each (metres): the sides are Catmull-Rom curves, the
+// ends round. Used for limbs in loose overalls — thigh fuller than knee, calf, a hem flaring over the boot.
+const tube = (P: (v: V) => string, pts: V[], widths: number[]) => {
   const n = pts.length;
-  const normal = (i: number) => {
+  const tangent = (i: number) => {
     const a = pts[Math.max(0, i - 1)];
     const b = pts[Math.min(n - 1, i + 1)];
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const len = Math.hypot(dx, dy) || 1e-6;
-    return { x: -dy / len, y: dx / len, tx: dx / len, ty: dy / len };
+    const len = Math.hypot(b.x - a.x, b.y - a.y) || 1e-6;
+    return { x: (b.x - a.x) / len, y: (b.y - a.y) / len };
   };
-  const left: V[] = [];
-  const right: V[] = [];
-  pts.forEach((p, i) => {
-    const nm = normal(i);
-    left.push({
-      x: p.x + (nm.x * widths[i]) / 2,
-      y: p.y + (nm.y * widths[i]) / 2,
+  const side = (sgn: number) =>
+    pts.map((p, i) => {
+      const t = tangent(i);
+      return {
+        x: p.x - t.y * sgn * widths[i] * 0.5,
+        y: p.y + t.x * sgn * widths[i] * 0.5,
+      };
     });
-    right.push({
-      x: p.x - (nm.x * widths[i]) / 2,
-      y: p.y - (nm.y * widths[i]) / 2,
-    });
-  });
-  const end = normal(n - 1);
-  const start = normal(0);
-  const tipEnd = {
-    x: pts[n - 1].x + end.tx * widths[n - 1] * 0.5,
-    y: pts[n - 1].y + end.ty * widths[n - 1] * 0.5,
-  };
-  const tipStart = {
-    x: pts[0].x - start.tx * widths[0] * 0.5,
-    y: pts[0].y - start.ty * widths[0] * 0.5,
-  };
-  // smooth through the middle joints with quadratic curves via the joint offsets
-  const side = (s: V[]) => {
+  const curve = (q: V[]) => {
     let d = "";
-    for (let i = 1; i < s.length - 1; i++) {
-      const m = { x: (s[i].x + s[i + 1].x) / 2, y: (s[i].y + s[i + 1].y) / 2 };
-      d += ` Q ${P(s[i])} ${P(i === s.length - 2 ? s[i + 1] : m)}`;
+    for (let i = 0; i < q.length - 1; i++) {
+      const p0 = q[Math.max(0, i - 1)];
+      const p1 = q[i];
+      const p2 = q[i + 1];
+      const p3 = q[Math.min(q.length - 1, i + 2)];
+      const c1 = { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 };
+      const c2 = { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 };
+      d += ` C ${P(c1)} ${P(c2)} ${P(p2)}`;
     }
-    if (s.length === 2) d += ` L ${P(s[1])}`;
     return d;
   };
-  const rl = [...right].reverse();
-  return `M ${P(left[0])}${side(left)} Q ${P(tipEnd)} ${P(right[n - 1])}${side(rl)} Q ${P(tipStart)} ${P(left[0])} Z`;
+  const L = side(1);
+  const R = side(-1).reverse();
+  const tEnd = tangent(n - 1);
+  const tStart = tangent(0);
+  const capEnd = {
+    x: pts[n - 1].x + tEnd.x * widths[n - 1] * 0.55,
+    y: pts[n - 1].y + tEnd.y * widths[n - 1] * 0.55,
+  };
+  const capStart = {
+    x: pts[0].x - tStart.x * widths[0] * 0.55,
+    y: pts[0].y - tStart.y * widths[0] * 0.55,
+  };
+  return `M ${P(L[0])}${curve(L)} Q ${P(capEnd)} ${P(R[0])}${curve(R)} Q ${P(capStart)} ${P(L[0])} Z`;
 };
 
 // A person standing on screen point `at` (their ground point), `pxPerMetre` there, facing left or right.
@@ -219,78 +221,96 @@ export const Figure: React.FC<{
   const farLeg = legJoints({ x: -0.03, y: hipY }, pose.far.leg);
   const up = 180 - pose.lean;
   const shoulder = add(hip, polar(TORSO, up));
-  const neck = add(shoulder, polar(0.07, 180 - pose.lean * 0.6));
+  const neck = add(shoulder, polar(0.06, 180 - pose.lean * 0.6));
   const nearArm = armJoints(
-    add(shoulder, polar(0.05, up + 180)),
+    add(shoulder, polar(0.06, up + 180)),
     pose.near.arm,
     pose.lean,
   );
   const farArm = armJoints(
-    add(shoulder, { x: -0.03, y: -0.04 }),
+    add(shoulder, { x: -0.03, y: -0.05 }),
     pose.far.arm,
     pose.lean,
   );
   const headC = add(
     neck,
-    polar(0.16, 180 - pose.lean * 0.4 + (pose.head ?? 0) * 0.3),
+    polar(0.15, 180 - pose.lean * 0.4 + (pose.head ?? 0) * 0.3),
   );
   const fwd = (v: V, d: number) => add(v, polar(d, 90 - pose.lean));
+  const upT = (v: V, d: number) => add(v, polar(d, up));
   const ink = Math.max(1.6, s * 0.011);
 
   const legD = (l: Leg) =>
-    chain(P, [l.hip, l.knee, l.ankle], [0.21, 0.135, 0.105]);
+    tube(
+      P,
+      [
+        l.hip,
+        lerp(l.hip, l.knee, 0.45),
+        l.knee,
+        lerp(l.knee, l.ankle, 0.35),
+        add(l.ankle, { x: 0, y: 0.05 }),
+      ],
+      [0.24, 0.215, 0.145, 0.15, 0.135],
+    );
   const armD = (a: Arm) =>
-    chain(P, [a.shoulder, a.elbow, a.wrist], [0.135, 0.105, 0.09]);
-  const gloveD = (a: Arm) => chain(P, [a.wrist, a.hand], [0.1, 0.085]);
+    tube(
+      P,
+      [
+        a.shoulder,
+        lerp(a.shoulder, a.elbow, 0.5),
+        a.elbow,
+        lerp(a.elbow, a.wrist, 0.45),
+        a.wrist,
+      ],
+      [0.16, 0.13, 0.105, 0.115, 0.095],
+    );
+  const gloveD = (a: Arm) =>
+    tube(P, [a.wrist, lerp(a.wrist, a.hand, 0.5), a.hand], [0.095, 0.1, 0.075]);
   const bootD = (l: Leg) =>
     `M ${P(add(l.heel, { x: -0.015, y: -0.005 }))} L ${P(add(l.toe, { x: 0.01, y: 0 }))} ` +
-    `Q ${P(add(l.toe, { x: 0.03, y: 0.07 }))} ${P(add(l.toe, { x: -0.07, y: 0.075 }))} ` +
-    `L ${P(add(l.ankle, { x: 0.05, y: 0.03 }))} L ${P(add(l.ankle, { x: 0.045, y: 0.1 }))} ` +
-    `L ${P(add(l.ankle, { x: -0.06, y: 0.1 }))} L ${P(add(l.heel, { x: -0.02, y: 0.06 }))} Z`;
-  // torso: chest ahead of the spine, shoulder blades behind, narrowing to the waist, collar at the neck
+    `Q ${P(add(l.toe, { x: 0.035, y: 0.075 }))} ${P(add(l.toe, { x: -0.07, y: 0.08 }))} ` +
+    `L ${P(add(l.ankle, { x: 0.055, y: 0.04 }))} L ${P(add(l.ankle, { x: 0.05, y: 0.11 }))} ` +
+    `L ${P(add(l.ankle, { x: -0.065, y: 0.11 }))} L ${P(add(l.heel, { x: -0.025, y: 0.06 }))} Z`;
+  // torso: full chest ahead of the spine, shoulder blades behind, a soft belly, seat behind the hips; the overall
+  // hangs a little loose at the small of the back
   const torsoD =
-    `M ${P(fwd(add(hip, { x: 0, y: -0.04 }), 0.12))} ` +
-    `C ${P(fwd(add(hip, { x: 0, y: 0.22 }), 0.13))} ${P(fwd(add(shoulder, { x: 0, y: -0.2 }), 0.19))} ${P(fwd(add(shoulder, { x: 0, y: -0.04 }), 0.15))} ` +
-    `Q ${P(fwd(shoulder, 0.12))} ${P(fwd(neck, 0.06))} L ${P(fwd(neck, -0.06))} ` +
-    `Q ${P(fwd(shoulder, -0.16))} ${P(fwd(add(shoulder, { x: 0, y: -0.12 }), -0.15))} ` +
-    `C ${P(fwd(add(shoulder, { x: 0, y: -0.3 }), -0.12))} ${P(fwd(add(hip, { x: 0, y: 0.2 }), -0.15))} ${P(fwd(add(hip, { x: 0, y: -0.04 }), -0.14))} ` +
-    `Q ${P(add(hip, { x: 0, y: -0.13 }))} ${P(fwd(add(hip, { x: 0, y: -0.04 }), 0.12))} Z`;
-  const neckD = chain(
+    `M ${P(fwd(neck, 0.07))} ` +
+    `C ${P(fwd(upT(shoulder, -0.03), 0.16))} ${P(fwd(upT(shoulder, -0.16), 0.2))} ${P(fwd(upT(shoulder, -0.26), 0.17))} ` +
+    `C ${P(fwd(upT(hip, 0.2), 0.15))} ${P(fwd(upT(hip, 0.08), 0.15))} ${P(fwd(upT(hip, -0.04), 0.12))} ` +
+    `Q ${P(upT(hip, -0.14))} ${P(fwd(upT(hip, -0.04), -0.16))} ` +
+    `C ${P(fwd(upT(hip, 0.06), -0.18))} ${P(fwd(upT(hip, 0.2), -0.12))} ${P(fwd(upT(hip, 0.3), -0.13))} ` +
+    `C ${P(fwd(upT(shoulder, -0.18), -0.17))} ${P(fwd(upT(shoulder, 0.0), -0.17))} ${P(fwd(neck, -0.07))} Z`;
+  const neckD = tube(
     P,
-    [neck, add(neck, polar(0.08, 180 - pose.lean * 0.4))],
-    [0.12, 0.11],
+    [upT(shoulder, 0.0), neck, add(neck, polar(0.06, 180 - pose.lean * 0.4))],
+    [0.15, 0.13, 0.12],
   );
 
   const h = outfit.head;
   const c = headC;
+  // full-face helmet ~0.28 m long and 0.25 m tall; a hood is a smaller, rounder head
   const shellD =
     h.kind === "helmet"
-      ? `M ${P(add(c, { x: -0.145, y: -0.07 }))} C ${P(add(c, { x: -0.17, y: 0.1 }))} ${P(add(c, { x: -0.04, y: 0.17 }))} ${P(add(c, { x: 0.05, y: 0.16 }))} ` +
-        `C ${P(add(c, { x: 0.13, y: 0.15 }))} ${P(add(c, { x: 0.165, y: 0.06 }))} ${P(add(c, { x: 0.155, y: -0.02 }))} ` +
-        `L ${P(add(c, { x: 0.14, y: -0.12 }))} L ${P(add(c, { x: -0.09, y: -0.14 }))} Z`
-      : `M ${P(add(c, { x: -0.11, y: -0.1 }))} C ${P(add(c, { x: -0.14, y: 0.08 }))} ${P(add(c, { x: -0.02, y: 0.15 }))} ${P(add(c, { x: 0.05, y: 0.13 }))} ` +
-        `C ${P(add(c, { x: 0.12, y: 0.1 }))} ${P(add(c, { x: 0.12, y: -0.02 }))} ${P(add(c, { x: 0.09, y: -0.1 }))} Z`;
+      ? `M ${P(add(c, { x: -0.135, y: -0.065 }))} C ${P(add(c, { x: -0.155, y: 0.09 }))} ${P(add(c, { x: -0.04, y: 0.155 }))} ${P(add(c, { x: 0.045, y: 0.145 }))} ` +
+        `C ${P(add(c, { x: 0.12, y: 0.135 }))} ${P(add(c, { x: 0.15, y: 0.055 }))} ${P(add(c, { x: 0.14, y: -0.02 }))} ` +
+        `L ${P(add(c, { x: 0.125, y: -0.11 }))} L ${P(add(c, { x: -0.08, y: -0.125 }))} Z`
+      : `M ${P(add(c, { x: -0.1, y: -0.09 }))} C ${P(add(c, { x: -0.13, y: 0.07 }))} ${P(add(c, { x: -0.02, y: 0.14 }))} ${P(add(c, { x: 0.05, y: 0.12 }))} ` +
+        `C ${P(add(c, { x: 0.11, y: 0.09 }))} ${P(add(c, { x: 0.11, y: -0.02 }))} ${P(add(c, { x: 0.08, y: -0.09 }))} Z`;
 
   // the whole silhouette, in one colour — for the rim of firelight behind the figure
-  const silhouette = (color: string) => (
-    <g fill={color} stroke={color} strokeWidth={ink * 2} strokeLinejoin="round">
-      {[
-        legD(farLeg),
-        legD(nearLeg),
-        armD(farArm),
-        armD(nearArm),
-        torsoD,
-        neckD,
-        shellD,
-        bootD(farLeg),
-        bootD(nearLeg),
-        gloveD(farArm),
-        gloveD(nearArm),
-      ].map((d, i) => (
-        <path key={i} d={d} />
-      ))}
-    </g>
-  );
+  const outline = [
+    legD(farLeg),
+    legD(nearLeg),
+    armD(farArm),
+    armD(nearArm),
+    torsoD,
+    neckD,
+    shellD,
+    bootD(farLeg),
+    bootD(nearLeg),
+    gloveD(farArm),
+    gloveD(nearArm),
+  ];
   const part = (d: string, fill: string) => (
     <path
       d={d}
@@ -310,11 +330,22 @@ export const Figure: React.FC<{
     />
   );
   const rimShift = (rimSide === "right" ? 1 : -1) * Math.max(2, ink * 1.5);
+  const nk = nearLeg.knee;
+  const ne = nearArm.elbow;
   return (
     <g>
       {rim ? (
-        <g transform={`translate(${rimShift} ${-ink * 0.6})`} opacity={0.95}>
-          {silhouette(rim)}
+        <g
+          transform={`translate(${rimShift} ${-ink * 0.6})`}
+          fill={rim}
+          stroke={rim}
+          strokeWidth={ink * 2}
+          strokeLinejoin="round"
+          opacity={0.95}
+        >
+          {outline.map((d, i) => (
+            <path key={i} d={d} />
+          ))}
         </g>
       ) : null}
       {/* far side, in shadow */}
@@ -327,36 +358,48 @@ export const Figure: React.FC<{
       {part(torsoD, outfit.suit)}
       {outfit.stripe
         ? line(
-            `M ${P(fwd(add(hip, { x: 0, y: 0.04 }), 0.0))} L ${P(fwd(add(shoulder, { x: 0, y: -0.04 }), 0.02))}`,
+            `M ${P(fwd(upT(hip, 0.02), -0.01))} C ${P(fwd(upT(hip, 0.25), 0.0))} ${P(fwd(upT(shoulder, -0.2), 0.02))} ${P(fwd(upT(shoulder, -0.05), 0.0))}`,
             3.2,
             outfit.stripe,
           )
         : null}
-      {/* zip, belt, chest seam */}
+      {/* zip, belt, the fold where the overall gathers at the small of the back, the hip crease */}
       {line(
-        `M ${P(fwd(add(shoulder, { x: 0, y: -0.02 }), 0.13))} C ${P(fwd(add(shoulder, { x: 0, y: -0.25 }), 0.17))} ${P(fwd(add(hip, { x: 0, y: 0.25 }), 0.12))} ${P(fwd(add(hip, { x: 0, y: 0.08 }), 0.11))}`,
+        `M ${P(fwd(neck, 0.06))} C ${P(fwd(upT(shoulder, -0.2), 0.19))} ${P(fwd(upT(hip, 0.2), 0.14))} ${P(fwd(upT(hip, 0.06), 0.13))}`,
         0.8,
       )}
       {line(
-        `M ${P(fwd(add(hip, { x: 0, y: 0.07 }), -0.14))} L ${P(fwd(add(hip, { x: 0, y: 0.07 }), 0.12))}`,
+        `M ${P(fwd(upT(hip, 0.07), -0.16))} L ${P(fwd(upT(hip, 0.07), 0.13))}`,
         1.6,
         INK,
       )}
-      {/* near leg with knee fold and outside seam */}
+      {line(
+        `M ${P(fwd(upT(hip, 0.16), -0.15))} q ${0.04 * s * dir} ${-0.01 * s} ${0.07 * s * dir} ${0.02 * s}`,
+        0.8,
+      )}
+      {line(
+        `M ${P(fwd(upT(hip, -0.02), 0.11))} q ${0.03 * s * dir} ${0.04 * s} ${0.08 * s * dir} ${0.02 * s}`,
+        0.8,
+      )}
+      {/* near leg: side band, knee folds, hem */}
       {part(legD(nearLeg), outfit.suit)}
       {outfit.stripe
         ? line(
-            `M ${P(add(nearLeg.hip, { x: 0, y: -0.06 }))} Q ${P(nearLeg.knee)} ${P(add(nearLeg.ankle, { x: 0, y: 0.07 }))}`,
+            `M ${P(add(nearLeg.hip, { x: 0, y: -0.05 }))} Q ${P(nk)} ${P(add(nearLeg.ankle, { x: 0, y: 0.08 }))}`,
             2.4,
             outfit.stripe,
           )
         : null}
       {line(
-        `M ${P(add(nearLeg.knee, { x: -0.06, y: 0.035 }))} Q ${P(add(nearLeg.knee, { x: 0, y: -0.015 }))} ${P(add(nearLeg.knee, { x: 0.06, y: 0.04 }))}`,
+        `M ${P(add(nk, { x: -0.07, y: 0.045 }))} Q ${P(add(nk, { x: 0, y: -0.005 }))} ${P(add(nk, { x: 0.07, y: 0.05 }))}`,
       )}
       {line(
-        `M ${P(add(nearLeg.knee, { x: -0.05, y: -0.04 }))} Q ${P(add(nearLeg.knee, { x: 0, y: -0.07 }))} ${P(add(nearLeg.knee, { x: 0.05, y: -0.03 }))}`,
+        `M ${P(add(nk, { x: -0.06, y: -0.03 }))} Q ${P(add(nk, { x: 0, y: -0.07 }))} ${P(add(nk, { x: 0.05, y: -0.035 }))}`,
         0.7,
+      )}
+      {line(
+        `M ${P(add(nk, { x: -0.05, y: 0.12 }))} q ${0.03 * s * dir} ${0.015 * s} ${0.06 * s * dir} ${0} `,
+        0.6,
       )}
       {part(bootD(nearLeg), outfit.boots)}
       {line(
@@ -369,21 +412,21 @@ export const Figure: React.FC<{
       {h.kind === "helmet" ? (
         <g>
           {line(
-            `M ${P(add(c, { x: -0.15, y: 0.05 }))} C ${P(add(c, { x: -0.08, y: 0.165 }))} ${P(add(c, { x: 0.06, y: 0.165 }))} ${P(add(c, { x: 0.13, y: 0.1 }))}`,
-            (0.045 * s) / ink,
+            `M ${P(add(c, { x: -0.14, y: 0.05 }))} C ${P(add(c, { x: -0.075, y: 0.155 }))} ${P(add(c, { x: 0.055, y: 0.155 }))} ${P(add(c, { x: 0.12, y: 0.09 }))}`,
+            (0.042 * s) / ink,
             h.stripe,
           )}
           {part(
-            `M ${P(add(c, { x: 0.16, y: 0.04 }))} C ${P(add(c, { x: 0.12, y: 0.075 }))} ${P(add(c, { x: 0.04, y: 0.075 }))} ${P(add(c, { x: -0.01, y: 0.055 }))} L ${P(add(c, { x: 0, y: -0.025 }))} C ${P(add(c, { x: 0.06, y: -0.035 }))} ${P(add(c, { x: 0.12, y: -0.035 }))} ${P(add(c, { x: 0.155, y: -0.03 }))} Z`,
+            `M ${P(add(c, { x: 0.145, y: 0.035 }))} C ${P(add(c, { x: 0.11, y: 0.07 }))} ${P(add(c, { x: 0.035, y: 0.07 }))} ${P(add(c, { x: -0.01, y: 0.05 }))} L ${P(add(c, { x: 0, y: -0.022 }))} C ${P(add(c, { x: 0.055, y: -0.032 }))} ${P(add(c, { x: 0.11, y: -0.032 }))} ${P(add(c, { x: 0.14, y: -0.028 }))} Z`,
             h.visor,
           )}
           {line(
-            `M ${P(add(c, { x: 0.125, y: 0.055 }))} C ${P(add(c, { x: 0.08, y: 0.068 }))} ${P(add(c, { x: 0.04, y: 0.066 }))} ${P(add(c, { x: 0.02, y: 0.054 }))}`,
+            `M ${P(add(c, { x: 0.115, y: 0.05 }))} C ${P(add(c, { x: 0.075, y: 0.062 }))} ${P(add(c, { x: 0.04, y: 0.06 }))} ${P(add(c, { x: 0.02, y: 0.05 }))}`,
             1,
             PAPER,
           )}
           {line(
-            `M ${P(add(c, { x: 0.1, y: -0.08 }))} L ${P(add(c, { x: 0.04, y: -0.09 }))} M ${P(add(c, { x: 0.1, y: -0.105 }))} L ${P(add(c, { x: 0.04, y: -0.115 }))}`,
+            `M ${P(add(c, { x: 0.09, y: -0.075 }))} L ${P(add(c, { x: 0.035, y: -0.085 }))}`,
             0.8,
             INK,
           )}
@@ -396,15 +439,19 @@ export const Figure: React.FC<{
           />
         </g>
       ) : null}
-      {/* near arm, elbow fold, glove with its cuff */}
+      {/* near arm, elbow folds, glove with its cuff */}
       {part(armD(nearArm), outfit.suit)}
       {line(
-        `M ${P(add(nearArm.elbow, { x: -0.035, y: 0.045 }))} Q ${P(add(nearArm.elbow, { x: 0.01, y: 0.005 }))} ${P(add(nearArm.elbow, { x: 0.03, y: -0.045 }))}`,
+        `M ${P(add(ne, { x: -0.04, y: 0.05 }))} Q ${P(add(ne, { x: 0.012, y: 0.006 }))} ${P(add(ne, { x: 0.035, y: -0.05 }))}`,
+      )}
+      {line(
+        `M ${P(lerp(nearArm.shoulder, ne, 0.55))} q ${0.03 * s * dir} ${-0.01 * s} ${0.05 * s * dir} ${0.02 * s}`,
+        0.6,
       )}
       {part(gloveD(nearArm), outfit.gloves)}
       {line(
-        `M ${P(add(nearArm.wrist, polar(0.05, 90)))} L ${P(add(nearArm.wrist, polar(0.05, -90)))}`,
-        1.2,
+        `M ${P(add(nearArm.wrist, polar(0.055, 90)))} L ${P(add(nearArm.wrist, polar(0.055, -90)))}`,
+        1.4,
         INK,
       )}
     </g>

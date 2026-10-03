@@ -169,11 +169,11 @@ export const Guardrail: React.FC<{
                 .filter((e) => e.u > 0 && e.u < 1)
                 .map((e) => {
                   const g = lerp(a, b, e.u);
-                  const tip = lerp(a, b, e.u + (e.dir * 0.6) / len);
+                  const tip = lerp(a, b, e.u + (e.dir * 0.3) / len);
                   const p0 = P(g, y0);
                   const p1 = P(g, y1);
-                  const q = P({ x: tip.x, z: tip.z + 0.9 }, y1 + 0.35);
-                  const q2 = P({ x: tip.x, z: tip.z + 0.7 }, y0 + 0.2);
+                  const q = P({ x: tip.x, z: tip.z + 0.35 }, y1 + 0.12);
+                  const q2 = P({ x: tip.x, z: tip.z + 0.3 }, y0 + 0.08);
                   return (
                     <path
                       key={`${e.u}`}

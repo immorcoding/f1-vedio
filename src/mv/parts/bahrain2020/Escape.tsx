@@ -8,13 +8,14 @@ import { FIRE_PALETTES } from "../../../kit/fire";
 import { Sfx } from "../../../kit/lettering";
 import { ToneDefs } from "../../../kit/tone";
 import { cueFrame, ramp, shotById, type PictureProps } from "./common";
-import { Figure, walkPose, type BodyPose, type Outfit } from "./figure";
+import {
+  Figure,
+  walkPose,
+  type BodyPose,
+  type Outfit,
+} from "../../../kit/figure";
 import { FACTS } from "./shots.ts";
 import { HALO_WORLD, WRECK_CAM, WreckWorld, heartbeat, zoomCam } from "./Wreck";
-
-// Closer than 3.4, framed on the cockpit; it pans left with the two men as they walk away.
-const camAt = (pan: number): Camera =>
-  zoomCam(WRECK_CAM, HALO_WORLD, 1.35, { x: 1280 + pan, y: 520 });
 
 // Race suit of 2020 (Haas: black with a grey side band), GRO's helmet; the doctor's light medical overalls and
 // helmet; a marshal's overalls (orange in reality, a mid tone here: environment stays black and white, ART-8).
@@ -113,6 +114,21 @@ const CLIMB_X = HALO_WORLD.x - 0.2;
 const CLIMB_END = 75; // frames into the shot when he is down on the track side
 const OVER = 36; // frames he spends coming over the top rail
 
+// The marshal braced and spraying: front knee bent, rear leg straight, leaning in; the near hand aims the hose
+// nozzle, the far hand holds the cylinder low at his side.
+const MARSHAL_POSE: BodyPose = {
+  lean: 20,
+  head: 8,
+  near: {
+    leg: { thigh: 30, knee: 28, foot: 0 },
+    arm: { shoulder: 74, elbow: 6 },
+  },
+  far: {
+    leg: { thigh: -16, knee: 6, foot: 10 },
+    arm: { shoulder: 16, elbow: 54 },
+  },
+};
+
 export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   const shot = shotById("3.6");
   const t = f - shot.from;
@@ -129,72 +145,67 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   const rim = fire.glow ? "#ffb347" : PAPER;
   const walkFrames = black - shot.from - CLIMB_END;
   const w = ramp(t, CLIMB_END, CLIMB_END + walkFrames, (u) => u);
-  const cam = camAt(w * 520);
-  // GRO: over the rails, then away on the track side, angling toward the camera
   const climb = ramp(t, 0, CLIMB_END);
-  // first he is behind the rails, hauling himself up over them; then down on the track side
+  const step = Math.floor(t / 3) * 3; // poses held on threes
+  // GRO: behind the rails hauling himself over, then down on the track side and away, toward the camera
   const behind = t < OVER;
   const groAt = {
-    x: CLIMB_X - 0.5 * climb - 3.6 * w,
-    z: behind ? 13.3 : 12.75 - 0.15 * climb - 1.5 * w,
+    x: CLIMB_X - 0.5 * climb - 3.2 * w,
+    z: behind ? 13.3 : 12.7 - 0.2 * climb - 1.9 * w,
   };
-  const step = Math.floor(t / 3) * 3; // poses held on threes
   const groPose = behind
     ? { ...CLIMB_A, hipY: 1.15 + 0.2 * ramp(step, 0, OVER) }
     : t < CLIMB_END
-      ? mix(CLIMB_B, walkPose(0, 0.85, 14), ramp(step, OVER, CLIMB_END))
-      : walkPose((step - CLIMB_END) / 64, 0.85, 14);
-  // the doctor: waiting with his hand on GRO's arm, then walking him away, one hand at his back
-  // (on the track side of him while he climbs; then just behind him, his near hand at GRO's back)
+      ? mix(CLIMB_B, walkPose(0, 0.85, 16), ramp(step, OVER, CLIMB_END))
+      : walkPose((step - CLIMB_END) / 64, 0.85, 16);
+  // the camera keeps GRO the subject: framed on him, pushing in a little as he comes closer
+  const cam: Camera = zoomCam(
+    WRECK_CAM,
+    { x: groAt.x, y: 1.1, z: groAt.z },
+    1.55 + 0.15 * w,
+    { x: 860 - 120 * w, y: 560 },
+  );
+  // the doctor: on the track side reaching up for him, then a step behind him with a hand at his back
   const walking = t >= CLIMB_END;
   const docAt = walking
-    ? { x: groAt.x + 0.3, z: groAt.z + 0.3 }
-    : { x: groAt.x - 1.15, z: groAt.z - 0.6 };
-  const docPose: BodyPose =
-    t < CLIMB_END
-      ? {
-          lean: 12,
-          near: {
-            leg: { thigh: 14, knee: 8, foot: 0 },
-            arm: { shoulder: 78, elbow: 14 },
-          },
-          far: {
-            leg: { thigh: -12, knee: 10, foot: 6 },
-            arm: { shoulder: 64, elbow: 30 },
-          },
-        }
-      : (() => {
-          const p = walkPose((step - CLIMB_END) / 64 + 0.25, 0.85, 10);
-          return {
-            ...p,
-            near: { ...p.near, arm: { shoulder: 58, elbow: 12 } },
-          };
-        })();
+    ? { x: groAt.x + 0.45, z: groAt.z + 0.55 }
+    : { x: groAt.x - 1.05, z: 12.55 };
+  const docPose: BodyPose = walking
+    ? (() => {
+        const p = walkPose((step - CLIMB_END) / 64 + 0.4, 0.8, 18);
+        return { ...p, near: { ...p.near, arm: { shoulder: 70, elbow: 18 } } };
+      })()
+    : {
+        lean: 14,
+        head: -6,
+        near: {
+          leg: { thigh: 18, knee: 16, foot: 0 },
+          arm: { shoulder: 128, elbow: 18 },
+        },
+        far: {
+          leg: { thigh: -14, knee: 10, foot: 6 },
+          arm: { shoulder: 96, elbow: 30 },
+        },
+      };
   // the marshal at the cockpit with the extinguisher
-  const marAt = { x: CLIMB_X + 1.5, z: 12.3 };
-  const marPose: BodyPose = {
-    lean: 14,
-    near: {
-      leg: { thigh: 22, knee: 18, foot: 0 },
-      arm: { shoulder: 58, elbow: 34 },
-    },
-    far: {
-      leg: { thigh: -18, knee: 8, foot: 8 },
-      arm: { shoulder: 70, elbow: 24 },
-    },
-  };
+  const marAt = { x: CLIMB_X + 1.7, z: 12.45 };
   const g = (p: { x: number; z: number }) =>
     cam.project({ x: p.x, y: 0, z: p.z });
   const ppm = (p: { z: number }) => cam.pxPerMetre(p.z);
-  const nozzle = cam.project({ x: marAt.x + 0.62, y: 1.05, z: marAt.z });
+  const mppm = ppm(marAt);
+  const nozzle = cam.project({ x: marAt.x + 0.58, y: 1.12, z: marAt.z });
   const hb = heartbeat(f);
   const text = ramp(f, timeCue, timeCue + 8);
-  const puffs = Array.from({ length: 9 }, (_, i) => {
-    const life = ((Math.floor(f / 3) + i * 2) % 9) / 9;
+  // the powder jet: a widening cone from the nozzle into the cockpit, billowing at its end
+  const jetLen = 1.9 * mppm;
+  const flick = Math.floor(f / 3);
+  const jet = `M ${nozzle.x} ${nozzle.y - 4} L ${nozzle.x + jetLen} ${nozzle.y - 0.32 * mppm} L ${nozzle.x + jetLen} ${nozzle.y + 0.3 * mppm} L ${nozzle.x} ${nozzle.y + 4} Z`;
+  const puffs = Array.from({ length: 8 }, (_, i) => {
+    const u = ((flick + i * 3) % 8) / 8;
     return {
-      x: nozzle.x + (40 + life * 260) * (0.9 + 0.2 * Math.sin(i * 3.1)),
-      y: nozzle.y - life * 60 + Math.sin(i * 1.7) * 20,
-      r: 14 + life * 46,
+      x: nozzle.x + jetLen * (0.55 + 0.5 * u),
+      y: nozzle.y + Math.sin(i * 2.3 + flick) * 0.25 * mppm - u * 0.2 * mppm,
+      r: (0.12 + 0.2 * u) * mppm,
     };
   });
   const gro = (
@@ -204,6 +215,17 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
       pose={groPose}
       outfit={GRO_KIT}
       facing="left"
+      rim={rim}
+      rimSide="right"
+    />
+  );
+  const doctor = (
+    <Figure
+      at={g(docAt)}
+      pxPerMetre={ppm(docAt)}
+      pose={docPose}
+      outfit={DOCTOR_KIT}
+      facing={walking ? "left" : "right"}
       rim={rim}
       rimSide="right"
     />
@@ -220,27 +242,43 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
         intensity={1}
         tonePrefix="b36"
         behindRails={behind ? gro : null}
+        driver={false}
       />
-      {/* marshal and the dry-powder cloud */}
+      {/* marshal, cylinder at his hip, and the dry-powder jet */}
       <Figure
         at={g(marAt)}
-        pxPerMetre={ppm(marAt)}
-        pose={marPose}
+        pxPerMetre={mppm}
+        pose={MARSHAL_POSE}
         outfit={MARSHAL_KIT}
         facing="right"
         rim={rim}
         rimSide="right"
       />
       <rect
-        x={nozzle.x - 0.42 * ppm(marAt)}
-        y={nozzle.y + 0.05 * ppm(marAt)}
-        width={0.16 * ppm(marAt)}
-        height={0.5 * ppm(marAt)}
-        rx={0.05 * ppm(marAt)}
+        x={g(marAt).x + 0.02 * mppm}
+        y={g(marAt).y - 0.98 * mppm}
+        width={0.17 * mppm}
+        height={0.52 * mppm}
+        rx={0.06 * mppm}
         fill="#2a2a2a"
         stroke={INK}
         strokeWidth={2}
       />
+      <path
+        d={`M ${g(marAt).x + 0.1 * mppm} ${g(marAt).y - 0.98 * mppm} Q ${g(marAt).x + 0.2 * mppm} ${nozzle.y - 0.2 * mppm} ${nozzle.x} ${nozzle.y}`}
+        fill="none"
+        stroke={INK}
+        strokeWidth={Math.max(3, 0.025 * mppm)}
+      />
+      <path
+        d={jet}
+        fill={PAPER}
+        stroke={INK}
+        strokeWidth={2.5}
+        strokeLinejoin="round"
+        opacity={0.9}
+      />
+      <path d={jet} fill="url(#b36-light)" opacity={0.5} />
       {puffs.map((p, i) => (
         <circle
           key={i}
@@ -253,34 +291,15 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
           opacity={0.92}
         />
       ))}
-      {/* nearer person drawn last */}
-      {[
-        {
-          key: "doc",
-          z: docAt.z,
-          el: (
-            <Figure
-              at={g(docAt)}
-              pxPerMetre={ppm(docAt)}
-              pose={docPose}
-              outfit={DOCTOR_KIT}
-              facing={walking ? "left" : "right"}
-              rim={rim}
-              rimSide="right"
-            />
-          ),
-        },
-        { key: "gro", z: groAt.z, el: behind ? null : gro },
-      ]
-        .sort((a, b) => b.z - a.z)
-        .map((p) => (
-          <g key={p.key}>{p.el}</g>
-        ))}
+      {/* the doctor a step behind (drawn first), GRO in front: he is the subject */}
+      {walking ? doctor : null}
+      {behind ? null : gro}
+      {walking ? null : doctor}
       <rect width={1920} height={1080} fill={INK} opacity={0.12 * hb} />
       {text > 0 ? (
         <g
           opacity={text}
-          transform={`translate(110 260) scale(${0.8 + 0.2 * text})`}
+          transform={`translate(110 220) scale(${0.8 + 0.2 * text})`}
         >
           <Sfx x={0} y={0} size={210} rotate={-4}>
             {`${FACTS.escapeSeconds} 秒`}
