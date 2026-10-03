@@ -41,7 +41,7 @@ export const u13 = (f: number) =>
   clamp01((f - SHOT_13.from) / (SHOT_13.to - SHOT_13.from));
 
 // Map scale, px per metre, and how much larger than life the cars are drawn (readable on the wide map).
-export const ppm13 = (u: number) => 6 + 17 * Math.pow(u, 1.5);
+export const ppm13 = (u: number) => 8 + 26 * Math.pow(u, 1.6);
 export const CAR_PPM_MIN = 30;
 export const carScale13 = (u: number) => Math.max(1, CAR_PPM_MIN / ppm13(u));
 
