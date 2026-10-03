@@ -4,8 +4,10 @@
 import type { TopViewSampler } from "./overlap.ts";
 import { SAMPLERS as BRAZIL_2008 } from "./parts/brazil2008/staging.ts";
 import { SAMPLERS as SUZUKA_1989 } from "./parts/suzuka1989/staging.ts";
+import { SAMPLERS as SUZUKA_1990 } from "./parts/suzuka1990/staging.ts";
 
 export const TOP_VIEWS: readonly TopViewSampler[] = [
   ...SUZUKA_1989,
+  ...SUZUKA_1990,
   ...BRAZIL_2008,
 ];

@@ -28,7 +28,15 @@ import {
   type MapView,
 } from "../../../tracks";
 import { ramp, shotById, type PictureProps } from "./common";
-import { carsAt, LANE, START_FRAME, type CarId } from "./race";
+import {
+  cars16,
+  LANE,
+  POLE,
+  pose16,
+  SLOT,
+  START_FRAME,
+  type CarId,
+} from "./staging";
 
 const T = SUZUKA_1989;
 const HALF = T.width / 2;
@@ -40,7 +48,7 @@ const CARS: Record<CarId, CarSpec> = {
 };
 // grid slots: centre of each car's wheelbase on the grid, 8 m apart, staggered (race.ts)
 const SLOTS = Array.from({ length: 8 }, (_, k) => ({
-  s: -6 - 8 * k,
+  s: POLE - SLOT * k,
   lat: k % 2 ? -LANE : LANE,
 }));
 // the screen turned so the main straight runs left to right
@@ -95,12 +103,14 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
   const shot = shotById("1.6");
   const t = f - shot.from;
   const tau = (f - START_FRAME) / 60;
-  const cars = carsAt(f);
+  const cars = cars16(f);
   const sen = cars.find((c) => c.id === "SEN")!;
   const pro = cars.find((c) => c.id === "PRO")!;
   // camera: on the front row at the start, running ahead of the leaders down the straight, opening onto Turn 1
   const look =
-    4 + 22 * ramp(tau, 0.3, 3, Easing.inOut(Easing.quad)) - 8 * ramp(tau, 4.6, 6.6);
+    4 +
+    22 * ramp(tau, 0.3, 3, Easing.inOut(Easing.quad)) -
+    8 * ramp(tau, 4.6, 6.6);
   const sMid = (sen.s + pro.s) / 2 + look;
   const centre = poseAt(T, sMid, 0.5);
   const ppm =
@@ -143,7 +153,13 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
         />
         {/* Turn 1 gravel trap */}
         <path
-          d={band(view, GRAVEL.from, GRAVEL.to, -(HALF + 2.5), -(HALF + GRAVEL.depth - 1))}
+          d={band(
+            view,
+            GRAVEL.from,
+            GRAVEL.to,
+            -(HALF + 2.5),
+            -(HALF + GRAVEL.depth - 1),
+          )}
           fill={PAPER}
           stroke={INK}
           strokeWidth={2}
@@ -157,7 +173,13 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
           strokeWidth={2}
         />
         <path
-          d={band(view, 215, 345, (s) => 9 - 2.2 * ((s - 215) / 130), (s) => 17 - 9.6 * ((s - 215) / 130))}
+          d={band(
+            view,
+            215,
+            345,
+            (s) => 9 - 2.2 * ((s - 215) / 130),
+            (s) => 17 - 9.6 * ((s - 215) / 130),
+          )}
           fill={tone("mid")}
           stroke={INK}
           strokeWidth={2}
@@ -183,7 +205,13 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
           opacity={0.55}
         />
         <path
-          d={band(view, 330, 420, (s) => -LANE - 1.5 + 4 * ((s - 330) / 90), (s) => -LANE + 1.6 + 4 * ((s - 330) / 90))}
+          d={band(
+            view,
+            330,
+            420,
+            (s) => -LANE - 1.5 + 4 * ((s - 330) / 90),
+            (s) => -LANE + 1.6 + 4 * ((s - 330) / 90),
+          )}
           fill={tone("dark")}
           opacity={0.45}
         />
@@ -222,12 +250,15 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
         })}
         {/* speed lines, then the cars, back to front */}
         {cars.map((c) => {
-          const pose = poseAt(T, c.s, c.lat);
+          const pose = pose16(f, c);
           const p = view.project(pose);
           const h = view.heading(pose.heading);
           const speed = Math.min(1, ramp(tau, 0.3, 2));
           return speed > 0 ? (
-            <g key={`sl-${c.id}`} transform={`translate(${p.x} ${p.y}) rotate(${h})`}>
+            <g
+              key={`sl-${c.id}`}
+              transform={`translate(${p.x} ${p.y}) rotate(${h})`}
+            >
               <path
                 d={speedLines({
                   x: -9 * ppm,
@@ -246,7 +277,7 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
           ) : null;
         })}
         {cars.map((c) => {
-          const pose = poseAt(T, c.s, c.lat);
+          const pose = pose16(f, c);
           const p = view.project(pose);
           const heading = view.heading(pose.heading);
           const car = CARS[c.id];
@@ -255,8 +286,15 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
               key={c.id}
               car={car}
               view="top"
-              at={topAnchorAt(car, { x: p.x, y: p.y, pxPerMetre: ppm }, heading)}
-              state={{ heading, steer: c.id === "PRO" ? 6 * ramp(tau, 4.6, 6) : 0 }}
+              at={topAnchorAt(
+                car,
+                { x: p.x, y: p.y, pxPerMetre: ppm },
+                heading,
+              )}
+              state={{
+                heading,
+                steer: c.id === "PRO" ? 6 * ramp(tau, 4.6, 6) : 0,
+              }}
             />
           );
         })}
@@ -264,7 +302,9 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
         {tags > 0
           ? (["SEN", "PRO"] as const).map((id) => {
               const c = cars.find((x) => x.id === id)!;
-              const p = view.project(poseAt(T, c.s, c.lat + (id === "SEN" ? 3.4 : -3.4)));
+              const p = view.project(
+                poseAt(T, c.s, c.lat + (id === "SEN" ? 3.4 : -3.4)),
+              );
               const dy = id === "SEN" ? 38 : -38;
               return (
                 <g key={`tag-${id}`} opacity={tags * ramp(t, 4, 16)}>
@@ -293,10 +333,28 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
               );
             })
           : null}
-        <g opacity={caption} transform={`translate(${1500 + 20 * (1 - caption)} 70)`}>
-          <Caption x={0} y={0} w={300} h={110} lines={[...shot.text]} size={56} />
+        <g
+          opacity={caption}
+          transform={`translate(${1500 + 20 * (1 - caption)} 70)`}
+        >
+          <Caption
+            x={0}
+            y={0}
+            w={300}
+            h={110}
+            lines={[...shot.text]}
+            size={56}
+          />
         </g>
-        <rect x={0} y={0} width={1920} height={1080} fill="none" stroke={INK} strokeWidth={18} />
+        <rect
+          x={0}
+          y={0}
+          width={1920}
+          height={1080}
+          fill="none"
+          stroke={INK}
+          strokeWidth={18}
+        />
       </g>
     </svg>
   );
