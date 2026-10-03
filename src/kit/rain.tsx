@@ -66,8 +66,10 @@ export const Rain: React.FC<RainProps> = ({
   );
 };
 
-// Spray behind a wheel: (x, y) is the tyre's contact patch on screen, `m` px per metre there; the cloud streams back
-// (to -x) `length` metres, rising to `height` metres. `t` animates the billows; `strength` 0–1 fades it.
+// Spray behind a wheel: (x, y) is the tyre's contact patch on screen, `m` px per metre there; the plume streams back
+// (to -x) `length` metres, rising to `height` metres. It is one billowing mass: overlapping puffs inked as a single
+// outline (all ink first, all paper on top), dot-shaded underneath, breaking into loose wisps and droplets at its
+// tail. `t` animates the billows; `strength` 0–1 shrinks it.
 export const Spray: React.FC<{
   x: number;
   y: number;
@@ -91,44 +93,62 @@ export const Spray: React.FC<{
   tonePrefix = "tone",
 }) => {
   if (strength <= 0) return null;
-  const n = 11;
+  const n = 16;
   const puffs = Array.from({ length: n }, (_, i) => {
-    const u = i / (n - 1);
-    // puffs drift back along the cloud and loop, so the spray churns
-    const phase = (u + t * 1.6 + random(`${seed}-ph-${i}`) * 0.1) % 1;
-    const px = x - phase * length * m;
-    const r = (0.25 + phase * height * 0.75) * m * strength;
-    const py = y - r * 0.8 - phase * height * 0.35 * m;
+    // puffs are born at the wheel and drift back; each loops, so the plume churns
+    const phase = (i / n + t * 1.3) % 1;
+    const wob = random(`${seed}-w-${i}`);
+    const px = x - phase * length * m * strength;
+    const r =
+      (0.18 + 0.5 * Math.sqrt(phase)) *
+      height *
+      m *
+      strength *
+      (0.8 + 0.4 * wob);
+    const py = y - r * 0.75 - phase * height * 0.45 * m * strength;
     return { px, py, r, phase, i };
-  }).sort((a, b) => b.phase - a.phase);
-  const drops = Array.from({ length: 26 }, (_, i) => {
+  });
+  const body = puffs.filter((p) => p.phase < 0.72);
+  const wisps = puffs.filter((p) => p.phase >= 0.72);
+  const drops = Array.from({ length: 22 }, (_, i) => {
     const q = (random(`${seed}-d-${i}`) + t * 2.3) % 1;
-    const dx = -q * length * 0.8 * m;
-    const dy = -(Math.sin(q * Math.PI) * height * 0.9 + 0.1) * m;
     return {
-      cx: x + dx,
-      cy: y + dy,
-      r: (2 + 3 * random(`${seed}-dr-${i}`)) * strength,
+      cx: x - q * length * 0.9 * m * strength,
+      cy: y - (Math.sin(q * Math.PI) * height * 0.8 + 0.08) * m * strength,
+      r: (1.5 + 2.5 * random(`${seed}-dr-${i}`)) * Math.max(0.5, strength),
     };
   });
   return (
-    <g opacity={Math.min(1, strength * 1.2)}>
-      {puffs.map((p) => (
-        <g key={p.i} opacity={1 - 0.75 * p.phase}>
-          <circle
-            cx={p.px}
-            cy={p.py}
-            r={p.r}
-            fill={PAPER}
-            stroke={INK}
-            strokeWidth={2.4}
-          />
-          <path
-            d={`M ${p.px - p.r * 0.9} ${p.py + p.r * 0.25} A ${p.r} ${p.r} 0 0 0 ${p.px + p.r * 0.9} ${p.py + p.r * 0.25} Z`}
-            fill={`url(#${tonePrefix}-light)`}
-            opacity={0.8}
-          />
-        </g>
+    <g>
+      {body.map((p) => (
+        <circle key={`o${p.i}`} cx={p.px} cy={p.py} r={p.r + 2.5} fill={INK} />
+      ))}
+      {body.map((p) => (
+        <circle key={`f${p.i}`} cx={p.px} cy={p.py} r={p.r} fill={PAPER} />
+      ))}
+      {body.map((p) => (
+        <ellipse
+          key={`s${p.i}`}
+          cx={p.px}
+          cy={p.py + p.r * 0.45}
+          rx={p.r * 0.85}
+          ry={p.r * 0.45}
+          fill={`url(#${tonePrefix}-light)`}
+          opacity={0.7}
+        />
+      ))}
+      {wisps.map((p) => (
+        <circle
+          key={`w${p.i}`}
+          cx={p.px}
+          cy={p.py}
+          r={p.r * (1.6 - p.phase)}
+          fill="none"
+          stroke={INK}
+          strokeWidth={1.6}
+          strokeDasharray="10 8"
+          opacity={Math.min(1, (1 - p.phase) * 2.2)}
+        />
       ))}
       {drops.map((d, i) => (
         <circle key={i} cx={d.cx} cy={d.cy} r={d.r} fill={INK} />

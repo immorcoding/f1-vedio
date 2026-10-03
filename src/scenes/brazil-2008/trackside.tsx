@@ -92,7 +92,7 @@ export const Skyline: React.FC<P> = ({ cam, camX }) => {
     return {
       x: -400 + i * 38 + r("x") * 14,
       w: 14 + r("w") * 16,
-      h: 25 + r("h") * 55,
+      h: 18 + r("h") * 34,
     };
   });
   const span = 40 * 38;
