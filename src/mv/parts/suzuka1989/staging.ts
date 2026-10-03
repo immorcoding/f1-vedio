@@ -1,9 +1,16 @@
 // Where the two McLarens are in every shot of the Suzuka 1989 part, as plain data: the pictures draw from it and the
 // interpenetration check (src/mv/overlap.ts, ART-18) tests it. Pure TypeScript (no React, no Remotion) so node can
 // load it.
-import type { Footprint, TopViewSampler } from "../../overlap.ts";
+import type { TopViewSampler } from "../../overlap.ts";
 import { frameAt } from "../../timing.ts";
-import { poseAt } from "../../../tracks/track.ts";
+import {
+  footprintOf,
+  proAt,
+  realTime,
+  senAt,
+  SHOT_SECONDS,
+  SLOWMO_AT,
+} from "./drive13.ts";
 import { SUZUKA_1989 } from "../../../tracks/suzuka-1989.ts";
 import { EDIT } from "./shots.ts";
 
@@ -32,74 +39,28 @@ export const smooth = (v: number, a: number, b: number) => {
 };
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-// ── 1.3: the chicane from above ────────────────────────────────────────────────────────────────────
-// u = 0…1 over the shot. PRO keeps left (the outside, lateral −) and turns in at the end; SEN sits in his tow, pulls
-// right onto the inside while still a scaled car length back, then draws up until his nose is at PRO's sidepod.
+// ── 1.3: the chicane from above, driven for real (drive13.ts) ─────────────────────────────────────────
+// Song frame → screen seconds into the shot → real seconds (real speed, then the slow-motion dive).
 
 export const SHOT_13 = shot("1.3");
-export const u13 = (f: number) =>
-  clamp01((f - SHOT_13.from) / (SHOT_13.to - SHOT_13.from));
-
-// Map scale, px per metre, and how much larger than life the cars are drawn (readable on the wide map).
-export const ppm13 = (u: number) => 8 + 26 * Math.pow(u, 1.6);
-export const CAR_PPM_MIN = 30;
-export const carScale13 = (u: number) => Math.max(1, CAR_PPM_MIN / ppm13(u));
-
-const proS = (u: number) => CHICANE - 18 - 160 * Math.pow(1 - u, 1.5);
-const gap13 = (u: number) =>
-  u < 0.4 ? lerp(24, 13, u / 0.4) : lerp(13, 2.2, smooth(u, 0.4, 1));
-const proLat = (u: number) => -3.3 + 2.5 * smooth(u, 0.8, 1);
-const senLat = (u: number) => -3.3 + 6.8 * smooth(u, 0.38, 0.68);
-
-// Pose of one car on the map at lap distance s and lateral offset lat(u): heading includes the yaw of a change of line.
-const carPose = (s: number, lat: number, dLatDs: number) => {
-  const p = poseAt(T, s, lat);
-  return {
-    s,
-    lat,
-    x: p.x,
-    y: p.y,
-    heading: p.heading + (Math.atan(dLatDs) * 180) / Math.PI,
-  };
+export const tau13 = (f: number) => (f - SHOT_13.from) / 60;
+export const real13 = (f: number) => realTime(tau13(f));
+export const cars13 = (f: number) => {
+  const t = real13(f);
+  return { t, pro: proAt(t), sen: senAt(t) };
 };
+// The song frame of the touch, for the contact window and the picture.
+export const CONTACT_13 = Math.ceil(SHOT_13.from + 60 * (SHOT_SECONDS - 0.12));
 
-export const cars13 = (u: number) => {
-  const du = 1e-3;
-  const sp = proS(u);
-  const ss = sp - gap13(u);
-  const dsP = (proS(u + du) - proS(u - du)) / (2 * du);
-  const dsS = dsP - (gap13(u + du) - gap13(u - du)) / (2 * du);
-  const dlP = (proLat(u + du) - proLat(u - du)) / (2 * du);
-  const dlS = (senLat(u + du) - senLat(u - du)) / (2 * du);
-  return {
-    pro: carPose(sp, proLat(u), dlP / Math.max(1, dsP)),
-    sen: carPose(ss, senLat(u), dlS / Math.max(1, dsS)),
-  };
+// Map scale, px per metre: close on the pair (the track streams past at real speed), closing in for the dive.
+export const ppm13 = (f: number) => {
+  const tau = tau13(f);
+  const k = smooth(tau, SLOWMO_AT - 0.5, SLOWMO_AT + 1.5);
+  return 26 + 14 * k;
 };
-
-// SEN's dashed line: from his place in the tow to past the apex, on the inside.
-export const senLine13 = (s: number) => {
-  const s0 = proS(0.3) - gap13(0.3);
-  return -3.3 + 7.2 * smooth(s, s0 + 20, CHICANE - 30);
-};
-
-const footprint = (
-  id: string,
-  c: { x: number; y: number; heading: number },
-  scale: number,
-): Footprint => {
-  const a = (c.heading * Math.PI) / 180;
-  const ahead = MP45.centreAhead * scale;
-  return {
-    id,
-    x: c.x + Math.cos(a) * ahead,
-    y: c.y + Math.sin(a) * ahead,
-    heading: c.heading,
-    length: MP45.length,
-    width: MP45.width,
-    scale,
-  };
-};
+// Cars are never drawn shorter than ~150 px (4.26 m × 36 px/m): larger than life on the wider framing.
+export const CAR_PPM_MIN = 36;
+export const carScale13 = (f: number) => Math.max(1, CAR_PPM_MIN / ppm13(f));
 
 // ── 1.2 and 1.4: side-on panels, cars placed in world metres (x along the track, z away from the camera) ──────────
 // The same plan seen from above: footprint x = world x of the car's middle, y = z.
@@ -110,7 +71,7 @@ export const HIT = cue("suzuka1989.crash");
 export const PUSH = cue("suzuka1989.push");
 
 // 1.2: rear ends in world metres; the camera's own x is camX12.
-export const SPEED = 70; // m/s
+export const SPEED = 83; // m/s, 300 km/h (MOT-5)
 export const Z_PRO_12 = 8;
 export const Z_SEN_12 = 11;
 export const cars12 = (f: number) => {
@@ -174,11 +135,14 @@ export const SAMPLERS: TopViewSampler[] = [
     part: "suzuka1989",
     shot: "1.3",
     ...SHOT_13,
+    // PRO turns in across SEN and their front wheels touch: the last frames of the shot (true size by then)
+    contact: [
+      { from: CONTACT_13, to: SHOT_13.to, ids: ["PRO", "SEN"], depth: 0.1 },
+    ],
     poses: (f) => {
-      const u = u13(f);
-      const c = cars13(u);
-      const k = carScale13(u);
-      return [footprint("PRO", c.pro, k), footprint("SEN", c.sen, k)];
+      const c = cars13(f);
+      const k = carScale13(f);
+      return [footprintOf("PRO", c.pro, k), footprintOf("SEN", c.sen, k)];
     },
   },
   {
