@@ -60,6 +60,57 @@ const CarSpray: React.FC<{
   );
 };
 
+// Spinning wheels (MOT-5): ink arcs of motion blur sweeping round each near wheel, faster the faster the car goes
+// (the spokes alone strobe at 60 fps).
+const WheelBlur: React.FC<{ cam: Camera; c: RainCar; t: number }> = ({
+  cam,
+  c,
+  t,
+}) => {
+  const a = cam.anchor({ x: c.x, z: c.z });
+  const k = (a.pxPerMetre * c.car.frame.k) / 250;
+  return (
+    <g>
+      {c.car.nearWheels.map((w, i) => {
+        const cx = a.x + (c.car.frame.x - w.cx) * k;
+        const cy = a.y + (w.cy - c.car.frame.ground) * k;
+        const r = c.car.rimR * k;
+        const spin = t * 1500 + i * 40;
+        const arc = (rr: number, from: number, len: number) => {
+          const p0 = (from * Math.PI) / 180;
+          const p1 = ((from + len) * Math.PI) / 180;
+          return `M ${cx + rr * Math.cos(p0)} ${cy + rr * Math.sin(p0)} A ${rr} ${rr} 0 0 1 ${cx + rr * Math.cos(p1)} ${cy + rr * Math.sin(p1)}`;
+        };
+        return (
+          <g key={i} opacity={0.75}>
+            {[0, 120, 240].map((o) => (
+              <path
+                key={o}
+                d={arc(r * 0.72, spin + o, 70)}
+                fill="none"
+                stroke="#2a2a2a"
+                strokeWidth={r * 0.28}
+                strokeLinecap="round"
+              />
+            ))}
+            {[60, 180, 300].map((o) => (
+              <path
+                key={o}
+                d={arc(r * 1.25, spin + o, 50)}
+                fill="none"
+                stroke="#fbfaf6"
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                opacity={0.7}
+              />
+            ))}
+          </g>
+        );
+      })}
+    </g>
+  );
+};
+
 // A rainy side close-up filling the frame (1920×1080); put it in a Panel to frame it smaller.
 export const RainCloseup: React.FC<{
   t: number;
@@ -122,7 +173,18 @@ export const RainCloseup: React.FC<{
         {sorted.map((c) => (
           <g key={c.car.name}>
             {sprayUnder ? null : <CarSpray c={c} cam={cam} t={t} front />}
-            <WetCar cam={cam} car={c.car} x={c.x} z={c.z} state={c.state} />
+            <WetCar
+              cam={cam}
+              car={c.car}
+              x={c.x}
+              z={c.z}
+              state={{
+                ...c.state,
+                // the chassis rides the bumps (MOT-5)
+                tilt: (c.state?.tilt ?? 0) + 0.25 * Math.sin(t * 21 + c.z),
+              }}
+            />
+            <WheelBlur cam={cam} c={c} t={t} />
             {sprayUnder ? null : <CarSpray c={c} cam={cam} t={t} />}
           </g>
         ))}

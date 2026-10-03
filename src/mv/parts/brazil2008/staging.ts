@@ -25,11 +25,31 @@ export const split23 = (t: number) => {
   return { vet: { x: 0.6 + gap, z: 15 }, ham: { x: -4.6, z: 11 } };
 };
 
-// ── 2.5: HAM passes GLO up the hill (side-on): noses level on the cue, then HAM draws away at ~1.6 m/s more ─────────
+// ── 2.5: HAM passes GLO up the hill (side-on) ────────────────────────────────────────────────────────────────
+// True speeds (MOT-5): GLO crawls out of Junção on slicks at ~30 m/s, HAM ~5 m/s quicker. The pass is shown in
+// slow motion — race time τ runs at 0.3× for the first 1.4 s after the cue, then back to real time — not by slow cars.
+const PASS_SLOW_UNTIL = 1.4;
+export const passRaceTime = (t: number) => {
+  if (t <= PASS_SLOW_UNTIL) return 0.3 * t;
+  const u = t - PASS_SLOW_UNTIL;
+  const ease = Math.min(u, 0.4);
+  // rate eases from 0.3 to 1 over 0.4 s
+  return (
+    0.3 * PASS_SLOW_UNTIL +
+    0.3 * ease +
+    (0.7 * ease * ease) / 0.8 +
+    Math.max(0, u - 0.4)
+  );
+};
+export const passSlow = (t: number) =>
+  t <= PASS_SLOW_UNTIL ? 1 : Math.max(0, 1 - (t - PASS_SLOW_UNTIL) / 0.4);
+export const PASS_GLO_SPEED = 30;
 export const pass25 = (t: number) => {
-  const d = -1 + 1.6 * t;
-  const glo = -2.6 - 0.6 * d;
-  return { glo: { x: glo, z: 16 }, ham: { x: glo + d, z: 10 } };
+  const tau = passRaceTime(t);
+  // HAM's nose level with GLO's at the cue, then 5 m/s quicker
+  const d = -0.3 + 5 * tau;
+  const glo = -3 - 0.8 * d; // the camera rides with HAM as he pulls away
+  return { tau, glo: { x: glo, z: 16 }, ham: { x: glo + d, z: 10 } };
 };
 
 // A side-on car (rear end at x, distance z) as a footprint on the plan.

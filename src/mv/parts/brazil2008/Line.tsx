@@ -11,6 +11,7 @@ import {
 } from "../../../scenes/brazil-2008/trackside";
 import { hit, ramp, type ShotTime } from "../abuDhabi2021/shotClock";
 import { Page, Panel, RainCloseup } from "./common";
+import { PosTag } from "./PosTag";
 
 const V = 55; // m/s past the line
 const LINE_X = 0; // the finish line, world m
@@ -20,7 +21,10 @@ export const Line: React.FC<{ st: ShotTime }> = ({ st }) => {
   const front = carPoint(MP4_23, "frontContact").x;
   // HAM's rear end along the track, and where the camera keeps him in the frame
   const crossAt = 1.4;
-  const xw = LINE_X + V * (t - crossAt) - front;
+  // after the line the picture goes to slow motion: race time τ runs at 0.35× (MOT-5: slow motion, not a slow car)
+  const slowFrom = crossAt + 0.5;
+  const tau = t <= slowFrom ? t : slowFrom + 0.35 * (t - slowFrom);
+  const xw = LINE_X + V * (tau - crossAt) - front;
   const rel = -5.5 + 3.5 * ramp(t, 0, 1.8) + 0.8 * ramp(t, crossAt, dur);
   const camX = xw - rel;
   const flash = hit(t, crossAt, 0.15);
@@ -43,7 +47,7 @@ export const Line: React.FC<{ st: ShotTime }> = ({ st }) => {
     <Page>
       <Panel box={{ x: 0, y: 0, w: 1920, h: 1080 }} view={view} border={false}>
         <RainCloseup
-          t={t * (1 - 0.6 * settle)}
+          t={tau}
           camX={camX}
           speed={0.8 * (1 - settle)}
           tilt={-2 - 2 * flash}
@@ -57,7 +61,10 @@ export const Line: React.FC<{ st: ShotTime }> = ({ st }) => {
               car: MP4_23,
               x: rel,
               z: 10.2,
-              state: { wheelAngle: t * 900, tread: "wet" },
+              state: {
+                wheelAngle: ((tau * V) / 0.29) * (180 / Math.PI),
+                tread: "wet",
+              },
             },
           ]}
         >
@@ -80,6 +87,10 @@ export const Line: React.FC<{ st: ShotTime }> = ({ st }) => {
           />
         </RainCloseup>
       </Panel>
+      {/* the position he needed: 5th, once he is over the line */}
+      <g opacity={ramp(t, crossAt, crossAt + 0.2)}>
+        <PosTag x={260} y={150} code="HAM" pos={5} big />
+      </g>
     </Page>
   );
 };

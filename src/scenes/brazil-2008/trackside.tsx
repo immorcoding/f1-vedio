@@ -148,7 +148,6 @@ export const Skyline: React.FC<P> = ({ cam, camX }) => {
 export const WetTrack: React.FC<P & { t: number }> = ({
   cam,
   camX,
-  t,
   layout = INTERLAGOS_LAYOUT,
 }) => {
   const Y = (z: number) => cam.screenY(0, z);
@@ -165,6 +164,27 @@ export const WetTrack: React.FC<P & { t: number }> = ({
       `M ${cam.screenX(xw, z).toFixed(1)} ${Y(z).toFixed(1)} L ${cam.screenX(xw + 2 + 5 * random(`wl-${i}`), z).toFixed(1)} ${Y(z).toFixed(1)}`,
     );
   }
+  const seamList: string[] = [];
+  const rub: string[] = [];
+  const near = layout.nearEdge + 0.5;
+  const far = layout.farEdge;
+  const xa = camX + ((-400 - cam.cx) * near) / cam.f;
+  const xb = camX + ((2320 - cam.cx) * far) / cam.f;
+  for (let k = Math.floor(xa / 9); k <= Math.ceil(xb / 9); k++) {
+    const x = k * 9 - camX;
+    seamList.push(
+      `M ${cam.screenX(x, near).toFixed(1)} ${Y(near).toFixed(1)} L ${cam.screenX(x, far).toFixed(1)} ${Y(far).toFixed(1)}`,
+    );
+  }
+  const zr = (near + far) / 2 + 1.2;
+  for (let k = Math.floor(xa / 6); k <= Math.ceil(xb / 6); k++) {
+    const x = k * 6 - camX;
+    rub.push(
+      `M ${cam.screenX(x, zr).toFixed(1)} ${Y(zr).toFixed(1)} L ${cam.screenX(x + 3, zr).toFixed(1)} ${Y(zr).toFixed(1)}`,
+    );
+  }
+  const seams = seamList.join(" ");
+  const rubber = rub.join(" ");
   return (
     <g>
       {/* wet verge between the far edge and the guardrail */}
@@ -208,9 +228,63 @@ export const WetTrack: React.FC<P & { t: number }> = ({
         strokeWidth={10}
         opacity={0.85}
       />
-      <g opacity={0.6 + 0.0 * t} />
+      {/* tar seams across the asphalt every 9 m and a dashed line of rubber, streaming past at the camera's speed */}
+      <path d={seams} stroke={INK} strokeWidth={2.4} opacity={0.55} />
+      <path
+        d={rubber}
+        stroke={INK}
+        strokeWidth={5}
+        opacity={0.35}
+        strokeLinecap="round"
+      />
     </g>
   );
+};
+
+// Marker boards along the guardrail every 50 m (plain blocks, no text, ART-5), passing at true speed (MOT-5).
+export const MarkerBoards: React.FC<P> = ({
+  cam,
+  camX,
+  layout = INTERLAGOS_LAYOUT,
+}) => {
+  const z = layout.rail - 0.6;
+  const boards: React.ReactNode[] = [];
+  const x0 = camX + ((-300 - cam.cx) * z) / cam.f;
+  const x1 = camX + ((2220 - cam.cx) * z) / cam.f;
+  for (let k = Math.floor(x0 / 50); k <= Math.ceil(x1 / 50); k++) {
+    const x = k * 50 - camX;
+    const X0 = cam.screenX(x, z);
+    const X1 = cam.screenX(x + 1.6, z);
+    const top = cam.screenY(1.9, z);
+    const mid = cam.screenY(1.1, z);
+    const foot = cam.screenY(0, z);
+    boards.push(
+      <g key={k}>
+        <path
+          d={`M ${X0 + 4} ${mid} L ${X0 + 4} ${foot} M ${X1 - 4} ${mid} L ${X1 - 4} ${foot}`}
+          stroke={INK}
+          strokeWidth={4}
+        />
+        <rect
+          x={X0}
+          y={top}
+          width={X1 - X0}
+          height={mid - top}
+          fill={PAPER}
+          stroke={INK}
+          strokeWidth={3}
+        />
+        <rect
+          x={X0 + 6}
+          y={top + (mid - top) * 0.3}
+          width={X1 - X0 - 12}
+          height={(mid - top) * 0.4}
+          fill={INK}
+        />
+      </g>,
+    );
+  }
+  return <g>{boards}</g>;
 };
 
 // A chequered finish line painted across the track at world x (2.6), seen in perspective.
@@ -270,6 +344,7 @@ export const RainTrackside: React.FC<P & { t: number; stands?: boolean }> = ({
       <Skyline {...p} />
       {stands ? <Grandstand cam={p.cam} camX={p.camX} layout={layout} /> : null}
       <Barriers cam={p.cam} camX={p.camX} layout={layout} />
+      <MarkerBoards cam={p.cam} camX={p.camX} layout={layout} />
       <WetTrack {...p} layout={layout} />
     </g>
   );

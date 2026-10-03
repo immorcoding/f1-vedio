@@ -16,6 +16,7 @@ import {
 import { at } from "../../timing.ts";
 import { ramp, secondsInShot, type ShotTime } from "../abuDhabi2021/shotClock";
 import { Page, Panel, RainCloseup } from "./common";
+import { PosTag } from "./PosTag";
 import { split23 } from "./staging.ts";
 
 const MAS_BOX = { x: 40, y: 40, w: 1090, h: 480 };
@@ -71,6 +72,17 @@ export const Split: React.FC<{ st: ShotTime }> = ({ st }) => {
   const joy = ramp(t, garageIn, garageIn + 0.6);
   // HAM behind VET, both on intermediates, the gap breathing
   const pos = split23(t);
+  // a frame point of the bottom panel's picture (view 0,420 1920×512 sliced into HAM_BOX) on the page
+  const HAM_VIEW = { x: 0, y: 420, w: 1920, h: 512 };
+  const sc = Math.max(HAM_BOX.w / HAM_VIEW.w, HAM_BOX.h / HAM_VIEW.h);
+  const onPage = (x: number, y: number) => ({
+    x: HAM_BOX.x + HAM_BOX.w / 2 + (x - (HAM_VIEW.x + HAM_VIEW.w / 2)) * sc,
+    y: HAM_BOX.y + HAM_BOX.h / 2 + (y - (HAM_VIEW.y + HAM_VIEW.h / 2)) * sc,
+  });
+  const hamA = BRAZIL_CAM.anchor({ x: pos.ham.x, z: pos.ham.z });
+  const vetA = BRAZIL_CAM.anchor({ x: pos.vet.x, z: pos.vet.z });
+  const hamTag = onPage(hamA.x + 2.6 * hamA.pxPerMetre, hamA.y + 40);
+  const vetTag = onPage(vetA.x + 2.4 * vetA.pxPerMetre, vetA.y - 150);
   return (
     <Page>
       <Waiting box={MAS_BOX} t={t} seed="w-mas" />
@@ -93,6 +105,7 @@ export const Split: React.FC<{ st: ShotTime }> = ({ st }) => {
             ground={<FinishStripe cam={BRAZIL_CAM} camX={camMas} x={36} />}
           />
         </Panel>
+        <PosTag x={MAS_BOX.x + 120} y={MAS_BOX.y + 60} code="MAS" pos={1} />
       </g>
       {t >= 0.12 ? (
         <g opacity={sGar} transform={`translate(${60 * (1 - sGar)} 0)`}>
@@ -131,6 +144,8 @@ export const Split: React.FC<{ st: ShotTime }> = ({ st }) => {
               ]}
             />
           </Panel>
+          <PosTag x={vetTag.x} y={vetTag.y} code="VET" pos={5} />
+          <PosTag x={hamTag.x} y={hamTag.y} code="HAM" pos={6} big />
         </g>
       ) : null}
     </Page>
