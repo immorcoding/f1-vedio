@@ -13,11 +13,13 @@ import { Page, RainCloseup } from "./common";
 const V = 34; // m/s, the Toyota climbing out of Junção
 
 export const Pass: React.FC<{ st: ShotTime }> = ({ st }) => {
-  const { t, dur } = st;
+  const { t } = st;
   const flash = hit(t, 0, 0.12);
-  // HAM: level at the cue, then drawing away (about 5 m/s faster)
-  const hamX = -3 + 5.5 * ramp(t, 0, dur) * (t / dur) + 3 * ramp(t, 0, 0.6);
-  const gloX = -2.8 - 0.4 * ramp(t, 0, dur);
+  // HAM on the near side, GLO 6 m further across the road (true widths, ART-18): noses level on the cue, then HAM
+  // draws away at ~1.6 m/s more; the camera splits the difference so both stay in frame
+  const d = -1 + 1.6 * t;
+  const gloX = -2.6 - 0.6 * d;
+  const hamX = gloX + d;
   const twitch = Math.sin(t * 9) * 1.2;
   const sfx = ramp(t, 0, 0.12);
   return (
@@ -27,6 +29,7 @@ export const Pass: React.FC<{ st: ShotTime }> = ({ st }) => {
         camX={V * t}
         speed={0.9}
         stands
+        sprayUnder
         tilt={-3 - 2 * flash}
         shake={{
           x: Math.sin(t * 57) * (2 + 12 * flash),
@@ -36,7 +39,7 @@ export const Pass: React.FC<{ st: ShotTime }> = ({ st }) => {
           {
             car: TF108,
             x: gloX,
-            z: 14.5,
+            z: 16,
             spray: 0.45,
             state: { wheelAngle: t * 600, tread: "dry", tilt: twitch * 0.5 },
           },

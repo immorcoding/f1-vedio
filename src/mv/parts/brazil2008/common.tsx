@@ -24,6 +24,42 @@ export type RainCar = {
   spray?: number;
 };
 
+// One car's spray: the low front-wheel mist (`front`), or the big rear plume (`low` = shorter and flatter).
+const CarSpray: React.FC<{
+  c: RainCar;
+  cam: Camera;
+  t: number;
+  front?: boolean;
+  low?: boolean;
+}> = ({ c, cam, t, front = false, low = false }) => {
+  const a = cam.anchor({ x: c.x, z: c.z });
+  const m = a.pxPerMetre;
+  const wheel = carPoint(c.car, front ? "frontContact" : "rearContact").x;
+  return front ? (
+    <Spray
+      x={a.x + (wheel - 0.35) * m}
+      y={a.y}
+      m={m}
+      t={t + 0.3}
+      length={1.6}
+      height={0.55}
+      strength={(c.spray ?? 1) * 0.8}
+      seed={`${c.car.name}-f`}
+    />
+  ) : (
+    <Spray
+      x={a.x + (wheel - 0.35) * m}
+      y={a.y}
+      m={m}
+      t={t}
+      length={low ? 6 : 9}
+      height={low ? 0.9 : 1.6}
+      strength={c.spray ?? 1}
+      seed={`${c.car.name}-r`}
+    />
+  );
+};
+
 // A rainy side close-up filling the frame (1920×1080); put it in a Panel to frame it smaller.
 export const RainCloseup: React.FC<{
   t: number;
@@ -36,6 +72,8 @@ export const RainCloseup: React.FC<{
   shake?: { x: number; y: number };
   // drawn on the track, under the cars (finish stripe)
   ground?: React.ReactNode;
+  // draw all the spray under all the cars, lower and shorter (for shots where one car passes another)
+  sprayUnder?: boolean;
   children?: React.ReactNode;
 }> = ({
   t,
@@ -47,6 +85,7 @@ export const RainCloseup: React.FC<{
   tilt = -2,
   shake,
   ground,
+  sprayUnder = false,
   children,
 }) => {
   const sorted = [...cars].sort((a, b) => b.z - a.z);
@@ -74,39 +113,19 @@ export const RainCloseup: React.FC<{
             opacity={0.5 * speed}
           />
         ) : null}
-        {sorted.map((c) => {
-          const a = cam.anchor({ x: c.x, z: c.z });
-          const m = a.pxPerMetre;
-          const rear = carPoint(c.car, "rearContact").x;
-          const front = carPoint(c.car, "frontContact").x;
-          return (
-            <g key={c.car.name}>
-              {/* front-wheel spray stays low, behind the car */}
-              <Spray
-                x={a.x + (front - 0.35) * m}
-                y={a.y}
-                m={m}
-                t={t + 0.3}
-                length={1.6}
-                height={0.55}
-                strength={(c.spray ?? 1) * 0.8}
-                seed={`${c.car.name}-f`}
-              />
-              <WetCar cam={cam} car={c.car} x={c.x} z={c.z} state={c.state} />
-              {/* the rear tyres throw the big plume, streaming back off the rear wing */}
-              <Spray
-                x={a.x + (rear - 0.35) * m}
-                y={a.y}
-                m={m}
-                t={t}
-                length={9}
-                height={1.6}
-                strength={c.spray ?? 1}
-                seed={`${c.car.name}-r`}
-              />
-            </g>
-          );
-        })}
+        {/* spray: "under" draws every plume before any car, so no car's spray hides another car (ART-18) */}
+        {sprayUnder
+          ? sorted.map((c) => (
+              <CarSpray key={`s-${c.car.name}`} c={c} cam={cam} t={t} low />
+            ))
+          : null}
+        {sorted.map((c) => (
+          <g key={c.car.name}>
+            {sprayUnder ? null : <CarSpray c={c} cam={cam} t={t} front />}
+            <WetCar cam={cam} car={c.car} x={c.x} z={c.z} state={c.state} />
+            {sprayUnder ? null : <CarSpray c={c} cam={cam} t={t} />}
+          </g>
+        ))}
       </g>
       <Rain
         t={t}
