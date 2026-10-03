@@ -99,6 +99,8 @@ export type FireProps = {
   step?: number;
   // 0–1: how far the fire has grown.
   intensity?: number;
+  // Finer drawing for close-ups: this many times more (and narrower) tongues. Default 1.
+  detail?: number;
   // Draw the smoke column.
   smoke?: boolean;
 };
@@ -114,11 +116,12 @@ export const Fire: React.FC<FireProps> = ({
   step = 3,
   intensity = 1,
   smoke = true,
+  detail = 1,
 }) => {
   const id = `fire${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const t = Math.floor(frame / step);
   const R = (k: string) => random(`${seed}-${k}-${t}`);
-  const n = Math.max(5, Math.round(w / (h * 0.11)));
+  const n = Math.max(5, Math.round((w / (h * 0.11)) * detail));
   const tongues: Tongue[] = Array.from({ length: n }, (_, i) => {
     const u = (i + 0.5) / n - 0.5;
     const edge = 1 - Math.abs(u) * 1.35; // taller in the middle
@@ -130,28 +133,34 @@ export const Fire: React.FC<FireProps> = ({
       lean: (R(`l${i}`) - 0.5) * (w / n) * 1.8,
     };
   });
-  const wisps = Array.from({ length: Math.round(n * 0.5) }, (_, i) => {
-    const life = (t + i * 3) % 5; // each wisp rises and shrinks over five steps
-    const u = random(`${seed}-wisp${i}-${Math.floor((t + i * 3) / 5)}`) - 0.5;
-    const size = h * 0.07 * (1 - life / 6) * intensity;
-    return {
-      bx: u * w * 0.7,
-      y: -h * intensity * (0.7 + life * 0.1),
-      w: size * 0.9,
-      h: size * 1.9,
-      lean: size * 0.3 * (u > 0 ? 1 : -1),
-    };
-  });
-  const embers = Array.from({ length: Math.round(n * 1.5) }, (_, i) => {
-    const life = (t + i * 2) % 8;
-    const g = Math.floor((t + i * 2) / 8);
-    const u = random(`${seed}-em${i}-${g}`) - 0.5;
-    return {
-      x: u * w * 1.1 + Math.sin(life + i) * 12,
-      y: -h * intensity * (0.3 + life * 0.16),
-      r: 3 + random(`${seed}-er${i}-${g}`) * 4,
-    };
-  });
+  const wisps = Array.from(
+    { length: Math.round((n / detail) * 0.5) },
+    (_, i) => {
+      const life = (t + i * 3) % 5; // each wisp rises and shrinks over five steps
+      const u = random(`${seed}-wisp${i}-${Math.floor((t + i * 3) / 5)}`) - 0.5;
+      const size = h * 0.07 * (1 - life / 6) * intensity;
+      return {
+        bx: u * w * 0.7,
+        y: -h * intensity * (0.7 + life * 0.1),
+        w: size * 0.9,
+        h: size * 1.9,
+        lean: size * 0.3 * (u > 0 ? 1 : -1),
+      };
+    },
+  );
+  const embers = Array.from(
+    { length: Math.round((n / detail) * 1.5) },
+    (_, i) => {
+      const life = (t + i * 2) % 8;
+      const g = Math.floor((t + i * 2) / 8);
+      const u = random(`${seed}-em${i}-${g}`) - 0.5;
+      return {
+        x: u * w * 1.1 + Math.sin(life + i) * 12,
+        y: -h * intensity * (0.3 + life * 0.16),
+        r: 3 + random(`${seed}-er${i}-${g}`) * 4,
+      };
+    },
+  );
   const puffs = Array.from({ length: 7 }, (_, i) => {
     const life = ((t * 0.5 + i * 1.7) % 7) / 7;
     return {
@@ -160,7 +169,7 @@ export const Fire: React.FC<FireProps> = ({
       r: (h * 0.1 + life * h * 0.14) * (0.6 + 0.4 * intensity),
     };
   });
-  const lineW = Math.max(3, h * 0.012);
+  const lineW = Math.max(3, (h * 0.012) / Math.sqrt(detail));
 
   return (
     <g transform={`translate(${x} ${y})`}>

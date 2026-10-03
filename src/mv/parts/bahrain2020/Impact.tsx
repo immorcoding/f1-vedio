@@ -44,9 +44,14 @@ export const Impact: React.FC<PictureProps> = ({ f }) => {
   const shot = shotById("3.3");
   const t = f - shot.from;
   const frozen = t >= FREEZE;
-  // the last half metre into the rails during the motion frames, then held
-  const travel = Math.min(t, FREEZE) / FREEZE;
-  const at = CAM.anchor({ x: NOSE_X + L + 0.5 - 0.6 * travel, z: CAR_Z });
+  // MOT-5: it arrives at 192 km/h (53 m/s, 0.9 m a frame) and the 67 G stop crushes ~2 m of it into the rails
+  // within the motion frames: u² deceleration from full speed to rest, then held
+  const u = Math.min(t, FREEZE) / FREEZE;
+  const travel = 2.1 * (1 - (1 - u) * (1 - u));
+  const at = CAM.anchor({ x: NOSE_X + L + 1.6 - travel, z: CAR_Z });
+  // the wheels still turning at road speed until the stop (53 m/s on a 0.33 m wheel ≈ 150° a frame: drawn at 37°
+  // steps, the spoke pattern's visible rate)
+  const wheelAngle = 37 * Math.min(t, FREEZE) * (1 - u * 0.5);
   const nose = CAM.project({ x: NOSE_X - 0.1, y: 0.45, z: CAR_Z });
   const shake = frozen ? Math.exp(-(t - FREEZE) / 10) * 14 : 22;
   const dx = Math.sin(t * 2.7) * shake;
@@ -61,7 +66,7 @@ export const Impact: React.FC<PictureProps> = ({ f }) => {
         car={VF20}
         facing="left"
         at={at}
-        state={{ tilt: frozen ? -2 : -1 }}
+        state={{ tilt: frozen ? -2 : -1, wheelAngle }}
       />
       <Guardrail cam={CAM} a={BAR_A} b={CONTACT} tonePrefix="b33" />
     </>

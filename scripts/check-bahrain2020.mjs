@@ -17,16 +17,26 @@ else {
   if (!new RegExp(`约\\s*${FACTS.impactG}\\s*G`).test(section))
     problems.push(`facts.md does not register an impact of ${FACTS.impactG} G`);
   if (!new RegExp(`约\\s*${FACTS.escapeSeconds}\\s*秒`).test(section))
-    problems.push(`facts.md does not register an escape after ${FACTS.escapeSeconds} 秒`);
+    problems.push(
+      `facts.md does not register an escape after ${FACTS.escapeSeconds} 秒`,
+    );
   if (!/来源/.test(section)) problems.push("the Bahrain facts have no source");
 }
-const text = (id) => (EDIT.shots.find((s) => s.id === id)?.text ?? []).join(" ");
+const text = (id) =>
+  (EDIT.shots.find((s) => s.id === id)?.text ?? []).join(" ");
 if (!text("3.3").includes(`${FACTS.impactG}G`))
-  problems.push(`shot 3.3 text "${text("3.3")}" does not show ${FACTS.impactG}G`);
+  problems.push(
+    `shot 3.3 text "${text("3.3")}" does not show ${FACTS.impactG}G`,
+  );
 if (!text("3.6").includes(`${FACTS.escapeSeconds} 秒`))
-  problems.push(`shot 3.6 text "${text("3.6")}" does not show ${FACTS.escapeSeconds} 秒`);
+  problems.push(
+    `shot 3.6 text "${text("3.6")}" does not show ${FACTS.escapeSeconds} 秒`,
+  );
 
+// (3.2's cars are checked by the shared interpenetration check: npm run check:overlap, src/mv/top-views.ts)
 console.log(`impact ${FACTS.impactG}G, escape ${FACTS.escapeSeconds} 秒`);
 for (const p of problems) console.log(`FAIL  ${p}`);
-console.log(problems.length ? `${problems.length} problem(s)` : "No problems found");
+console.log(
+  problems.length ? `${problems.length} problem(s)` : "No problems found",
+);
 process.exit(problems.length ? 1 : 0);
