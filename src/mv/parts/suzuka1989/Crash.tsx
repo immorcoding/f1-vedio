@@ -23,16 +23,19 @@ import {
   TRACKSIDE_DEFAULT,
 } from "../../../scenes/suzuka-1989/trackside";
 import { Foreground } from "./Foreground";
-import { cueFrame, ramp, shotById, type PictureProps } from "./common";
+import { ramp, shotById, type PictureProps } from "./common";
+import {
+  HIT,
+  PRO_X_14,
+  PUSH,
+  SEN_X_14,
+  slide14,
+  Z_PRO_14,
+  Z_SEN_14,
+} from "./staging";
 
 // The main panel's camera: 1.2 m up, close, f = 1700 px (ART-9).
-const CAM = pinhole({ f: 1700, horizon: 470, cx: 960, height: 1.2 });
-const Z_SEN = 8;
-const Z_PRO = 10.6;
-// Slide after the hit: from 22 m/s to rest, exponential, τ = 0.45 s.
-const V0 = 22;
-const TAU = 0.45;
-const slide = (t: number) => V0 * TAU * (1 - Math.exp(-Math.max(0, t) / TAU));
+const CAM = pinhole({ f: 1700, horizon: 400, cx: 960, height: 2.2 });
 
 // Marshals of 1989: white overalls, light hoods (no faces, ART-5).
 const MARSHAL: Outfit = {
@@ -102,19 +105,19 @@ const PushPanel: React.FC<{ t: number }> = ({ t }) => {
       ? 2.2 * t
       : 2.2 * FIRE + 2.2 * (t - FIRE) + 0.5 * 9 * (t - FIRE) ** 2;
   const camX = Math.min(x, 2.2 * FIRE + 1.2 * (t - FIRE));
-  const carA = cam.anchor({ x: x - 2.6 - camX, z: 7 });
+  const carA = cam.anchor({ x: x - 1.9 - camX, z: 9.5 });
   const rearM = carPoint(MP4_5_SEN, "rearContact").x;
   const fired = t >= FIRE;
   const marshals = [
-    { dx: -0.55, z: 6.4, ph: 0 },
-    { dx: -0.4, z: 7.7, ph: 0.45 },
+    { dx: -0.55, z: 8.9, ph: 0 },
+    { dx: -0.4, z: 10.2, ph: 0.45 },
   ];
   // bollards in the escape road: striped posts, one in front of the car's path, two beyond it
   const bollards = [
-    { x: 6.5, z: 5.6 },
-    { x: 9.5, z: 8.8 },
-    { x: 13, z: 5.8 },
-    { x: 3, z: 9 },
+    { x: 6.5, z: 8.1 },
+    { x: 9.5, z: 11.3 },
+    { x: 13, z: 8.3 },
+    { x: 3, z: 11.5 },
   ];
   const Bollard: React.FC<{ b: { x: number; z: number } }> = ({ b }) => {
     const p = cam.anchor({ x: b.x - camX, z: b.z });
@@ -145,8 +148,8 @@ const PushPanel: React.FC<{ t: number }> = ({ t }) => {
       </g>
     );
   };
-  const near = bollards.filter((b) => b.z < 7);
-  const far = bollards.filter((b) => b.z >= 7);
+  const near = bollards.filter((b) => b.z < 9.5);
+  const far = bollards.filter((b) => b.z >= 9.5);
   const exhaust = offsetFrom(carA, 0.1, 0.45);
   return (
     <g>
@@ -166,10 +169,10 @@ const PushPanel: React.FC<{ t: number }> = ({ t }) => {
         <Bollard key={`${b.x}`} b={b} />
       ))}
       {marshals
-        .filter((m) => m.z > 7)
+        .filter((m) => m.z > 9.5)
         .map((m) => {
           const p = cam.anchor({
-            x: x - 2.6 + rearM + m.dx - camX - (fired ? 0.8 * (t - FIRE) : 0),
+            x: x - 1.9 + rearM + m.dx - camX - (fired ? 0.8 * (t - FIRE) : 0),
             z: m.z,
           });
           return (
@@ -213,10 +216,10 @@ const PushPanel: React.FC<{ t: number }> = ({ t }) => {
         />
       ) : null}
       {marshals
-        .filter((m) => m.z <= 7)
+        .filter((m) => m.z <= 9.5)
         .map((m) => {
           const p = cam.anchor({
-            x: x - 2.6 + rearM + m.dx - camX - (fired ? 0.8 * (t - FIRE) : 0),
+            x: x - 1.9 + rearM + m.dx - camX - (fired ? 0.8 * (t - FIRE) : 0),
             z: m.z,
           });
           return (
@@ -244,30 +247,34 @@ const PushPanel: React.FC<{ t: number }> = ({ t }) => {
 
 export const Crash: React.FC<PictureProps> = ({ f }) => {
   const shot = shotById("1.4");
-  const hit = cueFrame("suzuka1989.crash");
-  const push = cueFrame("suzuka1989.push");
+  const hit = HIT;
+  const push = PUSH;
   const t = (f - hit) / 60;
-  const s = slide(t);
-  // the camera pans with the cars, so the trackside slides by and stops with them
-  const camX = s;
-  const senA = CAM.anchor({ x: -3.6, z: Z_SEN });
-  const proA = CAM.anchor({ x: -2.5 - 0.25 * ramp(t, 0, 1), z: Z_PRO });
+  // the camera pans with the cars, so the trackside slides by and stops with them; the cars' positions (staging.ts)
+  // are checked frame by frame for interpenetration (ART-18): tyre against tyre, a car width apart
+  const camX = slide14(f);
+  const senA = CAM.anchor({ x: SEN_X_14, z: Z_SEN_14 });
+  const proA = CAM.anchor({ x: PRO_X_14, z: Z_PRO_14 });
   // the frame freezes for half a beat on the star, then shakes out
   const freeze = f - hit < 14;
   const shake = freeze ? 0 : 14 * Math.exp(-(f - hit - 14) / 10);
   const sx = shake * Math.sin((f - hit) * 2.7);
   const sy = shake * Math.cos((f - hit) * 2.1);
-  const contact = offsetFrom(
-    senA,
-    carPoint(MP4_5_SEN, "frontContact").x - 0.1,
-    0.3,
-  );
+  // the contact: SEN's left front wheel against PRO's right front wheel, between the two cars
+  const contact = CAM.project({
+    x: SEN_X_14 + carPoint(MP4_5_SEN, "frontAxle").x + 0.1,
+    y: 0.35,
+    z: Z_SEN_14 + 0.95,
+  });
   const star = ramp(f, hit, hit + 10, Easing.out(Easing.cubic));
   const starFade = 1 - ramp(f, hit + 34, hit + 60);
   const sfx = ramp(f, hit, hit + 6, Easing.out(Easing.back(2.5)));
   const smoke = ramp(t, 0, 0.3) * (1 - ramp(t, 1.4, 2.4));
   const panel = ramp(f, push, push + 14, Easing.out(Easing.back(1.3)));
-  const PANEL = { x: 1060, y: 560, w: 800, h: 450 };
+  // From 20.1 the page splits into two panels: the stopped cars on the left, the push-start on the right.
+  const PANEL = { x: 990, y: 120, w: 900, h: 840 };
+  const K = 0.75; // the egg panel's 1920×1080 frame, scaled
+  const leftW = 1920 - (1920 - PANEL.x + 30) * panel;
   const senFront = offsetFrom(
     senA,
     carPoint(MP4_5_SEN, "frontContact").x,
@@ -286,64 +293,69 @@ export const Crash: React.FC<PictureProps> = ({ f }) => {
         <clipPath id="s14-panel">
           <rect x={PANEL.x} y={PANEL.y} width={PANEL.w} height={PANEL.h} />
         </clipPath>
+        <clipPath id="s14-main">
+          <rect x={0} y={0} width={leftW} height={1080} />
+        </clipPath>
       </defs>
       <rect width={1920} height={1080} fill={PAPER} />
       <g filter={inkFilter()}>
-        <g
-          transform={`translate(${sx} ${sy}) rotate(${freeze ? -3 : -3 * (1 - ramp(t, 0.3, 1.2))} 960 540)`}
-        >
-          <Trackside
-            cam={CAM}
-            camX={camX}
-            layout={{ ...TRACKSIDE_DEFAULT, nearEdge: 5, farEdge: 17 }}
-          />
-          <Foreground cam={CAM} camX={camX} nearEdge={5} farEdge={17} />
-          {freeze ? (
-            <path
-              d={focusLines(contact.x, contact.y, 260, 130, 11)}
-              fill={INK}
+        <g clipPath="url(#s14-main)">
+          <g
+            transform={`translate(${sx - 230 * panel} ${sy}) rotate(${freeze ? -3 : -3 * (1 - ramp(t, 0.3, 1.2))} 960 540)`}
+          >
+            <Trackside
+              cam={CAM}
+              camX={camX}
+              layout={{ ...TRACKSIDE_DEFAULT, nearEdge: 5, farEdge: 17 }}
             />
-          ) : null}
-          {/* PRO beyond, turned in across SEN's nose: his nose a little toward the camera */}
-          <MangaCar
-            car={MP4_5_PRO}
-            at={proA}
-            state={{ lockFront: 20, wheelAngle: 20, tilt: freeze ? 2 : 0.5 }}
-          />
-          <Puffs
-            x={proFront.x - 30}
-            y={proFront.y + 8}
-            n={6}
-            size={14}
-            o={smoke}
-          />
-          <Puffs
-            x={senFront.x - 40}
-            y={senFront.y + 14}
-            n={7}
-            size={18}
-            o={smoke}
-          />
-          <MangaCar
-            car={MP4_5_SEN}
-            at={senA}
-            state={{
-              lockFront: 40,
-              wheelAngle: 40,
-              tilt: freeze ? -2.5 : -0.5,
-            }}
-          />
-          {star * starFade > 0 ? (
-            <g opacity={starFade}>
-              <ImpactStar
-                x={contact.x}
-                y={contact.y}
-                r={190}
-                seed="suzuka89"
-                t={star}
+            <Foreground cam={CAM} camX={camX} nearEdge={5} farEdge={17} />
+            {freeze ? (
+              <path
+                d={focusLines(contact.x, contact.y, 260, 130, 11)}
+                fill={INK}
               />
-            </g>
-          ) : null}
+            ) : null}
+            {/* PRO beyond, turned in across SEN's nose: his nose a little toward the camera */}
+            <MangaCar
+              car={MP4_5_PRO}
+              at={proA}
+              state={{ lockFront: 20, wheelAngle: 20, tilt: freeze ? 2 : 0.5 }}
+            />
+            <Puffs
+              x={proFront.x - 30}
+              y={proFront.y + 8}
+              n={6}
+              size={14}
+              o={smoke}
+            />
+            <Puffs
+              x={senFront.x - 40}
+              y={senFront.y + 14}
+              n={7}
+              size={18}
+              o={smoke}
+            />
+            <MangaCar
+              car={MP4_5_SEN}
+              at={senA}
+              state={{
+                lockFront: 40,
+                wheelAngle: 40,
+                tilt: freeze ? -2.5 : -0.5,
+              }}
+            />
+            {star * starFade > 0 ? (
+              <g opacity={starFade}>
+                <ImpactStar
+                  x={contact.x}
+                  y={contact.y}
+                  r={190}
+                  seed="suzuka89"
+                  t={star}
+                />
+              </g>
+            ) : null}
+          </g>
         </g>
         {sfx > 0 ? (
           <g transform={`translate(330 330) scale(${0.6 + 0.4 * sfx})`}>
@@ -355,14 +367,14 @@ export const Crash: React.FC<PictureProps> = ({ f }) => {
         <rect
           x={0}
           y={0}
-          width={1920}
+          width={leftW}
           height={1080}
           fill="none"
           stroke={INK}
           strokeWidth={18}
         />
         {panel > 0 ? (
-          <g transform={`translate(0 ${(1 - panel) * 520})`}>
+          <g transform={`translate(${(1 - panel) * 960} 0)`}>
             <rect
               x={PANEL.x + 14}
               y={PANEL.y + 14}
@@ -379,7 +391,7 @@ export const Crash: React.FC<PictureProps> = ({ f }) => {
                 fill={PAPER}
               />
               <g
-                transform={`translate(${PANEL.x} ${PANEL.y}) scale(${PANEL.w / 1920})`}
+                transform={`translate(${PANEL.x + PANEL.w / 2 - K * 960} ${PANEL.y + PANEL.h / 2 - K * 540}) scale(${K})`}
               >
                 <PushPanel t={(f - push) / 60} />
               </g>

@@ -14,12 +14,12 @@ import {
   TRACKSIDE_DEFAULT,
 } from "../../../scenes/suzuka-1989/trackside";
 import { Foreground } from "./Foreground";
-import { cueFrame, ramp, shotById, SPEED, type PictureProps } from "./common";
+import { cueFrame, ramp, shotById, type PictureProps } from "./common";
+import { cars12, camX12, SPEED, Z_PRO_12, Z_SEN_12 } from "./staging";
 
-// One camera for the panel: 1.4 m up beside the track, level, f = 1900 px (ART-9).
-const CAM = pinhole({ f: 1900, horizon: 560, cx: 960, height: 1.4 });
-const Z_PRO = 9.5;
-const Z_SEN = 13;
+// One camera for the panel: 3 m up on a camera tower beside the track, level, f = 1500 px (the far car shows above the near one) (ART-9). The stands sit 110 m back, so the
+// hills and sky keep the top of the frame and the cars hold the lower half.
+const CAM = pinhole({ f: 1500, horizon: 300, cx: 960, height: 3.0 });
 const TYRE_R = 0.33; // m
 
 // Helmet centre of a car in metres from its origin (rear end on the ground): x forward, y up.
@@ -77,12 +77,8 @@ const HelmetPanel: React.FC<{
 export const Pair: React.FC<PictureProps> = ({ f }) => {
   const shot = shotById("1.2");
   const t = (f - shot.from) / 60; // seconds into the shot
-  const dur = (shot.to - shot.from) / 60;
-  const camX = SPEED * t;
-  // PRO a few metres ahead; SEN closes from 7 m down to half a car length behind over the shot
-  const gap = 7 - 4.6 * ramp(t, 0, dur, Easing.inOut(Easing.quad));
-  const proX = camX - 1.2 + 0.4 * Math.sin(t * 1.3);
-  const senX = proX - gap;
+  const { pro: proX, sen: senX } = cars12(f);
+  const camX = camX12(f);
   const wheel = ((SPEED * t) / TYRE_R) * (180 / Math.PI);
   const helmets = ramp(
     f,
@@ -96,8 +92,8 @@ export const Pair: React.FC<PictureProps> = ({ f }) => {
     cueFrame("suzuka1989.helmets") + 24,
     Easing.out(Easing.back(1.4)),
   );
-  const proA = CAM.anchor({ x: proX - camX, z: Z_PRO });
-  const senA = CAM.anchor({ x: senX - camX, z: Z_SEN });
+  const proA = CAM.anchor({ x: proX - camX, z: Z_PRO_12 });
+  const senA = CAM.anchor({ x: senX - camX, z: Z_SEN_12 });
   // a slight bob of the camera, as from a broadcast tower
   const bob = 3 * Math.sin(t * 2.1);
   return (
@@ -112,7 +108,12 @@ export const Pair: React.FC<PictureProps> = ({ f }) => {
           <Trackside
             cam={CAM}
             camX={camX}
-            layout={{ ...TRACKSIDE_DEFAULT, standFrom: -200, standTo: 900 }}
+            layout={{
+              ...TRACKSIDE_DEFAULT,
+              stand: 110,
+              standFrom: -400,
+              standTo: 1200,
+            }}
           />
           <Foreground cam={CAM} camX={camX} nearEdge={6} farEdge={19} />
           {/* speed streaks on the track behind each car */}

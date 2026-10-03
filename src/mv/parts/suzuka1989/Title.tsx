@@ -5,7 +5,7 @@ import { Easing } from "remotion";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
 import { BRUSH_FONT } from "../../../kit/lettering";
-import { ToneDefs, tone } from "../../../kit/tone";
+import { ToneDefs } from "../../../kit/tone";
 import { fitMap, poseAt, SUZUKA_1989, TrackMap } from "../../../tracks";
 import { ramp, shotById, type PictureProps } from "./common";
 
@@ -28,15 +28,6 @@ export const Title: React.FC<PictureProps> = ({ f }) => {
       </defs>
       <rect width={1920} height={1080} fill={PAPER} />
       <g filter={inkFilter()}>
-        {/* a light tone sun-patch behind the map, like a printed page */}
-        <ellipse
-          cx={1310}
-          cy={560}
-          rx={620}
-          ry={440}
-          fill={tone("light")}
-          opacity={0.55}
-        />
         <TrackMap
           track={T}
           view={VIEW}
