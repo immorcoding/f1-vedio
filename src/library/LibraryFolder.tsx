@@ -3,6 +3,7 @@
 import { Composition, Folder, Still } from "remotion";
 import { CARS, type CarId } from "../cars";
 import { T5Panel } from "../scenes/abu-dhabi-2021/T5Panel";
+import { Cars2020States, FireSheet, SHEET_2020 } from "./Bahrain2020Sheets";
 import { CarCheck } from "./CarCheck";
 import { CarSheet, SHEET_2021 } from "./CarSheet";
 import { CAR_STATES_FRAMES, CarStates } from "./CarStates";
@@ -28,6 +29,22 @@ export const LibraryFolder: React.FC = () => (
       {...SIZE}
     />
     <Still id="Scene-AbuDhabi2021-T5" component={T5Panel} {...SIZE} />
+    <Still
+      id="Cars-2020-Sheet"
+      component={CarSheet}
+      defaultProps={SHEET_2020}
+      {...SIZE}
+    />
+    <Still id="Cars-2020-States" component={Cars2020States} {...SIZE} />
+    {(["manga", "color"] as const).map((palette) => (
+      <Still
+        key={palette}
+        id={`Fire-Sheet-${palette}`}
+        component={FireSheet}
+        defaultProps={{ palette }}
+        {...SIZE}
+      />
+    ))}
     <Folder name="Checks">
       {(Object.keys(CARS) as CarId[]).map((car) => (
         <Still

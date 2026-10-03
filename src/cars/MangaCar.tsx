@@ -6,13 +6,33 @@ import { INK, PAPER } from "../kit/colors";
 import type { ScreenAnchor } from "../kit/camera";
 import { Ink } from "../kit/ink";
 import { TonePattern, ToneDefs, tone } from "../kit/tone";
-import { CAR_UNITS_PER_METRE, type CarSpec, type Wheel } from "./spec";
+import {
+  CAR_UNITS_PER_METRE,
+  photoPxPerMetre,
+  type CarSpec,
+  type Wheel,
+} from "./spec";
+import { TopCar } from "./TopCar";
 
-// How the car is seen. Side view only for now; a top view (track maps) comes with the track tickets.
-export type CarView = "side";
+// How the car is seen: from the side (the traced view), or from above on a track map (TopCar).
+export type CarView = "side" | "top";
+
+// Where one piece of a broken car has gone, relative to where it sat on the intact car: metres forward (dx) and up (dy),
+// and degrees of pitch (rotate, positive = that piece's front end up), about the middle of the break line.
+export type PiecePose = { dx?: number; dy?: number; rotate?: number };
 
 // What the car is doing, all optional; the default is a car at rest.
 export type CarState = {
+  // Torn in two along the spec's breakLine (side view): the front piece (survival cell, front wheels) and the rear
+  // piece (power unit, gearbox, rear wheels, rear wing), each placed by its own pose. `show` draws only one piece, so a
+  // scene can layer the pieces with what lies between them (a barrier). Ignored for a spec without a breakLine.
+  split?: {
+    front?: PiecePose;
+    rear?: PiecePose;
+    show?: "both" | "front" | "rear";
+  };
+  // Top view only: the direction the nose points, degrees clockwise from screen right.
+  heading?: number;
   // Rotation of the wheels, degrees (clockwise as the car rolls forward). Drive it from the frame to make them roll.
   wheelAngle?: number;
   // Front wheels locked under braking: when set, they stay at this angle and ignore wheelAngle.
@@ -249,24 +269,160 @@ export const CarInPhotoSpace: React.FC<{ car: CarSpec; state?: CarState }> = ({
   state = {},
 }) => {
   const id = svgId(useId());
+  const defs = (
+    <defs>
+      <clipPath id={`${id}-body`}>
+        <path d={car.body} />
+      </clipPath>
+      <ToneDefs prefix={id} />
+      <TonePattern id={`${id}-dl`} r={1.4} gap={9} />
+      <TonePattern id={`${id}-dm`} r={2.3} gap={9} />
+      <TonePattern id={`${id}-dd`} r={3.2} gap={9} />
+    </defs>
+  );
+  if (!state.split || !car.breakLine) {
+    return (
+      <g>
+        {defs}
+        <CarLayers car={car} state={state} id={id} />
+      </g>
+    );
+  }
+  const show = state.split.show ?? "both";
+  const pieces = (["front", "rear"] as const).filter(
+    (piece) => show === "both" || show === piece,
+  );
+  return (
+    <g>
+      {defs}
+      <defs>
+        {pieces.map((piece) => (
+          <clipPath key={piece} id={`${id}-${piece}`}>
+            <path d={piecePolygon(car.breakLine as string, piece)} />
+          </clipPath>
+        ))}
+      </defs>
+      {pieces.map((piece) => (
+        <g
+          key={piece}
+          transform={poseTransform(car, state.split?.[piece])}
+          clipPath={`url(#${id}-${piece})`}
+        >
+          <CarLayers car={car} state={state} id={id} />
+          <TornEdge car={car} id={id} side={piece === "front" ? -1 : 1} />
+        </g>
+      ))}
+    </g>
+  );
+};
+
+// ── Broken car (CarState.split) ─────────────────────────────────────────────────────────
+
+const breakPoints = (breakLine: string) => {
+  const n = breakLine.replace(/[ML]/g, " ").trim().split(/\s+/).map(Number);
+  return Array.from({ length: n.length / 2 }, (_, i) => ({
+    x: n[2 * i],
+    y: n[2 * i + 1],
+  }));
+};
+
+// The middle of the break line, the point each piece turns about.
+const breakPivot = (car: CarSpec) => {
+  const pts = breakPoints(car.breakLine ?? "");
+  const xs = pts.map((p) => p.x);
+  const ys = pts.map((p) => p.y);
+  return {
+    x: (Math.min(...xs) + Math.max(...xs)) / 2,
+    y: (Math.min(...ys) + Math.max(...ys)) / 2,
+  };
+};
+
+// Everything on one side of the break line (photo space: the front piece is on the left, the car faces left).
+const piecePolygon = (breakLine: string, piece: "front" | "rear") => {
+  const pts = breakPoints(breakLine);
+  const far = piece === "front" ? -20000 : 20000;
+  const top = pts[0];
+  const bottom = pts[pts.length - 1];
+  return `${pts.map((p, i) => `${i ? "L" : "M"} ${p.x} ${p.y}`).join(" ")} L ${bottom.x} 20000 L ${far} 20000 L ${far} -20000 L ${top.x} -20000 Z`;
+};
+
+// A piece's pose in photo space: forward is −x and up is −y there, and nose-up pitch is a clockwise turn.
+const poseTransform = (car: CarSpec, pose: PiecePose = {}) => {
+  const ppm = photoPxPerMetre(car);
+  const c = breakPivot(car);
+  return `translate(${-(pose.dx ?? 0) * ppm} ${-(pose.dy ?? 0) * ppm}) rotate(${pose.rotate ?? 0} ${c.x} ${c.y})`;
+};
+
+// The torn face of a piece: a black band of exposed carbon along the break, with a few white splinters.
+const TornEdge: React.FC<{ car: CarSpec; id: string; side: number }> = ({
+  car,
+  id,
+  side,
+}) => (
+  <g clipPath={`url(#${id}-body)`}>
+    <path
+      d={car.breakLine}
+      fill="none"
+      stroke={INK}
+      strokeWidth={34}
+      strokeLinejoin="miter"
+    />
+    <path
+      d={car.breakLine}
+      fill="none"
+      stroke={PAPER}
+      strokeWidth={3}
+      strokeLinejoin="miter"
+      transform={`translate(${side * 22} 6)`}
+      opacity={0.85}
+    />
+    <path
+      d={car.breakLine}
+      fill="none"
+      stroke={`url(#${id}-dark)`}
+      strokeWidth={10}
+      strokeLinejoin="miter"
+      transform={`translate(${side * 34} -4)`}
+    />
+  </g>
+);
+
+// Screen-space transform (MangaCar's frame; dir 1 = facing right, -1 = facing left) that follows the piece of a split
+// car holding the race number, which MangaCar draws unmirrored outside the photo-space group.
+const pieceScreenTransform = (
+  car: CarSpec,
+  state: CarState,
+  k: number,
+  dir: number,
+) => {
+  if (!state.split || !car.breakLine) return undefined;
+  const pivot = breakPivot(car);
+  const piece = car.numberAt.x < pivot.x ? "front" : "rear";
+  const show = state.split.show ?? "both";
+  if (show !== "both" && show !== piece) return "hidden";
+  const pose = state.split[piece] ?? {};
+  const ppm = photoPxPerMetre(car);
+  const sx = (car.frame.x - pivot.x) * k * dir;
+  const sy = (pivot.y - car.frame.ground) * k;
+  return `translate(${(pose.dx ?? 0) * ppm * k * dir} ${-(pose.dy ?? 0) * ppm * k}) rotate(${-(pose.rotate ?? 0) * dir} ${sx} ${sy})`;
+};
+
+// The layers of the car in photo space, without its <defs> (shared through `id`). Drawn once, or once per piece of a
+// split car.
+const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
+  car,
+  state,
+  id,
+}) => {
   const p = car.paint;
   const fw = car.frontWing;
   const wheelAngle = state.wheelAngle ?? 0;
   const compound = state.compound ?? car.compound;
   const [front, rear] = car.nearWheels;
   const pivot = { x: (front.cx + rear.cx) / 2, y: (front.cy + rear.cy) / 2 };
+  const shade = car.shade ?? 1;
   return (
-    <g>
-      <defs>
-        <clipPath id={`${id}-body`}>
-          <path d={car.body} />
-        </clipPath>
-        <ToneDefs prefix={id} />
-        <TonePattern id={`${id}-dl`} r={1.4} gap={9} />
-        <TonePattern id={`${id}-dm`} r={2.3} gap={9} />
-        <TonePattern id={`${id}-dd`} r={3.2} gap={9} />
-      </defs>
-
+    <>
       {car.farWheels.map((w) => (
         <FarWheel key={`f${w.cx}`} w={w} id={id} />
       ))}
@@ -345,11 +501,15 @@ export const CarInPhotoSpace: React.FC<{ car: CarSpec; state?: CarState }> = ({
           {car.livery.map((a) => (
             <path key={a.d} d={a.d} fill={a.color} />
           ))}
-          <path d={car.regions.chassis} fill={`url(#${id}-dl)`} opacity={0.5} />
+          <path
+            d={car.regions.chassis}
+            fill={`url(#${id}-dl)`}
+            opacity={0.5 * shade}
+          />
           <path
             d={car.regions.sidepod}
             fill={`url(#${id}-dm)`}
-            opacity={0.55}
+            opacity={0.55 * shade}
           />
           <path
             d={car.regions.undercut}
@@ -461,64 +621,80 @@ export const CarInPhotoSpace: React.FC<{ car: CarSpec; state?: CarState }> = ({
         compound={compound}
         id={id}
       />
-    </g>
+    </>
   );
 };
 
-// A car in a scene, facing right (nose to +x). `at` is where the car's origin — its rear end, on the ground — lands on
-// screen and how many px a metre is there; get it from the panel's camera (`camera.anchor({ x, z })`, ART-9) or, on an
-// asset sheet, write it by hand. The car is drawn at its real traced size.
+// A car in a scene, facing right (nose to +x) by default. `at` is where the car's origin — its rear end, on the
+// ground — lands on screen and how many px a metre is there; get it from the panel's camera (`camera.anchor({ x, z })`,
+// ART-9) or, on an asset sheet, write it by hand. The car is drawn at its real traced size. `facing: "left"` shows the
+// car's other side, nose to −x (a car seen from the other side of the track).
+// With view "top", `at` is the middle of the car's rear end on a top-down map and the nose points along state.heading.
 export const MangaCar: React.FC<{
   car: CarSpec;
   at: ScreenAnchor;
   view?: CarView;
+  facing?: "right" | "left";
   state?: CarState;
-}> = ({ car, at, state = {} }) => {
+}> = ({ car, at, view = "side", facing = "right", state = {} }) => {
+  if (view === "top") {
+    return <TopCar car={car} at={at} heading={state.heading ?? 0} />;
+  }
   const scale = at.pxPerMetre / CAR_UNITS_PER_METRE;
   // Photo px → screen px.
   const k = car.frame.k * scale;
+  // Facing left the car is drawn as traced (the trace photos face left); facing right it is mirrored.
+  const dir = facing === "left" ? -1 : 1;
   const [front, rear] = car.nearWheels;
   const toScreen = (px: number, py: number) => ({
-    x: (car.frame.x - px) * k,
+    x: (car.frame.x - px) * k * dir,
     y: (py - car.frame.ground) * k,
   });
   // Race number in screen space, so it reads unmirrored; it pitches with the body.
   const num = toScreen(car.numberAt.x, car.numberAt.y);
   const pivot = toScreen((front.cx + rear.cx) / 2, (front.cy + rear.cy) / 2);
+  const split = state.split && car.breakLine ? state.split : undefined;
+  const numberPiece = pieceScreenTransform(car, state, k, dir);
   return (
     <g transform={`translate(${at.x} ${at.y})`}>
-      <ellipse
-        cx={(car.frame.x - (front.cx + rear.cx) / 2) * k}
-        cy={2}
-        rx={760 * scale}
-        ry={14 * scale}
-        fill={INK}
-      />
+      {split ? null : (
+        <ellipse
+          cx={(car.frame.x - (front.cx + rear.cx) / 2) * k * dir}
+          cy={2}
+          rx={760 * scale}
+          ry={14 * scale}
+          fill={INK}
+        />
+      )}
       <g
-        transform={`scale(${-k} ${k}) translate(${-car.frame.x} ${-car.frame.ground})`}
+        transform={`scale(${-k * dir} ${k}) translate(${-car.frame.x} ${-car.frame.ground})`}
       >
         <CarInPhotoSpace car={car} state={state} />
       </g>
-      <text
-        x={num.x}
-        y={num.y}
-        textAnchor="middle"
-        fontFamily="Arial Black, Arial, sans-serif"
-        fontWeight={900}
-        fontSize={46 * k}
-        fill={PAPER}
-        stroke={INK}
-        strokeWidth={3 * k}
-        paintOrder="stroke"
-        fontStyle="italic"
-        transform={
-          state.tilt
-            ? `rotate(${-state.tilt} ${pivot.x} ${pivot.y})`
-            : undefined
-        }
-      >
-        {car.driver.number}
-      </text>
+      {numberPiece === "hidden" ? null : (
+        <g transform={numberPiece}>
+          <text
+            x={num.x}
+            y={num.y}
+            textAnchor="middle"
+            fontFamily="Arial Black, Arial, sans-serif"
+            fontWeight={900}
+            fontSize={46 * k}
+            fill={PAPER}
+            stroke={INK}
+            strokeWidth={3 * k}
+            paintOrder="stroke"
+            fontStyle="italic"
+            transform={
+              state.tilt
+                ? `rotate(${-state.tilt * dir} ${pivot.x} ${pivot.y})`
+                : undefined
+            }
+          >
+            {car.driver.number}
+          </text>
+        </g>
+      )}
     </g>
   );
 };

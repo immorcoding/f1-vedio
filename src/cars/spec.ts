@@ -82,6 +82,13 @@ export type CarSpec = {
   antenna: string;
   rainLight: string;
   numberAt: { x: number; y: number };
+  // Where the car tears in two when it breaks up (CarState.split): a jagged polyline from above the car to below it,
+  // running down the engine bulkhead between the survival cell (with the fuel cell) and the power unit. Only needed
+  // for a car that is shown broken.
+  breakLine?: string;
+  // Strength of the dot shading on the chassis and sidepods, 1 (default) = as on the dark 2021 cars. A white livery
+  // takes less, or the dots turn it grey.
+  shade?: number;
 };
 
 export const CAR_UNITS_PER_METRE = 250;
