@@ -3,6 +3,7 @@
 // Registered from Root with one line.
 import { Composition, Folder, Still } from "remotion";
 import { CARS, type CarId } from "../cars";
+import type { TrackId } from "../tracks";
 import { T5Panel } from "../scenes/abu-dhabi-2021/T5Panel";
 import { Cars2020States, FireSheet } from "./Bahrain2020Sheets";
 import { CarCheck } from "./CarCheck";
@@ -10,6 +11,7 @@ import { CarSheet, SHEETS } from "./CarSheet";
 import { CAR_STATES_FRAMES, CarStates } from "./CarStates";
 import { KitSheet } from "./KitSheet";
 import { TOP_SHEET_2021, TopCarSheet } from "./TopCarSheet";
+import { TRACK_SHEETS, TrackSheet } from "./TrackSheet";
 
 const SIZE = { width: 1920, height: 1080 };
 
@@ -42,6 +44,15 @@ export const LibraryFolder: React.FC = () => (
       {...SIZE}
     />
     <Still id="Scene-AbuDhabi2021-T5" component={T5Panel} {...SIZE} />
+    {(Object.keys(TRACK_SHEETS) as TrackId[]).map((track) => (
+      <Still
+        key={track}
+        id={`Track-${track}-Sheet`}
+        component={TrackSheet}
+        defaultProps={{ track }}
+        {...SIZE}
+      />
+    ))}
     <Still id="Cars-2020-States" component={Cars2020States} {...SIZE} />
     {(["manga", "color"] as const).map((palette) => (
       <Still
