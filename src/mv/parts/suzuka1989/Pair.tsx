@@ -17,9 +17,9 @@ import { Foreground } from "./Foreground";
 import { cueFrame, ramp, shotById, type PictureProps } from "./common";
 import { cars12, camX12, SPEED, Z_PRO_12, Z_SEN_12 } from "./staging";
 
-// One camera for the panel: 1.4 m up beside the track, level, f = 1500 px (ART-9). The stands sit 110 m back, so the
+// One camera for the panel: 3 m up on a camera tower beside the track, level, f = 1500 px (the far car shows above the near one) (ART-9). The stands sit 110 m back, so the
 // hills and sky keep the top of the frame and the cars hold the lower half.
-const CAM = pinhole({ f: 1500, horizon: 640, cx: 960, height: 1.4 });
+const CAM = pinhole({ f: 1500, horizon: 300, cx: 960, height: 3.0 });
 const TYRE_R = 0.33; // m
 
 // Helmet centre of a car in metres from its origin (rear end on the ground): x forward, y up.

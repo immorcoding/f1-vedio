@@ -116,16 +116,18 @@ export const Z_SEN_12 = 11;
 export const cars12 = (f: number) => {
   const t = (f - SHOT_12.from) / 60;
   const dur = (SHOT_12.to - SHOT_12.from) / 60;
-  // SEN closes from 5 m down to just off PRO's gearbox (3 m keeps both in frame)
-  const gap = lerp(3, 0.6, smooth(t, 0.8, dur - 0.3));
+  // SEN, on the far line, closes from 1.5 m off PRO's gearbox until he runs alongside, his nose at PRO's cockpit
+  // (treatment 1.2: "并排"); the lines are 3 m apart, so the cars never meet (ART-18)
+  const gap = lerp(1.5, -2.6, smooth(t, 0.6, dur - 0.4));
   const pro = SPEED * t + 0.6 * Math.sin(t * 1.3);
   return { pro, sen: pro - MP45.length - gap, t };
 };
-// The camera starts ahead of the cars, so they sweep in from the left, then holds both framed (PRO's nose and SEN's
-// rear wing inside the frame with the 1500 px lens).
+// The camera starts ahead of the cars, so they sweep in from the left, then holds the pair centred: the middle of
+// SEN's rear wing to PRO's nose on the optical axis.
 export const camX12 = (f: number) => {
-  const { pro, t } = cars12(f);
-  return pro - 0.5 + 18 * Math.exp(-t / 0.55);
+  const { pro, sen, t } = cars12(f);
+  const mid = (sen + pro + MP45.length) / 2;
+  return mid + 18 * Math.exp(-t / 0.55);
 };
 
 // 1.4: SEN on the near side, PRO alongside on the far side, a car width further away: SEN's nose wedged against
