@@ -38,4 +38,8 @@ MV 画面上出现的每个事实及其来源（STO-3）。来源核对日期：
 - 赛前 Verstappen 与 Hamilton 同为 369.5 分；全场 58 圈。
 - 最后的安全车期间 Verstappen 进站换上新软胎，Hamilton 留在赛道上用旧硬胎；最后一圈 Verstappen 在 5 号弯超越 Hamilton。
 - 最终积分 Verstappen 395.5、Hamilton 387.5，Verstappen 以 8 分夺冠。
-- 来源：[2021 Abu Dhabi Grand Prix — Wikipedia](https://en.wikipedia.org/wiki/2021_Abu_Dhabi_Grand_Prix)
+- 5 号弯是 2021 年改造后的左手发卡弯（原 7 号弯，改造时加宽）；Verstappen 从内线切入超车。
+- 超车后 Hamilton 在后直道上追赶 Verstappen，Verstappen 守住内线，Hamilton 无从下手；Verstappen 领先 2.2 秒冲线。
+- 彩蛋（镜头 4.3）：第 53 圈 Latifi（Williams）在 14 号弯出口撞墙，引出最后一次安全车。
+- 这场比赛的安全车是 Aston Martin Vantage（底盘 SC02），车顶有琥珀色警示灯。
+- 来源：[2021 Abu Dhabi Grand Prix — Wikipedia](https://en.wikipedia.org/wiki/2021_Abu_Dhabi_Grand_Prix)（积分、轮胎、5 号弯改造、Latifi 第 53 圈 14 号弯）；[Motorsport.com 正赛报道](https://www.motorsport.com/f1/news/abu-dhabi-f1-gp-race-report-verstappen-hamilton/6877919/)（左手发卡弯内线超车、守住内线、2.2 秒）；[Motor Authority：2021 年安全车](https://www.motorauthority.com/news/1131539_upgraded-aston-martin-vantage-joins-mercedes-benz-amg-gt-as-2021-f1-safety-car)、[GPFans：阿布扎比 2021 安全车出售](https://www.gpfans.com/en/f1-news/1076741/f1-2021-abu-dhabi-grand-prix-controversial-safety-car-sale/)（Vantage SC02）
