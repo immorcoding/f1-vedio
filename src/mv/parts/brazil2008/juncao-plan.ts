@@ -1,5 +1,5 @@
 // Choreography of shot 2.4 (the run down to Junção on the last lap), as positions along the Interlagos lap. Pure data
-// with no imports, so the overlap check (scripts/check-top-overlap, ART-18) can load it with node.
+// with no imports, so a node script can check every frame for overlapping cars (ART-18).
 //
 // Facts (docs/production/facts.md): GLO, on dry tyres, is slow and sliding; VET passes him first, then HAM closes up and
 // arrives at Junção on GLO's inside — the pass itself completes in shot 2.5 (47.1). Lap distances s in metres; lateral

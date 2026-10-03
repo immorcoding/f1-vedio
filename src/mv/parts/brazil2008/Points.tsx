@@ -1,6 +1,7 @@
 // Shot 2.7 (bars 53–56): the points. Two split-flap boards under the drivers' helmets (drawn from the traced cars,
 // ART-13): on 53.1 (`brazil2008.points`) the flaps fall to HAM 98 · MAS 97 (facts.md), then "1 分" is brushed in
-// between them. The rain thins out; focus lines settle on HAM's side.
+// between them. Then the page keeps moving: a slow push-in, the rain thinning out, HAM's side swelling as a brush
+// stroke underlines his 98 and focus lines gather on him, while MAS's side recedes under a screen of dots.
 import { CarInPhotoSpace, F2008, MP4_23, type CarSpec } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { inkFilter } from "../../../kit/ink";
@@ -129,20 +130,37 @@ export const Points: React.FC<{ st: ShotTime }> = ({ st }) => {
   const one = ramp(t, 0.9, 1.6);
   const win = ramp(t, 1.6, dur);
   const rain = 1 - ramp(t, 0.5, dur);
+  const push = 1 + 0.08 * ramp(t, 0.3, dur);
+  const stroke = ramp(t, 1.8, 2.6);
   return (
     <Page>
       <rect width={1920} height={1080} fill={tone("light")} opacity={0.35} />
       <path
-        d={focusLines(560, 520, 420, 130, Math.floor(t * 8))}
+        d={focusLines(560, 520, 420 - 60 * win, 130, Math.floor(t * 8))}
         fill={INK}
-        opacity={0.12 + 0.3 * win}
+        opacity={0.12 + 0.35 * win}
       />
       <g
         filter={inkFilter()}
-        transform={`translate(${Math.sin(t * 60) * 10 * land} 0)`}
+        transform={`translate(960 540) scale(${push}) translate(-960 -540) translate(${Math.sin(t * 60) * 10 * land} ${-6 * Math.sin(t * 1.7)})`}
       >
-        <Medallion car={MP4_23} cx={560} cy={250} r={170} id="b27-ham" />
-        <Medallion car={F2008} cx={1360} cy={250} r={170} id="b27-mas" />
+        <g
+          transform={`translate(560 540) scale(${1 + 0.1 * win}) translate(-560 -540)`}
+        >
+          <Medallion car={MP4_23} cx={560} cy={250} r={170} id="b27-ham" />
+        </g>
+        <g
+          transform={`translate(1360 540) scale(${1 - 0.08 * win}) translate(-1360 -540)`}
+        >
+          <Medallion car={F2008} cx={1360} cy={250} r={170} id="b27-mas" />
+          <circle
+            cx={1360}
+            cy={250}
+            r={170}
+            fill={tone("mid")}
+            opacity={0.6 * win}
+          />
+        </g>
         {[
           { x: 560, code: "HAM" },
           { x: 1360, code: "MAS" },
@@ -169,6 +187,16 @@ export const Points: React.FC<{ st: ShotTime }> = ({ st }) => {
           value="98"
           u={u}
           id="b27-98"
+        />
+        {/* brush stroke under HAM's 98 */}
+        <path
+          d="M 380 860 C 480 846 620 852 740 842"
+          fill="none"
+          stroke={INK}
+          strokeWidth={18}
+          strokeLinecap="round"
+          pathLength={1}
+          strokeDasharray={`${stroke} 1`}
         />
         <FlapBoard
           x={1200}

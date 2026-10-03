@@ -1,9 +1,12 @@
 // Shot 2.3 (bars 39–42): the split page. Top left: MAS's Ferrari crosses the line in front of the grandstand. Top
 // right (easter egg, facts.md): the Ferrari garage starts to celebrate — at that moment, with HAM sixth, Massa is
 // champion. Bottom, full width: the same moment out on the circuit — HAM on VET's gearbox in the spray, sixth
-// (facts.md: from lap 69 to the last corners). The panels drop in one per bar, on the downbeat.
+// (facts.md: from lap 69 to the last corners). The page is laid out from the first frame — panels waiting for their
+// beat show the rain on a dark screen — and each panel's picture drops in on its downbeat, one per bar.
 import { F2008, MP4_23, STR3 } from "../../../cars";
 import { INK } from "../../../kit/colors";
+import { Rain } from "../../../kit/rain";
+import { tone } from "../../../kit/tone";
 import { focusLines } from "../../../kit/lines";
 import { Garage } from "../../../scenes/brazil-2008/Garage";
 import {
@@ -17,6 +20,43 @@ import { Page, Panel, RainCloseup } from "./common";
 const MAS_BOX = { x: 40, y: 40, w: 1090, h: 480 };
 const GARAGE_BOX = { x: 1160, y: 40, w: 720, h: 480 };
 const HAM_BOX = { x: 40, y: 550, w: 1840, h: 490 };
+
+// A panel waiting for its picture: dark screen, rain falling, ink border.
+const Waiting: React.FC<{ box: typeof MAS_BOX; t: number; seed: string }> = ({
+  box,
+  t,
+  seed,
+}) => (
+  <g>
+    <rect
+      x={box.x}
+      y={box.y}
+      width={box.w}
+      height={box.h}
+      fill={tone("dark")}
+    />
+    <svg x={box.x} y={box.y} width={box.w} height={box.h}>
+      <Rain
+        t={t}
+        w={box.w}
+        h={box.h}
+        n={70}
+        color="#fbfaf6"
+        opacity={0.5}
+        seed={seed}
+      />
+    </svg>
+    <rect
+      x={box.x}
+      y={box.y}
+      width={box.w}
+      height={box.h}
+      fill="none"
+      stroke={INK}
+      strokeWidth={10}
+    />
+  </g>
+);
 
 export const Split: React.FC<{ st: ShotTime }> = ({ st }) => {
   const { t } = st;
@@ -33,6 +73,9 @@ export const Split: React.FC<{ st: ShotTime }> = ({ st }) => {
   const gap = 0.8 + 0.6 * Math.sin(t * 1.3);
   return (
     <Page>
+      <Waiting box={MAS_BOX} t={t} seed="w-mas" />
+      <Waiting box={GARAGE_BOX} t={t} seed="w-gar" />
+      <Waiting box={HAM_BOX} t={t} seed="w-ham" />
       <g opacity={sMas} transform={`translate(${-60 * (1 - sMas)} 0)`}>
         <Panel box={MAS_BOX} view={{ x: 120, y: 170, w: 1680, h: 740 }}>
           <RainCloseup
@@ -71,6 +114,7 @@ export const Split: React.FC<{ st: ShotTime }> = ({ st }) => {
               camX={60 * t}
               speed={0.8}
               stands={false}
+              sprayUnder
               cars={[
                 {
                   car: STR3,

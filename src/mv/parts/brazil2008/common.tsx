@@ -154,8 +154,15 @@ export const RainCloseup: React.FC<{
 export const Panel: React.FC<{
   box: { x: number; y: number; w: number; h: number };
   view?: { x: number; y: number; w: number; h: number };
+  // ink border round the panel (off for a full-frame crop)
+  border?: boolean;
   children: React.ReactNode;
-}> = ({ box, view = { x: 0, y: 0, w: 1920, h: 1080 }, children }) => {
+}> = ({
+  box,
+  view = { x: 0, y: 0, w: 1920, h: 1080 },
+  border = true,
+  children,
+}) => {
   const id = `pn${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   return (
     <g>
@@ -181,15 +188,17 @@ export const Panel: React.FC<{
         />
         <g clipPath={`url(#${id})`}>{children}</g>
       </svg>
-      <rect
-        x={box.x}
-        y={box.y}
-        width={box.w}
-        height={box.h}
-        fill="none"
-        stroke={INK}
-        strokeWidth={10}
-      />
+      {border ? (
+        <rect
+          x={box.x}
+          y={box.y}
+          width={box.w}
+          height={box.h}
+          fill="none"
+          stroke={INK}
+          strokeWidth={10}
+        />
+      ) : null}
     </g>
   );
 };
