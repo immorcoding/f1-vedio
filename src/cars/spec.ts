@@ -15,6 +15,10 @@
 // - top view (`top`): built from the side trace for the modern planform, or traced in plan for another shape.
 
 export type Wheel = { cx: number; cy: number; r: number };
+
+// The far endplate of a wing as the copy of the near one seen further away (ART-17): scaled by `scale` about the near
+// endplate's bounding-box corner (min x, min y), then moved by (dx, dy) photo px.
+export type EndplateCopy = { dx: number; dy: number; scale: number };
 export type Accent = { d: string; color: string };
 
 // Real livery colours, one flat manga fill per form region (ART-8); screentone dots add the shading on top.
@@ -69,8 +73,11 @@ export type CarPlan = {
   chassis?: string; // tub and nose: paint.chassis, dot-shaded like the sidepods
   accents?: Accent[]; // small blocks with a thin ink edge, on top (nose tip, chevrons)
   outline?: string; // one-piece body silhouette, inked again over the livery
+  inlets?: string[]; // sidepod inlets, ink
+  airbox?: string; // engine-cover air intake behind the driver's head, ink
   cockpit: string; // the opening, ink
   helmet: { x: number; r: number }; // helmet centre along the car and radius, m
+  windscreen?: string; // period cars: tinted screen in front of the cockpit
   halo?: string; // open path
   mirrors?: string[]; // paint.mirror (or chassis), one path each
   frontWing: { deck: string; flap?: string; endplates?: string };
@@ -78,7 +85,8 @@ export type CarPlan = {
     top: string;
     color?: string;
     element?: string;
-    endplates?: string;
+    endplates?: string; // open path; both endplates alike (ART-17)
+    endplateColor?: string; // default paint.wing
   };
   glints?: string; // floodlight on the upper edges, white lines (open path)
 };
@@ -124,10 +132,23 @@ export type CarSpec = {
   glints: string[];
   floor: string;
   // Simplified front wing (ART-12): far and near endplates, and one wing surface between them drawn behind the
-  // nose, with an accent-coloured flap along its trailing edge.
-  frontWing: { near: string; far: string; deck: string; flap: Accent };
+  // nose, with an accent-coloured flap running the whole trailing edge between the endplates (no diagonal stripes).
+  // The two endplates of a wing are one shape (ART-17): give `farFrom` and the renderer draws the far endplate as
+  // the perspective copy of the near one, colour blocks (`livery`) included. A traced `far` is only kept on the
+  // settled 2021 cars.
+  frontWing: {
+    near: string;
+    far?: string;
+    farFrom?: EndplateCopy;
+    deck: string;
+    flap: Accent;
+    livery?: Accent[];
+  };
   rearWing: {
     near: string;
+    // the far rear endplate, where it shows above the near one
+    farFrom?: EndplateCopy;
+    livery?: Accent[];
     top: string;
     elements: string[];
     pylon: string;
@@ -215,6 +236,25 @@ export const carPoint = (car: CarSpec, landmark: CarLandmark) => {
 
 // Overall length of the car in metres (rear end to the front wing tip).
 export const carLength = (car: CarSpec) => carPoint(car, "nose").x;
+
+// Bounding-box corner (min x, min y) of an absolute-coordinate SVG path (M/L/C/Z only, as traced).
+export const pathMin = (d: string) => {
+  const nums = d
+    .replace(/[MLCZ]/g, " ")
+    .trim()
+    .split(/\s+/)
+    .map(Number);
+  return {
+    x: Math.min(...nums.filter((_, i) => i % 2 === 0)),
+    y: Math.min(...nums.filter((_, i) => i % 2 === 1)),
+  };
+};
+
+// The far endplate's transform (EndplateCopy) as an SVG transform, for paths in the near endplate's coordinates.
+export const endplateCopyTransform = (near: string, c: EndplateCopy) => {
+  const o = pathMin(near);
+  return `translate(${o.x + c.dx} ${o.y + c.dy}) scale(${c.scale}) translate(${-o.x} ${-o.y})`;
+};
 
 // x coordinates of an absolute-coordinate SVG path (M/L/C/Z only, as traced).
 const pathXs = (d: string) => {

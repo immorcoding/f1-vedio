@@ -94,6 +94,9 @@ export const TopCar: React.FC<{
         opacity={0.5 * (car.shade ?? 1)}
         clipPath={`url(#${id}-shade)`}
       />
+      {(plan.inlets ?? []).map((d) => (
+        <path key={d} d={d} fill={INK} />
+      ))}
       {(plan.stripes ?? []).map((st) => (
         <path
           key={st.d}
@@ -136,6 +139,7 @@ export const TopCar: React.FC<{
           strokeLinejoin="round"
         />
       ) : null}
+      {plan.airbox ? <path d={plan.airbox} fill={INK} /> : null}
       {/* cockpit: opening, helmet from above (shell in the base colour, a stripe, the visor peak) */}
       <path d={plan.cockpit} fill={INK} />
       <circle
@@ -147,6 +151,16 @@ export const TopCar: React.FC<{
         strokeWidth={w(1.6)}
       />
       <path d={helmetStripe(h.x, h.r)} fill={stripe} />
+      {plan.windscreen ? (
+        <path
+          d={plan.windscreen}
+          fill="#2b3038"
+          opacity={0.85}
+          stroke={INK}
+          strokeWidth={w(1.4)}
+          strokeLinejoin="round"
+        />
+      ) : null}
       {/* halo, wrapping the opening */}
       {plan.halo ? (
         <>
@@ -187,7 +201,12 @@ export const TopCar: React.FC<{
         <path d={plan.frontWing.flap} fill={car.frontWing.flap.color} />
       ) : null}
       {plan.frontWing.endplates ? (
-        <path d={plan.frontWing.endplates} stroke={p.wing} strokeWidth={0.06} />
+        <PlanEndplates
+          d={plan.frontWing.endplates}
+          color={p.wing}
+          width={0.06}
+          ink={w(2)}
+        />
       ) : null}
       <path
         d={plan.rearWing.top}
@@ -199,7 +218,12 @@ export const TopCar: React.FC<{
         <path d={plan.rearWing.element} stroke={INK} strokeWidth={w(1.4)} />
       ) : null}
       {plan.rearWing.endplates ? (
-        <path d={plan.rearWing.endplates} stroke={p.wing} strokeWidth={0.05} />
+        <PlanEndplates
+          d={plan.rearWing.endplates}
+          color={plan.rearWing.endplateColor ?? p.wing}
+          width={0.05}
+          ink={w(2)}
+        />
       ) : null}
       {/* floodlight on the left-hand upper edges */}
       {plan.glints ? (
@@ -215,6 +239,19 @@ export const TopCar: React.FC<{
     </g>
   );
 };
+
+// Both endplates of a wing seen from above: thin plates in the wing colour, inked so a light one reads on paper.
+const PlanEndplates: React.FC<{
+  d: string;
+  color: string;
+  width: number;
+  ink: number;
+}> = ({ d, color, width, ink }) => (
+  <>
+    <path d={d} stroke={INK} strokeWidth={width + ink} strokeLinecap="square" />
+    <path d={d} stroke={color} strokeWidth={width} />
+  </>
+);
 
 // The helmet's stripe seen from above: a band across the crown, from the back of the shell to the visor.
 const helmetStripe = (x: number, r: number) => {

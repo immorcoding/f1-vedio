@@ -8,8 +8,11 @@ import { Ink } from "../kit/ink";
 import { TonePattern, ToneDefs, tone } from "../kit/tone";
 import {
   CAR_UNITS_PER_METRE,
+  endplateCopyTransform,
   photoPxPerMetre,
+  type Accent,
   type CarSpec,
+  type EndplateCopy,
   type Wheel,
 } from "./spec";
 import { TopCar } from "./TopCar";
@@ -455,6 +458,36 @@ const pieceScreenTransform = (
   return `translate(${(pose.dx ?? 0) * ppm * k * dir} ${-(pose.dy ?? 0) * ppm * k}) rotate(${-(pose.rotate ?? 0) * dir} ${sx} ${sy})`;
 };
 
+// A wing endplate with its colour blocks; with `copy`, the far endplate drawn as the perspective copy of the near
+// one (ART-17).
+const Endplate: React.FC<{
+  d: string;
+  livery?: Accent[];
+  fill: string;
+  w: number;
+  copy?: EndplateCopy;
+}> = ({ d, livery = [], fill, w, copy }) => (
+  <g transform={copy ? endplateCopyTransform(d, copy) : undefined}>
+    <path
+      d={d}
+      fill={fill}
+      stroke={INK}
+      strokeWidth={w}
+      strokeLinejoin="round"
+    />
+    {livery.map((a) => (
+      <path
+        key={a.d}
+        d={a.d}
+        fill={a.color}
+        stroke={INK}
+        strokeWidth={4}
+        strokeLinejoin="round"
+      />
+    ))}
+  </g>
+);
+
 // The layers of the car in photo space, without its <defs> (shared through `id`). Drawn once, or once per piece of a
 // split car.
 const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
@@ -482,7 +515,17 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
         }
       >
         {/* far side: far front endplate and wing surface, rear wing top, airbox camera */}
-        <path d={fw.far} fill={p.wing} stroke={INK} strokeWidth={4} />
+        {fw.far ? (
+          <path d={fw.far} fill={p.wing} stroke={INK} strokeWidth={4} />
+        ) : fw.farFrom ? (
+          <Endplate
+            d={fw.near}
+            livery={fw.livery}
+            fill={p.wing}
+            w={4}
+            copy={fw.farFrom}
+          />
+        ) : null}
         <path d={fw.deck} fill={p.frontDeck} />
         <path d={fw.flap.d} fill={fw.flap.color} />
         <path
@@ -500,6 +543,15 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
           strokeLinejoin="round"
         />
         <path d={car.rearWing.top} fill={`url(#${id}-dl)`} opacity={0.6} />
+        {car.rearWing.farFrom ? (
+          <Endplate
+            d={car.rearWing.near}
+            livery={car.rearWing.livery}
+            fill={p.wing}
+            w={5}
+            copy={car.rearWing.farFrom}
+          />
+        ) : null}
         <path d={car.rearWing.pylon} fill={INK} />
         {car.rearWing.elements.map((d) => (
           <Ink key={d} d={d} w={5} />
@@ -674,19 +726,12 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
           stroke={INK}
           strokeWidth={3}
         />
-        <path
-          d={fw.near}
-          fill={p.wing}
-          stroke={INK}
-          strokeWidth={5}
-          strokeLinejoin="round"
-        />
-        <path
+        <Endplate d={fw.near} livery={fw.livery} fill={p.wing} w={5} />
+        <Endplate
           d={car.rearWing.near}
+          livery={car.rearWing.livery}
           fill={p.wing}
-          stroke={INK}
-          strokeWidth={5}
-          strokeLinejoin="round"
+          w={5}
         />
         {car.wingLivery.map((a) => (
           <path

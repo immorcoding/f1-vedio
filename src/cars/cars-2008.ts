@@ -91,7 +91,8 @@ export const MP4_23: CarSpec = {
   floor: "M 667 622 L 1560 622 L 1560 632 L 667 632 Z",
   frontWing: {
     near: "M 245 522 L 445 520 L 447 594 L 436 603 L 228 606 L 236 590 C 238 570 240 540 245 522 Z",
-    far: "M 238 494 L 292 492 L 294 512 L 240 516 Z",
+    // far endplate: the near one seen further away (ART-17)
+    farFrom: { dx: 10, dy: -28, scale: 0.95 },
     deck: "M 238 500 L 294 496 L 447 522 L 447 590 L 255 604 C 236 590 230 540 238 500 Z",
     flap: { d: "M 400 513 L 447 521 L 447 560 L 400 556 Z", color: "#e2231a" },
   },
@@ -178,7 +179,8 @@ export const F2008: CarSpec = {
   floor: "M 650 752 L 1500 752 L 1500 762 L 650 762 Z",
   frontWing: {
     near: "M 237 679 L 423 679 L 425 740 L 412 747 L 217 747 L 226 728 C 228 710 232 692 237 679 Z",
-    far: "M 228 642 L 262 640 L 264 664 L 230 666 Z",
+    // far endplate: the near one seen further away (ART-17)
+    farFrom: { dx: 11, dy: -39, scale: 0.95 },
     deck: "M 228 648 L 262 645 L 423 679 L 423 740 L 217 747 C 205 720 210 670 228 648 Z",
     flap: { d: "M 380 670 L 423 679 L 423 715 L 380 712 Z", color: "#1c1c1e" },
   },
@@ -277,7 +279,8 @@ export const STR3: CarSpec = {
   floor: "M 640 694 L 1460 690 L 1460 700 L 640 704 Z",
   frontWing: {
     near: "M 232 588 L 245 578 L 330 578 L 440 610 L 490 622 L 492 680 L 470 688 L 262 686 L 238 650 Z",
-    far: "M 236 572 L 270 570 L 272 582 L 238 584 Z",
+    // far endplate: the near one seen further away (ART-17)
+    farFrom: { dx: 4, dy: -8, scale: 0.95 },
     deck: "M 236 576 L 300 572 L 490 622 L 492 680 L 262 686 C 240 660 230 600 236 576 Z",
     flap: { d: "M 440 608 L 490 622 L 490 650 L 440 640 Z", color: "#d7262b" },
   },
@@ -379,7 +382,8 @@ export const TF108: CarSpec = {
   floor: "M 596 762 L 1396 773 L 1396 783 L 596 772 Z",
   frontWing: {
     near: "M 197 700 L 208 672 L 226 669 L 234 692 L 371 694 L 372 751 L 362 758 L 204 755 L 197 738 Z",
-    far: "M 208 678 L 248 677 L 250 692 L 210 693 Z",
+    // far endplate: the near one seen further away (ART-17)
+    farFrom: { dx: 11, dy: 8, scale: 0.95 },
     deck: "M 208 678 L 288 677 L 371 694 L 370 751 L 204 755 C 195 728 198 693 208 678 Z",
     flap: { d: "M 328 685 L 371 694 L 370 726 L 327 722 Z", color: "#d9161c" },
   },

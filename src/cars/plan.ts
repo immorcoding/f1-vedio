@@ -19,6 +19,10 @@ export const symmetric = (half: [number, number][]) => {
   return `M ${right.join(" L ")} L ${left.join(" L ")} Z`;
 };
 
+// A closed outline on one side of the car (side 1 = right, -1 = left) from points given for the right side.
+export const symmetricSide = (side: number, pts: [number, number][]) =>
+  `M ${pts.map(([x, y]) => `${x} ${side * y}`).join(" L ")} Z`;
+
 // Rounded rectangle centred on (x, y): `len` along the car, `w` across, in metres (tyres, mirrors).
 export const roundedBox = (x: number, y: number, len: number, w: number) => {
   const r = Math.min(w, len) * 0.28;
@@ -109,6 +113,17 @@ export const modernPlan = (car: CarSpec, marks: TopMarks = {}): CarPlan => {
       [L - 0.2, 0.07],
     ]),
     accents,
+    // sidepod inlets just behind the front of each pod
+    inlets: [1, -1].map((s) =>
+      symmetricSide(s, [
+        [3.04, 0.36],
+        [3.17, 0.34],
+        [3.16, 0.64],
+        [3.02, 0.66],
+      ]),
+    ),
+    // the airbox above the roll hoop, behind the helmet
+    airbox: roundedBox(hx - 0.3, 0, 0.16, 0.2),
     cockpit: symmetric([
       [hx - 0.2, 0.2],
       [hx + 0.55, 0.23],

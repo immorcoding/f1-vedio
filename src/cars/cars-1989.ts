@@ -6,7 +6,7 @@
 //
 // Period car (ART-4): no halo, open cockpit with a small windscreen, 13-inch rims on tall Goodyear slicks with no
 // coloured band, period full-face helmets. The two team-mates share this spec and differ only in `driver`.
-import { symmetric } from "./plan";
+import { roundedBox, symmetric, symmetricSide } from "./plan";
 import type { Accent, CarPlan, CarSpec, Driver } from "./spec";
 
 // Marlboro McLaren fluorescent red-orange and the white body.
@@ -95,7 +95,28 @@ const PLAN_BODY = symmetric([
 ]);
 
 const MP4_5_PLAN: CarPlan = {
+  // wishbones from the tub to each wheel
+  suspension:
+    "M 3.12 0.24 L 3.28 0.78 M 3.42 0.2 L 3.28 0.78 M 3.12 -0.24 L 3.28 -0.78 M 3.42 -0.2 L 3.28 -0.78 " +
+    "M 0.62 0.36 L 0.38 0.66 M 0.2 0.22 L 0.38 0.66 M 0.62 -0.36 L 0.38 -0.66 M 0.2 -0.22 L 0.38 -0.66",
   sidepods: PLAN_BODY,
+  // inlets in the front of the sidepods, the airbox above the driver's head
+  inlets: [1, -1].map((s) =>
+    symmetricSide(s, [
+      [2.04, 0.46],
+      [2.19, 0.44],
+      [2.17, 0.6],
+      [2.02, 0.66],
+    ]),
+  ),
+  airbox: roundedBox(2.1, 0, 0.14, 0.2),
+  windscreen:
+    "M 2.7 -0.22 C 2.84 -0.14 2.84 0.14 2.7 0.22 L 2.77 0.22 C 2.92 0.12 2.92 -0.12 2.77 -0.22 Z",
+  // red mirror housings on short stalks
+  mirrors: [
+    roundedBox(2.82, 0.42, 0.1, 0.16),
+    roundedBox(2.82, -0.42, 0.1, 0.16),
+  ],
   outline: PLAN_BODY,
   livery: [
     // red nose top ending in a point, ahead of the cockpit
@@ -114,8 +135,20 @@ const MP4_5_PLAN: CarPlan = {
     deck:
       "M 4.05 -0.7 L 4.6 -0.7 L 4.6 -0.08 L 4.3 -0.12 L 4.05 -0.141 Z " +
       "M 4.05 0.7 L 4.6 0.7 L 4.6 0.08 L 4.3 0.12 L 4.05 0.141 Z",
+    // the flap along the whole trailing edge, either side of the nose
+    flap:
+      "M 4.06 -0.68 L 4.16 -0.68 L 4.16 -0.135 L 4.06 -0.14 Z " +
+      "M 4.06 0.68 L 4.16 0.68 L 4.16 0.135 L 4.06 0.14 Z",
+    endplates: "M 4.02 -0.7 L 4.62 -0.7 M 4.02 0.7 L 4.62 0.7",
   },
-  rearWing: { top: "M 0 -0.5 L 0.6 -0.5 L 0.6 0.5 L 0 0.5 Z", color: RED },
+  rearWing: {
+    top: "M 0 -0.5 L 0.6 -0.5 L 0.6 0.5 L 0 0.5 Z",
+    color: RED,
+    element: "M 0.36 -0.48 L 0.36 0.48",
+    // red endplates, as in the side view
+    endplates: "M -0.02 -0.52 L 0.62 -0.52 M -0.02 0.52 L 0.62 0.52",
+    endplateColor: RED,
+  },
   wheels: [
     { x: 3.28, y: -0.91, length: 0.635, width: 0.3, steer: true },
     { x: 3.28, y: 0.91, length: 0.635, width: 0.3, steer: true },
@@ -192,7 +225,8 @@ export const MP4_5: CarSpec = {
   floor: "M 690 690 L 1700 694 L 1696 706 L 696 702 Z",
   frontWing: {
     near: "M 240 612 L 470 572 L 482 692 L 240 694 Z",
-    far: "M 100 574 L 196 562 L 198 614 L 108 626 Z",
+    // far endplate: the near one seen further away (ART-17)
+    farFrom: { dx: -140, dy: -36, scale: 0.95 },
     deck: "M 100 576 L 204 562 L 470 558 L 476 650 L 240 694 C 190 682 140 656 108 628 Z",
     flap: { d: "M 200 562 L 470 556 L 472 574 L 204 580 Z", color: "#d9d6cf" },
   },
