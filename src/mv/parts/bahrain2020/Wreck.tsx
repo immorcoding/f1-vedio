@@ -402,13 +402,17 @@ const lerpRect = (a: Rect, b: Rect, u: number): Rect => ({
   w: a.w + (b.w - a.w) * u,
   h: a.h + (b.h - a.h) * u,
 });
-// Panel i's rectangle at frame f: the panels on the page slide into the next layout over the 18 frames before the
-// next panel lands.
+// Panel i's rectangle at frame f. On each cue the new panel lands in its place in the next layout (drawn on top) and
+// the panels already on the page slide into that layout over 10 frames, so the frame never has a hole.
 const panelRect = (i: number, f: number, cues: number[]): Rect => {
   const k = cues.filter((c) => f >= c).length; // panels on the page
-  const here = LAYOUTS[k - 1][i];
-  if (k >= cues.length) return here;
-  return lerpRect(here, LAYOUTS[k][i], ramp(f, cues[k] - 18, cues[k]));
+  const target = LAYOUTS[k - 1][i];
+  if (k < 2 || i === k - 1) return target;
+  return lerpRect(
+    LAYOUTS[k - 2][i],
+    target,
+    ramp(f, cues[k - 1], cues[k - 1] + 10),
+  );
 };
 
 export const HaloPanels: React.FC<PictureProps> = ({ f, palette }) => {
