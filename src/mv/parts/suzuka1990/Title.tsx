@@ -111,7 +111,8 @@ export const Title: React.FC<PictureProps> = ({ f }) => {
   // the push-in toward Turn 1 and the main straight on the last beats
   const push = ramp(t, len - 46, len, Easing.in(Easing.cubic));
   const t1 = VIEW.project(poseAt(T, 200));
-  const zoom = 1 + 5 * push;
+  // a slow drift in while the title holds, then the push-in
+  const zoom = 1 + 0.05 * ramp(t, 40, len - 46, Easing.linear) + 5 * push;
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>

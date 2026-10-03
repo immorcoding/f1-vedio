@@ -79,14 +79,16 @@ export const Settle: React.FC<PictureProps> = ({ f }) => {
   const shot = shotById("1.8");
   const helm = cueFrame("suzuka1990.helmets");
   const t = f - shot.from;
-  const len = shot.to - shot.from;
   // the dust sinks and thins over the first bar and a half
   const dustFade = ramp(t, 10, 150, Easing.inOut(Easing.quad));
   const left = ramp(f, helm, helm + 22, Easing.out(Easing.back(1.2)));
   const right = ramp(f, helm + 8, helm + 30, Easing.out(Easing.back(1.2)));
   const dim = ramp(f, helm, helm + 20);
   const text = ramp(f, helm + 34, helm + 52, Easing.out(Easing.back(1.8)));
-  const push = 1 + 0.06 * ramp(t, len - 112, len, Easing.inOut(Easing.quad));
+  // a slow push-in from the moment the panels land to the cut, the focus lines flickering like a held manga beat
+  const push = 1 + 0.1 * ramp(f, helm + 30, shot.to, Easing.inOut(Easing.quad));
+  const flicker = Math.floor(t / 5);
+  const bob = (k: number) => 6 * Math.sin((t + k) / 22);
   const L: Box = { x: 90, y: 70, w: 840, h: 700 };
   const R: Box = { x: 990, y: 70, w: 840, h: 700 };
   return (
@@ -108,25 +110,25 @@ export const Settle: React.FC<PictureProps> = ({ f }) => {
         />
         <g transform={`translate(960 470) scale(${push}) translate(-960 -470)`}>
           {left > 0 ? (
-            <g transform={`translate(${-(1 - left) * 1100} 0)`}>
+            <g transform={`translate(${-(1 - left) * 1100} ${bob(0)})`}>
               <HelmetPanel
                 car={MP4_5_PRO}
                 box={L}
                 facing="right"
                 id="s18-pro"
-                seed={4}
+                seed={4 + (flicker % 5)}
                 zoom={1}
               />
             </g>
           ) : null}
           {right > 0 ? (
-            <g transform={`translate(${(1 - right) * 1100} 0)`}>
+            <g transform={`translate(${(1 - right) * 1100} ${bob(30)})`}>
               <HelmetPanel
                 car={MP4_5B_SEN}
                 box={R}
                 facing="left"
                 id="s18-sen"
-                seed={9}
+                seed={9 + (flicker % 5)}
                 zoom={1}
               />
             </g>
