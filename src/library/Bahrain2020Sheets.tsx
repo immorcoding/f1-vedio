@@ -1,20 +1,11 @@
-// Review stills for the Bahrain 2020 assets (ticket #9): the 2020 car sheet, the Haas broken in two and both cars from
-// above (CarState.split, view "top"), and the fire in either palette (an open ART-8 decision: black and white or colour).
+// Review stills for the Bahrain 2020 assets (ticket #9; the 2020 car sheet is in CarSheet): the Haas broken in two and
+// both cars from above (CarState.split, view "top"), and the fire in either palette (an open ART-8 decision: black
+// and white or colour).
 import { AbsoluteFill } from "remotion";
 import { AT01, MangaCar, VF20 } from "../cars";
 import { INK, PAPER } from "../kit/colors";
 import { Fire, FIRE_PALETTES, type FirePaletteName } from "../kit/fire";
 import { CAPTION_FONT } from "../kit/lettering";
-import type { CarSheetProps } from "./CarSheet";
-
-// VF-20 above AT01, at the 2021 sheet's 275 px per metre.
-export const SHEET_2020: CarSheetProps = {
-  rows: [
-    { car: "VF20", x: 180, ground: 490 },
-    { car: "AT01", x: 180, ground: 1010 },
-  ],
-  pxPerMetre: 275,
-};
 
 const Label: React.FC<{ x: number; y: number; children: string }> = ({
   x,

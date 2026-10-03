@@ -33,6 +33,8 @@ export type CarState = {
   };
   // Top view only: the direction the nose points, degrees clockwise from screen right.
   heading?: number;
+  // Top view only: front-wheel steer angle, degrees (positive = to the car's right).
+  steer?: number;
   // Rotation of the wheels, degrees (clockwise as the car rolls forward). Drive it from the frame to make them roll.
   wheelAngle?: number;
   // Front wheels locked under braking: when set, they stay at this angle and ignore wheelAngle.
@@ -42,7 +44,12 @@ export type CarState = {
   tilt?: number;
   // Tyre sidewall band colour for this race (e.g. PIRELLI_2021.soft); defaults to the spec's.
   compound?: string;
+  // Tread: "dry" (slick or grooved: a smooth tyre, the default) or "wet" (intermediate/wet pattern cut into the
+  // shoulder), for races where the tyre type matters (Brazil 2008: GLO stays on dry tyres in the rain).
+  tread?: Tread;
 };
+
+export type Tread = "dry" | "wet";
 
 const svgId = (raw: string) => `car${raw.replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
@@ -52,15 +59,33 @@ const spokePath = (w: Wheel, r: number, n: number) =>
     return `M ${w.cx + Math.cos(a) * r * 0.22} ${w.cy + Math.sin(a) * r * 0.22} L ${w.cx + Math.cos(a) * r * 0.94} ${w.cy + Math.sin(a) * r * 0.94}`;
   }).join(" ");
 
+// Wet-weather tread seen from the side: slanted sipes cut into the shoulder all round, turning with the wheel.
+const wetSipes = (w: Wheel) =>
+  Array.from({ length: 30 }, (_, i) => {
+    const a = (i / 30) * Math.PI * 2;
+    const b = a + 0.07;
+    return `M ${w.cx + Math.cos(a) * (w.r - 1)} ${w.cy + Math.sin(a) * (w.r - 1)} L ${w.cx + Math.cos(b) * (w.r - 15)} ${w.cy + Math.sin(b) * (w.r - 15)}`;
+  }).join(" ");
+
 const NearWheel: React.FC<{
   car: CarSpec;
   w: Wheel;
   angle: number;
-  compound: string;
+  compound?: string;
+  tread: Tread;
   id: string;
-}> = ({ car, w, angle, compound, id }) => (
+}> = ({ car, w, angle, compound, tread, id }) => (
   <g>
     <circle cx={w.cx} cy={w.cy} r={w.r} fill={INK} />
+    {tread === "wet" ? (
+      <path
+        d={wetSipes(w)}
+        transform={`rotate(${-angle} ${w.cx} ${w.cy})`}
+        stroke="#5a5a5a"
+        strokeWidth={4}
+        strokeLinecap="round"
+      />
+    ) : null}
     <circle
       cx={w.cx}
       cy={w.cy}
@@ -69,14 +94,16 @@ const NearWheel: React.FC<{
       stroke="#2c2c2c"
       strokeWidth={3}
     />
-    <circle
-      cx={w.cx}
-      cy={w.cy}
-      r={w.r - 24}
-      fill="none"
-      stroke={compound}
-      strokeWidth={6}
-    />
+    {compound ? (
+      <circle
+        cx={w.cx}
+        cy={w.cy}
+        r={w.r - 24}
+        fill="none"
+        stroke={compound}
+        strokeWidth={6}
+      />
+    ) : null}
     <g transform={`rotate(${-angle} ${w.cx} ${w.cy})`}>
       {car.rim === "spoked" ? (
         <>
@@ -177,11 +204,18 @@ const FarWheel: React.FC<{ w: Wheel; id: string }> = ({ w, id }) => (
   </g>
 );
 
-// Side-view race helmet facing left (ART-13): shell with chin bar, tinted visor, livery stripes, top air intake and
-// rear spoiler, shaded with dots. Sized like a real helmet (about 0.29 m long) by the trace.
+// Side-view race helmet facing left (ART-13): shell with chin bar, tinted visor, livery stripes (or the driver's real
+// design), and on a modern shell the top air intake and rear spoiler; shaded with dots. Sized like a real helmet
+// (about 0.29 m long) by the trace.
 const Helmet: React.FC<{ car: CarSpec; id: string }> = ({ car, id }) => {
   const { cx, cy, r } = car.helmetAt;
-  const { base, stripe } = car.driver.helmet;
+  const {
+    base,
+    stripe,
+    trim = stripe,
+    shell: era = "modern",
+    design,
+  } = car.driver.helmet;
   const P = (x: number, y: number) => `${cx + x * r} ${cy + y * r}`;
   const shell = `M ${P(-0.98, 0.45)} C ${P(-1.08, -0.1)} ${P(-0.75, -0.98)} ${P(0.05, -1)} C ${P(0.7, -1)} ${P(1.05, -0.55)} ${P(1.02, 0.05)} L ${P(0.95, 0.6)} L ${P(-0.6, 0.7)} Z`;
   return (
@@ -191,31 +225,45 @@ const Helmet: React.FC<{ car: CarSpec; id: string }> = ({ car, id }) => {
           <path d={shell} />
         </clipPath>
       </defs>
-      <path
-        d={`M ${P(0.75, -0.75)} L ${P(1.02, -0.82)} L ${P(1.06, -0.58)} Z`}
-        fill={base}
-        stroke={INK}
-        strokeWidth={3}
-        strokeLinejoin="round"
-      />
-      <path
-        d={`M ${P(-0.16, -0.99)} L ${P(-0.12, -1.12)} L ${P(0.2, -1.12)} L ${P(0.24, -0.99)} Z`}
-        fill={INK}
-      />
+      {era === "modern" ? (
+        <>
+          <path
+            d={`M ${P(0.75, -0.75)} L ${P(1.02, -0.82)} L ${P(1.06, -0.58)} Z`}
+            fill={base}
+            stroke={INK}
+            strokeWidth={3}
+            strokeLinejoin="round"
+          />
+          <path
+            d={`M ${P(-0.16, -0.99)} L ${P(-0.12, -1.12)} L ${P(0.2, -1.12)} L ${P(0.24, -0.99)} Z`}
+            fill={INK}
+          />
+        </>
+      ) : null}
       <path d={shell} fill={base} />
       <g clipPath={`url(#${id}-helmet)`}>
-        <path
-          d={`M ${P(-0.75, -0.7)} C ${P(-0.2, -0.95)} ${P(0.5, -0.86)} ${P(1, -0.32)}`}
-          fill="none"
-          stroke={stripe}
-          strokeWidth={r * 0.2}
-        />
-        <path
-          d={`M ${P(0.1, -0.02)} C ${P(0.45, -0.04)} ${P(0.8, 0.02)} ${P(1.05, 0.18)}`}
-          fill="none"
-          stroke={stripe}
-          strokeWidth={r * 0.13}
-        />
+        {design ? (
+          <g transform={`translate(${cx} ${cy}) scale(${r})`}>
+            {design.map((a) => (
+              <path key={a.d} d={a.d} fill={a.color} />
+            ))}
+          </g>
+        ) : (
+          <>
+            <path
+              d={`M ${P(-0.75, -0.7)} C ${P(-0.2, -0.95)} ${P(0.5, -0.86)} ${P(1, -0.32)}`}
+              fill="none"
+              stroke={stripe}
+              strokeWidth={r * 0.2}
+            />
+            <path
+              d={`M ${P(0.1, -0.02)} C ${P(0.45, -0.04)} ${P(0.8, 0.02)} ${P(1.05, 0.18)}`}
+              fill="none"
+              stroke={trim}
+              strokeWidth={r * 0.13}
+            />
+          </>
+        )}
         <path
           d={`M ${P(-0.2, 0.15)} L ${P(1.1, 0.15)} L ${P(1.1, 0.9)} L ${P(-1.1, 0.9)} Z`}
           fill={`url(#${id}-dm)`}
@@ -418,6 +466,7 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
   const fw = car.frontWing;
   const wheelAngle = state.wheelAngle ?? 0;
   const compound = state.compound ?? car.compound;
+  const tread = state.tread ?? "dry";
   const [front, rear] = car.nearWheels;
   const pivot = { x: (front.cx + rear.cx) / 2, y: (front.cy + rear.cy) / 2 };
   const shade = car.shade ?? 1;
@@ -455,41 +504,65 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
         {car.rearWing.elements.map((d) => (
           <Ink key={d} d={d} w={5} />
         ))}
-        <Ink d={car.antenna} w={3} />
-        <path d={car.tcam} fill={INK} />
+        {car.antenna ? <Ink d={car.antenna} w={3} /> : null}
+        {car.tcam ? (
+          <path
+            d={car.tcam}
+            fill={car.tcamColor ?? INK}
+            stroke={INK}
+            strokeWidth={car.tcamColor ? 3 : 0}
+          />
+        ) : null}
 
-        {/* cockpit, seen through the open halo: far halo bar, HANS, driver, headrest */}
-        <path
-          d={car.haloFar}
-          fill="none"
-          stroke={INK}
-          strokeWidth={14}
-          strokeLinecap="round"
-        />
-        <path
-          d={car.haloFar}
-          fill="none"
-          stroke={p.chassis}
-          strokeWidth={7}
-          strokeLinecap="round"
-        />
-        <ellipse
-          cx={car.cockpit.hans.cx}
-          cy={car.cockpit.hans.cy}
-          rx={car.cockpit.hans.rx}
-          ry={car.cockpit.hans.ry}
-          fill="#1b1b1e"
-          stroke={INK}
-          strokeWidth={3}
-        />
+        {/* cockpit, seen through the open halo: far halo bar, HANS (or the open tub), driver, headrest */}
+        {car.haloFar ? (
+          <>
+            <path
+              d={car.haloFar}
+              fill="none"
+              stroke={INK}
+              strokeWidth={14}
+              strokeLinecap="round"
+            />
+            <path
+              d={car.haloFar}
+              fill="none"
+              stroke={p.chassis}
+              strokeWidth={7}
+              strokeLinecap="round"
+            />
+          </>
+        ) : null}
+        {car.cockpit.opening ? (
+          <path
+            d={car.cockpit.opening}
+            fill="#1b1b1e"
+            stroke={INK}
+            strokeWidth={3}
+            strokeLinejoin="round"
+          />
+        ) : null}
+        {car.cockpit.hans ? (
+          <ellipse
+            cx={car.cockpit.hans.cx}
+            cy={car.cockpit.hans.cy}
+            rx={car.cockpit.hans.rx}
+            ry={car.cockpit.hans.ry}
+            fill="#1b1b1e"
+            stroke={INK}
+            strokeWidth={3}
+          />
+        ) : null}
         <Helmet car={car} id={id} />
-        <path
-          d={car.cockpit.headrest}
-          fill={p.chassis}
-          stroke={INK}
-          strokeWidth={4}
-          strokeLinejoin="round"
-        />
+        {car.cockpit.headrest ? (
+          <path
+            d={car.cockpit.headrest}
+            fill={p.chassis}
+            stroke={INK}
+            strokeWidth={4}
+            strokeLinejoin="round"
+          />
+        ) : null}
 
         {/* body: livery colour per form region, then dot shading */}
         <path d={car.body} fill={p.sidepod} />
@@ -544,31 +617,48 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
         ))}
         <Ink d={car.body} w={6} />
 
-        {/* near side: halo bar, mirror, near front endplate, rear wing */}
-        <path
-          d={car.halo}
-          fill="none"
-          stroke={INK}
-          strokeWidth={16}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d={car.halo}
-          fill="none"
-          stroke={p.chassis}
-          strokeWidth={9}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d={car.halo}
-          fill="none"
-          stroke={PAPER}
-          strokeWidth={3}
-          strokeLinecap="round"
-          transform="translate(0 -3)"
-        />
+        {/* near side: halo bar or windscreen, mirror, near front endplate, rear wing */}
+        {car.halo ? (
+          <>
+            <path
+              d={car.halo}
+              fill="none"
+              stroke={INK}
+              strokeWidth={16}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d={car.halo}
+              fill="none"
+              stroke={p.chassis}
+              strokeWidth={9}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d={car.halo}
+              fill="none"
+              stroke={PAPER}
+              strokeWidth={3}
+              strokeLinecap="round"
+              transform="translate(0 -3)"
+            />
+          </>
+        ) : null}
+        {car.windscreen ? (
+          <>
+            <path
+              d={car.windscreen}
+              fill="#2b3038"
+              opacity={0.85}
+              stroke={INK}
+              strokeWidth={4}
+              strokeLinejoin="round"
+            />
+            <path d={car.windscreen} fill={`url(#${id}-dl)`} opacity={0.5} />
+          </>
+        ) : null}
         {car.haloAccent ? (
           <path
             d={car.haloAccent.d}
@@ -578,7 +668,12 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
             strokeLinecap="round"
           />
         ) : null}
-        <path d={car.mirror} fill={p.chassis} stroke={INK} strokeWidth={3} />
+        <path
+          d={car.mirror}
+          fill={p.mirror ?? p.chassis}
+          stroke={INK}
+          strokeWidth={3}
+        />
         <path
           d={fw.near}
           fill={p.wing}
@@ -603,8 +698,10 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
             strokeLinejoin="round"
           />
         ))}
-        <Ink d={car.rearWing.beam} w={7} />
-        <path d={car.rainLight} fill="#ff2a2a" stroke={INK} strokeWidth={2} />
+        {car.rearWing.beam ? <Ink d={car.rearWing.beam} w={7} /> : null}
+        {car.rainLight ? (
+          <path d={car.rainLight} fill="#ff2a2a" stroke={INK} strokeWidth={2} />
+        ) : null}
       </g>
 
       <NearWheel
@@ -612,6 +709,7 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
         w={front}
         angle={state.lockFront ?? wheelAngle}
         compound={compound}
+        tread={tread}
         id={id}
       />
       <NearWheel
@@ -619,6 +717,7 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
         w={rear}
         angle={wheelAngle}
         compound={compound}
+        tread={tread}
         id={id}
       />
     </>
@@ -629,7 +728,8 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
 // ground — lands on screen and how many px a metre is there; get it from the panel's camera (`camera.anchor({ x, z })`,
 // ART-9) or, on an asset sheet, write it by hand. The car is drawn at its real traced size. `facing: "left"` shows the
 // car's other side, nose to −x (a car seen from the other side of the track).
-// With view "top", `at` is the middle of the car's rear end on a top-down map and the nose points along state.heading.
+// With view "top", `at` is the middle of the car's rear end on a top-down map (TopCar; topAnchorAt places it by the
+// middle of the wheelbase instead), the nose points along state.heading and state.steer turns the front wheels.
 export const MangaCar: React.FC<{
   car: CarSpec;
   at: ScreenAnchor;
@@ -638,7 +738,7 @@ export const MangaCar: React.FC<{
   state?: CarState;
 }> = ({ car, at, view = "side", facing = "right", state = {} }) => {
   if (view === "top") {
-    return <TopCar car={car} at={at} heading={state.heading ?? 0} />;
+    return <TopCar car={car} at={at} state={state} />;
   }
   const scale = at.pxPerMetre / CAR_UNITS_PER_METRE;
   // Photo px → screen px.
@@ -679,7 +779,7 @@ export const MangaCar: React.FC<{
             textAnchor="middle"
             fontFamily="Arial Black, Arial, sans-serif"
             fontWeight={900}
-            fontSize={46 * k}
+            fontSize={(car.numberAt.size ?? 46) * k}
             fill={PAPER}
             stroke={INK}
             strokeWidth={3 * k}

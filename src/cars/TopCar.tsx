@@ -1,170 +1,243 @@
-// A car seen from directly above, for the top-down track maps (MOT-2): a schematic planform in the car's livery
-// colours, built from the traced spec's real length and axle positions plus the common dimensions of a 2017–2021 car
-// (2.0 m wide, 0.305 m / 0.405 m wide tyres, 0.67 m tall). There is no plan-view photo to trace, so it stays a
-// map-scale symbol: outline, livery blocks, tyres, halo and helmet — no detail that would need tracing (ART-11).
+// A car seen from directly above, for the top-down track maps (MOT-2). Reached through <MangaCar view="top" />.
+// Draws the car's CarPlan (planOf: its traced plan, or the modern planform built from the side trace) with the same
+// manga treatment as the side view: livery colours as flat blocks, a dot screen on the shadowed (right-hand) side, a
+// few ink lines, a white floodlight edge (ART-8, ART-11). Ink widths stay constant on screen at any map scale.
 import { useId } from "react";
 import type { ScreenAnchor } from "../kit/camera";
 import { INK, PAPER } from "../kit/colors";
 import { TonePattern } from "../kit/tone";
-import { carLength, carPoint, photoPxPerMetre, type CarSpec } from "./spec";
+import type { CarState } from "./MangaCar";
+import { planOf, roundedBox } from "./plan";
+import { carPoint, type CarSpec } from "./spec";
 
-const TYRE_D = 0.67;
-const HALF_TRACK = 0.8; // tyre centre lines, metres from the car's centre line
+const svgId = (raw: string) => `top${raw.replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
-// Mirror a list of (x, y) points (car frame, y to the car's right) into a closed outline symmetric about y = 0.
-const symmetric = (half: [number, number][]) => {
-  const right = half.map(([x, y]) => `${x} ${y}`);
-  const left = [...half].reverse().map(([x, y]) => `${x} ${-y}`);
-  return `M ${[...right, ...left].join(" L ")} Z`;
-};
-
+// `at` is the middle of the car's rear end on screen; the nose points along state.heading (degrees clockwise from
+// screen right). state.steer turns the front wheels, state.compound sets the tyre band.
 export const TopCar: React.FC<{
   car: CarSpec;
   at: ScreenAnchor;
-  heading: number;
-}> = ({ car, at, heading }) => {
-  const id = `top${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  state?: CarState;
+}> = ({ car, at, state = {} }) => {
+  const id = svgId(useId());
+  const plan = planOf(car);
   const p = car.paint;
-  const L = carLength(car);
-  const xf = carPoint(car, "frontAxle").x;
-  const xr = carPoint(car, "rearAxle").x;
-  // the helmet's place along the car, from the side-view trace
-  const xh = (car.frame.x - car.helmetAt.cx) / photoPxPerMetre(car);
-  const ink = 2.2 / at.pxPerMetre; // a 2.2 px pen at any map scale
-
-  const floor = symmetric([
-    [xr - 0.15, 0.55],
-    [xr + 0.4, 0.78],
-    [xf - 0.75, 0.78],
-    [xf - 0.45, 0.45],
-  ]);
-  const sidepods = symmetric([
-    [xr + 0.15, 0.26],
-    [xr + 0.75, 0.46],
-    [xh + 0.15, 0.7],
-    [xh + 0.35, 0.7],
-    [xh + 0.4, 0.3],
-  ]);
-  const cover = symmetric([
-    [0.35, 0.09],
-    [xr + 0.2, 0.2],
-    [xh - 0.35, 0.3],
-    [xh - 0.25, 0.32],
-  ]);
-  const chassis = symmetric([
-    [xh - 0.3, 0.33],
-    [xh + 0.9, 0.3],
-    [xf + 0.05, 0.2],
-    [L - 0.55, 0.12],
-    [L - 0.42, 0.07],
-  ]);
-  const frontWing = symmetric([
-    [L - 0.62, 0.98],
-    [L - 0.32, 0.98],
-    [L - 0.14, 0.5],
-    [L - 0.04, 0.12],
-  ]);
-  const rearWing = `M 0 -0.52 L 0.34 -0.52 L 0.34 0.52 L 0 0.52 Z`;
-  const tyre = (x: number, side: number, w: number) =>
-    `M ${x - TYRE_D / 2} ${side * HALF_TRACK - w / 2} L ${x + TYRE_D / 2} ${side * HALF_TRACK - w / 2} L ${x + TYRE_D / 2} ${side * HALF_TRACK + w / 2} L ${x - TYRE_D / 2} ${side * HALF_TRACK + w / 2} Z`;
+  const ppm = at.pxPerMetre;
+  const band = state.compound ?? car.compound;
+  const steer = state.steer ?? 0;
   const { base, stripe } = car.driver.helmet;
-
+  const h = plan.helmet;
+  // ink widths stay constant on screen
+  const w = (px: number) => px / ppm;
   return (
     <g
-      transform={`translate(${at.x} ${at.y}) rotate(${heading}) scale(${at.pxPerMetre})`}
+      transform={`translate(${at.x} ${at.y}) rotate(${state.heading ?? 0}) scale(${ppm})`}
     >
       <defs>
-        <TonePattern id={`${id}-d`} r={0.012} gap={0.05} />
+        <TonePattern id={`${id}-dot`} r={1.6 / ppm} gap={6 / ppm} />
+        <clipPath id={`${id}-shade`}>
+          <rect x={-1} y={0} width={8} height={1.5} />
+        </clipPath>
       </defs>
-      {/* tyres sit outside the body; wishbones run out to them */}
-      {[xf, xr].map((x) =>
-        [-1, 1].map((s) => (
-          <path
-            key={`${x}${s}`}
-            d={`M ${x} ${s * 0.25} L ${x} ${s * (HALF_TRACK - 0.1)}`}
-            stroke={INK}
-            strokeWidth={ink * 1.6}
-          />
-        )),
-      )}
-      {[-1, 1].map((s) => (
-        <g key={s}>
-          <path
-            d={tyre(xf, s, 0.305)}
-            fill={INK}
-            stroke={INK}
-            strokeWidth={ink}
-            strokeLinejoin="round"
-          />
-          <path
-            d={tyre(xr, s, 0.405)}
-            fill={INK}
-            stroke={INK}
-            strokeWidth={ink}
-            strokeLinejoin="round"
-          />
-        </g>
-      ))}
-      <path d={floor} fill={p.undercut} stroke={INK} strokeWidth={ink} />
-      <path d={sidepods} fill={p.sidepod} stroke={INK} strokeWidth={ink} />
-      <path d={sidepods} fill={`url(#${id}-d)`} opacity={0.35} />
-      <path d={cover} fill={p.cover} stroke={INK} strokeWidth={ink} />
-      <path d={chassis} fill={p.chassis} stroke={INK} strokeWidth={ink} />
-      {/* front wing, with the accent flap along its trailing edge */}
-      <path d={frontWing} fill={p.frontDeck} stroke={INK} strokeWidth={ink} />
-      <path
-        d={`M ${L - 0.6} -0.96 L ${L - 0.6} 0.96`}
-        stroke={car.frontWing.flap.color}
-        strokeWidth={0.1}
-      />
-      <path
-        d={`M ${L - 0.62} -1 L ${L - 0.32} -1 M ${L - 0.62} 1 L ${L - 0.32} 1`}
-        stroke={p.wing}
-        strokeWidth={0.06}
-      />
-      <path d={rearWing} fill={p.rearTop} stroke={INK} strokeWidth={ink} />
-      {car.wingLivery.length ? (
+      {/* suspension arms, under everything */}
+      {plan.suspension ? (
         <path
-          d={`M 0.04 -0.4 L 0.3 -0.4 L 0.3 0.4 L 0.04 0.4 Z`}
-          fill={car.wingLivery[car.wingLivery.length - 1].color}
+          d={plan.suspension}
+          stroke={INK}
+          strokeWidth={w(2.4)}
+          strokeLinecap="round"
         />
       ) : null}
-      {/* cockpit opening, helmet, halo */}
-      <ellipse cx={xh + 0.1} cy={0} rx={0.42} ry={0.23} fill={INK} />
+      {/* tyres: black, with the compound's sidewall band on the outer edge */}
+      {plan.wheels.map((t) => {
+        const s = Math.sign(t.y);
+        return (
+          <g
+            key={`${t.x}${t.y}`}
+            transform={t.steer ? `rotate(${steer} ${t.x} ${t.y})` : undefined}
+          >
+            <path d={roundedBox(t.x, t.y, t.length, t.width)} fill={INK} />
+            {band ? (
+              <path
+                d={`M ${t.x - 0.26} ${t.y + s * (t.width / 2 - 0.035)} L ${t.x + 0.26} ${t.y + s * (t.width / 2 - 0.035)}`}
+                stroke={band}
+                strokeWidth={Math.max(0.035, w(2.2))}
+                strokeLinecap="round"
+              />
+            ) : null}
+            <path
+              d={`M ${t.x - 0.2} ${t.y - s * 0.02} L ${t.x + 0.2} ${t.y - s * 0.02}`}
+              stroke="#3a3a3a"
+              strokeWidth={w(1.2)}
+            />
+          </g>
+        );
+      })}
+      {/* floor, sidepods (dot-shaded on the far side), stripes, engine cover, livery, tub */}
+      {plan.floor ? (
+        <path
+          d={plan.floor}
+          fill={p.undercut}
+          stroke={INK}
+          strokeWidth={w(2)}
+        />
+      ) : null}
+      <path
+        d={plan.sidepods}
+        fill={p.sidepod}
+        stroke={INK}
+        strokeWidth={w(2.2)}
+      />
+      <path
+        d={`${plan.sidepods} ${plan.chassis ?? ""}`}
+        fill={`url(#${id}-dot)`}
+        opacity={0.5 * (car.shade ?? 1)}
+        clipPath={`url(#${id}-shade)`}
+      />
+      {(plan.stripes ?? []).map((st) => (
+        <path
+          key={st.d}
+          d={st.d}
+          fill="none"
+          stroke={st.color}
+          strokeWidth={st.width}
+          strokeLinecap="round"
+        />
+      ))}
+      {plan.cover ? (
+        <path d={plan.cover} fill={p.cover} stroke={INK} strokeWidth={w(2)} />
+      ) : null}
+      {plan.livery.map((a) => (
+        <path key={a.d} d={a.d} fill={a.color} />
+      ))}
+      {plan.chassis ? (
+        <path
+          d={plan.chassis}
+          fill={p.chassis}
+          stroke={INK}
+          strokeWidth={w(2)}
+        />
+      ) : null}
+      {(plan.accents ?? []).map((a) => (
+        <path
+          key={a.d}
+          d={a.d}
+          fill={a.color}
+          stroke={INK}
+          strokeWidth={w(1.4)}
+        />
+      ))}
+      {plan.outline ? (
+        <path
+          d={plan.outline}
+          fill="none"
+          stroke={INK}
+          strokeWidth={w(2.4)}
+          strokeLinejoin="round"
+        />
+      ) : null}
+      {/* cockpit: opening, helmet from above (shell in the base colour, a stripe, the visor peak) */}
+      <path d={plan.cockpit} fill={INK} />
       <circle
-        cx={xh}
+        cx={h.x}
         cy={0}
-        r={0.13}
+        r={h.r}
         fill={base}
         stroke={INK}
-        strokeWidth={ink}
+        strokeWidth={w(1.6)}
       />
+      <path d={helmetStripe(h.x, h.r)} fill={stripe} />
+      {/* halo, wrapping the opening */}
+      {plan.halo ? (
+        <>
+          <path
+            d={plan.halo}
+            fill="none"
+            stroke={INK}
+            strokeWidth={0.1 + w(2)}
+            strokeLinecap="round"
+          />
+          <path
+            d={plan.halo}
+            fill="none"
+            stroke={p.chassis}
+            strokeWidth={0.07}
+            strokeLinecap="round"
+          />
+        </>
+      ) : null}
+      {(plan.mirrors ?? []).map((d) => (
+        <path
+          key={d}
+          d={d}
+          fill={p.mirror ?? p.chassis}
+          stroke={INK}
+          strokeWidth={w(1.4)}
+        />
+      ))}
+      {/* wings */}
       <path
-        d={`M ${xh - 0.12} 0 L ${xh + 0.12} 0`}
-        stroke={stripe}
-        strokeWidth={0.07}
-      />
-      <path
-        d={`M ${xh + 0.62} 0 L ${xh + 0.35} 0 M ${xh - 0.1} -0.3 C ${xh + 0.25} -0.34 ${xh + 0.38} -0.2 ${xh + 0.38} 0 C ${xh + 0.38} 0.2 ${xh + 0.25} 0.34 ${xh - 0.1} 0.3`}
-        fill="none"
+        d={plan.frontWing.deck}
+        fill={p.frontDeck}
         stroke={INK}
-        strokeWidth={0.1}
-        strokeLinecap="round"
+        strokeWidth={w(2)}
+        strokeLinejoin="round"
       />
+      {plan.frontWing.flap ? (
+        <path d={plan.frontWing.flap} fill={car.frontWing.flap.color} />
+      ) : null}
+      {plan.frontWing.endplates ? (
+        <path d={plan.frontWing.endplates} stroke={p.wing} strokeWidth={0.06} />
+      ) : null}
       <path
-        d={`M ${xh + 0.62} 0 L ${xh + 0.35} 0 M ${xh - 0.1} -0.3 C ${xh + 0.25} -0.34 ${xh + 0.38} -0.2 ${xh + 0.38} 0 C ${xh + 0.38} 0.2 ${xh + 0.25} 0.34 ${xh - 0.1} 0.3`}
-        fill="none"
-        stroke={car.haloAccent?.color ?? p.chassis}
-        strokeWidth={0.05}
-        strokeLinecap="round"
+        d={plan.rearWing.top}
+        fill={plan.rearWing.color ?? p.rearTop}
+        stroke={INK}
+        strokeWidth={w(2)}
       />
-      {/* sheen along the spine */}
-      <path
-        d={`M 0.5 -0.05 L ${xh - 0.4} -0.12`}
-        stroke={PAPER}
-        strokeWidth={0.04}
-        opacity={0.8}
-      />
+      {plan.rearWing.element ? (
+        <path d={plan.rearWing.element} stroke={INK} strokeWidth={w(1.4)} />
+      ) : null}
+      {plan.rearWing.endplates ? (
+        <path d={plan.rearWing.endplates} stroke={p.wing} strokeWidth={0.05} />
+      ) : null}
+      {/* floodlight on the left-hand upper edges */}
+      {plan.glints ? (
+        <path
+          d={plan.glints}
+          fill="none"
+          stroke={PAPER}
+          strokeWidth={w(1.6)}
+          strokeLinecap="round"
+          opacity={0.85}
+        />
+      ) : null}
     </g>
   );
+};
+
+// The helmet's stripe seen from above: a band across the crown, from the back of the shell to the visor.
+const helmetStripe = (x: number, r: number) => {
+  const k = r / 0.135;
+  const X = (u: number) => x + u * k;
+  const Y = (v: number) => v * k;
+  return `M ${X(-0.11)} ${Y(-0.05)} C ${X(0)} ${Y(-0.09)} ${X(0.06)} ${Y(-0.09)} ${X(0.13)} ${Y(-0.04)} L ${X(0.13)} ${Y(0.04)} C ${X(0.06)} ${Y(0.09)} ${X(0)} ${Y(0.09)} ${X(-0.11)} ${Y(0.05)} Z`;
+};
+
+// The `at` that puts the middle of the wheelbase on screen point `centre` for a car heading `heading` degrees: for
+// placing a top-view car by its centre (on a racing line, say) instead of by its rear end.
+export const topAnchorAt = (
+  car: CarSpec,
+  centre: ScreenAnchor,
+  heading: number,
+): ScreenAnchor => {
+  const mid =
+    ((carPoint(car, "rearAxle").x + carPoint(car, "frontAxle").x) / 2) *
+    centre.pxPerMetre;
+  const a = (heading * Math.PI) / 180;
+  return {
+    x: centre.x - Math.cos(a) * mid,
+    y: centre.y - Math.sin(a) * mid,
+    pxPerMetre: centre.pxPerMetre,
+  };
 };

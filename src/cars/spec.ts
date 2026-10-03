@@ -1,6 +1,18 @@
 // CarSpec: one traced car (ART-4, ART-10). Every path is in the pixel space of the car's side-on reference photo,
 // where the car faces left; `frame` maps photo pixels to the car's own frame. A new car is a new CarSpec traced the
 // same way — the renderer (MangaCar) never changes per car.
+//
+// Era features are optional fields, so one shape covers every car from 1989 to 2021 (ART-4, ART-13):
+// - halo (2018+): `halo` + `haloFar` (+ `haloAccent`); leave them out before 2018.
+// - cockpit: modern cars have `cockpit.headrest` + `cockpit.hans`; an open period cockpit has `cockpit.opening`
+//   (the dark tub between rim and helmet) and a tinted `windscreen`.
+// - details that came with later eras: `tcam` (+ `tcamColor`, which tells team-mates apart from 2008), `antenna`,
+//   `rainLight`, `rearWing.beam`; leave out what the car did not have.
+// - tyres: `compound` is the sidewall band colour (Pirelli 2011+); leave it out for plain sidewalls (Bridgestone,
+//   Goodyear). Dry or wet tread is a race state (CarState.tread), not car data.
+// - helmet: Driver.helmet `shell` ("modern" with air intake and spoiler, or "classic") and either the default two
+//   stripes (`stripe`, `trim`) or the real `design` as colour blocks.
+// - top view (`top`): built from the side trace for the modern planform, or traced in plan for another shape.
 
 export type Wheel = { cx: number; cy: number; r: number };
 export type Accent = { d: string; color: string };
@@ -14,13 +26,68 @@ export type Paint = {
   wing: string; // wing endplates
   frontDeck: string; // front wing surface
   rearTop: string; // rear wing seen from above
+  mirror?: string; // mirror housing, when it is not the chassis colour
 };
 
 // The driver in this car: race number and helmet colours (ART-5, ART-13). Two cars of one team share a CarSpec
 // and differ only here: `{ ...MP4_5, driver: PRO_1989 }`.
 export type Driver = {
   number: string;
-  helmet: { base: string; stripe: string };
+  helmet: {
+    base: string;
+    // The default design: a broad `stripe` over the crown and a thin `trim` stripe along the side (defaults to
+    // `stripe`).
+    stripe: string;
+    trim?: string;
+    // Shell of the era (ART-13): "modern" (default) has the top air intake and the rear spoiler; "classic" is the
+    // smooth full-face shell of the 1980s–90s without them.
+    shell?: "modern" | "classic";
+    // The real helmet design as colour blocks, drawn instead of the default stripes. Paths are in helmet units:
+    // origin at the helmet centre, 1 = helmet radius, helmet facing left (visor at -x), y down.
+    design?: Accent[];
+  };
+};
+
+// ── Top view (MangaCar view "top", MOT-2) ───────────────────────────────────────────────────────────────────────
+// Planform in metres: x forward from the rear end, y across (to the car's right, screen down when the car heads
+// screen right). Closed paths unless noted. TopCar draws it in the car's paint, layer by layer in this order.
+export type CarPlan = {
+  // Tyres: centre (x along, y across), diameter and width, m; the front ones `steer`.
+  wheels: {
+    x: number;
+    y: number;
+    length: number;
+    width: number;
+    steer?: boolean;
+  }[];
+  suspension?: string; // wishbones, ink lines (open path)
+  floor?: string; // paint.undercut
+  sidepods: string; // paint.sidepod; the dot screen shades its far (right-hand) half
+  stripes?: { d: string; color: string; width: number }[]; // painted stripes (open paths, width in m)
+  cover?: string; // engine cover / spine: paint.cover
+  livery: Accent[]; // colour blocks on the sidepods and cover, under the chassis
+  chassis?: string; // tub and nose: paint.chassis, dot-shaded like the sidepods
+  accents?: Accent[]; // small blocks with a thin ink edge, on top (nose tip, chevrons)
+  outline?: string; // one-piece body silhouette, inked again over the livery
+  cockpit: string; // the opening, ink
+  helmet: { x: number; r: number }; // helmet centre along the car and radius, m
+  halo?: string; // open path
+  mirrors?: string[]; // paint.mirror (or chassis), one path each
+  frontWing: { deck: string; flap?: string; endplates?: string };
+  rearWing: {
+    top: string;
+    color?: string;
+    element?: string;
+    endplates?: string;
+  };
+  glints?: string; // floodlight on the upper edges, white lines (open path)
+};
+
+// Colours seen only from above, for a car drawn with the modern planform (modernPlan). Real livery, no logos (ART-5).
+export type TopMarks = {
+  noseTip?: string; // the very front of the nose
+  coverStripe?: string; // a block on the engine cover / airbox
+  podStripe?: string; // a stripe along each sidepod top
 };
 
 export type CarSpec = {
@@ -42,8 +109,9 @@ export type CarSpec = {
   rimR: number;
   rim: "spoked" | "dark";
   rimAccent?: string;
-  // Default tyre sidewall band colour (Pirelli soft red, hard white, …); a scene can override it per race.
-  compound: string;
+  // Default tyre sidewall band colour (Pirelli soft red, hard white, …); a scene can override it per race (CarState).
+  // Leave it out for tyres without a coloured band (before 2011: Bridgestone, Goodyear).
+  compound?: string;
   body: string;
   // Form regions, each a closed path, clipped to the body.
   regions: {
@@ -63,25 +131,32 @@ export type CarSpec = {
     top: string;
     elements: string[];
     pylon: string;
-    beam: string;
+    beam?: string; // lower (beam) wing, where the car has one
   };
   // A few ink lines only (ART-11).
   panelLines: string[];
   suspension: string[];
   // Halo (ART-13): the near bar runs down from the front pylon past the helmet; the far bar sits higher behind it.
-  // The opening between them stays transparent.
-  halo: string;
-  haloFar: string;
+  // The opening between them stays transparent. Cars before 2018 have none: leave both out.
+  halo?: string;
+  haloFar?: string;
   cockpit: {
-    headrest: string;
-    hans: { cx: number; cy: number; rx: number; ry: number };
+    headrest?: string;
+    hans?: { cx: number; cy: number; rx: number; ry: number };
+    // Dark cockpit interior seen between the rim and the helmet (open period cockpits without a headrest wall).
+    opening?: string;
   };
   helmetAt: { cx: number; cy: number; r: number };
+  // Windscreen in front of the cockpit (period cars), drawn tinted on the near side.
+  windscreen?: string;
   mirror: string;
-  tcam: string;
-  antenna: string;
-  rainLight: string;
-  numberAt: { x: number; y: number };
+  tcam?: string;
+  // Colour of the T-camera pod (ink when left out). From 2008 on it tells a team's two cars apart.
+  tcamColor?: string;
+  antenna?: string;
+  rainLight?: string;
+  // Race number position (text baseline centre) and its height in photo px (default 46).
+  numberAt: { x: number; y: number; size?: number };
   // Where the car tears in two when it breaks up (CarState.split): a jagged polyline from above the car to below it,
   // running down the engine bulkhead between the survival cell (with the fuel cell) and the power unit. Only needed
   // for a car that is shown broken.
@@ -89,6 +164,9 @@ export type CarSpec = {
   // Strength of the dot shading on the chassis and sidepods, 1 (default) = as on the dark 2021 cars. A white livery
   // takes less, or the dots turn it grey.
   shade?: number;
+  // Top view. Leave it out for a car of the modern (2017–2021) shape: its planform is built from this side trace
+  // (modernPlan), coloured with `paint` and the top-only `marks`. A car of another shape carries its own `plan`.
+  top?: { marks?: TopMarks; plan?: CarPlan };
 };
 
 export const CAR_UNITS_PER_METRE = 250;
