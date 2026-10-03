@@ -99,7 +99,7 @@ export const Settle: React.FC<PictureProps> = ({ f }) => {
       <g filter={inkFilter()}>
         {/* the crash panel, held on its last frame, the cars at rest */}
         <CrashStage f={shot.from - 1} dustFade={dustFade} />
-        {/* falling grains of gravel as the dust sinks */}
+        {/* the scene dims behind the helmet panels */}
         <rect
           width={1920}
           height={1080}

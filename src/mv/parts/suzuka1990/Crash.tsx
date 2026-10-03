@@ -26,14 +26,21 @@ import {
 } from "../../../scenes/suzuka-1989/trackside";
 import { ramp, shotById, type PictureProps } from "./common";
 import { Debris, Dust, GravelTrap, NearKerb } from "./effects";
-import { cars17, HIT, SLIDE_TOTAL, slide17, Z_SEN_17 } from "./staging";
+import {
+  cars17,
+  drift17,
+  HIT,
+  SLIDE_TOTAL,
+  slide17,
+  Z_SEN_17,
+} from "./staging";
 
-// The panel's camera: 1.2 m up on the inside of Turn 1, level, f = 1700 px (ART-9).
+// The panel's camera: 1.8 m up on the inside of Turn 1, level, f = 1700 px (ART-9).
 export const CAM_17: Camera = pinhole({
   f: 1700,
-  horizon: 430,
+  horizon: 500,
   cx: 960,
-  height: 1.2,
+  height: 1.8,
 });
 // Track from the inside edge (5 m from the camera) to the outside edge 13 m further; a strip of grass, then the
 // gravel trap out to the guardrail.
@@ -64,7 +71,50 @@ export const anchorLeft = (
 ) => cam.anchor({ x: x + midM(car) - camX, z });
 
 // The camera pans with the slide, a little behind it, so the cars drift across the frame to the left as they stop.
-export const camX17 = (f: number) => -1.6 - 0.78 * slide17(f);
+export const camX17 = (f: number) => -2.6 - 0.9 * slide17(f);
+// ...and dollies after them as they slide away across the grass, so they stay a good size in the frame (m).
+export const camZ17 = (f: number) => 0.8 * drift17(f);
+// The layout as seen from the dollied camera: every depth less camZ.
+const layoutAt = (camZ: number): TracksideLayout => ({
+  ...LAYOUT_17,
+  nearEdge: LAYOUT_17.nearEdge - camZ,
+  farEdge: LAYOUT_17.farEdge - camZ,
+  rail: LAYOUT_17.rail - camZ,
+  fence: LAYOUT_17.fence - camZ,
+  stand: LAYOUT_17.stand - camZ,
+});
+
+// Skid marks: the track of each car's near and far tyres (front and rear axle) from the hit to frame f, on the ground,
+// seen from the dollied camera. Wheelbase middles from staging; axles ±half a wheelbase; tyres ±0.85 m across.
+const skids = (f: number, camX: number, camZ: number) => {
+  if (f <= HIT) return [];
+  const out: { d: string; w: number }[] = [];
+  const frames: number[] = [];
+  for (let k = HIT; k < f; k += 3) frames.push(k);
+  frames.push(f);
+  const cars = [
+    { key: "sen" as const, half: 2.94 / 2 },
+    { key: "pro" as const, half: 2.86 / 2 },
+  ];
+  for (const car of cars)
+    for (const axle of [-1, 1])
+      for (const side of [-0.85, 0.85]) {
+        // only the stretch still in front of the dollied camera
+        const pts = frames.flatMap((k) => {
+          const c = cars17(k)[car.key];
+          const x = c.x + axle * car.half - camX;
+          const z = c.z + side - camZ;
+          return z > 1.5 ? [CAM_17.project({ x, z })] : [];
+        });
+        if (pts.length < 2) continue;
+        const zMid = cars17(f)[car.key].z + side - camZ;
+        out.push({
+          d: `M ${pts.map((p) => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" L ")}`,
+          w: Math.max(2, 0.12 * CAM_17.pxPerMetre(Math.max(1, zMid))),
+        });
+      }
+  return out;
+};
 
 // Everything of the crash panel at song frame f, without the frame border and the sound effect (1.8 reuses it).
 export const CrashStage: React.FC<{ f: number; dustFade?: number }> = ({
@@ -73,11 +123,13 @@ export const CrashStage: React.FC<{ f: number; dustFade?: number }> = ({
 }) => {
   const t = (f - HIT) / 60;
   const camX = camX17(f);
+  const camZ = camZ17(f);
+  const layout = layoutAt(camZ);
   const c = cars17(f);
   const s = slide17(f);
   const moving = 1 - s / SLIDE_TOTAL;
-  const senA = anchorLeft(CAM_17, camX, MP4_5B_SEN, c.sen.x, c.sen.z);
-  const proA = anchorLeft(CAM_17, camX, F641_PRO, c.pro.x, c.pro.z);
+  const senA = anchorLeft(CAM_17, camX, MP4_5B_SEN, c.sen.x, c.sen.z - camZ);
+  const proA = anchorLeft(CAM_17, camX, F641_PRO, c.pro.x, c.pro.z - camZ);
   const wheel = (s / TYRE_R) * 57.3;
   // into the gravel: each car's dust starts as it crosses into the trap
   const inGravel = (z: number) =>
@@ -98,13 +150,25 @@ export const CrashStage: React.FC<{ f: number; dustFade?: number }> = ({
   const dSen = dustAt(senA, 4.3);
   return (
     <g>
-      <Trackside cam={CAM_17} camX={camX} layout={LAYOUT_17} />
+      <Trackside cam={CAM_17} camX={camX} layout={layout} />
       <GravelTrap
         cam={CAM_17}
         camX={camX}
-        z0={GRAVEL_17.z0}
-        z1={GRAVEL_17.z1}
+        z0={GRAVEL_17.z0 - camZ}
+        z1={GRAVEL_17.z1 - camZ}
       />
+      {/* the skid marks the four locked tyres of each car have left since the hit, across the track and grass */}
+      {skids(f, camX, camZ).map((d, i) => (
+        <path
+          key={i}
+          d={d.d}
+          fill="none"
+          stroke={INK}
+          strokeWidth={d.w}
+          strokeLinecap="round"
+          opacity={0.75}
+        />
+      ))}
       {/* PRO beyond, then SEN on the near side */}
       <Dust
         x={dPro.x}
@@ -158,7 +222,9 @@ export const CrashStage: React.FC<{ f: number; dustFade?: number }> = ({
         at={senA}
         state={{ wheelAngle: wheel, lockFront: 30, tilt: -bump(c.sen.z) * 0.8 }}
       />
-      <NearKerb cam={CAM_17} camX={camX} edge={LAYOUT_17.nearEdge} />
+      {layout.nearEdge > 1.6 ? (
+        <NearKerb cam={CAM_17} camX={camX} edge={layout.nearEdge} />
+      ) : null}
     </g>
   );
 };
@@ -174,7 +240,7 @@ export const Crash: React.FC<PictureProps> = ({ f }) => {
   // the contact: SEN's left front tyre against PRO's right rear tyre, halfway between the two cars' depths
   const camX = camX17(f);
   const c = cars17(f);
-  const zC = Z_SEN_17 + 1.06 + (c.sen.z - Z_SEN_17);
+  const zC = Z_SEN_17 + 1.06 + (c.sen.z - Z_SEN_17) - camZ17(f);
   const senFrontX = c.sen.x - 2.94 / 2;
   const contact = CAM_17.project({ x: senFrontX - camX, y: 0.34, z: zC });
   const star = ramp(f, HIT, HIT + 10, Easing.out(Easing.cubic));

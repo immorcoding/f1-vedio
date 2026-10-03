@@ -108,16 +108,16 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
   const pro = cars.find((c) => c.id === "PRO")!;
   // camera: on the front row at the start, running ahead of the leaders down the straight, opening onto Turn 1
   const look =
-    4 +
-    22 * ramp(tau, 0.3, 3, Easing.inOut(Easing.quad)) -
-    8 * ramp(tau, 4.6, 6.6);
+    2 +
+    7 * ramp(tau, 0.3, 3, Easing.inOut(Easing.quad)) -
+    3 * ramp(tau, 4.6, 6.6);
   const sMid = (sen.s + pro.s) / 2 + look;
   const centre = poseAt(T, sMid, 0.5);
   const ppm =
-    22 +
+    36 +
     4 * ramp(t, 0, 50) -
-    9 * ramp(tau, 0.2, 3, Easing.inOut(Easing.quad)) +
-    4 * ramp(tau, 4.4, 6.6);
+    14 * ramp(tau, 0.2, 3, Easing.inOut(Easing.quad)) +
+    8 * ramp(tau, 4.4, 6.6);
   const view = mapView({
     centre,
     rotation: ROTATION,
@@ -165,6 +165,53 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
           strokeWidth={2}
         />
         <path d={gravel(view)} fill={INK} opacity={0.6} />
+        {/* main grandstand beyond the left run-off: rows of seats under a roof */}
+        <path
+          d={band(view, -300, 160, -19, -33)}
+          fill={tone("mid")}
+          stroke={INK}
+          strokeWidth={2.5}
+        />
+        {Array.from({ length: 9 }, (_, i) => (
+          <path
+            key={`row-${i}`}
+            d={view.path(samplePath(T, -300, 160, -20.5 - 1.5 * i, 3))}
+            fill="none"
+            stroke={INK}
+            strokeWidth={Math.max(1.5, 0.12 * ppm)}
+          />
+        ))}
+        <path
+          d={band(view, -300, 160, -29, -36)}
+          fill={PAPER}
+          stroke={INK}
+          strokeWidth={3}
+        />
+        {/* pit garages beyond the pit lane: a dark block of doors under a white roof edge */}
+        <path
+          d={band(view, -420, 190, 18.5, 32)}
+          fill={tone("dark")}
+          stroke={INK}
+          strokeWidth={2.5}
+        />
+        {Array.from({ length: 51 }, (_, i) => -420 + 12 * i).map((s0) => {
+          const a = view.project(poseAt(T, s0, 18.5));
+          const b = view.project(poseAt(T, s0, 24));
+          return (
+            <path
+              key={`door-${s0}`}
+              d={`M ${a.x} ${a.y} L ${b.x} ${b.y}`}
+              stroke={PAPER}
+              strokeWidth={Math.max(2, 0.15 * ppm)}
+            />
+          );
+        })}
+        <path
+          d={band(view, -420, 190, 24, 32)}
+          fill={PAPER}
+          stroke={INK}
+          strokeWidth={3}
+        />
         {/* pit lane and pit wall on the right of the straight; the pit exit joins after the Turn 1 entry */}
         <path
           d={band(view, -420, 215, 9, 17)}
