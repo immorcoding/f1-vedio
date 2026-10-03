@@ -238,7 +238,7 @@ export const WreckShot: React.FC<PictureProps> = ({ f, palette }) => {
     y: 0.9 * (1 - u) + HALO_WORLD.y * u,
     z: REAR_Z + (HALO_WORLD.z - REAR_Z) * u,
   };
-  const cam = zoomCam(WRECK_CAM, target, 0.82 + 0.75 * u + 0.01 * hb, {
+  const cam = zoomCam(WRECK_CAM, target, 0.82 + 0.45 * u + 0.01 * hb, {
     x: 960 + 160 * (1 - u),
     y: 560,
   });
@@ -375,11 +375,41 @@ const HaloScorch: React.FC<{ cam: Camera; f: number }> = ({ cam, f }) => {
 
 // Panel layout of shot 3.5: four panels, one more on each bar, each one closer on the halo.
 const PANELS = [
-  { x: 40, y: 40, w: 1100, h: 480, zoom: 1.4 },
+  { x: 40, y: 40, w: 1100, h: 480, zoom: 1.15 },
   { x: 1164, y: 40, w: 716, h: 480, zoom: 2.0 },
   { x: 40, y: 544, w: 716, h: 496, zoom: 2.7 },
   { x: 780, y: 544, w: 1100, h: 496, zoom: 3.6 },
 ];
+
+type Rect = { x: number; y: number; w: number; h: number };
+// The page with 1, 2, 3 and 4 panels on it: every layout fills the frame; the last one is PANELS.
+const LAYOUTS: Rect[][] = [
+  [{ x: 0, y: 0, w: 1920, h: 1080 }],
+  [
+    { x: 40, y: 40, w: 1100, h: 1000 },
+    { x: 1164, y: 40, w: 716, h: 1000 },
+  ],
+  [
+    { x: 40, y: 40, w: 1100, h: 480 },
+    { x: 1164, y: 40, w: 716, h: 1000 },
+    { x: 40, y: 544, w: 1100, h: 496 },
+  ],
+  PANELS,
+];
+const lerpRect = (a: Rect, b: Rect, u: number): Rect => ({
+  x: a.x + (b.x - a.x) * u,
+  y: a.y + (b.y - a.y) * u,
+  w: a.w + (b.w - a.w) * u,
+  h: a.h + (b.h - a.h) * u,
+});
+// Panel i's rectangle at frame f: the panels on the page slide into the next layout over the 18 frames before the
+// next panel lands.
+const panelRect = (i: number, f: number, cues: number[]): Rect => {
+  const k = cues.filter((c) => f >= c).length; // panels on the page
+  const here = LAYOUTS[k - 1][i];
+  if (k >= cues.length) return here;
+  return lerpRect(here, LAYOUTS[k][i], ramp(f, cues[k] - 18, cues[k]));
+};
 
 export const HaloPanels: React.FC<PictureProps> = ({ f, palette }) => {
   const cues = [1, 2, 3, 4].map((n) => cueFrame(`bahrain2020.panel${n}`));
@@ -391,31 +421,6 @@ export const HaloPanels: React.FC<PictureProps> = ({ f, palette }) => {
         <TonePattern id="b35-soot" r={2.4} gap={6} />
       </defs>
       <rect width={1920} height={1080} fill={INK} />
-      {/* the page is laid out from the start: slots waiting for their panel are dark tone in an open border */}
-      {PANELS.map((p, i) =>
-        f >= cues[i] ? null : (
-          <g key={`slot${i}`}>
-            <rect
-              x={p.x}
-              y={p.y}
-              width={p.w}
-              height={p.h}
-              fill="url(#b35-dark)"
-              opacity={0.35}
-            />
-            <rect
-              x={p.x}
-              y={p.y}
-              width={p.w}
-              height={p.h}
-              fill="none"
-              stroke={PAPER}
-              strokeWidth={6}
-              opacity={0.6}
-            />
-          </g>
-        ),
-      )}
       {PANELS.map((p, i) => {
         if (f < cues[i]) return null;
         const age = f - cues[i];
@@ -435,15 +440,9 @@ export const HaloPanels: React.FC<PictureProps> = ({ f, palette }) => {
           y: HALO_WORLD.y + look.dy,
           z: HALO_WORLD.z,
         };
-        // panel 1 opens full-frame, then settles into its place on the page as panel 2 lands
-        const settle = i === 0 ? ramp(f, cues[1] - 24, cues[1]) : 1;
-        const r = {
-          x: p.x * settle,
-          y: p.y * settle,
-          w: 1920 + (p.w - 1920) * settle,
-          h: 1080 + (p.h - 1080) * settle,
-        };
-        const cam = zoomCam(WRECK_CAM, target, zoom * (r.w / p.w) ** 0.5, {
+        // the page re-lays itself as each panel lands, so the frame is always full
+        const r = panelRect(i, f, cues);
+        const cam = zoomCam(WRECK_CAM, target, zoom * Math.sqrt(r.w / p.w), {
           x: r.x + r.w * (i % 2 ? 0.45 : 0.55),
           y: r.y + r.h * 0.52,
         });
@@ -462,7 +461,7 @@ export const HaloPanels: React.FC<PictureProps> = ({ f, palette }) => {
                 f={f + i * 11}
                 fireSeed={`p${i}`}
                 palette={palette}
-                intensity={[1, 0.8, 0.9, 0.5][i]}
+                intensity={[0.8, 0.8, 0.9, 0.5][i]}
                 noGlow
                 fireDetail={zoom}
                 tonePrefix="b35"
