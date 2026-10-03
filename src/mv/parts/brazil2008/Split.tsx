@@ -1,8 +1,8 @@
 // Shot 2.3 (bars 39–42): the split page. Top left: MAS's Ferrari crosses the line in front of the grandstand. Top
 // right (easter egg, facts.md): the Ferrari garage starts to celebrate — at that moment, with HAM sixth, Massa is
 // champion. Bottom, full width: the same moment out on the circuit — HAM on VET's gearbox in the spray, sixth
-// (facts.md: from lap 69 to the last corners). The page is laid out from the first frame — panels waiting for their
-// beat show the rain on a dark screen — and each panel's picture drops in on its downbeat, one per bar.
+// (facts.md: from lap 69 to the last corners). The whole page is there from the first beat (the three panels slide
+// in within a quarter second); on bar 40 the garage, which has been watching the monitors, erupts.
 import { F2008, MP4_23, STR3 } from "../../../cars";
 import { INK } from "../../../kit/colors";
 import { Rain } from "../../../kit/rain";
@@ -62,11 +62,10 @@ const Waiting: React.FC<{ box: typeof MAS_BOX; t: number; seed: string }> = ({
 export const Split: React.FC<{ st: ShotTime }> = ({ st }) => {
   const { t } = st;
   const garageIn = secondsInShot(st, at(40));
-  const hamIn = secondsInShot(st, at(41));
   const slide = (t0: number) => ramp(t, t0, t0 + 0.25);
   const sMas = slide(0);
-  const sGar = slide(garageIn);
-  const sHam = slide(hamIn);
+  const sGar = slide(0.12);
+  const sHam = slide(0.24);
   // MAS: the camera pans with him; the line slides under his front wheels at ~0.6 s
   const camMas = 58 * t;
   const joy = ramp(t, garageIn, garageIn + 0.6);
@@ -95,10 +94,10 @@ export const Split: React.FC<{ st: ShotTime }> = ({ st }) => {
           />
         </Panel>
       </g>
-      {t >= garageIn ? (
+      {t >= 0.12 ? (
         <g opacity={sGar} transform={`translate(${60 * (1 - sGar)} 0)`}>
           <Panel box={GARAGE_BOX} view={{ x: 180, y: 120, w: 1560, h: 1040 }}>
-            <Garage t={t - garageIn} joy={joy} />
+            <Garage t={t} joy={joy} />
             <path
               d={focusLines(960, 520, 560, 90, Math.floor(t * 8))}
               fill={INK}
@@ -107,7 +106,7 @@ export const Split: React.FC<{ st: ShotTime }> = ({ st }) => {
           </Panel>
         </g>
       ) : null}
-      {t >= hamIn ? (
+      {t >= 0.24 ? (
         <g opacity={sHam} transform={`translate(0 ${60 * (1 - sHam)})`}>
           <Panel box={HAM_BOX} view={{ x: 0, y: 420, w: 1920, h: 512 }}>
             <RainCloseup

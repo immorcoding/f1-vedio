@@ -15,8 +15,8 @@ const VIEW = fitMap(T, { x: 1060, y: 90, w: 760, h: 900 }, 0, 0.04);
 
 export const Title: React.FC<{ st: ShotTime }> = ({ st }) => {
   const { t, dur } = st;
-  const draw = ramp(t, 0.15, dur * 0.85);
-  const title = ramp(t, 0.5, 1.5);
+  const draw = 0.25 + 0.75 * ramp(t, 0, dur * 0.8);
+  const title = 0.4 + 0.6 * ramp(t, 0, 0.7);
   const rain = ramp(t, 0.2, dur * 0.6);
   const push = 1 + 0.04 * (t / dur);
   return (

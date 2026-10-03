@@ -21,7 +21,7 @@ export const Line: React.FC<{ st: ShotTime }> = ({ st }) => {
   // HAM's rear end along the track, and where the camera keeps him in the frame
   const crossAt = 1.4;
   const xw = LINE_X + V * (t - crossAt) - front;
-  const rel = -9 + 7 * ramp(t, 0, 1.8) + 0.8 * ramp(t, crossAt, dur);
+  const rel = -5.5 + 3.5 * ramp(t, 0, 1.8) + 0.8 * ramp(t, crossAt, dur);
   const camX = xw - rel;
   const flash = hit(t, crossAt, 0.15);
   const settle = ramp(t, crossAt + 0.8, dur);

@@ -55,43 +55,50 @@ type Person = {
   joy: number;
 };
 
-// Two groups spilling forward, overlapping, at different distances (scale).
+// Six people in a line along the front of the garage, about a metre apart so raised arms never cross anyone
+// (ART-18), alternating mechanics and family, near the same depth.
 const PEOPLE: (Person & { scale: number })[] = [
   {
-    x: 330,
+    x: 300,
     outfit: MECHANIC,
     facing: "right",
     phase: 0.1,
     joy: 1,
-    scale: 0.86,
-  },
-  { x: 470, outfit: GUEST, facing: "left", phase: 0.55, joy: 0.85, scale: 0.9 },
-  { x: 590, outfit: MECHANIC, facing: "right", phase: 0.3, joy: 1, scale: 1.0 },
-  {
-    x: 1080,
-    outfit: GUEST_DARK,
-    facing: "right",
-    phase: 0.8,
-    joy: 0.75,
-    scale: 0.88,
-  },
-  {
-    x: 1220,
-    outfit: MECHANIC,
-    facing: "left",
-    phase: 0.05,
-    joy: 1,
-    scale: 1.04,
-  },
-  {
-    x: 1370,
-    outfit: MECHANIC,
-    facing: "right",
-    phase: 0.65,
-    joy: 0.95,
     scale: 0.92,
   },
-  { x: 1530, outfit: GUEST, facing: "left", phase: 0.4, joy: 0.8, scale: 1.0 },
+  {
+    x: 560,
+    outfit: GUEST,
+    facing: "left",
+    phase: 0.55,
+    joy: 0.85,
+    scale: 0.95,
+  },
+  { x: 820, outfit: MECHANIC, facing: "right", phase: 0.3, joy: 1, scale: 1.0 },
+  {
+    x: 1100,
+    outfit: GUEST_DARK,
+    facing: "left",
+    phase: 0.8,
+    joy: 0.75,
+    scale: 0.94,
+  },
+  {
+    x: 1360,
+    outfit: MECHANIC,
+    facing: "right",
+    phase: 0.05,
+    joy: 1,
+    scale: 1.0,
+  },
+  {
+    x: 1620,
+    outfit: MECHANIC,
+    facing: "left",
+    phase: 0.65,
+    joy: 0.95,
+    scale: 0.93,
+  },
 ];
 
 // The garage panel, laid out for a 1920×1080 frame. `t` seconds; `joy` 0–1 builds the celebration.
@@ -182,7 +189,7 @@ export const Garage: React.FC<{ t: number; joy: number }> = ({ t, joy }) => {
           const up = Math.sin(beat * Math.PI);
           const hop = up * 0.2 * j;
           const pose = cheer(j * (0.85 + 0.15 * up), up, (1 - up) * j);
-          const ground = floor - 60 + (80 * (p.scale - 0.86)) / 0.18;
+          const ground = floor - 30 + (60 * (p.scale - 0.92)) / 0.08;
           return (
             <Figure
               key={i}
