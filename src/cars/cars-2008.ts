@@ -6,10 +6,59 @@
 // No halo (pre-2018) and Bridgestone tyres without a coloured sidewall band; the tread (dry grooved / wet) is a
 // MangaCar state. Scale: the MP4-23's documented 3.10 m wheelbase gives 353 px/m on its frame; the other cars are
 // scaled by the same Bridgestone tyre (0.58 m measured on that frame).
-import type { CarSpec } from "./spec";
+import { modernPlan } from "./plan";
+import type { CarPlan, CarSpec, TopMarks } from "./spec";
 
 // Photo px → car units (250 per metre), from a tyre radius in frame px: the tyre is 0.577 m across.
 const kFromTyre = (r: number) => (250 * 0.577) / (2 * r);
+
+// Scale the across-the-car (y) coordinates of a plan path (M/L/C/Q pairs, as modernPlan writes them).
+const scaleY = (d: string | undefined, k: number) =>
+  d?.replace(
+    /(-?\d*\.?\d+(?:e-?\d+)?)\s+(-?\d*\.?\d+(?:e-?\d+)?)/g,
+    (_, x: string, y: string) => `${x} ${Number(y) * k}`,
+  );
+
+// The 2008 planform: the modern one built from the side trace (lengths from the trace, ART-10), narrowed to the 2008
+// regulations — 1.8 m overall, front wing 1.4 m and rear wing 1.0 m wide, grooved tyres 0.27 m (front) and 0.355 m
+// (rear) across the tread, so the front wheels' outer edges sit at ±0.9 m (ART-15).
+const plan2008 = (car: CarSpec, marks: TopMarks = {}): CarPlan => {
+  const m = modernPlan(car, marks);
+  const body = 0.9;
+  const s = (d: string | undefined) => scaleY(d, body);
+  return {
+    ...m,
+    wheels: m.wheels.map((w) =>
+      w.steer
+        ? { ...w, y: Math.sign(w.y) * 0.765, width: 0.27 }
+        : { ...w, y: Math.sign(w.y) * 0.72, width: 0.355 },
+    ),
+    suspension: s(m.suspension),
+    // bodywork between the wheels is at most 1.4 m wide
+    floor: scaleY(m.floor, 0.85),
+    sidepods: s(m.sidepods)!,
+    stripes: m.stripes?.map((st) => ({ ...st, d: s(st.d)! })),
+    cover: s(m.cover),
+    livery: m.livery.map((a) => ({ ...a, d: s(a.d)! })),
+    chassis: s(m.chassis),
+    accents: m.accents?.map((a) => ({ ...a, d: s(a.d)! })),
+    inlets: m.inlets?.map((d) => s(d)!),
+    mirrors: m.mirrors?.map((d) => s(d)!),
+    cockpit: m.cockpit,
+    frontWing: {
+      deck: scaleY(m.frontWing.deck, 0.7)!,
+      flap: scaleY(m.frontWing.flap, 0.7),
+      endplates: scaleY(m.frontWing.endplates, 0.7),
+    },
+    rearWing: {
+      ...m.rearWing,
+      top: scaleY(m.rearWing.top, 0.95)!,
+      element: scaleY(m.rearWing.element, 0.95),
+      endplates: scaleY(m.rearWing.endplates, 0.95),
+    },
+    glints: s(m.glints),
+  };
+};
 
 export const MP4_23: CarSpec = {
   name: "2008 McLaren-Mercedes MP4-23",
@@ -124,6 +173,7 @@ export const MP4_23: CarSpec = {
   antenna: "M 527 420 L 527 398",
   rainLight: "M 1795 545 L 1812 545 L 1812 556 L 1795 556 Z",
   numberAt: { x: 1330, y: 372 },
+  tyreGrooves: 4,
 };
 
 // Traced on Massa's car at Sepang 2008; the engine-cover fin it carried at Interlagos is added from the Brazil photo
@@ -215,6 +265,7 @@ export const F2008: CarSpec = {
   antenna: "M 470 573 L 470 550",
   rainLight: "M 1700 676 L 1716 676 L 1716 688 L 1700 688 Z",
   numberAt: { x: 1300, y: 500 },
+  tyreGrooves: 4,
 };
 
 // Traced on Bourdais's car in Friday practice at Fuji 2008 (Morio, CC BY-SA 3.0), mirrored to face left and levelled
@@ -316,6 +367,7 @@ export const STR3: CarSpec = {
   antenna: "M 743 503 L 743 480",
   rainLight: "M 1678 615 L 1692 615 L 1692 627 L 1678 627 Z",
   numberAt: { x: 1300, y: 420 },
+  tyreGrooves: 4,
 };
 
 // Traced on the TF108 at the 2008 Goodwood Festival of Speed (Supermac1961, CC BY 2.0), mirrored to face left and
@@ -323,6 +375,8 @@ export const STR3: CarSpec = {
 // car at Monza 2008 (Jane Belinda Smith, CC BY 2.0), which also gives the Brazil-race details (lime T-camera, #12).
 export const TF108: CarSpec = {
   name: "2008 Toyota TF108",
+  // white livery: light dots, or the white turns grey
+  shade: 0.45,
   reference: "references/cars-2008/TF108-side.png",
   frame: { x: 1675, ground: 805, k: kFromTyre(100) },
   driver: {
@@ -340,6 +394,11 @@ export const TF108: CarSpec = {
   },
   // Toyota red with its brushed, flame-like trailing edges: nose, sidepod, fin
   livery: [
+    // dark coke-bottle area between the engine cover and the tail of the sidepod
+    {
+      d: "M 1138 640 L 1379 631 L 1393 702 L 1391 772 L 1286 770 L 1282 745 C 1247 720 1208 694 1178 678 C 1163 668 1148 655 1138 640 Z",
+      color: "#232427",
+    },
     {
       d: "M 278 669 L 496 593 L 529 593 L 599 598 L 559 606 L 616 615 L 564 622 L 599 630 L 538 633 L 557 706 L 277 701 Z",
       color: "#d9161c",
@@ -427,7 +486,17 @@ export const TF108: CarSpec = {
   antenna: "M 489 603 L 490 565",
   rainLight: "M 1657 711 L 1672 711 L 1672 723 L 1657 723 Z",
   numberAt: { x: 1250, y: 525 },
+  tyreGrooves: 4,
 };
+
+// Top views (ART-15): the 2008 planform in each car's paint, with the colours seen from above.
+const TOP_MARKS: [CarSpec, TopMarks][] = [
+  [MP4_23, { podStripe: "#e2231a" }],
+  [F2008, { coverStripe: "#f4f4f2" }],
+  [STR3, { coverStripe: "#d7262b", podStripe: "#d7262b", noseTip: "#c8a13a" }],
+  [TF108, { podStripe: "#d9161c", noseTip: "#d9161c" }],
+];
+for (const [car, marks] of TOP_MARKS) car.top = { plan: plan2008(car, marks) };
 
 export const CARS_2008: Record<"MP4-23" | "TF108" | "STR3" | "F2008", CarSpec> =
   {

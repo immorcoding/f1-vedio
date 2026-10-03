@@ -6,9 +6,9 @@ import { useId } from "react";
 import type { ScreenAnchor } from "../kit/camera";
 import { INK, PAPER } from "../kit/colors";
 import { TonePattern } from "../kit/tone";
-import type { CarState } from "./MangaCar";
+import type { CarState, Tread } from "./MangaCar";
 import { planOf, roundedBox } from "./plan";
-import { carPoint, type CarSpec } from "./spec";
+import { carPoint, type CarPlan, type CarSpec } from "./spec";
 
 const svgId = (raw: string) => `top${raw.replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
@@ -82,6 +82,12 @@ export const TopCar: React.FC<{
               d={`M ${t.x - 0.2} ${t.y - s * 0.02} L ${t.x + 0.2} ${t.y - s * 0.02}`}
               stroke="#3a3a3a"
               strokeWidth={w(1.2)}
+            />
+            <TreadMarks
+              t={t}
+              tread={state.tread ?? "dry"}
+              grooves={car.tyreGrooves ?? 0}
+              ink={w(1.6)}
             />
           </g>
         );
@@ -264,6 +270,41 @@ export const TopCar: React.FC<{
       ) : null}
     </g>
   );
+};
+
+// The tread on a tyre seen from above (MOT-2): a dry tyre of a grooved era (CarSpec.tyreGrooves, e.g. the 2008
+// Bridgestones) shows its longitudinal grooves, a slick shows nothing; a wet tyre shows chevron sipes across the
+// tread for any car.
+const TreadMarks: React.FC<{
+  t: CarPlan["wheels"][number];
+  tread: Tread;
+  grooves: number;
+  ink: number;
+}> = ({ t, tread, grooves, ink }) => {
+  const half = t.length / 2 - 0.05;
+  if (tread === "wet") {
+    const n = 7;
+    const d = Array.from({ length: n }, (_, i) => {
+      const x = t.x - half + ((i + 0.5) / n) * 2 * half;
+      const hw = t.width / 2 - 0.03;
+      return `M ${x - 0.05} ${t.y - hw} L ${x + 0.03} ${t.y} L ${x - 0.05} ${t.y + hw}`;
+    }).join(" ");
+    return (
+      <path
+        d={d}
+        fill="none"
+        stroke="#8a8a8a"
+        strokeWidth={ink}
+        strokeLinejoin="round"
+      />
+    );
+  }
+  if (!grooves) return null;
+  const d = Array.from({ length: grooves }, (_, i) => {
+    const y = t.y - t.width / 2 + ((i + 1) / (grooves + 1)) * t.width;
+    return `M ${t.x - half} ${y} L ${t.x + half} ${y}`;
+  }).join(" ");
+  return <path d={d} stroke="#6a6a6a" strokeWidth={ink} />;
 };
 
 // Both endplates of a wing seen from above: thin plates in the wing colour, inked so a light one reads on paper.

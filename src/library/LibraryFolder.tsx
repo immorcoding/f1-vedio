@@ -11,7 +11,12 @@ import { CarSheet, SHEETS } from "./CarSheet";
 import { CAR_STATES_FRAMES, CarStates } from "./CarStates";
 import { KitSheet } from "./KitSheet";
 import { SuzukaTracksideSheet } from "./SceneSheets";
-import { AllTopsSheet, TOP_SHEET_2021, TopCarSheet } from "./TopCarSheet";
+import {
+  AllTopsSheet,
+  TOP_SHEET_2021,
+  TOP_SHEETS_2008,
+  TopCarSheet,
+} from "./TopCarSheet";
 import { TRACK_SHEETS, TrackSheet } from "./TrackSheet";
 
 const SIZE = { width: 1920, height: 1080 };
@@ -37,6 +42,15 @@ export const LibraryFolder: React.FC = () => (
       {...SIZE}
     />
     <Still id="Cars-Top-All-Sheet" component={AllTopsSheet} {...SIZE} />
+    {(["A", "B"] as const).map((k) => (
+      <Still
+        key={k}
+        id={`Cars-2008-Top-Sheet-${k}`}
+        component={TopCarSheet}
+        defaultProps={TOP_SHEETS_2008[k]}
+        {...SIZE}
+      />
+    ))}
     <Composition
       id="Cars-States"
       component={CarStates}

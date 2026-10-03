@@ -120,6 +120,9 @@ export type CarSpec = {
   // Default tyre sidewall band colour (Pirelli soft red, hard white, …); a scene can override it per race (CarState).
   // Leave it out for tyres without a coloured band (before 2011: Bridgestone, Goodyear).
   compound?: string;
+  // Longitudinal grooves in a dry tyre's tread, seen in the top view (4 on the 2008 grooved Bridgestones); leave it
+  // out for slicks.
+  tyreGrooves?: number;
   body: string;
   // Form regions, each a closed path, clipped to the body.
   regions: {
