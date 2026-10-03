@@ -1,13 +1,20 @@
 // Review sheet for the top-view cars: each car's top view directly under its side view at the same scale, so the
 // axles, cockpit, helmet and wings must line up vertically (the modern top view is built from the side trace, ART-10).
 import { AbsoluteFill } from "remotion";
-import { CARS, carPoint, MangaCar, PIRELLI_2021, type CarId } from "../cars";
+import {
+  CARS,
+  carPoint,
+  MangaCar,
+  PIRELLI_2021,
+  type CarId,
+  type Tread,
+} from "../cars";
 import { INK, PAPER } from "../kit/colors";
 
 const PPM = 170;
 
 export type TopCarSheetProps = {
-  rows: { car: CarId; compound?: string; y: number }[];
+  rows: { car: CarId; compound?: string; tread?: Tread; y: number }[];
 };
 
 export const TOP_SHEET_2021: TopCarSheetProps = {
@@ -41,11 +48,26 @@ export const AllTopsSheet: React.FC = () => (
     </svg>
   </AbsoluteFill>
 );
+// Brazil 2008, last lap: GLO stays on dry grooved tyres, HAM (and VET, MAS) are on intermediates.
+export const TOP_SHEETS_2008: Record<"A" | "B", TopCarSheetProps> = {
+  A: {
+    rows: [
+      { car: "MP4-23", tread: "wet", y: 10 },
+      { car: "TF108", tread: "dry", y: 545 },
+    ],
+  },
+  B: {
+    rows: [
+      { car: "STR3", tread: "wet", y: 10 },
+      { car: "F2008", tread: "wet", y: 545 },
+    ],
+  },
+};
 
 export const TopCarSheet: React.FC<TopCarSheetProps> = ({ rows }) => (
   <AbsoluteFill style={{ backgroundColor: PAPER }}>
     <svg width={1920} height={1080}>
-      {rows.map(({ car: id, compound, y }) => {
+      {rows.map(({ car: id, compound, tread, y }) => {
         const car = CARS[id];
         const x0 = 300;
         const guides = [
@@ -68,13 +90,13 @@ export const TopCarSheet: React.FC<TopCarSheetProps> = ({ rows }) => (
             <MangaCar
               car={car}
               at={{ x: x0, y: y + 190, pxPerMetre: PPM }}
-              state={{ compound }}
+              state={{ compound, tread }}
             />
             <MangaCar
               car={car}
               view="top"
               at={{ x: x0, y: y + 380, pxPerMetre: PPM }}
-              state={{ heading: 0, compound }}
+              state={{ heading: 0, compound, tread }}
             />
             <text
               x={1800}
