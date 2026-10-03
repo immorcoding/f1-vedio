@@ -6,26 +6,40 @@
 import { AT01, MangaCar, VF20 } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { CAPTION_FONT, Caption, Sfx } from "../../../kit/lettering";
-import { speedLines } from "../../../kit/lines";
+import { focusLines, speedLines } from "../../../kit/lines";
 import { ToneDefs, tone } from "../../../kit/tone";
-import { cueFrame, ramp, shotById, type PictureProps } from "./common";
+import { ramp, shotById, type PictureProps } from "./common";
 import {
   L_GRO,
   L_KVY,
   TRACK_HALF,
-  planCrash,
+  poseAtFrame,
   type CarPose,
 } from "./crash-geometry.ts";
+import { CLOCK_32, PLAN_32 } from "./staging.ts";
 
 const PX = 42; // px per metre: a car is ~240 px long
 const LEFT_EDGE = -TRACK_HALF - 6; // grass and wall on the left
 
 const shot = shotById("3.2");
-const PLAN = planCrash(
-  shot.to - shot.from,
-  cueFrame("bahrain2020.contact") - shot.from,
-);
+const PLAN = PLAN_32;
+const CLOCK = CLOCK_32;
 const BARRIER = PLAN.barrierY;
+
+// Marks fixed on the ground (world metres), so the track streams past the tracking camera at true speed (MOT-5):
+// rubber streaks, patches of repair, and the white line dashes of the track edge.
+const MARKS = Array.from({ length: 160 }, (_, i) => {
+  const r = (k: number) => {
+    const h = Math.sin((i + 1) * 12.9898 + k * 78.233) * 43758.5453;
+    return h - Math.floor(h);
+  };
+  return {
+    x: -40 + i * 2.2 + r(1) * 1.5,
+    y: -TRACK_HALF + 0.8 + r(2) * (2 * TRACK_HALF - 1.6),
+    len: 1.5 + r(3) * 5,
+    w: r(4) < 0.2 ? 0.5 : 0.12,
+  };
+});
 
 const Tag: React.FC<{ x: number; y: number; children: string }> = ({
   x,
@@ -56,10 +70,13 @@ const Tag: React.FC<{ x: number; y: number; children: string }> = ({
 );
 
 export const CrashMap: React.FC<PictureProps> = ({ f }) => {
-  const t = Math.max(0, Math.min(PLAN.frames, f - shot.from));
+  const shotT = Math.max(0, f - shot.from);
+  // real-time frame of the choreography (slowed round the touch)
+  const t = CLOCK.sim(shotT);
+  const slow = CLOCK.slow(shotT);
   const tc = PLAN.contact;
-  const gro = PLAN.gro[t];
-  const kvy = PLAN.kvy[t];
+  const gro = poseAtFrame(PLAN.gro, t);
+  const kvy = poseAtFrame(PLAN.kvy, t);
   // camera: on the pair until the touch, then on GRO, panning down toward the guardrail
   const follow = ramp(t, tc - 10, tc + 40);
   const groNose = {
@@ -74,11 +91,12 @@ export const CrashMap: React.FC<PictureProps> = ({ f }) => {
   const sx = (x: number) => 960 + (x - camX) * PX;
   const sy = (y: number) => 540 + (y - camY) * PX;
   const at = (p: CarPose) => ({ x: sx(p.x), y: sy(p.y), pxPerMetre: PX });
-  const sinceContact = t - tc;
+  // shot frames since the touch (the star and the 擦 are timed in what the viewer sees)
+  const sinceContact = shotT - CLOCK.shot(tc);
   const contact = { x: sx(PLAN.contactPoint.x), y: sy(PLAN.contactPoint.y) };
   // GRO's line ahead of him (dashed) until the touch
   const path = PLAN.gro
-    .filter((_, i) => i % 4 === 0)
+    .filter((_, i) => i % 4 === 0 && i <= tc + 60)
     .map((p, i) => {
       const h = (p.heading * Math.PI) / 180;
       return `${i ? "L" : "M"} ${sx(p.x + L_GRO * Math.cos(h)).toFixed(1)} ${sy(p.y + L_GRO * Math.sin(h)).toFixed(1)}`;
@@ -122,6 +140,18 @@ export const CrashMap: React.FC<PictureProps> = ({ f }) => {
       {band(-TRACK_HALF, TRACK_HALF, PAPER)}
       {band(-TRACK_HALF, TRACK_HALF, tone("light", "b32"))}
       {band(TRACK_HALF, BARRIER, tone("mid", "b32"))}
+      {/* rubber and repair marks fixed to the asphalt: they stream past at the cars' speed */}
+      {MARKS.filter((m) => m.x + m.len > x0 && m.x < x1).map((m, i) => (
+        <rect
+          key={i}
+          x={sx(m.x)}
+          y={sy(m.y) - (m.w * PX) / 2}
+          width={m.len * PX}
+          height={m.w * PX}
+          fill={INK}
+          opacity={m.w > 0.3 ? 0.12 : 0.28}
+        />
+      ))}
       {/* turn 3 exit kerb and the corner number, in frame at the start */}
       {kerb(-30, 2, -TRACK_HALF, -TRACK_HALF + 1)}
       {sx(-12) > 40 ? (
@@ -196,7 +226,7 @@ export const CrashMap: React.FC<PictureProps> = ({ f }) => {
           length: [0.15, 0.4],
         })}
         fill={INK}
-        opacity={0.3}
+        opacity={0.3 * (1 - slow)}
       />
       {/* GRO's line, dashed, fading at the touch */}
       <path
@@ -230,17 +260,57 @@ export const CrashMap: React.FC<PictureProps> = ({ f }) => {
             />
           ))
         : null}
+      {/* contact shadows under both cars */}
+      {[
+        { p: kvy, L: L_KVY },
+        { p: gro, L: L_GRO },
+      ].map(({ p, L }, i) => {
+        const h = (p.heading * Math.PI) / 180;
+        return (
+          <ellipse
+            key={i}
+            cx={sx(p.x + (L / 2) * Math.cos(h)) + 6}
+            cy={sy(p.y + (L / 2) * Math.sin(h)) + 8}
+            rx={(L / 2) * PX}
+            ry={1.05 * PX}
+            transform={`rotate(${p.heading} ${sx(p.x + (L / 2) * Math.cos(h)) + 6} ${sy(p.y + (L / 2) * Math.sin(h)) + 8})`}
+            fill={INK}
+            opacity={0.35}
+          />
+        );
+      })}
+      {/* tyre smoke off GRO's rear wheels while he slides, on threes */}
+      {sinceContact > 0
+        ? Array.from({ length: 16 }, (_, k) => {
+            const back = PLAN.gro[Math.max(tc, Math.floor(t) - Math.floor(k * 1.5))];
+            if (!back) return null;
+            const h = (back.heading * Math.PI) / 180;
+            const age = k / 16;
+            return [-0.8, 0.8].map((side) => (
+              <circle
+                key={`${k}${side}`}
+                cx={sx(back.x + 0.4 * Math.cos(h) - side * Math.sin(h))}
+                cy={sy(back.y + 0.4 * Math.sin(h) + side * Math.cos(h))}
+                r={(0.55 + 1.3 * age) * PX}
+                fill={PAPER}
+                stroke={INK}
+                strokeWidth={2.5}
+                opacity={0.85 * (1 - age)}
+              />
+            ));
+          })
+        : null}
       <MangaCar
         car={AT01}
         view="top"
         at={at(kvy)}
-        state={{ heading: kvy.heading }}
+        state={{ heading: kvy.heading, steer: kvy.steer ?? 0 }}
       />
       <MangaCar
         car={VF20}
         view="top"
         at={at(gro)}
-        state={{ heading: gro.heading }}
+        state={{ heading: gro.heading, steer: gro.steer ?? 0 }}
       />
       {/* the touch: a small star where the wheels met */}
       {sinceContact >= 0 && sinceContact < 36 ? (
@@ -272,6 +342,34 @@ export const CrashMap: React.FC<PictureProps> = ({ f }) => {
         <Tag x={sx(kvy.x + L_KVY * 0.5)} y={sy(kvy.y) + 2.9 * PX}>
           KVY
         </Tag>
+      ) : null}
+      {/* slow motion: the page goes still — paper border, focus lines on the touch */}
+      {slow > 0 ? (
+        <g opacity={slow}>
+          <path
+            d={focusLines(contact.x, contact.y, 420, 90, 3)}
+            fill={INK}
+            opacity={0.55}
+          />
+          <rect
+            x={14}
+            y={14}
+            width={1892}
+            height={1052}
+            fill="none"
+            stroke={PAPER}
+            strokeWidth={28}
+          />
+          <rect
+            x={28}
+            y={28}
+            width={1864}
+            height={1024}
+            fill="none"
+            stroke={INK}
+            strokeWidth={6}
+          />
+        </g>
       ) : null}
       <Caption
         x={1570}

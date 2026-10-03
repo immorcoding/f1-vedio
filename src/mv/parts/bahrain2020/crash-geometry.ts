@@ -33,6 +33,7 @@ export type CarPose = {
   x: number;
   y: number;
   heading: number;
+  steer?: number; // front wheels, degrees (+ = right)
 };
 
 export type CrashPlan = {
@@ -66,11 +67,14 @@ export const planCrash = (frames: number, contact: number): CrashPlan => {
     const s = (contact - f) * dt;
     // he came across from the left: sideways motion starts ~1.4 s before the touch
     const lat = Math.min(s, 1.4) * LATERAL;
-    const startedMoving = s < 1.4;
+    // the heading follows the velocity: it turns in as the sideways motion builds over ~0.25 s
+    const turnIn = Math.max(0, Math.min(1, (1.4 - s) / 0.25));
     gro.push({
       x: groRearAtContact - V0 * s + 0.35 * Math.min(s, 2), // KVY closing on him a little
       y: CONTACT_Y - lat,
-      heading: startedMoving ? heading0 : 0,
+      heading: heading0 * turnIn,
+      steer:
+        4 * turnIn * (1 - Math.max(0, Math.min(1, (0.9 - s) / 0.3))) + turnIn,
     });
   }
   // after the touch: the rear is kicked, the car yaws right about its middle and runs off at the impact angle
@@ -88,6 +92,8 @@ export const planCrash = (frames: number, contact: number): CrashPlan => {
       x: cx - GRO_CG * Math.cos(h),
       y: cy - GRO_CG * Math.sin(h),
       heading,
+      // he catches the kick with opposite lock
+      steer: -16 * Math.min(1, i / 10),
     });
     // the car slides: the kick turns its nose right first, and its path follows behind the heading
     const v = V0 + (V_IMPACT - V0) * u;
@@ -158,3 +164,54 @@ export const penetration = (A: V[], B: V[]) => {
 
 export const carOverlap = (plan: CrashPlan, f: number) =>
   penetration(corners(plan.gro[f], L_GRO), corners(plan.kvy[f], L_KVY));
+
+// ── Slow motion around the touch (MOT-5: the readable moment is slowed down, never the driving) ──────────
+// The shot runs in real time, drops to RATE for the frames around the touch, then runs in real time again. The
+// choreography is planned in real-time ("sim") frames; the picture and the checks map shot frames to them.
+export const SLOW = { before: 24, after: 40, rate: 0.35 };
+
+export type CrashClock = {
+  simFrames: number; // length of the shot in real-time frames
+  simContact: number; // the touch, in real-time frames
+  sim: (t: number) => number; // shot frame → real-time frame (fractional)
+  shot: (s: number) => number; // real-time frame → shot frame
+  slow: (t: number) => number; // 0 in real time, 1 in full slow motion (eased at the edges)
+};
+
+export const crashClock = (frames: number, contact: number): CrashClock => {
+  const a = contact - SLOW.before;
+  const b = contact + SLOW.after;
+  const sim = (t: number) =>
+    t <= a
+      ? t
+      : t <= b
+        ? a + (t - a) * SLOW.rate
+        : a + (b - a) * SLOW.rate + (t - b);
+  const sb = sim(b);
+  const shot = (s: number) =>
+    s <= a ? s : s <= sb ? a + (s - a) / SLOW.rate : b + (s - sb);
+  const slow = (t: number) =>
+    Math.max(0, Math.min((t - a + 8) / 8, (b + 8 - t) / 8, 1));
+  return {
+    simFrames: Math.ceil(sim(frames)),
+    simContact: sim(contact),
+    sim,
+    shot,
+    slow,
+  };
+};
+
+// A pose between two planned frames.
+export const poseAtFrame = (poses: CarPose[], s: number): CarPose => {
+  const i = Math.max(0, Math.min(poses.length - 1, Math.floor(s)));
+  const j = Math.min(poses.length - 1, i + 1);
+  const u = Math.max(0, Math.min(1, s - i));
+  return {
+    x: poses[i].x + (poses[j].x - poses[i].x) * u,
+    y: poses[i].y + (poses[j].y - poses[i].y) * u,
+    heading: poses[i].heading + (poses[j].heading - poses[i].heading) * u,
+    steer:
+      (poses[i].steer ?? 0) +
+      ((poses[j].steer ?? 0) - (poses[i].steer ?? 0)) * u,
+  };
+};

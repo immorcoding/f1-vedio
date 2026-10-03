@@ -10,7 +10,9 @@ import {
   CAR_HALF_WIDTH,
   L_GRO,
   L_KVY,
+  crashClock,
   planCrash,
+  poseAtFrame,
   type CarPose,
 } from "./crash-geometry.ts";
 import { CLIMB_END, MARSHAL_AT, stage36 } from "./escape-staging.ts";
@@ -31,7 +33,17 @@ const cue = (id: string) => {
 // ── 3.2 ─────────────────────────────────────────────────────────────────────────────────────────────────
 const S32 = shot("3.2");
 const TOUCH = cue("bahrain2020.contact");
-export const PLAN_32 = planCrash(S32.to - S32.from, TOUCH - S32.from);
+// real time, with a slow-motion stretch round the touch (crash-geometry.ts)
+export const CLOCK_32 = crashClock(S32.to - S32.from, TOUCH - S32.from);
+export const PLAN_32 = planCrash(
+  CLOCK_32.simFrames,
+  Math.round(CLOCK_32.simContact),
+);
+// the touch as the picture shows it: the rubbing lasts ~0.25 s of real time, stretched by the slow motion
+const RUB = {
+  from: S32.from + Math.floor(CLOCK_32.shot(PLAN_32.contact - 4)),
+  to: S32.from + Math.ceil(CLOCK_32.shot(PLAN_32.contact + 16)),
+};
 
 // MangaCar's top view is anchored at the rear end; a footprint is centred.
 const carFootprint = (id: string, p: CarPose, length: number): Footprint => {
@@ -52,14 +64,12 @@ const SAMPLER_32: TopViewSampler = {
   from: S32.from,
   to: S32.to,
   // the wheels rub for ~0.2 s from the touch
-  contact: [
-    { from: TOUCH - 4, to: TOUCH + 16, ids: ["GRO", "KVY"], depth: 0.12 },
-  ],
+  contact: [{ from: RUB.from, to: RUB.to, ids: ["GRO", "KVY"], depth: 0.12 }],
   poses: (f) => {
-    const i = Math.max(0, Math.min(PLAN_32.frames, f - S32.from));
+    const sim = CLOCK_32.sim(Math.max(0, f - S32.from));
     return [
-      carFootprint("GRO", PLAN_32.gro[i], L_GRO),
-      carFootprint("KVY", PLAN_32.kvy[i], L_KVY),
+      carFootprint("GRO", poseAtFrame(PLAN_32.gro, sim), L_GRO),
+      carFootprint("KVY", poseAtFrame(PLAN_32.kvy, sim), L_KVY),
     ];
   },
 };
