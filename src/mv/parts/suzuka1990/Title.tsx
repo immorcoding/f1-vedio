@@ -64,7 +64,7 @@ const Page: React.FC<{
           opacity={sub01}
           transform={`translate(${120 - 30 * (1 - sub01)} 740)`}
         >
-          <Caption x={0} y={0} w={520} h={96} lines={[sub]} size={50} />
+          <Caption x={0} y={0} w={640} h={96} lines={[sub]} size={50} />
         </g>
       ) : null}
     </g>
