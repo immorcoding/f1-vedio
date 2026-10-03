@@ -5,12 +5,15 @@
 import { Easing } from "remotion";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
-import { BRUSH_FONT } from "../../../kit/lettering";
+import { BRUSH_FONT, Caption } from "../../../kit/lettering";
 import { ToneDefs, tone } from "../../../kit/tone";
 import { fitMap, poseAt, SUZUKA_1989, TrackMap } from "../../../tracks";
 import { cueFrame, ramp, shotById, type PictureProps } from "./common";
 
 const T = SUZUKA_1989;
+// The title stakes before the race (facts.md): SEN leads PRO by 9 points with two races left; the crash that put both
+// out here settled the title for SEN.
+const STAKES = "积分 SEN 78 · PRO 69";
 const VIEW = fitMap(T, { x: 760, y: 120, w: 1100, h: 860 }, 0);
 const W = 1920;
 const H = 1080;
@@ -23,7 +26,10 @@ const Page: React.FC<{
   ringAt: number;
   ring: number;
   title01: number;
-}> = ({ title, ringAt, ring, title01 }) => {
+  // the title stakes under the title (1990 page only)
+  sub?: string;
+  sub01?: number;
+}> = ({ title, ringAt, ring, title01, sub, sub01 = 0 }) => {
   const c = VIEW.project(poseAt(T, ringAt));
   return (
     <g>
@@ -53,6 +59,14 @@ const Page: React.FC<{
           strokeLinecap="round"
         />
       </g>
+      {sub && sub01 > 0 ? (
+        <g
+          opacity={sub01}
+          transform={`translate(${120 - 30 * (1 - sub01)} 740)`}
+        >
+          <Caption x={0} y={0} w={520} h={96} lines={[sub]} size={50} />
+        </g>
+      ) : null}
     </g>
   );
 };
@@ -108,6 +122,7 @@ export const Title: React.FC<PictureProps> = ({ f }) => {
   const left = `M -2000 -2000 L ${c + K * (-2000 - H / 2)} -2000 L ${c + K * (3000 - H / 2)} 3000 L -2000 3000 Z`;
   const title = ramp(t, 40, 66, Easing.out(Easing.back(2)));
   const ring = ramp(t, 74, 92, Easing.out(Easing.back(1.6)));
+  const stakes = ramp(t, 96, 114, Easing.out(Easing.back(1.6)));
   // the push-in toward Turn 1 and the main straight on the last beats
   const push = ramp(t, len - 46, len, Easing.in(Easing.cubic));
   const t1 = VIEW.project(poseAt(T, 200));
@@ -132,6 +147,8 @@ export const Title: React.FC<PictureProps> = ({ f }) => {
             ringAt={T.corners.turn1Apex}
             ring={ring}
             title01={title}
+            sub={STAKES}
+            sub01={stakes}
           />
         </g>
         {turn < 1 ? (

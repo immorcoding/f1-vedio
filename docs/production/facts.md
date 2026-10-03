@@ -15,6 +15,7 @@ MV 画面上出现的每个事实及其来源（STO-3）。来源核对日期：
 - 第 1 圈第 1 个弯，Senna（McLaren-Honda）撞上 Prost（Ferrari），两人当场退赛，Senna 锁定 1990 年冠军。
 - Senna 在 1991 年夺冠后承认那次碰撞是故意的，是对 1989 年的报复。
 - 车与车号：Senna 开 McLaren-Honda MP4/5B（#27），Prost 开 Ferrari 641（#1，1989 年冠军的车号随他去了法拉利）。
+- 赛前积分（镜头 1.5）：Senna 78 分、Prost 69 分，还剩两站（本站与澳大利亚）；两人都在这里退赛，Senna 就锁定冠军（见上条 Wikipedia）。来源：[Jolpica-F1（Ergast 数据）1990 第 14 站后车手积分](https://api.jolpi.ca/ergast/f1/1990/14/driverStandings.json)
 - 发车前两排：1 Senna（#27 McLaren）、2 Prost（#1 Ferrari）、3 Mansell（#2 Ferrari）、4 Berger（#28 McLaren）；Senna 与 Prost 都是 0 圈退赛（碰撞）。来源：[Jolpica-F1（Ergast 数据）1990 第 15 站成绩](https://api.jolpi.ca/ergast/f1/1990/15/results.json)
 - 彩蛋（镜头 1.6）：Senna 排位第一、Prost 第二。杆位所在的发车格在直道右侧，不在行车线上、路面较脏；Senna 和 Berger 赛前请求把杆位换到较干净的左侧，赛会起初同意，随后被 FISA 主席 Balestre 否决，杆位留在较脏的右侧；FIA 还警告起步时不得越过右侧维修区出口的黄线去抢 1 号弯的位置。起步时左侧的 Prost 领先，Senna 在 1 号弯从内线切入，两车相撞冲出赛道。（核对 2026-10-03）
 - 来源：[1990 Japanese Grand Prix — Wikipedia](https://en.wikipedia.org/wiki/1990_Japanese_Grand_Prix)（Race report：较脏的右侧、换位请求被 Balestre 否决、黄线警告、Prost 起步领先、Senna 内线）；[Prost–Senna rivalry — Wikipedia](https://en.wikipedia.org/wiki/Prost%E2%80%93Senna_rivalry)（Balestre 拒绝杆位车手换到干净一侧的请求）
