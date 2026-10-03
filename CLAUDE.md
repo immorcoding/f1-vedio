@@ -16,3 +16,17 @@ Area files change only on `main` (the writer branch); on any other branch, write
 - [Story & facts](docs/shape/story-and-facts.md): 名场面合集、中文、事实必须核实
 - [Art direction](docs/shape/art-direction.md): 代码绘制的黑白漫画风，颜色只给配色和胎圈
 - [Motion & timing](docs/shape/motion-and-timing.md): 1080p60，俯视加特写的混合视角
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live in GitHub Issues on immorcoding/f1-vedio, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five default triage labels: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` and `docs/adr/` at the repo root, created as needed. See `docs/agents/domain.md`.
