@@ -39,7 +39,7 @@ const contactCue = s32.cues.find((c) => c.id === "bahrain2020.contact");
 const frames = T.framesBetween(s32.from, s32.to);
 const contact = T.framesBetween(s32.from, contactCue.at);
 const plan = planCrash(frames, contact);
-const WINDOW = [contact - 2, contact + 12]; // the wheels rub for ~0.2 s
+const WINDOW = [contact - 4, contact + 15]; // the wheels rub for ~0.25 s (as registered in staging.ts)
 let worst = { o: 0, f: -1 };
 for (let f = 0; f <= frames; f++) {
   const o = carOverlap(plan, f);

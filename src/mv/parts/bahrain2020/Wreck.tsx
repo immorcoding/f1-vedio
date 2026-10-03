@@ -2,7 +2,7 @@
 // survival cell, halo up, wedged through the triple guardrail, and the rear (power unit, gearbox, rear wing) torn off on
 // the track side — and the fire. Shot 3.4 shows it whole; shot 3.5 pushes in on the halo panel by panel through zoomed
 // copies of the same camera; shot 3.6 reuses it behind GRO. No driver injury is ever shown: helmet and halo only.
-import { MangaCar, VF20, carLength } from "../../../cars";
+import { MangaCar, VF20 } from "../../../cars";
 import { pinhole, type Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import { Fire, FIRE_PALETTES, type FirePaletteName } from "../../../kit/fire";
@@ -10,6 +10,19 @@ import { ToneDefs, TonePattern } from "../../../kit/tone";
 import { beatsAtFrame, FRAMES_PER_BEAT } from "../../timing.ts";
 import { cueFrame, ramp, shotById, type PictureProps } from "./common";
 import { Guardrail, NightBackdrop } from "./night";
+import {
+  BARRIER_Z,
+  CELL_ANCHOR_X,
+  CELL_POSE,
+  CELL_Z,
+  HALO_WORLD,
+  L,
+  REAR_ANCHOR_X,
+  REAR_POSE,
+  REAR_Z,
+} from "./wreck-geometry.ts";
+
+export { HALO_WORLD };
 
 // Camera of shot 3.4: 1 m up at the track edge, long lens, looking square at the barrier 13 m away.
 export const WRECK_CAM = pinhole({
@@ -18,29 +31,6 @@ export const WRECK_CAM = pinhole({
   cx: 960,
   height: 1.0,
 });
-
-const BARRIER_Z = 13;
-const CELL_Z = 13.6; // the survival cell went through the middle rail: just behind the barrier line
-const REAR_Z = 10.4; // the torn-off rear came to rest on the track side
-// World x of the intact car's rear end for each piece, set so the cell's nose lands near screen x 260 and the rear
-// piece's torn edge near 1250.
-const CELL_ANCHOR_X = ((1332 - 960) * CELL_Z) / 2300;
-const REAR_ANCHOR_X = ((1787 - 960) * REAR_Z) / 2300;
-const L = carLength(VF20);
-
-// The pieces' poses (CarState.split): the cell pushed on 0.4 m and pitched nose-down into the rails; the rear piece
-// turned a little on its own wheels.
-const CELL_POSE = { dx: 0.4, rotate: -3 };
-const REAR_POSE = { rotate: 4 };
-
-// Where the halo is, for the close-ups: the near halo bar's middle, from the trace (photo 880, 515), on the posed cell.
-const HALO_FROM_REAR = (VF20.frame.x - 880) / (250 / VF20.frame.k);
-const HALO_HEIGHT = (VF20.frame.ground - 515) / (250 / VF20.frame.k);
-export const HALO_WORLD = {
-  x: CELL_ANCHOR_X - HALO_FROM_REAR - CELL_POSE.dx,
-  y: HALO_HEIGHT - 0.12,
-  z: CELL_Z,
-};
 
 // A copy of a camera zoomed by `zoom` about a world point, which lands on `to` on screen.
 export const zoomCam = (
