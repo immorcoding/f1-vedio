@@ -1,6 +1,6 @@
 # formula-one
 
-手绘风 F1 比赛名场面合集视频，用 Remotion 制作（1920×1080，60 fps）。
+手绘风 F1 比赛名场面 MV，用 Remotion 制作（1920×1080，60 fps）。
 
 - 预览：`npm run dev`；检查：`npm run lint`
 - 渲染只能用 `npm run render` / `npm run still`：这两个命令把渲染限制在 8 个 CPU 核上，不要直接调用 `npx remotion render`。
@@ -13,10 +13,10 @@ Levels: **exploring** is a bet (follow it, note friction); **provisional** is li
 Add a dated line to the area's Signals when a rule decides part of your change, gets in your way or is broken by code, and when the user corrects you. Decisions that should bind the project go through the `shape-your-project` skill.
 Area files change only on `main` (the writer branch); on any other branch, write those lines and any drafts to `docs/shape/inbox/<branch>.md` instead.
 
-- [Story & facts](docs/shape/story-and-facts.md): 名场面合集、中文、事实必须核实
+- [Story & facts](docs/shape/story-and-facts.md): 3–3.5 分钟手绘 MV，4 个名场面，事实必须核实
 - [Art direction](docs/shape/art-direction.md): 代码绘制的漫画风，环境黑白、赛车真实涂装
 - [Motion & timing](docs/shape/motion-and-timing.md): 1080p60，俯视加特写的混合视角
-- [Audio](docs/shape/audio.md): 代码合成的原创电子风 BGM
+- [Audio](docs/shape/audio.md): 代码合成的电子风 BGM 是 MV 的骨架
 
 ## Agent skills
 
