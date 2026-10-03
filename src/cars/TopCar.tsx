@@ -119,6 +119,25 @@ export const TopCar: React.FC<{
           mask={`url(#${id}-tyres)`}
         />
       ) : null}
+      {/* front wing: under the nose, which runs forward over it to its tip */}
+      <path
+        d={plan.frontWing.deck}
+        fill={p.frontDeck}
+        stroke={INK}
+        strokeWidth={w(2)}
+        strokeLinejoin="round"
+      />
+      {plan.frontWing.flap ? (
+        <path d={plan.frontWing.flap} fill={car.frontWing.flap.color} />
+      ) : null}
+      {plan.frontWing.endplates ? (
+        <PlanEndplates
+          d={plan.frontWing.endplates}
+          color={p.wing}
+          width={0.06}
+          ink={w(2)}
+        />
+      ) : null}
       {(plan.inlets ?? []).map((d) => (
         <path key={d} d={d} fill={INK} />
       ))}
@@ -214,25 +233,7 @@ export const TopCar: React.FC<{
           strokeWidth={w(1.4)}
         />
       ))}
-      {/* wings */}
-      <path
-        d={plan.frontWing.deck}
-        fill={p.frontDeck}
-        stroke={INK}
-        strokeWidth={w(2)}
-        strokeLinejoin="round"
-      />
-      {plan.frontWing.flap ? (
-        <path d={plan.frontWing.flap} fill={car.frontWing.flap.color} />
-      ) : null}
-      {plan.frontWing.endplates ? (
-        <PlanEndplates
-          d={plan.frontWing.endplates}
-          color={p.wing}
-          width={0.06}
-          ink={w(2)}
-        />
-      ) : null}
+      {/* rear wing */}
       <path
         d={plan.rearWing.top}
         fill={plan.rearWing.color ?? p.rearTop}

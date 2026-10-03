@@ -82,11 +82,13 @@ export const W12: CarSpec = {
     flap: { d: "M 262 641 L 305 640 L 330 758 L 282 757 Z", color: "#00a19b" },
   },
   rearWing: {
-    near: "M 1685 525 L 1858 528 L 1872 562 L 1845 600 L 1845 675 L 1690 678 Z",
-    // far endplate: the near one's copy, black like it, showing behind the wing elements (ART-17)
-    farFrom: { dx: -5, dy: -80, scale: 0.95 },
-    top: "M 1655 445 L 1772 440 L 1790 450 L 1790 525 L 1685 525 L 1662 500 Z",
-    elements: ["M 1668 495 L 1790 501"],
+    // near endplate as in the photo, with the stepped cut-outs along its rear edge
+    near: "M 1687 525 L 1820 526 L 1821 540 L 1838 540 L 1838 552 L 1877 552 L 1847 600 L 1845 673 L 1690 677 Z",
+    // far endplate: the near one's copy, nearly all behind it; a sliver shows along the top and rear edges (ART-17)
+    farFrom: { dx: 12, dy: -5, scale: 0.95 },
+    // the wing elements (mainplane and flap) between the endplates, seen from above as a curved band
+    top: "M 1687 525 L 1662 500 C 1652 480 1652 458 1658 446 C 1690 438 1735 437 1762 440 L 1785 450 L 1790 525 Z",
+    elements: ["M 1664 490 C 1700 486 1750 488 1789 494"],
     pylon: "M 1640 500 L 1682 500 L 1690 612 L 1650 616 Z",
     beam: "M 1690 600 L 1840 600",
   },
@@ -181,20 +183,22 @@ export const RB16B: CarSpec = {
     flap: { d: "M 262 639 L 305 638 L 318 752 L 272 752 Z", color: "#d72a2e" },
   },
   rearWing: {
-    near: "M 1602 522 L 1826 522 L 1812 560 L 1800 600 L 1785 602 L 1785 660 L 1612 660 L 1602 600 Z",
+    // near endplate as in the photo: higher at the front, a step down at the rear, curved lower edge
+    near: "M 1630 493 L 1743 493 L 1750 506 L 1773 520 L 1827 520 L 1790 603 L 1787 643 L 1760 655 L 1700 662 L 1650 650 L 1610 612 L 1603 597 Z",
     // red endplate panel, on both endplates (ART-17)
     livery: [
       {
-        d: "M 1602 522 L 1826 522 L 1812 560 L 1800 600 L 1602 600 Z",
+        d: "M 1640 526 L 1825 524 L 1793 603 L 1604 598 Z",
         color: "#d72a2e",
       },
     ],
-    // far endplate: the near one's copy, showing behind the wing elements where the photo shows it
-    farFrom: { dx: -2, dy: -82, scale: 0.95 },
-    top: "M 1615 412 L 1725 412 L 1745 430 L 1745 522 L 1602 522 L 1598 470 Z",
-    elements: ["M 1608 495 L 1745 495"],
+    // far endplate: the near one's copy, nearly all behind it; a sliver shows along the top and rear edges (ART-17)
+    farFrom: { dx: 17, dy: -6, scale: 0.95 },
+    // the wing elements (mainplane and flap) between the endplates, seen from above as a curved band
+    top: "M 1630 493 C 1616 470 1615 440 1624 418 C 1660 410 1705 410 1725 412 L 1742 424 L 1748 493 Z",
+    elements: ["M 1622 452 C 1670 448 1710 448 1746 452"],
     pylon: "M 1595 455 L 1640 455 L 1645 610 L 1600 612 Z",
-    beam: "M 1612 615 L 1790 615",
+    beam: "M 1612 615 L 1788 615",
   },
   panelLines: [
     "M 862 582 L 882 580 L 886 650 L 868 652",

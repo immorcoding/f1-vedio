@@ -228,13 +228,19 @@ export const MP4_5: CarSpec = {
     flap: { d: "M 200 562 L 470 556 L 472 574 L 204 580 Z", color: "#d9d6cf" },
   },
   rearWing: {
-    near: "M 1505 350 L 1824 348 L 1826 470 L 1650 470 Z",
-    // red endplates, both of them (ART-17); the far one hides behind the near one and the wing top
+    // near endplate as in the photo: a narrow strip runs forward along the top, cut away below it
+    near: "M 1505 350 L 1824 348 L 1826 470 L 1648 470 L 1645 390 L 1505 362 Z",
+    // red endplates, both of them (ART-17)
     livery: [
-      { d: "M 1505 350 L 1824 348 L 1826 470 L 1650 470 Z", color: RED },
+      {
+        d: "M 1505 350 L 1824 348 L 1826 470 L 1648 470 L 1645 390 L 1505 362 Z",
+        color: RED,
+      },
     ],
-    farFrom: { dx: -20, dy: -20, scale: 0.95 },
-    top: "M 1496 324 L 1700 304 L 1828 334 L 1824 350 L 1505 352 Z",
+    // far endplate: the near one's copy, nearly all behind it; a sliver shows along the top and rear edges (ART-17)
+    farFrom: { dx: 22, dy: -4, scale: 0.95 },
+    // the wing elements (mainplane and flap) between the endplates, seen from above as a curved band
+    top: "M 1505 352 L 1496 324 C 1560 312 1640 305 1700 304 C 1760 312 1800 322 1828 334 L 1824 350 Z",
     elements: [],
     pylon: "M 1600 470 L 1640 470 L 1650 525 L 1610 525 Z",
   },

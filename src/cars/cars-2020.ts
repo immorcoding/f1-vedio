@@ -103,11 +103,12 @@ export const VF20: CarSpec = {
   },
   rearWing: {
     near: "M 1688 520 L 1892 516 L 1834 626 L 1800 640 L 1700 640 L 1688 600 Z",
-    top: "M 1598 418 L 1780 416 L 1792 444 L 1800 520 L 1688 520 L 1590 470 Z",
-    elements: ["M 1594 466 L 1796 470"],
+    // far endplate: the near one's copy, nearly all behind it; a sliver shows along the top and rear edges (ART-17)
+    farFrom: { dx: 16, dy: -6, scale: 0.95 },
+    // the wing elements (mainplane and flap) between the endplates, seen from above as a curved band
+    top: "M 1688 520 L 1592 470 C 1588 452 1590 432 1600 419 C 1660 414 1730 414 1780 416 L 1792 444 L 1800 520 Z",
+    elements: ["M 1596 462 C 1660 460 1740 462 1796 470"],
     pylon: "M 1606 468 L 1632 468 L 1642 612 L 1616 614 Z",
-    // far endplate: the near one seen further away, above and behind it (ART-17)
-    farFrom: { dx: -12, dy: -100, scale: 0.95 },
     beam: "M 1700 626 L 1830 626",
   },
   panelLines: [
@@ -208,11 +209,13 @@ export const AT01: CarSpec = {
     flap: { d: "M 272 693 L 314 692 L 414 706 L 370 707 Z", color: AT_NAVY },
   },
   rearWing: {
-    near: "M 1662 472 L 1770 470 L 1852 494 L 1792 636 L 1690 640 L 1668 600 Z",
-    // far endplate: the near one's copy, ahead of it behind the wing elements (low camera) (ART-17)
-    farFrom: { dx: -165, dy: -6, scale: 0.93 },
-    top: "M 1500 466 L 1662 472 L 1668 520 L 1540 520 L 1495 490 Z",
-    elements: ["M 1498 488 L 1664 494"],
+    // near endplate as in the photo: its front edge runs down and forward under the wing elements
+    near: "M 1662 470 L 1770 470 L 1852 494 L 1820 578 L 1792 636 L 1690 640 L 1618 600 L 1615 580 L 1660 520 Z",
+    // far endplate: the near one's copy, nearly all behind it; a sliver shows along the top and rear edges (ART-17)
+    farFrom: { dx: 18, dy: -6, scale: 0.95 },
+    // the wing elements (mainplane and flap) between the endplates, seen from above as a curved band
+    top: "M 1498 489 C 1497 478 1500 470 1508 467 L 1662 470 L 1662 518 L 1542 518 C 1520 510 1505 500 1498 489 Z",
+    elements: ["M 1500 488 C 1560 486 1620 488 1664 494"],
     pylon: "M 1540 500 L 1566 500 L 1572 620 L 1548 622 Z",
     beam: "M 1690 628 L 1800 628",
   },
