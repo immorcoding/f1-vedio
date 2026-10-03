@@ -8,3 +8,6 @@ out/
 
 # Real-world reference photos: local only, never committed (see the asset reference register).
 /references/
+
+# Generated score (npm run music, deterministic); the beat map next to it is committed.
+/public/music/*.wav

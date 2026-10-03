@@ -3,6 +3,8 @@
 手绘风 F1 比赛名场面 MV，用 Remotion 制作（1920×1080，60 fps）。
 
 - 预览：`npm run dev`；检查：`npm run lint`
+- 音乐：`npm run music` 生成 `public/music/mv.wav`（不进 git，新检出后先跑一次）和节拍表 `beat-map.json`；`npm run check:audio` 查音频，`npm run check:edit` 查剪辑表卡点。
+- 时间只从 `src/mv/timing.ts`（节拍表）来：镜头和卡点写小节/拍，帧号一律用 `frameAt()` 换算。每个段落只改 `src/mv/parts/<段落>/`（`shots.ts` 剪辑表、`Scene.tsx` 画面）。
 - 渲染只能用 `npm run render` / `npm run still`：这两个命令把渲染限制在 8 个 CPU 核上，不要直接调用 `npx remotion render`。
 - `src/prototype/` 是一次性原型代码，画风定稿以后会移走。
 
