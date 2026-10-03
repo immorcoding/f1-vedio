@@ -98,6 +98,8 @@ export const WreckWorld: React.FC<{
   const p = noGlow
     ? { ...FIRE_PALETTES[palette], glow: null }
     : FIRE_PALETTES[palette];
+  // only the big fire behind the cell throws light; the fires in front of it would wash the cell out
+  const noLight = { ...p, glow: null };
   const fireAt = (x: number, z: number, w: number, h: number) => {
     const base = cam.project({ x, y: 0, z });
     const ppm = cam.pxPerMetre(z);
@@ -154,7 +156,7 @@ export const WreckWorld: React.FC<{
           h={front.h * (k === 0 ? 1 : 0.75)}
           frame={f + 1 + k}
           seed={`wreck-front${k}${fireSeed}`}
-          palette={p}
+          palette={noLight}
           intensity={intensity}
           smoke={false}
         />
@@ -166,7 +168,7 @@ export const WreckWorld: React.FC<{
         h={gapFire.h}
         frame={f + 2}
         seed={`wreck-gap${fireSeed}`}
-        palette={p}
+        palette={noLight}
         intensity={intensity * 0.9}
         smoke={false}
       />
@@ -363,7 +365,20 @@ export const HaloPanels: React.FC<PictureProps> = ({ f, palette }) => {
         const pop = ramp(age, 0, 8);
         // each panel keeps creeping in while it is on screen
         const zoom = p.zoom * (1 + 0.004 * age);
-        const cam = zoomCam(WRECK_CAM, HALO_WORLD, zoom, {
+        // each panel looks at a different part of the cockpit, so the fire in front changes too:
+        // the whole cell, the helmet, the front of the halo, then the halo itself
+        const look = [
+          { dx: 0.4, dy: 0.1 },
+          { dx: -0.45, dy: 0.05 },
+          { dx: 0.55, dy: -0.12 },
+          { dx: 0, dy: 0 },
+        ][i];
+        const target = {
+          x: HALO_WORLD.x + look.dx,
+          y: HALO_WORLD.y + look.dy,
+          z: HALO_WORLD.z,
+        };
+        const cam = zoomCam(WRECK_CAM, target, zoom, {
           x: p.x + p.w * (i % 2 ? 0.45 : 0.55),
           y: p.y + p.h * 0.52,
         });
@@ -379,7 +394,7 @@ export const HaloPanels: React.FC<PictureProps> = ({ f, palette }) => {
                 f={f + i * 11}
                 fireSeed={`p${i}`}
                 palette={palette}
-                intensity={i === 3 ? 0.55 : 1}
+                intensity={[1, 0.8, 0.9, 0.5][i]}
                 noGlow
                 tonePrefix="b35"
               />

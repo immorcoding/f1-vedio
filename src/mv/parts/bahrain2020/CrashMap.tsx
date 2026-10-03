@@ -106,6 +106,8 @@ export const CrashMap: React.FC<PictureProps> = ({ f }) => {
     y: sy(Y_KVY - HALF_TRACK - 0.2),
   };
   const sinceContact = t - tc;
+  // labels sit on the outside of the pair, so they swap sides once GRO crosses below KVY
+  const groBelow = gro.y > kvy.y;
   // the path GRO is about to take (dashed) and has taken (solid)
   const path = Array.from({ length: 41 }, (_, i) => {
     const p = poses((i / 40) * T, tc, T).gro;
@@ -295,10 +297,16 @@ export const CrashMap: React.FC<PictureProps> = ({ f }) => {
           擦！
         </Sfx>
       ) : null}
-      <Tag x={at(gro).x + L_GRO * 0.45 * PX} y={sy(gro.y) - 2.2 * PX}>
+      <Tag
+        x={at(gro).x + L_GRO * 0.45 * PX}
+        y={sy(gro.y) + (groBelow ? 2.9 : -2.2) * PX}
+      >
         GRO
       </Tag>
-      <Tag x={at(kvy).x + carLength(AT01) * 0.45 * PX} y={sy(kvy.y) + 2.6 * PX}>
+      <Tag
+        x={at(kvy).x + carLength(AT01) * 0.45 * PX}
+        y={sy(kvy.y) + (groBelow ? -2.2 : 2.9) * PX}
+      >
         KVY
       </Tag>
       <Caption
