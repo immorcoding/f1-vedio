@@ -42,6 +42,8 @@ type TrackSheetSpec = {
 
 const SUZUKA = TRACKS.Suzuka1989;
 const YAS = TRACKS.YasMarina2021;
+const INTERLAGOS = TRACKS.Interlagos2008;
+const JUNCAO_BOX: Box = { x: 980, y: 40, w: 900, h: 1000 };
 const SUZUKA_PLAN: Box = { x: 980, y: 60, w: 880, h: 960 };
 
 export const TRACK_SHEETS: Record<TrackId, TrackSheetSpec> = {
@@ -101,6 +103,35 @@ export const TRACK_SHEETS: Record<TrackId, TrackSheetSpec> = {
     cars: [
       { car: "RB16B", s: 1395, lateral: -3, compound: PIRELLI_2021.soft },
       { car: "W12", s: 1392, lateral: 3.5, compound: PIRELLI_2021.hard },
+    ],
+  },
+  // The lap as on the Brazil title card, and Junção on the last lap: GLO on dry tyres, HAM about to pass.
+  Interlagos2008: {
+    map: {
+      box: { x: 40, y: 140, w: 900, h: 800 },
+      road: 16,
+      rim: 16 * 0.36,
+      shadow: true,
+      finish: true,
+      labels: 1,
+      labelSize: 30,
+    },
+    detail: {
+      box: JUNCAO_BOX,
+      view: {
+        centre: poseAt(INTERLAGOS, INTERLAGOS.corners.juncaoApex),
+        rotation: -poseAt(INTERLAGOS, INTERLAGOS.corners.juncaoExit + 60)
+          .heading,
+        pxPerMetre: 9,
+        screen: { x: 1430, y: 540 },
+      },
+      from: INTERLAGOS.corners.mergulho,
+      to: INTERLAGOS.corners.cafe + 200,
+      look: { grass: JUNCAO_BOX, runoff: 10, barrier: true },
+    },
+    cars: [
+      { car: "TF108", s: INTERLAGOS.corners.juncaoApex + 10, lateral: 2 },
+      { car: "MP4-23", s: INTERLAGOS.corners.juncaoApex - 2, lateral: -3 },
     ],
   },
 };

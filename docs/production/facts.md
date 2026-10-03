@@ -27,6 +27,8 @@ MV 画面上出现的每个事实及其来源（STO-3）。来源核对日期：
   - Junção：Autosport 文字直播"the move from Hamilton on Glock at the Juncao on the last lap"，[As it happened: Showdown at Interlagos（存档）](https://web.archive.org/web/20081206231049/http://live.autosport.com/commentary.php/id/63)；BBC："the McLaren slipped past the Toyota as it accelerated up the hill towards the finish line"。
 - 两人进站换半雨胎、只有 GLO 留在干地胎上：HAM、VET 第 66 圈进站（FIA 进站汇总），[Formula1.com Pit stop summary（存档）](https://web.archive.org/web/20081206133243/http://www.formula1.com/results/season/2008/804/6586/pit_stop_summary.html)。
 - 车号（同一份进站汇总）：MAS #2、GLO #12、VET #15、HAM #22。
+- 彩蛋（镜头 2.3）：Massa 冲线时 Hamilton 还是第 6，按当时的名次 Massa 就是冠军；法拉利车库里 Massa 的家人和机械师已经开始庆祝，法拉利的人也拥到维修区墙边庆祝，几秒后 Hamilton 在最后几个弯超过 Glock，车库里的庆祝变成失望。来源：[ESPN：Brazil 2008 口述史，2018-11](https://www.espn.com/f1/story/_/id/25154101/how-lewis-hamilton-lost-won-first-world-championship-oral-history-2008-brazilian-gp)（"Cameras showed Massa's family celebrating with Ferrari mechanics"，以及法拉利工程师、Massa 家人的回忆；画面不引用原话）；Wikipedia 正赛段"Premature joy in the Ferrari garage"。
+- 彩蛋（镜头 2.4、2.5）：最后几圈 GLO 用的是 2008 年 Bridgestone 干地胎（胎面四条纵向沟槽，2008 年规则要求干地胎有 4 条纵向沟），HAM、VET 已换半雨胎（胎面有横向花纹）。来源：上面的 FIA 进站汇总；沟槽规则见 [Formula One tyres — Wikipedia](https://en.wikipedia.org/wiki/Formula_One_tyres)（1998–2008 年干地胎为沟槽胎）。
 
 ## 2020 巴林大奖赛
 
