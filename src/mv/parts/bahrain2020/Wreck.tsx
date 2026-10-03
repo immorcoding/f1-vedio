@@ -82,6 +82,8 @@ export const WreckWorld: React.FC<{
   noGlow?: boolean;
   // varies the flames (the close-up panels each catch a different moment of the fire)
   fireSeed?: string;
+  // close-ups: more, finer flame tongues (the fire is drawn this many times more finely)
+  fireDetail?: number;
   // false once GRO is out: the cockpit is empty
   driver?: false;
 }> = ({
@@ -93,6 +95,7 @@ export const WreckWorld: React.FC<{
   behindRails,
   noGlow = false,
   fireSeed = "",
+  fireDetail = 1,
   driver,
 }) => {
   const p = noGlow
@@ -129,6 +132,7 @@ export const WreckWorld: React.FC<{
         h={back.h}
         frame={f}
         seed={`wreck-back${fireSeed}`}
+        detail={fireDetail}
         palette={p}
         intensity={intensity}
       />
@@ -156,6 +160,7 @@ export const WreckWorld: React.FC<{
           h={front.h * (k === 0 ? 1 : 0.75)}
           frame={f + 1 + k}
           seed={`wreck-front${k}${fireSeed}`}
+          detail={fireDetail}
           palette={noLight}
           intensity={intensity}
           smoke={false}
@@ -168,6 +173,7 @@ export const WreckWorld: React.FC<{
         h={gapFire.h}
         frame={f + 2}
         seed={`wreck-gap${fireSeed}`}
+        detail={fireDetail}
         palette={noLight}
         intensity={intensity * 0.9}
         smoke={false}
@@ -231,24 +237,65 @@ const Vignette: React.FC<{ amount: number }> = ({ amount }) => (
 export const WreckShot: React.FC<PictureProps> = ({ f, palette }) => {
   const shot = shotById("3.4");
   const t = f - shot.from;
+  const len = shot.to - shot.from;
   const intensity = 0.25 + 0.75 * ramp(t, 0, 112);
   const hb = heartbeat(f);
-  const push = 1 + 0.03 * (t / (shot.to - shot.from)) + 0.012 * hb;
+  // the camera never rests: a slow dolly from the whole wreck (torn rear in front) in to the cell in the barrier,
+  // drifting along the rails, with a small kick on each heartbeat
+  const u = ramp(t, 0, len, (x) => x * x * (3 - 2 * x));
+  const target = {
+    x: HALO_WORLD.x + (REAR_ANCHOR_X - 1.5 - HALO_WORLD.x) * (1 - u),
+    y: 0.9 * (1 - u) + HALO_WORLD.y * u,
+    z: REAR_Z + (HALO_WORLD.z - REAR_Z) * u,
+  };
+  const cam = zoomCam(WRECK_CAM, target, 0.82 + 0.75 * u + 0.01 * hb, {
+    x: 960 + 160 * (1 - u),
+    y: 560,
+  });
+  // smoke rolling off to the left across the top of the frame, on threes
+  const step = Math.floor(f / 3);
+  const smoke = Array.from({ length: 10 }, (_, i) => {
+    const life = ((step * 0.6 + i * 9) % 90) / 90;
+    return {
+      x: 1250 - life * 1500 + Math.sin(i * 2.1) * 60,
+      y: 330 - life * 330 + Math.cos(i * 1.3) * 40,
+      r: 60 + life * 150,
+    };
+  });
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
         <ToneDefs prefix="b34" />
       </defs>
-      <g transform={`translate(960 540) scale(${push}) translate(-960 -540)`}>
-        <WreckWorld
-          cam={WRECK_CAM}
-          f={f}
-          palette={palette}
-          intensity={intensity}
-          tonePrefix="b34"
-        />
+      <WreckWorld
+        cam={cam}
+        f={f}
+        palette={palette}
+        intensity={intensity}
+        tonePrefix="b34"
+      />
+      <g opacity={ramp(t, 30, 140)}>
+        {smoke.map((p, i) => (
+          <g key={i}>
+            <circle
+              cx={p.x}
+              cy={p.y}
+              r={p.r}
+              fill="#262626"
+              stroke={INK}
+              strokeWidth={3}
+            />
+            <circle
+              cx={p.x - p.r * 0.2}
+              cy={p.y - p.r * 0.2}
+              r={p.r * 0.7}
+              fill="url(#b34-dark)"
+              opacity={0.5}
+            />
+          </g>
+        ))}
       </g>
-      <Vignette amount={0.55 + 0.35 * hb} />
+      <Vignette amount={0.5 + 0.35 * hb} />
     </svg>
   );
 };
@@ -352,13 +399,33 @@ export const HaloPanels: React.FC<PictureProps> = ({ f, palette }) => {
       <defs>
         <ToneDefs prefix="b35" />
         <TonePattern id="b35-soot" r={2.4} gap={6} />
-        {PANELS.map((p, i) => (
-          <clipPath key={i} id={`b35-p${i}`}>
-            <rect x={p.x} y={p.y} width={p.w} height={p.h} />
-          </clipPath>
-        ))}
       </defs>
       <rect width={1920} height={1080} fill={INK} />
+      {/* the page is laid out from the start: slots waiting for their panel are dark tone in an open border */}
+      {PANELS.map((p, i) =>
+        f >= cues[i] ? null : (
+          <g key={`slot${i}`}>
+            <rect
+              x={p.x}
+              y={p.y}
+              width={p.w}
+              height={p.h}
+              fill="url(#b35-dark)"
+              opacity={0.35}
+            />
+            <rect
+              x={p.x}
+              y={p.y}
+              width={p.w}
+              height={p.h}
+              fill="none"
+              stroke={PAPER}
+              strokeWidth={6}
+              opacity={0.6}
+            />
+          </g>
+        ),
+      )}
       {PANELS.map((p, i) => {
         if (f < cues[i]) return null;
         const age = f - cues[i];
@@ -378,16 +445,27 @@ export const HaloPanels: React.FC<PictureProps> = ({ f, palette }) => {
           y: HALO_WORLD.y + look.dy,
           z: HALO_WORLD.z,
         };
-        const cam = zoomCam(WRECK_CAM, target, zoom, {
-          x: p.x + p.w * (i % 2 ? 0.45 : 0.55),
-          y: p.y + p.h * 0.52,
+        // panel 1 opens full-frame, then settles into its place on the page as panel 2 lands
+        const settle = i === 0 ? ramp(f, cues[1] - 24, cues[1]) : 1;
+        const r = {
+          x: p.x * settle,
+          y: p.y * settle,
+          w: 1920 + (p.w - 1920) * settle,
+          h: 1080 + (p.h - 1080) * settle,
+        };
+        const cam = zoomCam(WRECK_CAM, target, zoom * (r.w / p.w) ** 0.5, {
+          x: r.x + r.w * (i % 2 ? 0.45 : 0.55),
+          y: r.y + r.h * 0.52,
         });
         return (
           <g
             key={i}
             opacity={pop}
-            transform={`translate(${p.x + p.w / 2} ${p.y + p.h / 2}) scale(${0.94 + 0.06 * pop}) translate(${-p.x - p.w / 2} ${-p.y - p.h / 2})`}
+            transform={`translate(${r.x + r.w / 2} ${r.y + r.h / 2}) scale(${0.94 + 0.06 * pop}) translate(${-r.x - r.w / 2} ${-r.y - r.h / 2})`}
           >
+            <clipPath id={`b35-p${i}`}>
+              <rect x={r.x} y={r.y} width={r.w} height={r.h} />
+            </clipPath>
             <g clipPath={`url(#b35-p${i})`}>
               <WreckWorld
                 cam={cam}
@@ -396,33 +474,34 @@ export const HaloPanels: React.FC<PictureProps> = ({ f, palette }) => {
                 palette={palette}
                 intensity={[1, 0.8, 0.9, 0.5][i]}
                 noGlow
+                fireDetail={zoom}
                 tonePrefix="b35"
               />
               {i === 3 ? <HaloScorch cam={cam} f={f} /> : null}
               {/* newest panel flashes white as it lands */}
               <rect
-                x={p.x}
-                y={p.y}
-                width={p.w}
-                height={p.h}
+                x={r.x}
+                y={r.y}
+                width={r.w}
+                height={r.h}
                 fill={PAPER}
                 opacity={0.8 * (1 - ramp(age, 0, 5))}
               />
             </g>
             <rect
-              x={p.x}
-              y={p.y}
-              width={p.w}
-              height={p.h}
+              x={r.x}
+              y={r.y}
+              width={r.w}
+              height={r.h}
               fill="none"
               stroke={PAPER}
               strokeWidth={10}
             />
             <rect
-              x={p.x}
-              y={p.y}
-              width={p.w}
-              height={p.h}
+              x={r.x}
+              y={r.y}
+              width={r.w}
+              height={r.h}
               fill="none"
               stroke={INK}
               strokeWidth={4}
