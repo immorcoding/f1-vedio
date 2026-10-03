@@ -6,7 +6,7 @@ import { MangaCar, VF20, carLength } from "../../../cars";
 import { pinhole, type Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import { Fire, FIRE_PALETTES, type FirePaletteName } from "../../../kit/fire";
-import { ToneDefs } from "../../../kit/tone";
+import { ToneDefs, TonePattern } from "../../../kit/tone";
 import { beatsAtFrame, FRAMES_PER_BEAT } from "../../timing.ts";
 import { cueFrame, ramp, shotById, type PictureProps } from "./common";
 import { Guardrail, NightBackdrop } from "./night";
@@ -76,8 +76,22 @@ export const WreckWorld: React.FC<{
   // 0–1: the fire growing after the impact
   intensity: number;
   tonePrefix: string;
-}> = ({ cam, f, palette, intensity, tonePrefix }) => {
-  const p = FIRE_PALETTES[palette];
+  // drawn behind the guardrail, just in front of the cell (someone climbing over the rails)
+  behindRails?: React.ReactNode;
+  // close-ups: no light pool, the fire throws no glow over the whole panel
+  noGlow?: boolean;
+}> = ({
+  cam,
+  f,
+  palette,
+  intensity,
+  tonePrefix,
+  behindRails,
+  noGlow = false,
+}) => {
+  const p = noGlow
+    ? { ...FIRE_PALETTES[palette], glow: null }
+    : FIRE_PALETTES[palette];
   const fireAt = (x: number, z: number, w: number, h: number) => {
     const base = cam.project({ x, y: 0, z });
     const ppm = cam.pxPerMetre(z);
@@ -116,6 +130,7 @@ export const WreckWorld: React.FC<{
         at={cellAt}
         state={{ split: { front: CELL_POSE, show: "front" } }}
       />
+      {behindRails}
       <Guardrail
         cam={cam}
         a={RUN.a}
@@ -123,17 +138,21 @@ export const WreckWorld: React.FC<{
         gaps={GAPS}
         tonePrefix={tonePrefix}
       />
-      <Fire
-        x={front.x}
-        y={front.y}
-        w={front.w}
-        h={front.h}
-        frame={f + 1}
-        seed="wreck-front"
-        palette={p}
-        intensity={intensity}
-        smoke={false}
-      />
+      {/* the low fire along the rails: three smaller fires, so close-ups keep fine tongues */}
+      {[-1, 0, 1].map((k) => (
+        <Fire
+          key={k}
+          x={front.x + k * front.w * 0.34}
+          y={front.y}
+          w={front.w * 0.4}
+          h={front.h * (k === 0 ? 1 : 0.75)}
+          frame={f + 1 + k}
+          seed={`wreck-front${k}`}
+          palette={p}
+          intensity={intensity}
+          smoke={false}
+        />
+      ))}
       <Fire
         x={gapFire.x}
         y={gapFire.y}
@@ -226,12 +245,95 @@ export const WreckShot: React.FC<PictureProps> = ({ f, palette }) => {
   );
 };
 
+// The halo, scorched black but whole (facts.md: the burnt front of the car, halo intact, is on show in London):
+// drawn over the cell's own halo in the last panel — charred tube, soot, embers, and the one clean highlight left on it.
+// Uses the cell's own transform (MangaCar facing left, split pose of the front piece) to land on the traced halo.
+const HaloScorch: React.FC<{ cam: Camera; f: number }> = ({ cam, f }) => {
+  const at = cam.anchor({ x: CELL_ANCHOR_X, z: CELL_Z });
+  const k = (VF20.frame.k * at.pxPerMetre) / 250;
+  const ppmPhoto = 250 / VF20.frame.k;
+  const nums = (VF20.breakLine ?? "")
+    .replace(/[ML]/g, " ")
+    .trim()
+    .split(/\s+/)
+    .map(Number);
+  const bx = nums.filter((_, i) => i % 2 === 0);
+  const by = nums.filter((_, i) => i % 2 === 1);
+  const pivot = {
+    x: (Math.min(...bx) + Math.max(...bx)) / 2,
+    y: (Math.min(...by) + Math.max(...by)) / 2,
+  };
+  const halo = VF20.halo ?? "";
+  const haloFar = VF20.haloFar ?? "";
+  const step = Math.floor(f / 3);
+  const embers = Array.from({ length: 6 }, (_, i) => ({
+    x: 780 + ((i * 97 + step * 13) % 240),
+    y: 500 + ((i * 53 + step * 7) % 70),
+    r: 2 + (i % 3),
+  }));
+  return (
+    <g
+      transform={`translate(${at.x} ${at.y}) scale(${k} ${k}) translate(${-VF20.frame.x} ${-VF20.frame.ground}) translate(${-CELL_POSE.dx * ppmPhoto} 0) rotate(${CELL_POSE.rotate} ${pivot.x} ${pivot.y})`}
+    >
+      {[haloFar, halo].map((d, i) => (
+        <g key={i}>
+          <path
+            d={d}
+            fill="none"
+            stroke={INK}
+            strokeWidth={i ? 20 : 16}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d={d}
+            fill="none"
+            stroke="#3a2a22"
+            strokeWidth={i ? 12 : 9}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          {/* soot: a dot screen burnt into the tube */}
+          <path
+            d={d}
+            fill="none"
+            stroke="url(#b35-soot)"
+            strokeWidth={i ? 12 : 9}
+            strokeLinecap="round"
+            opacity={0.7}
+          />
+        </g>
+      ))}
+      {/* the one clean highlight left on the near bar: it held */}
+      <path
+        d={halo}
+        fill="none"
+        stroke={PAPER}
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        transform="translate(0 -5)"
+      />
+      {embers.map((e, i) => (
+        <circle
+          key={i}
+          cx={e.x}
+          cy={e.y}
+          r={e.r}
+          fill="#ffb347"
+          stroke={INK}
+          strokeWidth={0.8}
+        />
+      ))}
+    </g>
+  );
+};
+
 // Panel layout of shot 3.5: four panels, one more on each bar, each one closer on the halo.
 const PANELS = [
-  { x: 40, y: 40, w: 1100, h: 480, zoom: 1.7 },
-  { x: 1164, y: 40, w: 716, h: 480, zoom: 2.8 },
-  { x: 40, y: 544, w: 716, h: 496, zoom: 4.2 },
-  { x: 780, y: 544, w: 1100, h: 496, zoom: 6.4 },
+  { x: 40, y: 40, w: 1100, h: 480, zoom: 1.4 },
+  { x: 1164, y: 40, w: 716, h: 480, zoom: 2.0 },
+  { x: 40, y: 544, w: 716, h: 496, zoom: 2.7 },
+  { x: 780, y: 544, w: 1100, h: 496, zoom: 3.6 },
 ];
 
 export const HaloPanels: React.FC<PictureProps> = ({ f, palette }) => {
@@ -241,6 +343,7 @@ export const HaloPanels: React.FC<PictureProps> = ({ f, palette }) => {
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
         <ToneDefs prefix="b35" />
+        <TonePattern id="b35-soot" r={2.4} gap={6} />
         {PANELS.map((p, i) => (
           <clipPath key={i} id={`b35-p${i}`}>
             <rect x={p.x} y={p.y} width={p.w} height={p.h} />
@@ -269,9 +372,11 @@ export const HaloPanels: React.FC<PictureProps> = ({ f, palette }) => {
                 cam={cam}
                 f={f + i * 5}
                 palette={palette}
-                intensity={1}
+                intensity={i === 3 ? 0.55 : 1}
+                noGlow
                 tonePrefix="b35"
               />
+              {i === 3 ? <HaloScorch cam={cam} f={f} /> : null}
               {/* newest panel flashes white as it lands */}
               <rect
                 x={p.x}

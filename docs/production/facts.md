@@ -32,6 +32,9 @@ MV 画面上出现的每个事实及其来源（STO-3）。来源核对日期：
 - 第 1 圈 3 号弯后的直道，Grosjean（Haas VF-20）擦到 Kvyat（AlphaTauri）后以 192 km/h 撞穿护栏，冲击约 67 G，赛车断裂起火。
 - 约 28 秒后 Grosjean 自己从火中脱身；halo 护住了他的头部和身体，伤势为双手二度烧伤。
 - 来源：[2020 Bahrain Grand Prix — Wikipedia](https://en.wikipedia.org/wiki/2020_Bahrain_Grand_Prix)
+- 画面细节（镜头 3.2–3.6）：Grosjean 从赛道左侧往右侧并线时，右后轮碰到 Kvyat 左前轮，当时车速 241 km/h；撞击点在 3 号弯弯心后约 180 米、缓冲区后面的三层护栏，撞击角 29°；座舱穿过中间那层护栏，动力单元整体与车身前段分离。发车轮胎：Grosjean 硬胎（白），Kvyat 中性胎（黄），前 10 名都用中性胎。
+- 彩蛋（STO-7）：医疗车 11 秒内到场，FIA 医疗救援协调员 Ian Roberts 让一名工作人员用干粉灭火器对着座舱喷，Grosjean 从火里爬出翻过护栏时，Roberts 把他拉离残骸；医疗车司机 Alan van der Merwe 也在场。烧毁的车身前段（halo 完好，表面烧黑）后来在伦敦 F1 展览展出。
+- 来源：[FIA accident investigation summary (2021-03-05)](https://api.fia.com/news/fia-concludes-investigation-romain-grosjeans-accident-2020-bahrain-formula-1-grand-prix-and)、[Pirelli 2020 Bahrain GP race report](https://press.pirelli.com/2020-bahrain-grand-prix--race/)、[Burned remains at the F1 Exhibition, London (Wikimedia Commons)](https://commons.wikimedia.org/wiki/File:Romain_Grosjean_Haas_VF-20_Remains_at_Formula_1_Exhibition,_London_01.jpg)
 
 ## 2021 阿布扎比大奖赛（Yas Marina）
 

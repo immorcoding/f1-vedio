@@ -6,7 +6,7 @@ import { EDIT } from "./shots.ts";
 
 // The fire's palette — the single switch for the open ART-8 question (is fire environment, black and white, or does it
 // get colour?). Black and white until the user decides; "color" renders the alternative.
-export const FIRE_PALETTE: FirePaletteName = "manga";
+export const FIRE_PALETTE: FirePaletteName = "color";
 
 export const shotById = (id: string) => {
   const s = EDIT.shots.find((x) => x.id === id);
