@@ -86,6 +86,7 @@ export type OverlapReport = {
   frames: number;
   minGap: number; // smallest separation outside contact windows, m
   minGapAt: number; // song frame
+  contactGap: number; // smallest separation inside contact windows (negative = overlap depth), m
   hits: { frame: number; a: string; b: string; gap: number }[];
 };
 
@@ -101,6 +102,7 @@ export const checkTopViews = (
       frames: 0,
       minGap: Infinity,
       minGapAt: s.from,
+      contactGap: Infinity,
       hits: [],
     };
     for (let f = s.from; f < s.to; f += step) {
@@ -118,6 +120,7 @@ export const checkTopViews = (
           );
           const gap = separation(corners(a), corners(b));
           if (window) {
+            report.contactGap = Math.min(report.contactGap, gap);
             if (gap < -(window.depth ?? 0.3))
               report.hits.push({ frame: f, a: a.id, b: b.id, gap });
             continue;

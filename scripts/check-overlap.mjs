@@ -11,8 +11,11 @@ for (const r of reports) {
   const gap = Number.isFinite(r.minGap)
     ? `${r.minGap.toFixed(2)} m at frame ${r.minGapAt}`
     : "—";
+  const touch = Number.isFinite(r.contactGap)
+    ? `, in contact ${r.contactGap.toFixed(2)} m`
+    : "";
   console.log(
-    `${r.part} ${r.shot}: ${r.frames} frames, closest ${gap}${r.hits.length ? `, ${r.hits.length} HIT(S)` : ""}`,
+    `${r.part} ${r.shot}: ${r.frames} frames, closest ${gap}${touch}${r.hits.length ? `, ${r.hits.length} HIT(S)` : ""}`,
   );
   for (const h of r.hits.slice(0, 8))
     console.log(

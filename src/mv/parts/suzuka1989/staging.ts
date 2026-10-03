@@ -41,8 +41,8 @@ export const u13 = (f: number) =>
   clamp01((f - SHOT_13.from) / (SHOT_13.to - SHOT_13.from));
 
 // Map scale, px per metre, and how much larger than life the cars are drawn (readable on the wide map).
-export const ppm13 = (u: number) => 6 + 10 * Math.pow(u, 1.3);
-export const CAR_PPM_MIN = 22;
+export const ppm13 = (u: number) => 6 + 17 * Math.pow(u, 1.5);
+export const CAR_PPM_MIN = 30;
 export const carScale13 = (u: number) => Math.max(1, CAR_PPM_MIN / ppm13(u));
 
 const proS = (u: number) => CHICANE - 18 - 160 * Math.pow(1 - u, 1.5);
@@ -111,20 +111,21 @@ export const PUSH = cue("suzuka1989.push");
 
 // 1.2: rear ends in world metres; the camera's own x is camX12.
 export const SPEED = 70; // m/s
-export const Z_PRO_12 = 9.5;
-export const Z_SEN_12 = 13;
+export const Z_PRO_12 = 8;
+export const Z_SEN_12 = 11;
 export const cars12 = (f: number) => {
   const t = (f - SHOT_12.from) / 60;
   const dur = (SHOT_12.to - SHOT_12.from) / 60;
-  // SEN closes from 5.5 m down to just off PRO's gearbox
-  const gap = lerp(5.5, 0.6, smooth(t, 0.4, dur - 0.4));
+  // SEN closes from 5 m down to just off PRO's gearbox (3 m keeps both in frame)
+  const gap = lerp(3, 0.6, smooth(t, 0.8, dur - 0.3));
   const pro = SPEED * t + 0.6 * Math.sin(t * 1.3);
   return { pro, sen: pro - MP45.length - gap, t };
 };
-// The camera lags the cars at first, so they sweep in from the left, then holds them framed.
+// The camera starts ahead of the cars, so they sweep in from the left, then holds both framed (PRO's nose and SEN's
+// rear wing inside the frame with the 1500 px lens).
 export const camX12 = (f: number) => {
   const { pro, t } = cars12(f);
-  return pro + 1.6 - 14 * Math.exp(-t / 0.7);
+  return pro - 0.5 + 18 * Math.exp(-t / 0.55);
 };
 
 // 1.4: SEN on the near side, PRO alongside on the far side, a car width further away: SEN's nose wedged against
@@ -135,9 +136,10 @@ const V0 = 22;
 const TAU = 0.45;
 export const slide14 = (f: number) =>
   V0 * TAU * (1 - Math.exp(-Math.max(0, (f - HIT) / 60) / TAU));
-// Rear ends relative to the camera's x (which pans with the slide): SEN's front axle 0.4 m behind PRO's.
+// Rear ends relative to the camera's x (which pans with the slide): PRO 1.1 m ahead, so SEN's left front wheel is
+// jammed against PRO's right front wheel and sidepod.
 export const SEN_X_14 = -3.6;
-export const PRO_X_14 = SEN_X_14 + 0.4;
+export const PRO_X_14 = SEN_X_14 + 1.1;
 
 export const SAMPLERS: TopViewSampler[] = [
   {
