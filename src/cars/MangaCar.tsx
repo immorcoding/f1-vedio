@@ -50,6 +50,8 @@ export type CarState = {
   // Tread: "dry" (slick or grooved: a smooth tyre, the default) or "wet" (intermediate/wet pattern cut into the
   // shoulder), for races where the tyre type matters (Brazil 2008: GLO stays on dry tyres in the rain).
   tread?: Tread;
+  // false: an empty cockpit — no helmet, no HANS (the driver has got out).
+  driver?: false;
 };
 
 export type Tread = "dry" | "wet";
@@ -594,7 +596,7 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
             strokeLinejoin="round"
           />
         ) : null}
-        {car.cockpit.hans ? (
+        {car.cockpit.hans && state.driver !== false ? (
           <ellipse
             cx={car.cockpit.hans.cx}
             cy={car.cockpit.hans.cy}
@@ -605,7 +607,7 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
             strokeWidth={3}
           />
         ) : null}
-        <Helmet car={car} id={id} />
+        {state.driver === false ? null : <Helmet car={car} id={id} />}
         {car.cockpit.headrest ? (
           <path
             d={car.cockpit.headrest}

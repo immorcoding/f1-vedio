@@ -73,11 +73,17 @@ const tonguePath = ({ bx, w, h, lean }: Tongue, s: number) => {
   );
 };
 
-// A detached flame floating at height y (negative = up): a teardrop with a leaning tip.
-const wispPath = ({ bx, y, w, h, lean }: Tongue & { y: number }) =>
-  `M ${bx} ${y} C ${bx - w * 0.6} ${y - h * 0.05} ${bx - w * 0.2} ${y - h * 0.5} ${bx - lean} ${y - h * 0.62} ` +
-  `C ${bx - lean * 0.2} ${y - h * 0.75} ${bx + lean * 0.8} ${y - h * 0.85} ${bx + lean} ${y - h} ` +
-  `C ${bx + w * 0.55} ${y - h * 0.6} ${bx + w * 0.55} ${y - h * 0.15} ${bx} ${y} Z`;
+// A detached flame flick floating at height y (negative = up): a thin curved sliver, pointed at both ends — a lick of
+// flame torn off the top, never a round-bottomed drop.
+const wispPath = ({ bx, y, w, h, lean }: Tongue & { y: number }) => {
+  const W = w * 0.5;
+  const s = lean >= 0 ? 1 : -1;
+  return (
+    `M ${bx - s * W * 0.3} ${y} ` +
+    `C ${bx + s * W * 0.9} ${y - h * 0.25} ${bx - s * W * 0.4} ${y - h * 0.6} ${bx + s * W * 0.5} ${y - h} ` +
+    `C ${bx + s * W * 0.1} ${y - h * 0.62} ${bx + s * W * 1.5} ${y - h * 0.3} ${bx - s * W * 0.3} ${y} Z`
+  );
+};
 
 export type FireProps = {
   // Middle of the fire's base, on screen.
