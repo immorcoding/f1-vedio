@@ -1,5 +1,65 @@
-// Edit list for 阿布扎比 2021 (bars 81–104). Placeholder until ticket #5 replaces it.
-import { stubEdit } from "../../shot.ts";
+// Edit list for 阿布扎比 2021 (bars 81–104), treatment shots 5.1–5.7. The drop at 81.1 is cued by the buildup part
+// (it is the cut between the two).
+import { hitCue, type PartEdit } from "../../shot.ts";
 import { at } from "../../timing.ts";
 
-export const EDIT = stubEdit("abuDhabi2021", at(81), at(105), "#5");
+export const EDIT: PartEdit = {
+  status: "cut",
+  shots: [
+    {
+      id: "5.1",
+      from: at(81),
+      to: at(85),
+      view: "closeup",
+      content: "两车冲向 5 号弯：VER 贴着 HAM 的尾流，向内线摆出",
+    },
+    {
+      id: "5.2",
+      from: at(85),
+      to: at(89),
+      view: "top",
+      content: "俯视 T5 发卡弯：HAM 走外线，VER 内线晚刹车切入的走线",
+    },
+    {
+      id: "5.3",
+      from: at(89),
+      to: at(91),
+      view: "closeup",
+      content:
+        "定版那一格（style-b-manga-v2.png）：VER 锁死前轮冒烟，HAM 在外线；第一帧即定版画面",
+      text: ["吱——", "轰——！"],
+      cues: [hitCue("abuDhabi2021.lockup")],
+    },
+    {
+      id: "5.4",
+      from: at(91),
+      to: at(95),
+      view: "closeup",
+      content: "出弯，HAM 在后直道借尾流反扑，VER 守住内线",
+    },
+    {
+      id: "5.5",
+      from: at(95),
+      to: at(99),
+      view: "top",
+      content: "俯视全图：从后直道一路到终点线，VER 领先",
+    },
+    {
+      id: "5.6",
+      from: at(99),
+      to: at(101),
+      view: "closeup",
+      content: "VER 冲线：第 99 小节第一拍前轮压上终点线，方格旗挥下；HAM 2.2 秒后过线",
+      cues: [hitCue("abuDhabi2021.finish")],
+    },
+    {
+      id: "5.7",
+      from: at(101),
+      to: at(105),
+      view: "title",
+      content: "积分翻牌定格",
+      text: ["395.5 · 387.5"],
+      cues: [hitCue("abuDhabi2021.points")],
+    },
+  ],
+};
