@@ -2,7 +2,7 @@
 
 画面长什么样：画风、颜色、赛车与赛道的画法、画面里的文字。
 
-Next id: ART-7
+Next id: ART-8
 
 ## Pillars
 
@@ -17,16 +17,22 @@ Next id: ART-7
 - **ART-3** · provisional · 颜色只出现在车队配色条纹和倍耐力胎圈（软胎红、中性胎黄、硬胎白）上，其余全部黑白。_Why:_ 保持简约，同时让观众一眼分清两台车和轮胎策略。
 - **ART-4** · provisional · 实施阶段画每台车、每条赛道、每个场景之前，先上网找这场比赛的真实图片作参考（车型年代、配色、赛道和建筑特征），再照着画。_Why:_ 用户 2026-10-03 要求；凭印象画的通用赛车显得简陋。
 - **ART-5** · exploring · 不画车手面部（只画头盔），不画真实赞助商 logo 和车队标志，用配色、车号和头盔区分车手。_Why:_ 避开肖像和商标问题，漫画里头盔已足够辨认。
+- **ART-7** · provisional · 质量底线：每件素材的精细度不得低于 `cars-2021-sheet.png`。也就是说，要照真实参考照片描线，并把描线叠回照片校验；要有部件级细节（翼片、端板、悬挂、导流板、座舱等）；要分三档明暗（受光面浅网点、侧面深网点、凹陷实黑），深色车身加白色高光。_Why:_ 用户 2026-10-03 看完照片描绘版后定下"不得低于这个质量"。_Check:_ 资产评审，新素材与 References 里的 `cars-2021-sheet.png` 并排对照。
 - **ART-6** · exploring · 拟声字用毛笔字体（Ma Shan Zheng），旁白框用 ZCOOL KuaiLe；关键瞬间用漫画小格（inset panel）给特写。_Why:_ B 版原型里这套组合最有漫画味。
 
 ## References
 
-- `docs/shape/references/style-b-manga.png`：选定的画风原型，阿布扎比 2021 第 58 圈 T5（ART-2、ART-3、ART-6）
+- `docs/shape/references/style-b-manga-v2.png`：画风与质量基准，阿布扎比 2021 第 58 圈 T5，用照片描绘的车模（ART-2、ART-3、ART-6、ART-7）
+- `docs/shape/references/cars-2021-sheet.png`：素材质量底线，W12 与 RB16B 素材表（ART-4、ART-7）
+- `docs/shape/references/style-b-manga.png`：最初选定的画风原型（车模较简陋，只代表画风，不代表质量）（ART-2）
 
 ## Open questions
 
 - 透视镜头（斜前方、车载、俯拍）怎么画：目前车模只有纯侧面。
 - 线条抖动（boil）在动画里要不要动、动多快。
+
+## Signals
+
 
 ## Rejected
 

@@ -4,6 +4,8 @@ import { ABU_DHABI_2021_FRAMES, AbuDhabi2021 } from "./prototype/AbuDhabi2021";
 import { StyleA } from "./prototype/styles/StyleA";
 import { StyleB } from "./prototype/styles/StyleB";
 import { StyleC } from "./prototype/styles/StyleC";
+import { TraceCheck } from "./prototype/styles/TraceCheck";
+import { CarSheet2021 } from "./prototype/styles/CarSheet2021";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -15,6 +17,9 @@ export const RemotionRoot: React.FC = () => {
         <Still id="Style-A-InkWatercolor" component={StyleA} width={1920} height={1080} />
         <Still id="Style-B-Manga" component={StyleB} width={1920} height={1080} />
         <Still id="Style-C-Illustration" component={StyleC} width={1920} height={1080} />
+        <Still id="Sheet-Cars2021" component={CarSheet2021} width={1920} height={1080} />
+        <Still id="Trace-W12" component={TraceCheck} defaultProps={{ car: "W12" }} width={1920} height={1080} />
+        <Still id="Trace-RB16B" component={TraceCheck} defaultProps={{ car: "RB16B" }} width={1920} height={1080} />
       </Folder>
     </>
   );

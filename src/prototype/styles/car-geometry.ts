@@ -59,7 +59,7 @@ export const MERCEDES_2021: CarSkin = { body: "#1c1c1e", accent: "#00a19b", nose
 
 // Scene placement shared by every style: camera on the outside of T5, so HAM (outside line) is nearer.
 export const HAM_PLACE = { x: 150, ground: 915, scale: 1.0 };
-export const VER_PLACE = { x: 470, ground: 770, scale: 0.8 };
+export const VER_PLACE = { x: 600, ground: 770, scale: 0.8 };
 export const placeTransform = (p: { x: number; ground: number; scale: number }) => `translate(${p.x} ${p.ground}) scale(${p.scale})`;
 // Screen position of VER's front contact patch, where the lock-up smoke starts.
 export const VER_LOCKUP = { x: VER_PLACE.x + 1060 * VER_PLACE.scale, y: VER_PLACE.ground };

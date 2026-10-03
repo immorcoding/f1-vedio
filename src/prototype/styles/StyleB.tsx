@@ -2,7 +2,9 @@
 import { AbsoluteFill } from "remotion";
 import { loadFont as loadBrush } from "@remotion/google-fonts/MaShanZheng";
 import { handZh } from "../race-kit";
-import { CAR, HAM_PLACE, MERCEDES_2021, RED_BULL_2021, RIM_R, VER_LOCKUP, VER_PLACE, WHEELS, placeTransform, spokes, type CarSkin } from "./car-geometry";
+import { HAM_PLACE, RED_BULL_2021, VER_PLACE, spokes } from "./car-geometry";
+import { RB16B, W12, wheelInCarUnits } from "./cars-2021";
+import { MangaCar } from "./MangaCar";
 
 const { fontFamily: brush } = loadBrush("normal", { weights: ["400"], subsets: ["chinese-simplified"], ignoreTooManyRequestsWarning: true });
 
@@ -10,6 +12,8 @@ const WHITE = "#fbfaf6";
 const BLACK = "#0d0d0d";
 const PANEL = { x: 40, y: 40, w: 1840, h: 1000 };
 const INSET = { x: 1290, y: 70, w: 560, h: 330 };
+const VER_FRONT = wheelInCarUnits(RB16B, 0);
+const VER_LOCKUP = { x: VER_PLACE.x + VER_FRONT.x * VER_PLACE.scale, y: VER_PLACE.ground };
 
 const tone = (id: string, r: number, gap = 7) => (
   <pattern id={id} width={gap} height={gap} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -32,12 +36,6 @@ const Defs: React.FC = () => (
     </clipPath>
     <clipPath id="b-inset">
       <rect x={INSET.x} y={INSET.y} width={INSET.w} height={INSET.h} />
-    </clipPath>
-    <clipPath id="b-body">
-      <path d={CAR.body} />
-    </clipPath>
-    <clipPath id="b-top">
-      <path d={CAR.topBand} />
     </clipPath>
     <clipPath id="b-ground">
       <rect x={-100} y={606} width={2120} height={600} />
@@ -123,51 +121,6 @@ const Track: React.FC = () => (
   </g>
 );
 
-const Car: React.FC<{ skin: CarSkin; place: { x: number; ground: number; scale: number }; toneFill: string }> = ({ skin, place, toneFill }) => (
-  <g transform={placeTransform(place)}>
-    <ellipse cx={720} cy={2} rx={700} ry={14} fill={BLACK} />
-    <path d={CAR.body} fill={toneFill} />
-    <path d={CAR.floor} fill={BLACK} />
-    <path d={CAR.rearWingEndplate} fill={toneFill} />
-    <path d={CAR.frontWingEndplate} fill={toneFill} />
-    <path d={CAR.accentStripe} fill={skin.accent} />
-    <path d={CAR.engineAccent} fill={skin.accent} />
-    <g clipPath="url(#b-body)">
-      <path d={CAR.shadowBand} fill={BLACK} opacity={toneFill === BLACK ? 0 : 0.85} />
-      <g clipPath="url(#b-top)">
-        <path d={CAR.body} fill="none" stroke={WHITE} strokeWidth={9} />
-      </g>
-    </g>
-    <Ink d={CAR.body} w={5} />
-    {[CAR.sidepodLine, CAR.inlet, CAR.undercut, CAR.boomerang, CAR.fin, CAR.headrest, CAR.airboxMouth, ...CAR.vanes].map((d) => (
-      <Ink key={d} d={d} w={2.4} c={WHITE} />
-    ))}
-    {[...CAR.suspension, ...CAR.rearWingLines, ...CAR.frontWingLines, ...CAR.frontWingPillars, CAR.beamWing, CAR.mirror, CAR.mirrorStalk].map((d) => (
-      <Ink key={d} d={d} w={2.4} />
-    ))}
-    <Ink d={CAR.rearWingEndplate} w={4.5} />
-    <Ink d={CAR.frontWingEndplate} w={4} />
-    <path d={CAR.halo} fill="none" stroke={BLACK} strokeWidth={13} strokeLinecap="round" />
-    <path d={CAR.halo} fill="none" stroke={WHITE} strokeWidth={3} strokeLinecap="round" transform="translate(0 -3)" />
-    <circle cx={CAR.helmet.cx} cy={CAR.helmet.cy} r={CAR.helmet.r} fill={WHITE} stroke={BLACK} strokeWidth={4} />
-    <path d={CAR.visor} fill={BLACK} />
-    <path d={`M ${CAR.helmet.cx - 20} ${CAR.helmet.cy - 4} C ${CAR.helmet.cx - 14} ${CAR.helmet.cy - 22} ${CAR.helmet.cx + 2} ${CAR.helmet.cy - 28} ${CAR.helmet.cx + 14} ${CAR.helmet.cy - 26}`} fill="none" stroke={skin.accent} strokeWidth={6} />
-    <text x={CAR.number.x} y={CAR.number.y} fontFamily={handZh} fontSize={32} fill={WHITE} transform={`rotate(-7 ${CAR.number.x} ${CAR.number.y})`}>
-      {skin.number}
-    </text>
-    {WHEELS.map((w) => (
-      <g key={w.cx}>
-        <circle cx={w.cx} cy={w.cy} r={w.r} fill={BLACK} />
-        <circle cx={w.cx} cy={w.cy} r={w.r - 16} fill="none" stroke={skin.compound} strokeWidth={4} />
-        <circle cx={w.cx} cy={w.cy} r={RIM_R} fill="url(#b-tone-light)" stroke={BLACK} strokeWidth={3} />
-        <path d={spokes(w, RIM_R)} stroke={BLACK} strokeWidth={3} />
-        <circle cx={w.cx} cy={w.cy} r={9} fill={BLACK} />
-        <path d={`M ${w.cx - w.r * 0.8} ${w.cy - w.r * 0.42} A ${w.r * 0.9} ${w.r * 0.9} 0 0 1 ${w.cx - w.r * 0.1} ${w.cy - w.r * 0.9}`} fill="none" stroke={WHITE} strokeWidth={5} strokeLinecap="round" />
-      </g>
-    ))}
-  </g>
-);
-
 const Puffs: React.FC<{ x: number; y: number; n: number; step: number; grow: number }> = ({ x, y, n, step, grow }) => (
   <g>
     {Array.from({ length: n }, (_, i) => {
@@ -235,11 +188,11 @@ export const StyleB: React.FC = () => (
           <g transform="rotate(-3 960 540)">
             <Background />
             <Track />
-            <Car skin={RED_BULL_2021} place={VER_PLACE} toneFill="url(#b-tone-dark)" />
+            <MangaCar car={RB16B} id="ver" scheme="navy" x={VER_PLACE.x} ground={VER_PLACE.ground} scale={VER_PLACE.scale} spin={18} />
             <Puffs x={VER_LOCKUP.x - 40} y={VER_LOCKUP.y - 12} n={13} step={26} grow={3.4} />
-            <Car skin={MERCEDES_2021} place={HAM_PLACE} toneFill={BLACK} />
+            <MangaCar car={W12} id="ham" scheme="black" x={HAM_PLACE.x} ground={HAM_PLACE.ground} scale={HAM_PLACE.scale} spin={40} />
           </g>
-          <Sfx x={1380} y={590} size={160} rotate={-12}>
+          <Sfx x={960} y={360} size={150} rotate={-10}>
             轰——！
           </Sfx>
         </g>
