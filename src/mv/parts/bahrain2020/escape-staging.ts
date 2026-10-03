@@ -88,8 +88,8 @@ export const MARSHAL_POSE: BodyPose = {
     arm: { shoulder: -4, elbow: 16 },
   },
 };
-export const MARSHAL_AT = { x: CLIMB_X + 2.75, z: 12.35 };
-export const AIM = { x: CLIMB_X + 1.45, y: 0.75, z: 13.4 }; // into the cockpit, beside where GRO came out
+export const MARSHAL_AT = { x: CLIMB_X + 2.5, z: 12.35 };
+export const AIM = { x: CLIMB_X + 1.25, y: 0.75, z: 13.4 }; // into the cockpit, beside where GRO came out
 
 // t = frames into the shot
 export const stage36 = (t: number) => {
