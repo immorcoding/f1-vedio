@@ -1,23 +1,39 @@
-// Studio "Library" folder: review stills for the asset library — kit sheet, car sheets, car state check, and the
-// Trace/Art check stills of every traced car (ART-10). Registered from Root with one line.
+// Studio "Library" folder: review stills for the asset library — kit sheet, car sheets (one per year, side and top
+// views), car state checks, scene and track sheets, and the Trace/Art check stills of every traced car (ART-10).
+// Registered from Root with one line.
 import { Composition, Folder, Still } from "remotion";
 import { CARS, type CarId } from "../cars";
+import type { TrackId } from "../tracks";
 import { T5Panel } from "../scenes/abu-dhabi-2021/T5Panel";
-import { Cars2020States, FireSheet, SHEET_2020 } from "./Bahrain2020Sheets";
+import { Cars2020States, FireSheet } from "./Bahrain2020Sheets";
 import { CarCheck } from "./CarCheck";
-import { CarSheet, SHEET_2021 } from "./CarSheet";
+import { CarSheet, SHEETS } from "./CarSheet";
 import { CAR_STATES_FRAMES, CarStates } from "./CarStates";
 import { KitSheet } from "./KitSheet";
+import { SuzukaTracksideSheet } from "./SceneSheets";
+import { TOP_SHEET_2021, TopCarSheet } from "./TopCarSheet";
+import { TRACK_SHEETS, TrackSheet } from "./TrackSheet";
 
 const SIZE = { width: 1920, height: 1080 };
+
+const YEARS = Object.keys(SHEETS).map(Number) as (keyof typeof SHEETS)[];
 
 export const LibraryFolder: React.FC = () => (
   <Folder name="Library">
     <Still id="Kit-Sheet" component={KitSheet} {...SIZE} />
+    {YEARS.map((year) => (
+      <Still
+        key={year}
+        id={`Cars-${year}-Sheet`}
+        component={CarSheet}
+        defaultProps={SHEETS[year]}
+        {...SIZE}
+      />
+    ))}
     <Still
-      id="Cars-2021-Sheet"
-      component={CarSheet}
-      defaultProps={SHEET_2021}
+      id="Cars-2021-Top-Sheet"
+      component={TopCarSheet}
+      defaultProps={TOP_SHEET_2021}
       {...SIZE}
     />
     <Composition
@@ -30,11 +46,19 @@ export const LibraryFolder: React.FC = () => (
     />
     <Still id="Scene-AbuDhabi2021-T5" component={T5Panel} {...SIZE} />
     <Still
-      id="Cars-2020-Sheet"
-      component={CarSheet}
-      defaultProps={SHEET_2020}
+      id="Scene-Suzuka1989-Trackside"
+      component={SuzukaTracksideSheet}
       {...SIZE}
     />
+    {(Object.keys(TRACK_SHEETS) as TrackId[]).map((track) => (
+      <Still
+        key={track}
+        id={`Track-${track}-Sheet`}
+        component={TrackSheet}
+        defaultProps={{ track }}
+        {...SIZE}
+      />
+    ))}
     <Still id="Cars-2020-States" component={Cars2020States} {...SIZE} />
     {(["manga", "color"] as const).map((palette) => (
       <Still

@@ -53,10 +53,9 @@ export const VF20: CarSpec = {
     },
   ],
   // red flick on the near front endplate, red top of the rear wing
-  wingLivery: [
-    { d: "M 352 712 L 376 708 L 418 760 L 396 764 Z", color: HAAS_RED },
-    { d: "M 1676 418 L 1780 416 L 1800 520 L 1702 520 Z", color: HAAS_RED },
-  ],
+  // No wing colour blocks: the red diagonal on the near front endplate and the red far rear endplate broke ART-17
+  // (endplates of one wing are one shape, coloured alike; the flap carries the red).
+  wingLivery: [],
   // white top of the nose and of the chassis flank
   accents: [
     {
@@ -98,7 +97,8 @@ export const VF20: CarSpec = {
   floor: "M 690 784 L 1585 784 L 1580 796 L 700 798 Z",
   frontWing: {
     near: "M 260 764 L 416 760 L 418 830 L 404 846 L 272 848 L 258 834 Z",
-    far: "M 271 579 L 406 572 L 408 604 L 398 616 L 282 619 L 270 608 Z",
+    // far endplate: the near one seen further away (ART-17)
+    farFrom: { dx: 12, dy: -188, scale: 0.8625 },
     deck: "M 272 618 L 404 616 L 416 762 L 416 820 L 272 848 C 238 826 214 762 218 718 C 222 690 248 646 272 618 Z",
     flap: { d: "M 364 617 L 404 616 L 416 762 L 380 762 Z", color: HAAS_RED },
   },
@@ -107,6 +107,8 @@ export const VF20: CarSpec = {
     top: "M 1598 418 L 1780 416 L 1792 444 L 1800 520 L 1688 520 L 1590 470 Z",
     elements: ["M 1594 466 L 1796 470"],
     pylon: "M 1606 468 L 1632 468 L 1642 612 L 1616 614 Z",
+    // far endplate: the near one seen further away, above and behind it (ART-17)
+    farFrom: { dx: -12, dy: -100, scale: 0.95 },
     beam: "M 1700 626 L 1830 626",
   },
   panelLines: [
@@ -202,7 +204,8 @@ export const AT01: CarSpec = {
   floor: "M 640 772 L 1600 764 L 1596 776 L 646 784 Z",
   frontWing: {
     near: "M 246 708 L 414 704 L 416 766 L 404 778 L 256 780 L 244 768 Z",
-    far: "M 166 657 L 314 655 L 316 686 L 306 694 L 176 696 L 165 684 Z",
+    // far endplate: the near one seen further away (ART-17)
+    farFrom: { dx: -79, dy: -49, scale: 0.878 },
     deck: "M 176 695 L 314 692 L 414 706 L 414 760 L 256 780 C 200 770 158 752 155 728 C 156 712 166 700 176 695 Z",
     flap: { d: "M 272 693 L 314 692 L 414 706 L 370 707 Z", color: AT_NAVY },
   },

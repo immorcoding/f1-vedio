@@ -108,6 +108,11 @@ export const W12: CarSpec = {
   antenna: "M 612 554 L 612 495",
   rainLight: "M 1700 640 L 1716 640 L 1716 654 L 1700 654 Z",
   numberAt: { x: 1500, y: 555 },
+  // From above (side and rear reference photos): teal nose tip and sidepod stripe, red airbox top ahead of the silver
+  // engine cover.
+  top: {
+    marks: { noseTip: "#00a19b", coverStripe: "#8e1430", podStripe: "#00a19b" },
+  },
 };
 
 export const RB16B: CarSpec = {
@@ -206,4 +211,6 @@ export const RB16B: CarSpec = {
   antenna: "M 545 554 L 545 518 M 535 518 L 556 518",
   rainLight: "M 1650 640 L 1666 640 L 1666 654 L 1650 654 Z",
   numberAt: { x: 1470, y: 530 },
+  // From above (side and rear reference photos): yellow nose tip and red sidepod flash.
+  top: { marks: { noseTip: "#ffcc00", podStripe: "#d72a2e" } },
 };

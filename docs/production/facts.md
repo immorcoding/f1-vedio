@@ -20,6 +20,12 @@ MV 画面上出现的每个事实及其来源（STO-3）。来源核对日期：
 - 全场 71 圈；最后一圈雨势变大，Glock（Toyota）仍用干地胎；Vettel 和 Hamilton 在最后几个弯超过 Glock，Hamilton 拿回第 5 名。
 - Massa 赢下比赛；年度积分 Hamilton 98、Massa 97，Hamilton 以 1 分夺冠。
 - 来源：[2008 Brazilian Grand Prix — Wikipedia](https://en.wikipedia.org/wiki/2008_Brazilian_Grand_Prix)
+- **已核实（原"待核实"）：Vettel 超 Hamilton 是在第 69 圈，Hamilton 从第 5 掉到第 6。** 第 69 圈雨势变大，Hamilton 跑宽，Vettel 拿到第 5；第 69、70 圈结束时排名都是 GLO 第 4、VET 第 5、HAM 第 6。Massa 冲线夺冠那一刻 Hamilton 仍是第 6。第 71 圈（最后一圈）VET 和 HAM 先后超过还在用干地胎的 GLO：VET 在前、HAM 在后，HAM 的超车发生在 Junção 弯、冲上通往终点的上坡时。最终 VET 第 4、HAM 第 5、GLO 第 6。
+  - 圈位：[Jolpica-F1（Ergast 数据）2008 第 18 站第 66–71 圈逐圈排名](https://api.jolpi.ca/ergast/f1/2008/18/laps/69.json)
+  - 第 69 圈跑宽、VET 拿到第 5：[2008 Brazilian Grand Prix — Wikipedia, Race](https://en.wikipedia.org/wiki/2008_Brazilian_Grand_Prix#Race)；BBC 赛报写作"倒数第二圈开始时"被 Vettel 超过（即第 69 圈过线时），[BBC Sport, 2008-11-02](https://news.bbc.co.uk/sport2/hi/motorsport/formula_one/7705230.stm)
+  - Junção：Autosport 文字直播"the move from Hamilton on Glock at the Juncao on the last lap"，[As it happened: Showdown at Interlagos（存档）](https://web.archive.org/web/20081206231049/http://live.autosport.com/commentary.php/id/63)；BBC："the McLaren slipped past the Toyota as it accelerated up the hill towards the finish line"。
+- 两人进站换半雨胎、只有 GLO 留在干地胎上：HAM、VET 第 66 圈进站（FIA 进站汇总），[Formula1.com Pit stop summary（存档）](https://web.archive.org/web/20081206133243/http://www.formula1.com/results/season/2008/804/6586/pit_stop_summary.html)。
+- 车号（同一份进站汇总）：MAS #2、GLO #12、VET #15、HAM #22。
 
 ## 2020 巴林大奖赛
 
