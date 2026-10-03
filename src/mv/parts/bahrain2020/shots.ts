@@ -21,7 +21,7 @@ export const EDIT: PartEdit = {
       content:
         "第 1 圈 3 号弯后直道俯视：GRO 从左往右并线，右后轮擦到 KVY 左前轮，斜冲向右侧护栏",
       text: ["第 1 圈"],
-      cues: [{ id: "bahrain2020.contact", at: at(60, 3) }],
+      cues: [{ id: "bahrain2020.contact", at: at(60) }],
     },
     {
       id: "3.3",
