@@ -12,6 +12,9 @@ import { carPoint, type CarSpec } from "./spec";
 
 const svgId = (raw: string) => `top${raw.replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
+// Width of a suspension arm seen from above, m: a faired wishbone, drawn as one ink line.
+const SUSPENSION_ARM = 0.04;
+
 // `at` is the middle of the car's rear end on screen; the nose points along state.heading (degrees clockwise from
 // screen right). state.steer turns the front wheels, state.compound sets the tyre band.
 export const TopCar: React.FC<{
@@ -38,16 +41,26 @@ export const TopCar: React.FC<{
         <clipPath id={`${id}-shade`}>
           <rect x={-1} y={0} width={8} height={1.5} />
         </clipPath>
+        {/* everything but the tyres (the front ones as steered), for the suspension arms */}
+        <mask
+          id={`${id}-tyres`}
+          maskUnits="userSpaceOnUse"
+          x={-2}
+          y={-2}
+          width={10}
+          height={4}
+        >
+          <rect x={-2} y={-2} width={10} height={4} fill="#fff" />
+          {plan.wheels.map((t) => (
+            <path
+              key={`${t.x}${t.y}`}
+              d={roundedBox(t.x, t.y, t.length, t.width)}
+              transform={t.steer ? `rotate(${steer} ${t.x} ${t.y})` : undefined}
+              fill="#000"
+            />
+          ))}
+        </mask>
       </defs>
-      {/* suspension arms, under everything */}
-      {plan.suspension ? (
-        <path
-          d={plan.suspension}
-          stroke={INK}
-          strokeWidth={w(2.4)}
-          strokeLinecap="round"
-        />
-      ) : null}
       {/* tyres: black, with the compound's sidewall band on the outer edge */}
       {plan.wheels.map((t) => {
         const s = Math.sign(t.y);
@@ -94,6 +107,18 @@ export const TopCar: React.FC<{
         opacity={0.5 * (car.shade ?? 1)}
         clipPath={`url(#${id}-shade)`}
       />
+      {/* suspension arms over the floor and sidepods but under the tub, the engine cover and the tyres (masked out):
+          one ink line per arm, as wide as a faired wishbone (SUSPENSION_ARM) plus a constant ink edge, so they read
+          at every map scale and alike on every car (ART-15) */}
+      {plan.suspension ? (
+        <path
+          d={plan.suspension}
+          stroke={INK}
+          strokeWidth={SUSPENSION_ARM + w(1.5)}
+          strokeLinecap="round"
+          mask={`url(#${id}-tyres)`}
+        />
+      ) : null}
       {(plan.inlets ?? []).map((d) => (
         <path key={d} d={d} fill={INK} />
       ))}

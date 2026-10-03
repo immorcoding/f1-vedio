@@ -40,13 +40,6 @@ export const MP4_23: CarSpec = {
       color: "#7b7f86",
     },
   ],
-  // the front wing is silver; the rear wing endplates are charcoal (paint.wing)
-  wingLivery: [
-    {
-      d: "M 245 522 L 445 520 L 447 594 L 436 603 L 228 606 L 236 590 C 238 570 240 540 245 522 Z",
-      color: "#c3c7cc",
-    },
-  ],
   accents: [
     // red stripe up the side of the nose, and along the top edge of the engine cover fin
     {
@@ -93,12 +86,20 @@ export const MP4_23: CarSpec = {
     near: "M 245 522 L 445 520 L 447 594 L 436 603 L 228 606 L 236 590 C 238 570 240 540 245 522 Z",
     // far endplate: the near one seen further away (ART-17)
     farFrom: { dx: 10, dy: -28, scale: 0.95 },
+    // the front wing endplates are silver; the rear wing endplates are charcoal (paint.wing)
+    livery: [
+      {
+        d: "M 245 522 L 445 520 L 447 594 L 436 603 L 228 606 L 236 590 C 238 570 240 540 245 522 Z",
+        color: "#c3c7cc",
+      },
+    ],
     deck: "M 238 500 L 294 496 L 447 522 L 447 590 L 255 604 C 236 590 230 540 238 500 Z",
     flap: { d: "M 400 513 L 447 521 L 447 560 L 400 556 Z", color: "#e2231a" },
   },
   rearWing: {
     near: "M 1620 362 L 1773 360 L 1827 443 L 1827 523 L 1810 543 L 1753 543 L 1700 500 L 1625 455 Z",
-    top: "M 1597 343 L 1735 341 L 1748 352 L 1773 360 L 1620 362 L 1620 405 L 1597 405 Z",
+    // far endplate: the near one's copy, peeking above and ahead of it; the wing is seen edge-on (ART-17)
+    farFrom: { dx: -23, dy: -19, scale: 0.95 },
     elements: ["M 1600 375 L 1622 375"],
     pylon: "M 1700 420 L 1720 420 L 1725 470 L 1705 470 Z",
     beam: "M 1700 522 L 1800 522",
@@ -144,7 +145,6 @@ export const F2008: CarSpec = {
   livery: [
     { d: "M 1150 455 L 1343 458 L 1400 557 L 1173 553 Z", color: "#f4f4f2" },
   ],
-  wingLivery: [],
   accents: [],
   nearWheels: [
     { cx: 531, cy: 690, r: 102 },
@@ -186,6 +186,8 @@ export const F2008: CarSpec = {
   },
   rearWing: {
     near: "M 1580 510 L 1747 503 L 1777 520 L 1777 673 L 1697 673 L 1650 640 L 1590 600 Z",
+    // far endplate: the near one's copy, just above and ahead of it, behind the upper element (ART-17)
+    farFrom: { dx: -17, dy: -14, scale: 0.95 },
     top: "M 1563 480 L 1690 478 L 1700 503 L 1580 510 L 1580 525 L 1563 525 Z",
     elements: ["M 1565 500 L 1582 500"],
     pylon: "M 1640 560 L 1660 560 L 1665 610 L 1645 610 Z",
@@ -238,7 +240,6 @@ export const STR3: CarSpec = {
       color: "#c8a13a",
     },
   ],
-  wingLivery: [],
   // the bull's light-blue horn on the side of the chassis
   accents: [
     {
@@ -286,7 +287,9 @@ export const STR3: CarSpec = {
   },
   rearWing: {
     near: "M 1550 460 L 1630 460 L 1695 472 L 1695 610 L 1650 610 L 1630 580 L 1560 520 Z",
-    top: "M 1430 420 L 1600 418 L 1630 460 L 1550 460 L 1550 470 L 1430 470 Z",
+    // far endplate: the near one's copy, showing above it behind the wing elements (ART-17)
+    farFrom: { dx: -6, dy: -22, scale: 0.95 },
+    top: "M 1430 420 L 1590 418 L 1600 440 L 1550 460 L 1550 470 L 1430 470 Z",
     elements: ["M 1435 440 L 1550 438"],
     pylon: "M 1600 520 L 1620 520 L 1625 560 L 1605 560 Z",
     beam: "M 1620 600 L 1690 600",
@@ -342,12 +345,6 @@ export const TF108: CarSpec = {
     },
   ],
   // red flames at the foot of the rear wing endplate
-  wingLivery: [
-    {
-      d: "M 1570 650 L 1608 662 L 1593 670 L 1638 679 L 1613 686 L 1675 695 L 1675 704 L 1598 703 Z",
-      color: "#d9161c",
-    },
-  ],
   accents: [],
   nearWheels: [
     { cx: 473, cy: 705, r: 101 },
@@ -389,6 +386,15 @@ export const TF108: CarSpec = {
   },
   rearWing: {
     near: "M 1477 556 L 1650 556 L 1677 571 L 1675 704 L 1598 703 L 1568 650 L 1489 608 Z",
+    // red flame at the foot of the endplate, on both endplates (ART-17)
+    livery: [
+      {
+        d: "M 1570 650 L 1608 662 L 1593 670 L 1638 679 L 1613 686 L 1675 695 L 1675 704 L 1598 703 Z",
+        color: "#d9161c",
+      },
+    ],
+    // far endplate: the near one's copy, just above and ahead of it, behind the upper element (ART-17)
+    farFrom: { dx: -12, dy: -14, scale: 0.95 },
     top: "M 1450 525 L 1600 525 L 1655 541 L 1650 556 L 1477 556 L 1470 568 L 1450 568 Z",
     elements: ["M 1455 543 L 1475 543"],
     pylon: "M 1559 609 L 1579 610 L 1583 650 L 1563 649 Z",

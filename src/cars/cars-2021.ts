@@ -28,10 +28,6 @@ export const W12: CarSpec = {
       color: "#8e1430",
     },
   ],
-  // red top of the far front-wing endplate
-  wingLivery: [
-    { d: "M 141 598 L 306 598 L 306 612 L 139 612 Z", color: "#8e1430" },
-  ],
   accents: [
     {
       d: "M 530 645 C 650 642 760 636 810 640 C 850 650 880 672 892 700 L 880 702 C 866 678 840 660 806 652 C 750 648 650 652 530 655 Z",
@@ -78,15 +74,19 @@ export const W12: CarSpec = {
   ],
   floor: "M 600 788 L 1545 798 L 1540 808 L 610 806 Z",
   frontWing: {
+    // Both endplates black, as the near one's outer face in the photo (ART-17); the far one is its copy, its top
+    // edge where the photo shows it.
     near: "M 152 756 L 330 756 L 330 813 L 317 825 L 162 825 L 147 810 Z",
-    far: "M 141 598 L 306 598 L 306 634 L 294 642 L 150 642 L 136 632 Z",
+    farFrom: { dx: -11, dy: -158, scale: 0.93 },
     deck: "M 140 642 L 305 640 L 330 758 L 330 800 L 162 825 C 128 804 102 744 104 712 C 106 698 124 668 140 642 Z",
     flap: { d: "M 262 641 L 305 640 L 330 758 L 282 757 Z", color: "#00a19b" },
   },
   rearWing: {
     near: "M 1685 525 L 1858 528 L 1872 562 L 1845 600 L 1845 675 L 1690 678 Z",
-    top: "M 1655 445 L 1772 440 L 1790 450 L 1840 470 L 1850 525 L 1685 525 L 1662 500 Z",
-    elements: ["M 1668 495 L 1848 505"],
+    // far endplate: the near one's copy, black like it, showing behind the wing elements (ART-17)
+    farFrom: { dx: -5, dy: -80, scale: 0.95 },
+    top: "M 1655 445 L 1772 440 L 1790 450 L 1790 525 L 1685 525 L 1662 500 Z",
+    elements: ["M 1668 495 L 1790 501"],
     pylon: "M 1640 500 L 1682 500 L 1690 612 L 1650 616 Z",
     beam: "M 1690 600 L 1840 600",
   },
@@ -131,13 +131,6 @@ export const RB16B: CarSpec = {
     rearTop: "#1d2448",
   },
   livery: [],
-  // red rear-wing endplate panel
-  wingLivery: [
-    {
-      d: "M 1602 522 L 1826 522 L 1812 560 L 1800 600 L 1602 600 Z",
-      color: "#d72a2e",
-    },
-  ],
   accents: [
     {
       d: "M 152 712 C 200 696 250 676 300 660 L 314 702 C 270 714 210 724 158 726 Z",
@@ -181,15 +174,25 @@ export const RB16B: CarSpec = {
   ],
   floor: "M 585 774 L 1495 764 L 1492 776 L 590 788 Z",
   frontWing: {
+    // far endplate: the near one's copy, its top edge where the photo shows it (ART-17)
     near: "M 136 752 L 318 752 L 318 809 L 305 822 L 145 822 L 130 807 Z",
-    far: "M 137 600 L 306 600 L 306 633 L 294 640 L 146 640 L 132 631 Z",
+    farFrom: { dx: 2, dy: -152, scale: 0.925 },
     deck: "M 135 640 L 305 638 L 318 752 L 318 800 L 145 822 C 118 800 100 744 104 714 C 108 700 122 668 135 640 Z",
     flap: { d: "M 262 639 L 305 638 L 318 752 L 272 752 Z", color: "#d72a2e" },
   },
   rearWing: {
     near: "M 1602 522 L 1826 522 L 1812 560 L 1800 600 L 1785 602 L 1785 660 L 1612 660 L 1602 600 Z",
-    top: "M 1625 412 L 1725 412 L 1745 430 L 1805 440 L 1826 522 L 1602 522 L 1610 470 Z",
-    elements: ["M 1608 495 L 1815 495"],
+    // red endplate panel, on both endplates (ART-17)
+    livery: [
+      {
+        d: "M 1602 522 L 1826 522 L 1812 560 L 1800 600 L 1602 600 Z",
+        color: "#d72a2e",
+      },
+    ],
+    // far endplate: the near one's copy, showing behind the wing elements where the photo shows it
+    farFrom: { dx: -2, dy: -82, scale: 0.95 },
+    top: "M 1615 412 L 1725 412 L 1745 430 L 1745 522 L 1602 522 L 1598 470 Z",
+    elements: ["M 1608 495 L 1745 495"],
     pylon: "M 1595 455 L 1640 455 L 1645 610 L 1600 612 Z",
     beam: "M 1612 615 L 1790 615",
   },

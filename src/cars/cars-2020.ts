@@ -55,7 +55,6 @@ export const VF20: CarSpec = {
   // red flick on the near front endplate, red top of the rear wing
   // No wing colour blocks: the red diagonal on the near front endplate and the red far rear endplate broke ART-17
   // (endplates of one wing are one shape, coloured alike; the flap carries the red).
-  wingLivery: [],
   // white top of the nose and of the chassis flank
   accents: [
     {
@@ -159,7 +158,6 @@ export const AT01: CarSpec = {
       color: AT_NAVY,
     },
   ],
-  wingLivery: [],
   // navy nose tip
   accents: [
     {
@@ -211,6 +209,8 @@ export const AT01: CarSpec = {
   },
   rearWing: {
     near: "M 1662 472 L 1770 470 L 1852 494 L 1792 636 L 1690 640 L 1668 600 Z",
+    // far endplate: the near one's copy, ahead of it behind the wing elements (low camera) (ART-17)
+    farFrom: { dx: -165, dy: -6, scale: 0.93 },
     top: "M 1500 466 L 1662 472 L 1668 520 L 1540 520 L 1495 490 Z",
     elements: ["M 1498 488 L 1664 494"],
     pylon: "M 1540 500 L 1566 500 L 1572 620 L 1548 622 Z",

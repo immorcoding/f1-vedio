@@ -185,9 +185,6 @@ export const MP4_5: CarSpec = {
     },
   ],
   // red rear-wing endplate
-  wingLivery: [
-    { d: "M 1505 350 L 1824 348 L 1826 470 L 1650 470 Z", color: RED },
-  ],
   // airbox intake lip above the driver's head
   accents: [
     {
@@ -232,6 +229,11 @@ export const MP4_5: CarSpec = {
   },
   rearWing: {
     near: "M 1505 350 L 1824 348 L 1826 470 L 1650 470 Z",
+    // red endplates, both of them (ART-17); the far one hides behind the near one and the wing top
+    livery: [
+      { d: "M 1505 350 L 1824 348 L 1826 470 L 1650 470 Z", color: RED },
+    ],
+    farFrom: { dx: -20, dy: -20, scale: 0.95 },
     top: "M 1496 324 L 1700 304 L 1828 334 L 1824 350 L 1505 352 Z",
     elements: [],
     pylon: "M 1600 470 L 1640 470 L 1650 525 L 1610 525 Z",

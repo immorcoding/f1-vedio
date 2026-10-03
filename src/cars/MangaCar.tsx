@@ -514,10 +514,8 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
           state.tilt ? `rotate(${state.tilt} ${pivot.x} ${pivot.y})` : undefined
         }
       >
-        {/* far side: far front endplate and wing surface, rear wing top, airbox camera */}
-        {fw.far ? (
-          <path d={fw.far} fill={p.wing} stroke={INK} strokeWidth={4} />
-        ) : fw.farFrom ? (
+        {/* far side: far front endplate and wing surface, far rear endplate and rear wing top, airbox camera */}
+        {fw.farFrom ? (
           <Endplate
             d={fw.near}
             livery={fw.livery}
@@ -535,14 +533,7 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
           strokeWidth={4}
           strokeLinejoin="round"
         />
-        <path
-          d={car.rearWing.top}
-          fill={p.rearTop}
-          stroke={INK}
-          strokeWidth={5}
-          strokeLinejoin="round"
-        />
-        <path d={car.rearWing.top} fill={`url(#${id}-dl)`} opacity={0.6} />
+        {/* rear wing: the far endplate behind the wing surface, as the far front endplate sits behind the deck */}
         {car.rearWing.farFrom ? (
           <Endplate
             d={car.rearWing.near}
@@ -551,6 +542,18 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
             w={5}
             copy={car.rearWing.farFrom}
           />
+        ) : null}
+        {car.rearWing.top ? (
+          <>
+            <path
+              d={car.rearWing.top}
+              fill={p.rearTop}
+              stroke={INK}
+              strokeWidth={5}
+              strokeLinejoin="round"
+            />
+            <path d={car.rearWing.top} fill={`url(#${id}-dl)`} opacity={0.6} />
+          </>
         ) : null}
         <path d={car.rearWing.pylon} fill={INK} />
         {car.rearWing.elements.map((d) => (
@@ -733,16 +736,6 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
           fill={p.wing}
           w={5}
         />
-        {car.wingLivery.map((a) => (
-          <path
-            key={a.d}
-            d={a.d}
-            fill={a.color}
-            stroke={INK}
-            strokeWidth={4}
-            strokeLinejoin="round"
-          />
-        ))}
         {car.rearWing.beam ? <Ink d={car.rearWing.beam} w={7} /> : null}
         {car.rainLight ? (
           <path d={car.rainLight} fill="#ff2a2a" stroke={INK} strokeWidth={2} />
