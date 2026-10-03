@@ -181,10 +181,13 @@ export const MP4_5: CarSpec = {
   },
   livery: [
     // the chevron: red over the nose top and the chassis in front of the cockpit, cut on a diagonal at the back
-    { d: "M 540 600 L 806 590 L 728 694 L 556 698 Z", color: RED },
-    // red lower rear of the sidepod rising on the diagonal to the engine cover, round the gearbox
     {
-      d: "M 1190 702 L 1300 700 L 1380 652 L 1440 626 L 1520 616 L 1630 636 L 1630 840 L 1190 816 Z",
+      d: "M 520 606 L 806 590 C 778 620 750 656 726 694 C 670 700 610 700 556 698 C 566 668 556 636 520 606 Z",
+      color: RED,
+    },
+    // red sweeping up from the floor behind the grille to the rear wheel and round the gearbox, on a curve
+    {
+      d: "M 1110 818 C 1140 804 1166 796 1190 794 L 1190 704 C 1262 704 1320 684 1376 654 C 1424 630 1470 618 1524 614 L 1630 636 L 1630 840 Z",
       color: RED,
     },
   ],
@@ -217,12 +220,17 @@ export const MP4_5: CarSpec = {
     "L 975 500 C 976 488 980 482 990 481 L 1010 481 C 1120 488 1250 528 1400 590 L 1460 618 L 1610 640 " +
     "L 1614 818 L 600 822 L 520 792 L 440 772 L 330 788 L 180 794 Z",
   regions: {
+    // the lit white body runs down the sidepod flank; only its lower edge is shaded, then a dark band at the floor
     cover:
-      "M 975 470 L 1010 470 C 1120 478 1250 520 1410 585 L 1470 615 L 1640 640 L 1640 692 L 870 690 L 870 636 L 975 636 Z",
-    sidepod: "M 870 690 L 1640 692 L 1640 840 L 870 840 Z",
-    undercut: "M 540 690 L 870 690 L 870 830 L 540 830 Z",
+      "M 975 470 L 1010 470 C 1120 478 1250 520 1410 585 L 1470 615 L 1640 640 L 1640 770 C 1300 768 1000 766 870 764 L 870 636 L 975 636 Z",
+    sidepod:
+      "M 870 764 C 1000 766 1300 768 1640 770 L 1640 800 C 1300 798 1000 796 870 794 Z",
+    undercut:
+      "M 540 776 C 600 790 700 796 870 794 C 1100 798 1400 802 1640 802 L 1640 840 L 540 840 Z " +
+      // the shadowed sidepod mouth under the chassis, deepest just ahead of the sidepod
+      "M 560 768 C 660 748 780 716 868 700 L 868 796 C 760 794 650 788 560 778 Z",
     chassis:
-      "M 150 760 L 450 650 L 640 596 L 975 590 L 975 690 L 540 690 L 440 790 L 150 800 Z",
+      "M 150 760 L 450 650 L 640 596 L 975 590 L 975 636 L 870 636 L 870 794 C 760 794 650 788 540 776 L 440 790 L 150 800 Z",
   },
   glints: [
     "M 600 618 L 740 604 L 738 611 L 602 625 Z",
@@ -232,18 +240,20 @@ export const MP4_5: CarSpec = {
   frontWing: {
     // tall at the back, sloping down to the front, as on the 1989 car
     near: "M 150 790 L 335 745 L 337 822 L 150 822 Z",
-    // far endplate: the near one seen across the car (ART-17)
-    farFrom: { dx: 290, dy: -150, scale: 0.85 },
-    deck: "M 150 792 L 335 758 L 560 660 L 445 668 C 330 700 220 745 150 792 Z",
+    // far endplate: the same plate across the car, almost wholly behind the near one (ART-17)
+    farFrom: { dx: 10, dy: -8, scale: 0.97 },
+    deck: "M 166 782 L 340 740 L 342 822 L 150 822 C 136 810 136 792 166 782 Z",
     // the whole wing is white on the real car (ART-12)
-    flap: { d: "M 330 760 L 560 662 L 566 672 L 336 772 Z", color: "#e9e7e1" },
+    flap: { d: "M 318 746 L 340 740 L 342 790 L 320 792 Z", color: "#e9e7e1" },
   },
   rearWing: {
     near: REAR_ENDPLATE,
-    farFrom: { dx: -12, dy: -50, scale: 0.96 },
+    // the far endplate hides behind the near one but for a sliver at the top (ART-17)
+    farFrom: { dx: -4, dy: -6, scale: 0.99 },
     livery: [{ d: REAR_ENDPLATE, color: RED }],
-    top: "M 1486 478 L 1636 471 L 1665 518 L 1500 525 Z",
-    elements: [],
+    // the wing elements in profile above the endplate: white top flap over the red main plane
+    top: "M 1492 486 L 1642 478 L 1666 516 L 1500 524 Z",
+    elements: ["M 1496 505 L 1654 498"],
     pylon: "M 1556 640 L 1590 640 L 1590 702 L 1556 702 Z",
   },
   panelLines: ["M 870 692 L 870 808", "M 872 690 C 1000 690 1150 692 1300 696"],
