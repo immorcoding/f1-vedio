@@ -250,3 +250,23 @@ export const MP4_5B_SEN: CarSpec = {
   name: "1990 McLaren-Honda MP4/5B",
   driver: SEN_1990,
 };
+
+// The second row of the 1990 Suzuka grid (Jolpica/Ergast 1990 round 15: P3 Mansell #2, P4 Berger #28), seen only
+// from above on the grid in shot 1.6, so their helmets carry just the base and crown colours (default design).
+// Mansell: white with a red crown (1990 Jerez pit-stop photo, United Autosports, CC BY-SA 2.0). Berger: dark navy with
+// a white band over the crown and red sides (Honda F1 Exposition 2015 helmet photo by Morio, CC BY-SA 3.0).
+export const MAN_1990: Driver = {
+  number: "2",
+  helmet: { base: "#f3f3f0", stripe: "#d81a1f", shell: "classic" },
+};
+export const BER_1990: Driver = {
+  number: "28",
+  helmet: {
+    base: "#15182a",
+    stripe: "#f3f3f0",
+    trim: "#d81a1f",
+    shell: "classic",
+  },
+};
+export const F641_MAN: CarSpec = { ...F641, driver: MAN_1990 };
+export const MP4_5B_BER: CarSpec = { ...MP4_5B_SEN, driver: BER_1990 };
