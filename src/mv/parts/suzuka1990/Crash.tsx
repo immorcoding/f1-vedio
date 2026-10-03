@@ -72,7 +72,7 @@ export const anchorLeft = (
 ) => cam.anchor({ x: x + midM(car) - camX, z });
 
 // The camera pans with the slide, a little behind it, so the cars drift across the frame to the left as they stop.
-export const camX17 = (f: number) => -2.6 - 0.9 * slide17(f);
+export const camX17 = (f: number) => -2.2 - 0.97 * slide17(f);
 // ...and dollies after them as they slide away across the grass, so they stay a good size in the frame (m).
 export const camZ17 = (f: number) => 0.8 * drift17(f);
 // The layout as seen from the dollied camera: every depth less camZ.

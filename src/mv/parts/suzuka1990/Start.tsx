@@ -395,10 +395,18 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
         {lines > 0
           ? (["PRO", "SEN"] as const).map((id) => {
               const c = cars.find((x) => x.id === id)!;
-              const pts = samplePath(T, c.s + 3, c.s + 3 + 75 * lines, (sv) =>
-                id === "PRO"
-                  ? Math.min(c.lat + (sv - c.s) * 0.11, 5.2)
-                  : Math.min(c.lat + 0.004 * (sv - c.s), 5),
+              const pts = samplePath(
+                T,
+                c.s + 3,
+                c.s + 3 + (id === "PRO" ? 55 : 75) * lines,
+                (sv) =>
+                  id === "PRO"
+                    ? Math.min(
+                        c.lat +
+                          Math.pow(Math.max(0, sv - c.s - 3) / 22, 1.6) * 4,
+                        6,
+                      )
+                    : Math.min(c.lat + 0.004 * (sv - c.s), 5),
               );
               const end = view.project(pts[pts.length - 1]);
               const prev = view.project(pts[Math.max(0, pts.length - 4)]);
