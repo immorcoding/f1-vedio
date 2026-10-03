@@ -114,9 +114,10 @@ const footprint = (
 
 export const SHOT_17 = shot("1.7");
 export const HIT = cue("suzuka1990.crash");
-// Slide after the hit: from 42 m/s to rest, exponential, τ = 0.9 s (≈ 38 m).
-const V0 = 42;
-const TAU = 0.9;
+// Slide after the hit: from 55 m/s (≈ 200 km/h, braking into Turn 1) to rest across the grass and gravel, exponential,
+// τ = 1.1 s (≈ 60 m) — true speed, slowing only because they are stopping (MOT-5).
+const V0 = 55;
+const TAU = 1.1;
 export const slide17 = (f: number) =>
   V0 * TAU * (1 - Math.exp(-Math.max(0, (f - HIT) / 60) / TAU));
 export const SLIDE_TOTAL = V0 * TAU;
@@ -124,8 +125,13 @@ export const Z_SEN_17 = 8;
 // tyres touching at the hit
 export const Z_PRO_17 = Z_SEN_17 + (MP45.width + F641.width) / 2;
 // away from the camera as they slide off the outside of the corner (m), and PRO's extra drift
-export const drift17 = (f: number) => 13 * (slide17(f) / SLIDE_TOTAL);
-export const part17 = (f: number) => 0.9 * smooth01((f - HIT) / 40);
+export const DRIFT_TOTAL = 13;
+export const drift17 = (f: number) => DRIFT_TOTAL * (slide17(f) / SLIDE_TOTAL);
+// Heading off the line of the track (deg): the hit turns both cars toward the outside, and from then on each car points
+// where it is going — the velocity direction, atan(dz / dx), since the drift is a fixed share of the slide (MOT-5).
+export const YAW_17 = (Math.atan(DRIFT_TOTAL / SLIDE_TOTAL) * 180) / Math.PI;
+export const yaw17 = (f: number) => YAW_17 * smooth01((f - HIT) / 18);
+export const part17 = (f: number) => 1.4 * smooth01((f - HIT) / 16);
 // Wheelbase middles along x, relative to the slide: PRO ahead by a wheelbase, so SEN's front axle meets PRO's rear
 // axle (MP4/5B wheelbase 2.94 m, 641 2.86 m: half of each).
 export const SEN_X_17 = 0;
@@ -160,7 +166,7 @@ export const SAMPLERS: TopViewSampler[] = [
         id,
         x: x - SIZE[id].centreAhead,
         y: z,
-        heading: 180,
+        heading: 180 - yaw17(f),
         length: SIZE[id].length,
         width: SIZE[id].width,
       });

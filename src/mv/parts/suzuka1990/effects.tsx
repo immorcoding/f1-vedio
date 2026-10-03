@@ -1,7 +1,7 @@
 // Effects of the Suzuka 1990 crash, drawn in a side-on panel's pinhole camera (ART-9): the gravel trap on the outside
-// of Turn 1, the inside kerb in the foreground, dust thrown up by the cars in the gravel, and debris flying from the
-// hit. All deterministic (seeded), all in the black-and-white environment style (ART-8) except the car fragments,
-// which carry the cars' own colours.
+// of Turn 1, the inside kerb in the foreground, and debris flying from the hit (the dust is in Crash.tsx). All
+// deterministic (seeded), all in the black-and-white environment style (ART-8) except the car fragments, which carry
+// the cars' own colours.
 import { random } from "remotion";
 import type { Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
@@ -105,61 +105,6 @@ export const NearKerb: React.FC<{
         stroke={INK}
         strokeWidth={4}
       />
-    </g>
-  );
-};
-
-// A cloud of dust: overlapping inked puffs with a tone shadow on their lower side, billowing up and back from a
-// point on the ground. `grow` 0–1 builds it up, `fade` 0–1 thins it out (it settles: puffs sink and shrink).
-export const Dust: React.FC<{
-  x: number;
-  y: number;
-  // size of one puff, px
-  size: number;
-  n: number;
-  grow: number;
-  fade?: number;
-  // direction the cloud trails, -1 = to the left, 1 = to the right
-  dir?: number;
-  seed: string;
-}> = ({ x, y, size, n, grow, fade = 0, dir = 1, seed }) => {
-  if (grow <= 0 || fade >= 1) return null;
-  return (
-    <g opacity={1 - fade}>
-      {Array.from({ length: n }, (_, i) => {
-        const q = (k: string) => random(`${seed}-${k}-${i}`);
-        const k = i / Math.max(1, n - 1);
-        const appear = Math.min(1, Math.max(0, (grow - k * 0.6) / 0.4));
-        if (appear <= 0) return null;
-        const r =
-          size *
-          (0.55 + 0.7 * q("r")) *
-          (0.5 + 0.5 * appear) *
-          (1 - 0.35 * fade);
-        const cx =
-          x +
-          dir * (k * size * 3.2 + (q("x") - 0.5) * size) * (0.6 + 0.4 * grow);
-        const cy =
-          y - size * (0.2 + 1.6 * q("y") * k) * grow + fade * size * 0.8;
-        return (
-          <g key={i}>
-            <circle
-              cx={cx}
-              cy={cy}
-              r={r}
-              fill={PAPER}
-              stroke={INK}
-              strokeWidth={2.6}
-            />
-            <path
-              d={`M ${cx - r * 0.75} ${cy + r * 0.55} A ${r} ${r} 0 0 0 ${cx + r * 0.9} ${cy + r * 0.3}`}
-              fill="none"
-              stroke={tone("light")}
-              strokeWidth={r * 0.45}
-            />
-          </g>
-        );
-      })}
     </g>
   );
 };

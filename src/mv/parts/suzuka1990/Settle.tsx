@@ -98,7 +98,7 @@ export const Settle: React.FC<PictureProps> = ({ f }) => {
       <rect width={1920} height={1080} fill={PAPER} />
       <g filter={inkFilter()}>
         {/* the crash panel, held on its last frame, the cars at rest */}
-        <CrashStage f={shot.from - 1} dustFade={dustFade} />
+        <CrashStage f={shot.from - 1} dustFade={dustFade} dustAge={t / 60} />
         {/* the scene dims behind the helmet panels */}
         <rect
           width={1920}

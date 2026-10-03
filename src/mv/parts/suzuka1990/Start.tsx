@@ -116,17 +116,26 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
   const ppm =
     36 +
     4 * ramp(t, 0, 50) -
-    14 * ramp(tau, 0.2, 3, Easing.inOut(Easing.quad)) +
-    8 * ramp(tau, 4.4, 6.6);
+    9 * ramp(tau, 0.2, 2.6, Easing.inOut(Easing.quad)) +
+    6 * ramp(tau, 4.4, 6.6);
+  // the camera swings a few degrees as it runs with the cars, and settles square to the corner at the end
+  const swing =
+    -7 * ramp(tau, 0.4, 2.4, Easing.inOut(Easing.quad)) +
+    11 * ramp(tau, 2.4, 5.2, Easing.inOut(Easing.quad)) -
+    4 * ramp(tau, 5.2, 6.6);
   const view = mapView({
     centre,
-    rotation: ROTATION,
+    rotation: ROTATION + swing,
     pxPerMetre: ppm,
     screen: { x: 900, y: 540 },
   });
   const g = grit(view);
   const caption = ramp(t, 10, 26, Easing.out(Easing.back(1.5)));
   const tags = 1 - ramp(tau, 3.8, 4.6);
+  // the dirty-side note: in during the grid hold, out soon after the start
+  const note = ramp(t, 12, 26) * (1 - ramp(tau, 0.9, 1.4));
+  // the drawn lines into Turn 1 grow ahead of the two cars over the last two seconds
+  const lines = ramp(tau, 4.4, 5.8, Easing.out(Easing.quad));
   const pitWall = samplePath(T, -400, 215, 8.2, 2);
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
@@ -149,6 +158,7 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
               : 5
           }
           barrier
+          tyreMarks
           grass={{ x: 0, y: 0, w: 1920, h: 1080 }}
         />
         {/* Turn 1 gravel trap */}
@@ -238,6 +248,43 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
           strokeWidth={Math.max(4, 0.6 * ppm)}
           strokeLinecap="round"
         />
+        {/* white panels along the pit wall, a dashed line down the pit lane and seams across the asphalt: fixed marks
+            that stream past as the camera runs with the cars (MOT-5) */}
+        {Array.from({ length: 105 }, (_, i) => -420 + 6 * i).map((s0) => {
+          const a = view.project(poseAt(T, s0, 8.2));
+          const b = view.project(poseAt(T, s0 + 3, 8.2));
+          const c = view.project(poseAt(T, s0, 13));
+          const d = view.project(poseAt(T, s0 + 2.5, 13));
+          return (
+            <g key={`wall-${s0}`}>
+              <path
+                d={`M ${a.x} ${a.y} L ${b.x} ${b.y}`}
+                stroke={PAPER}
+                strokeWidth={Math.max(2, 0.3 * ppm)}
+              />
+              {s0 < 210 ? (
+                <path
+                  d={`M ${c.x} ${c.y} L ${d.x} ${d.y}`}
+                  stroke={PAPER}
+                  strokeWidth={Math.max(2, 0.15 * ppm)}
+                />
+              ) : null}
+            </g>
+          );
+        })}
+        {Array.from({ length: 46 }, (_, i) => -420 + 25 * i).map((s0) => (
+          <path
+            key={`seam-${s0}`}
+            d={view.path(
+              samplePath(T, s0, s0 + 0.01, -HALF, 1).concat(
+                samplePath(T, s0, s0 + 0.01, HALF, 1),
+              ),
+            )}
+            stroke={INK}
+            strokeWidth={Math.max(1.2, 0.06 * ppm)}
+            opacity={0.35}
+          />
+        ))}
         {/* the pit-exit line along the right edge, which the cars were told not to cross */}
         <path
           d={view.path(samplePath(T, 200, 345, HALF - 0.25, 2))}
@@ -295,6 +342,144 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
             />
           );
         })}
+        {/* countdown boards on the left verge before Turn 1: three, two and one bars */}
+        {[3, 2, 1].map((n) => {
+          const sB = T.corners.turn1TurnIn - 100 * n;
+          const a = view.project(poseAt(T, sB, -(HALF + 4)));
+          const h = view.heading(poseAt(T, sB).heading);
+          const w = 1.6 * ppm;
+          const len = 0.5 * ppm;
+          return (
+            <g
+              key={`board-${n}`}
+              transform={`translate(${a.x} ${a.y}) rotate(${h})`}
+            >
+              <rect
+                x={-len / 2}
+                y={-w / 2}
+                width={len}
+                height={w}
+                fill={PAPER}
+                stroke={INK}
+                strokeWidth={3}
+              />
+              {Array.from({ length: n }, (_, k) => (
+                <rect
+                  key={k}
+                  x={-len / 2}
+                  y={-w / 2 + ((k + 0.5) * w) / (n + 0.5) - w / (4 * (n + 0.5))}
+                  width={len}
+                  height={w / (2 * (n + 0.5))}
+                  fill={INK}
+                />
+              ))}
+            </g>
+          );
+        })}
+        {/* manga speed streaks over the whole ground while the cars are flat out */}
+        <path
+          d={speedLines({
+            x: -100,
+            y: 0,
+            w: 2120,
+            h: 1080,
+            n: 46,
+            seed: `bg16-${Math.floor(t / 2)}`,
+            thickness: 3,
+            length: [0.15, 0.45],
+          })}
+          fill={INK}
+          opacity={0.32 * ramp(tau, 0.8, 1.8) * (1 - ramp(tau, 5.2, 6.4))}
+        />
+        {/* the two lines into Turn 1: PRO turning in from the left, SEN holding the inside — they cross */}
+        {lines > 0
+          ? (["PRO", "SEN"] as const).map((id) => {
+              const c = cars.find((x) => x.id === id)!;
+              const pts = samplePath(T, c.s + 3, c.s + 3 + 75 * lines, (sv) =>
+                id === "PRO"
+                  ? Math.min(c.lat + (sv - c.s) * 0.11, 5.2)
+                  : Math.min(c.lat + 0.004 * (sv - c.s), 5),
+              );
+              const end = view.project(pts[pts.length - 1]);
+              const prev = view.project(pts[Math.max(0, pts.length - 4)]);
+              const ah = Math.atan2(end.y - prev.y, end.x - prev.x);
+              return (
+                <g key={`line-${id}`}>
+                  <path
+                    d={view.path(pts)}
+                    fill="none"
+                    stroke={PAPER}
+                    strokeWidth={20}
+                    strokeLinecap="round"
+                    strokeDasharray="30 14"
+                  />
+                  <path
+                    d={view.path(pts)}
+                    fill="none"
+                    stroke={INK}
+                    strokeWidth={10}
+                    strokeLinecap="round"
+                    strokeDasharray="30 14"
+                  />
+                  <path
+                    d={`M ${end.x + Math.cos(ah) * 34} ${end.y + Math.sin(ah) * 34} L ${end.x + Math.cos(ah + 2.4) * 28} ${end.y + Math.sin(ah + 2.4) * 28} L ${end.x + Math.cos(ah - 2.4) * 28} ${end.y + Math.sin(ah - 2.4) * 28} Z`}
+                    fill={INK}
+                    stroke={PAPER}
+                    strokeWidth={4}
+                  />
+                </g>
+              );
+            })
+          : null}
+        {/* wheelspin smoke left on the grid at the launch: it stays where it was made as the cars pull away */}
+        {cars.flatMap((c) =>
+          Array.from({ length: 12 }, (_, i) => START_FRAME + 4 * i)
+            .filter((k) => k <= f)
+            .flatMap((k) => {
+              const at = cars16(k).find((x) => x.id === c.id)!;
+              const age = (f - k) / 60;
+              const life = 1 - Math.min(1, age / 1.6);
+              if (life <= 0) return [];
+              return [-0.85, 0.85].map((side) => {
+                const q = random(`spin-${c.id}-${k}-${side}`);
+                const p = view.project(
+                  poseAt(T, at.s - 1.9 - 0.6 * q, at.lat + side),
+                );
+                const r = (0.35 + 0.9 * age) * ppm * (0.8 + 0.4 * q);
+                return (
+                  <circle
+                    key={`spin-${c.id}-${k}-${side}`}
+                    cx={p.x}
+                    cy={p.y}
+                    r={r}
+                    fill={PAPER}
+                    stroke={INK}
+                    strokeWidth={2}
+                    opacity={0.85 * life}
+                  />
+                );
+              });
+            }),
+        )}
+        {/* contact shadows under the cars */}
+        {cars.map((c) => {
+          const pose = pose16(f, c);
+          const p = view.project(pose);
+          const h = view.heading(pose.heading);
+          return (
+            <rect
+              key={`sh-${c.id}`}
+              x={-2.1 * ppm}
+              y={-0.8 * ppm}
+              width={4.2 * ppm}
+              height={1.6 * ppm}
+              rx={0.5 * ppm}
+              fill={INK}
+              opacity={0.28}
+              transform={`translate(${p.x + 0.25 * ppm} ${p.y + 0.3 * ppm}) rotate(${h})`}
+            />
+          );
+        })}
         {/* speed lines, then the cars, back to front */}
         {cars.map((c) => {
           const pose = pose16(f, c);
@@ -345,6 +530,30 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
             />
           );
         })}
+        {/* the easter egg in words, once, while the grid stands: the pole slot is on the dirty side */}
+        {note > 0
+          ? (() => {
+              const p = view.project(poseAt(T, POLE + 9, HALF + 1));
+              return (
+                <g opacity={note}>
+                  <path
+                    d={`M ${p.x} ${p.y + 70} L ${p.x - 40} ${p.y + 6}`}
+                    stroke={INK}
+                    strokeWidth={5}
+                    strokeLinecap="round"
+                  />
+                  <Caption
+                    x={p.x - 20}
+                    y={p.y + 70}
+                    w={410}
+                    h={84}
+                    lines={["杆位在较脏的一侧"]}
+                    size={44}
+                  />
+                </g>
+              );
+            })()
+          : null}
         {/* SEN and PRO tags: SEN's below his car (his right), PRO's above */}
         {tags > 0
           ? (["SEN", "PRO"] as const).map((id) => {

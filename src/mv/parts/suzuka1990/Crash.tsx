@@ -4,7 +4,7 @@
 // and the two cars, locked together, slide off the outside of the corner — away from the camera, across the grass
 // and into the gravel trap — throwing up dust, and stop. Staging (world metres) lives in staging.ts and is tested for
 // interpenetration (ART-18).
-import { Easing } from "remotion";
+import { Easing, random } from "remotion";
 import {
   carPoint,
   F641_PRO,
@@ -13,23 +13,24 @@ import {
   type CarSpec,
 } from "../../../cars";
 import { pinhole, type Camera } from "../../../kit/camera";
-import { INK } from "../../../kit/colors";
+import { INK, PAPER } from "../../../kit/colors";
 import { ImpactStar } from "../../../kit/impact";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
 import { Sfx } from "../../../kit/lettering";
 import { focusLines, speedLines } from "../../../kit/lines";
-import { ToneDefs } from "../../../kit/tone";
+import { ToneDefs, tone } from "../../../kit/tone";
 import {
   Trackside,
   TRACKSIDE_DEFAULT,
   type TracksideLayout,
 } from "../../../scenes/suzuka-1989/trackside";
 import { ramp, shotById, type PictureProps } from "./common";
-import { Debris, Dust, GravelTrap, NearKerb } from "./effects";
+import { Debris, GravelTrap, NearKerb } from "./effects";
 import {
   cars17,
   drift17,
   HIT,
+  yaw17,
   SLIDE_TOTAL,
   slide17,
   Z_SEN_17,
@@ -116,11 +117,96 @@ const skids = (f: number, camX: number, camZ: number) => {
   return out;
 };
 
+// A car turned by the yaw off the camera's axis after the hit, still drawn side-on (MangaCar has only the side view):
+// shortened by cos(yaw) about the middle of its wheelbase, which stays in place. For 12° that is 2 % of the length.
+const squash = (
+  a: { x: number; y: number; pxPerMetre: number },
+  car: CarSpec,
+  f: number,
+) => {
+  const k = Math.cos((yaw17(f) * Math.PI) / 180);
+  // facing left, the wheelbase middle lies midM px to the left of the rear end
+  const mx = a.x - midM(car) * a.pxPerMetre;
+  return `translate(${mx} 0) scale(${k} 1) translate(${-mx} 0)`;
+};
+
 // Everything of the crash panel at song frame f, without the frame border and the sound effect (1.8 reuses it).
-export const CrashStage: React.FC<{ f: number; dustFade?: number }> = ({
-  f,
-  dustFade = 0,
-}) => {
+// Dust thrown up behind a car in the gravel: puffs left along its path every few frames from the moment it crosses
+// into the trap, each growing and rising as it ages, in world metres seen from the dollied camera. `extraAge` ages the
+// whole cloud further (1.8, where it settles) and `fade` 0–1 thins and sinks it.
+const TrailDust: React.FC<{
+  f: number;
+  car: "sen" | "pro";
+  half: number;
+  camX: number;
+  camZ: number;
+  extraAge: number;
+  fade: number;
+}> = ({ f, car, half, camX, camZ, extraAge, fade }) => {
+  if (fade >= 1) return null;
+  const puffs: { x: number; y: number; r: number; key: string; z: number }[] =
+    [];
+  for (let k = HIT; k <= f; k += 4) {
+    const c = cars17(k)[car];
+    // tyre smoke from the locked wheels on the track and grass, a full dust cloud once in the gravel
+    const gravel = c.z >= GRAVEL_17.z0 - 0.5;
+    if (!gravel && (k - HIT) % 8 !== 0) continue;
+    const size = gravel ? 1 : 0.5;
+    const age = (f - k) / 60 + extraAge;
+    for (const side of [0.75, -0.75]) {
+      const q = (n: string) => random(`td-${car}-${k}-${side}-${n}`);
+      const zw = c.z + side + (q("z") - 0.5) * 0.6;
+      const zv = zw - camZ;
+      if (zv < 1.5) continue;
+      const rM =
+        Math.min(2.2, 0.35 + 0.95 * Math.pow(age, 0.8)) *
+        (0.75 + 0.5 * q("r")) *
+        size *
+        (1 - 0.45 * fade);
+      const hM =
+        (0.25 + 0.9 * Math.pow(age, 0.7) * (0.6 + 0.6 * q("h"))) *
+        (1 - 0.7 * fade);
+      const xw = c.x + half + 0.4 + 0.5 * age + (q("x") - 0.5) * 1.2 - camX;
+      const p = CAM_17.project({ x: xw, y: hM, z: zv });
+      puffs.push({
+        x: p.x,
+        y: p.y,
+        r: rM * CAM_17.pxPerMetre(zv) * 0.5,
+        key: `${k}${side}`,
+        z: zv,
+      });
+    }
+  }
+  puffs.sort((a, b) => b.z - a.z);
+  return (
+    <g opacity={1 - fade}>
+      {puffs.map((p) => (
+        <g key={p.key}>
+          <circle
+            cx={p.x}
+            cy={p.y}
+            r={p.r}
+            fill={PAPER}
+            stroke={INK}
+            strokeWidth={2.4}
+          />
+          <path
+            d={`M ${p.x - p.r * 0.8} ${p.y + p.r * 0.45} A ${p.r} ${p.r} 0 0 0 ${p.x + p.r * 0.9} ${p.y + p.r * 0.25}`}
+            fill="none"
+            stroke={tone("light")}
+            strokeWidth={p.r * 0.5}
+          />
+        </g>
+      ))}
+    </g>
+  );
+};
+
+export const CrashStage: React.FC<{
+  f: number;
+  dustFade?: number;
+  dustAge?: number;
+}> = ({ f, dustFade = 0, dustAge = 0 }) => {
   const t = (f - HIT) / 60;
   const camX = camX17(f);
   const camZ = camZ17(f);
@@ -137,17 +223,6 @@ export const CrashStage: React.FC<{ f: number; dustFade?: number }> = ({
   // the cars buck as they hit the grass edge and the gravel
   const bump = (z: number) =>
     1.6 * Math.sin(Math.max(0, z - GRAVEL_17.z0) * 2.2) * inGravel(z) * moving;
-  const dustAt = (
-    a: { x: number; y: number; pxPerMetre: number },
-    len: number,
-  ) => ({
-    x: a.x - 0.4 * a.pxPerMetre,
-    y: a.y - 0.1 * a.pxPerMetre,
-    size: 0.55 * a.pxPerMetre,
-    len,
-  });
-  const dPro = dustAt(proA, 4.2);
-  const dSen = dustAt(senA, 4.3);
   return (
     <g>
       <Trackside cam={CAM_17} camX={camX} layout={layout} />
@@ -170,35 +245,31 @@ export const CrashStage: React.FC<{ f: number; dustFade?: number }> = ({
         />
       ))}
       {/* PRO beyond, then SEN on the near side */}
-      <Dust
-        x={dPro.x}
-        y={dPro.y}
-        size={dPro.size}
-        n={9}
-        grow={inGravel(c.pro.z) * Math.min(1, 0.3 + (1 - moving) * 1.2)}
+      <TrailDust
+        f={f}
+        car="pro"
+        half={2.86 / 2}
+        camX={camX}
+        camZ={camZ}
+        extraAge={dustAge}
         fade={dustFade}
-        dir={1}
-        seed="dust-pro"
       />
-      <MangaCar
-        car={F641_PRO}
-        facing="left"
-        at={proA}
-        state={{
-          wheelAngle: wheel,
-          lockFront: wheel * 0.2,
-          tilt: bump(c.pro.z),
-        }}
-      />
-      <Dust
-        x={dSen.x}
-        y={dSen.y}
-        size={dSen.size}
-        n={9}
-        grow={inGravel(c.sen.z) * Math.min(1, 0.3 + (1 - moving) * 1.2)}
+      <g transform={squash(proA, F641_PRO, f)}>
+        <MangaCar
+          car={F641_PRO}
+          facing="left"
+          at={proA}
+          state={{ wheelAngle: wheel, tilt: bump(c.pro.z) }}
+        />
+      </g>
+      <TrailDust
+        f={f}
+        car="sen"
+        half={2.94 / 2}
+        camX={camX}
+        camZ={camZ}
+        extraAge={dustAge}
         fade={dustFade}
-        dir={1}
-        seed="dust-sen"
       />
       {moving > 0.15 && t > 0.2 ? (
         <path
@@ -216,12 +287,18 @@ export const CrashStage: React.FC<{ f: number; dustFade?: number }> = ({
           opacity={0.6 * moving}
         />
       ) : null}
-      <MangaCar
-        car={MP4_5B_SEN}
-        facing="left"
-        at={senA}
-        state={{ wheelAngle: wheel, lockFront: 30, tilt: -bump(c.sen.z) * 0.8 }}
-      />
+      <g transform={squash(senA, MP4_5B_SEN, f)}>
+        <MangaCar
+          car={MP4_5B_SEN}
+          facing="left"
+          at={senA}
+          state={{
+            wheelAngle: wheel,
+            lockFront: 30,
+            tilt: -bump(c.sen.z) * 0.8,
+          }}
+        />
+      </g>
       {layout.nearEdge > 1.6 ? (
         <NearKerb cam={CAM_17} camX={camX} edge={layout.nearEdge} />
       ) : null}
