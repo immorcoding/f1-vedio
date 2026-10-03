@@ -148,7 +148,6 @@ export const F641: CarSpec = {
     mirror: RED,
   },
   livery: [],
-  wingLivery: [],
   accents: [
     // the sidepod inlet, seen from the side as a dark red recess ahead of the sidepod
     {
