@@ -14,7 +14,7 @@ Add a dated line to the area's Signals when a rule decides part of your change, 
 Area files change only on `main` (the writer branch); on any other branch, write those lines and any drafts to `docs/shape/inbox/<branch>.md` instead.
 
 - [Story & facts](docs/shape/story-and-facts.md): 名场面合集、中文、事实必须核实
-- [Art direction](docs/shape/art-direction.md): 代码绘制的黑白漫画风，颜色只给配色和胎圈
+- [Art direction](docs/shape/art-direction.md): 代码绘制的漫画风，环境黑白、赛车真实涂装
 - [Motion & timing](docs/shape/motion-and-timing.md): 1080p60，俯视加特写的混合视角
 - [Audio](docs/shape/audio.md): 代码合成的原创电子风 BGM
 

@@ -18,8 +18,8 @@ export const CarSheet2021: React.FC = () => (
         {tone("b-tone-mid", 1.8)}
         {tone("b-tone-light", 1.05)}
       </defs>
-      <MangaCar car={RB16B} id="s-ver" scheme="navy" x={180} ground={490} scale={1.1} />
-      <MangaCar car={W12} id="s-ham" scheme="black" x={180} ground={1010} scale={1.1} />
+      <MangaCar car={RB16B} id="s-ver" x={180} ground={490} scale={1.1} />
+      <MangaCar car={W12} id="s-ham" x={180} ground={1010} scale={1.1} />
     </svg>
   </AbsoluteFill>
 );

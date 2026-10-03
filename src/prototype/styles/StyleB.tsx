@@ -38,10 +38,13 @@ const Defs: React.FC = () => (
       <rect x={INSET.x} y={INSET.y} width={INSET.w} height={INSET.h} />
     </clipPath>
     <clipPath id="b-ground">
-      <rect x={-100} y={606} width={2120} height={600} />
+      <rect x={-200} y={sy(13.9)} width={2320} height={800} />
+    </clipPath>
+    <clipPath id="b-fence">
+      <rect x={-200} y={-200} width={2320} height={580} />
     </clipPath>
     <clipPath id="b-shell">
-      <path d="M 1120 430 C 1180 300 1350 250 1520 255 C 1680 260 1790 320 1840 430 Z" />
+      <path d={hotelShell()} />
     </clipPath>
   </defs>
 );
@@ -63,61 +66,137 @@ const focusLines = (cx: number, cy: number, clear: number, n: number, seed: numb
   return d;
 };
 
-const lattice = () => {
+// One pinhole camera for the whole panel: 2.9 m up, horizon at y = 190, focal length 2500 px.
+// It matches the traced cars: HAM sits 10 m away (scale 1, ground y 915), VER 12.5 m away (scale 0.8, ground y 770).
+const CAM = { f: 2500, horizon: 190, cx: 960, height: 2.9 };
+// Screen position of a world point: x along the track (m), z distance from camera (m), y height above ground (m).
+const sx = (z: number, x: number) => CAM.cx + (CAM.f * x) / z;
+const sy = (z: number, y = 0) => CAM.horizon + (CAM.f * (CAM.height - y)) / z;
+// A patch of ground between two distances and two track positions; its sides run to the vanishing point.
+const groundQuad = (z0: number, z1: number, x0: number, x1: number) =>
+  `M ${sx(z0, x0)} ${sy(z0)} L ${sx(z0, x1)} ${sy(z0)} L ${sx(z1, x1)} ${sy(z1)} L ${sx(z1, x0)} ${sy(z1)} Z`;
+
+const WALL_Z = 25;
+const STAND_Z = 45;
+const HOTEL_Z = 420;
+
+const hotelShell = () => {
+  const z = HOTEL_Z;
+  const [x0, x1, top] = [2, 64, 30];
+  return `M ${sx(z, x0)} ${sy(z)} C ${sx(z, x0 + 6)} ${sy(z, top * 0.9)} ${sx(z, x0 + 20)} ${sy(z, top)} ${sx(z, (x0 + x1) / 2)} ${sy(z, top)} C ${sx(z, x1 - 20)} ${sy(z, top)} ${sx(z, x1 - 6)} ${sy(z, top * 0.9)} ${sx(z, x1)} ${sy(z)} Z`;
+};
+
+const lattice = (x0: number, x1: number, y0: number, y1: number, step: number) => {
   const out: string[] = [];
-  for (let i = -20; i < 40; i++) {
-    out.push(`M ${1100 + i * 34} 440 L ${1100 + i * 34 + 220} 220`);
-    out.push(`M ${1100 + i * 34} 220 L ${1100 + i * 34 + 220} 440`);
+  const h = y1 - y0;
+  for (let x = x0 - h; x < x1 + h; x += step) {
+    out.push(`M ${x} ${y1} L ${x + h} ${y0}`);
+    out.push(`M ${x} ${y0} L ${x + h} ${y1}`);
   }
   return out.join(" ");
 };
 
+// Grandstand tiers rising away from the camera, with a head-and-shoulders crowd on each row.
+const STAND_ROWS = Array.from({ length: 26 }, (_, k) => ({ z: STAND_Z + k * 0.8, y: k * 0.45 }));
+
+const Grandstand: React.FC = () => (
+  <g>
+    {STAND_ROWS.slice(0, -1).map((row, k) => {
+      const next = STAND_ROWS[k + 1];
+      const d = `M ${sx(row.z, -70)} ${sy(row.z, row.y)} L ${sx(row.z, -3)} ${sy(row.z, row.y)} L ${sx(next.z, -3)} ${sy(next.z, next.y)} L ${sx(next.z, -70)} ${sy(next.z, next.y)} Z`;
+      return <path key={k} d={d} fill={k % 2 ? "url(#b-tone-mid)" : "url(#b-tone-dark)"} stroke={BLACK} strokeWidth={1.5} />;
+    })}
+    {STAND_ROWS.slice(0, -1).map((row, k) =>
+      Array.from({ length: 110 }, (_, i) => {
+        const x = -62 + i * 0.55 + ((k * 7 + i * 3) % 5) * 0.06;
+        if ((i * 13 + k * 7) % 11 === 0) return null;
+        const head = (CAM.f * 0.11) / row.z;
+        const cx = sx(row.z, x);
+        const cy = sy(row.z, row.y + 0.95);
+        return (
+          <g key={`${k}-${i}`}>
+            <ellipse cx={cx} cy={cy + head * 2.2} rx={head * 1.6} ry={head * 1.2} fill={(i + k) % 3 ? WHITE : BLACK} stroke={BLACK} strokeWidth={1} />
+            <circle cx={cx} cy={cy} r={head} fill={WHITE} stroke={BLACK} strokeWidth={1.2} />
+          </g>
+        );
+      }),
+    )}
+  </g>
+);
+
 const Background: React.FC = () => (
   <g>
-    <rect x={0} y={0} width={1920} height={430} fill={BLACK} />
-    <rect x={0} y={330} width={1920} height={120} fill="url(#b-tone-dark)" />
-    <path d="M 1120 430 C 1180 300 1350 250 1520 255 C 1680 260 1790 320 1840 430 Z" fill={BLACK} />
-    <g clipPath="url(#b-shell)">
-      <path d={lattice()} stroke={WHITE} strokeWidth={2} fill="none" />
-    </g>
-    <Ink d="M 1120 430 C 1180 300 1350 250 1520 255 C 1680 260 1790 320 1840 430" w={3} c={WHITE} />
-    {/* floodlight starbursts */}
-    {[
-      [265, 185],
-      [905, 165],
-    ].map(([x, y]) => (
-      <g key={x}>
-        <path d={focusLines(x, y, 36, 40, 3)} fill={WHITE} opacity={0.9} transform={`translate(${x} ${y}) scale(0.09) translate(${-x} ${-y})`} />
-        <circle cx={x} cy={y} r={44} fill={WHITE} />
-        <rect x={x - 34} y={y - 20} width={68} height={40} fill="none" stroke={BLACK} strokeWidth={2} />
-        <Ink d={`M ${x} ${y + 44} L ${x} 440`} w={4} c={WHITE} />
-      </g>
-    ))}
-    {/* grandstand in tone, crowd as white specks */}
-    <path d="M 40 445 L 1110 410 L 1118 590 L 40 600 Z" fill="url(#b-tone-mid)" />
-    {Array.from({ length: 320 }, (_, i) => {
-      const x = 60 + ((i * 53) % 1040);
-      const y = 470 + (i % 4) * 30 - x * 0.026 + ((i * 7) % 8);
-      return <circle key={i} cx={x} cy={y} r={3.6} fill={WHITE} stroke={BLACK} strokeWidth={1.2} />;
+    <rect x={-200} y={-200} width={2320} height={CAM.horizon + 200} fill={BLACK} />
+    {/* distant circuit buildings between the horizon and the wall */}
+    <rect x={-200} y={CAM.horizon} width={2320} height={sy(WALL_Z, 1) - CAM.horizon} fill="url(#b-tone-dark)" />
+    {Array.from({ length: 9 }, (_, i) => {
+      const z = 160 + (i % 3) * 40;
+      const x0 = -10 + i * 9;
+      const h = 8 + (i % 4) * 5;
+      return <path key={i} d={`M ${sx(z, x0)} ${sy(z)} L ${sx(z, x0)} ${sy(z, h)} L ${sx(z, x0 + 7)} ${sy(z, h)} L ${sx(z, x0 + 7)} ${sy(z)} Z`} fill={BLACK} />;
     })}
-    <Ink d="M 40 445 L 1110 410 M 40 600 L 1118 590" w={3} />
+    {/* Yas hotel: glowing gridshell far beyond the circuit */}
+    <path d={hotelShell()} fill={BLACK} />
+    <g clipPath="url(#b-shell)">
+      <path d={lattice(sx(HOTEL_Z, 2), sx(HOTEL_Z, 64), sy(HOTEL_Z, 30), sy(HOTEL_Z, 0), 16)} stroke={WHITE} strokeWidth={1.6} fill="none" />
+    </g>
+    <path d={hotelShell()} fill="none" stroke={WHITE} strokeWidth={2.5} />
+    <Grandstand />
+    {/* floodlight beams falling from towers above the frame */}
+    {[
+      [-120, 0.9],
+      [520, 0.7],
+    ].map(([x, o]) => (
+      <path key={x} d={`M ${x} -60 L ${x + 900} ${sy(WALL_Z, 1)} L ${x + 1200} ${sy(WALL_Z, 1)} L ${x + 160} -60 Z`} fill={WHITE} opacity={0.16 * o} />
+    ))}
+    {/* catch fence on the wall: mesh, posts and cables run up out of the frame */}
+    <g clipPath="url(#b-fence)" opacity={0.55}>
+      <path d={lattice(-200, 2120, -200, sy(WALL_Z, 1), 22)} stroke="#6b6b6b" strokeWidth={1.2} fill="none" />
+    </g>
+    {Array.from({ length: 9 }, (_, i) => {
+      const x = sx(WALL_Z, -16 + i * 4);
+      return <path key={i} d={`M ${x} ${sy(WALL_Z, 1)} L ${x} -200`} stroke={BLACK} strokeWidth={8} />;
+    })}
+    {[2.2, 3.6].map((y) => (
+      <path key={y} d={`M -200 ${sy(WALL_Z, y)} L 2120 ${sy(WALL_Z, y)}`} stroke={BLACK} strokeWidth={3} />
+    ))}
+    {/* concrete wall with panel joints */}
+    <rect x={-200} y={sy(WALL_Z, 1)} width={2320} height={sy(WALL_Z) - sy(WALL_Z, 1)} fill={WHITE} stroke={BLACK} strokeWidth={4} />
+    <rect x={-200} y={sy(WALL_Z, 1)} width={2320} height={14} fill="url(#b-tone-mid)" />
+    {Array.from({ length: 12 }, (_, i) => {
+      const x = sx(WALL_Z, -18 + i * 3);
+      return <path key={i} d={`M ${x} ${sy(WALL_Z, 1)} L ${x} ${sy(WALL_Z)}`} stroke={BLACK} strokeWidth={2} />;
+    })}
   </g>
 );
 
 const Track: React.FC = () => (
   <g>
-    <rect x={0} y={600} width={1920} height={480} fill={WHITE} />
-    <rect x={0} y={600} width={1920} height={180} fill="url(#b-tone-light)" />
-    {Array.from({ length: 18 }, (_, i) => (
-      <path key={i} d={`M ${i * 112} 780 L ${i * 112 + 112} 780 L ${i * 112 + 106} 796 L ${i * 112 - 6} 796 Z`} fill={i % 2 ? BLACK : WHITE} stroke={BLACK} strokeWidth={2} />
+    {/* run-off between the wall and the inside kerb */}
+    <path d={groundQuad(15, WALL_Z, -30, 30)} fill="url(#b-tone-light)" />
+    {Array.from({ length: 7 }, (_, i) => {
+      const z = 16 + i * 1.3;
+      return <path key={i} d={`M -200 ${sy(z)} L 2120 ${sy(z)}`} stroke={BLACK} strokeWidth={1} opacity={0.25} />;
+    })}
+    {/* inside (apex) kerb, beyond VER */}
+    {Array.from({ length: 34 }, (_, i) => (
+      <path key={i} d={groundQuad(13.9, 15.2, -8.5 + i * 0.5, -8 + i * 0.5)} fill={i % 2 ? BLACK : WHITE} stroke={BLACK} strokeWidth={3.5} />
     ))}
-    {Array.from({ length: 11 }, (_, i) => (
-      <path key={`n${i}`} d={`M ${i * 190 - 20} 975 L ${i * 190 + 170} 975 L ${i * 190 + 160} 1012 L ${i * 190 - 30} 1012 Z`} fill={i % 2 ? BLACK : WHITE} stroke={BLACK} strokeWidth={3} />
-    ))}
-    <Ink d="M 0 602 L 1920 606" w={4} />
+    <path d={groundQuad(13.65, 13.9, -30, 30)} fill={WHITE} stroke={BLACK} strokeWidth={2.5} />
+    {/* racing surface, with rubbered-in streaks */}
+    <path d={groundQuad(8.6, 13.65, -30, 30)} fill={WHITE} />
+    {Array.from({ length: 18 }, (_, i) => {
+      const z = 9 + ((i * 0.37) % 4.6);
+      const x = -6 + ((i * 1.7) % 12);
+      return <path key={i} d={`M ${sx(z, x)} ${sy(z)} L ${sx(z, x + 1.5 + (i % 3))} ${sy(z)}`} stroke={BLACK} strokeWidth={2.2} opacity={0.5} />;
+    })}
     <g clipPath="url(#b-ground)">
       <path d={focusLines(VER_LOCKUP.x - 120, VER_LOCKUP.y - 60, 560, 110, 5)} fill={BLACK} />
     </g>
+    {/* outside kerb, nearest the camera */}
+    {Array.from({ length: 24 }, (_, i) => (
+      <path key={`n${i}`} d={groundQuad(8, 8.6, -6 + i * 0.5, -5.5 + i * 0.5)} fill={i % 2 ? BLACK : WHITE} stroke={BLACK} strokeWidth={3} />
+    ))}
   </g>
 );
 
@@ -188,9 +267,9 @@ export const StyleB: React.FC = () => (
           <g transform="rotate(-3 960 540)">
             <Background />
             <Track />
-            <MangaCar car={RB16B} id="ver" scheme="navy" x={VER_PLACE.x} ground={VER_PLACE.ground} scale={VER_PLACE.scale} spin={18} />
+            <MangaCar car={RB16B} id="ver" x={VER_PLACE.x} ground={VER_PLACE.ground} scale={VER_PLACE.scale} spin={18} />
             <Puffs x={VER_LOCKUP.x - 40} y={VER_LOCKUP.y - 12} n={13} step={26} grow={3.4} />
-            <MangaCar car={W12} id="ham" scheme="black" x={HAM_PLACE.x} ground={HAM_PLACE.ground} scale={HAM_PLACE.scale} spin={40} />
+            <MangaCar car={W12} id="ham" x={HAM_PLACE.x} ground={HAM_PLACE.ground} scale={HAM_PLACE.scale} spin={40} />
           </g>
           <Sfx x={960} y={360} size={150} rotate={-10}>
             轰——！

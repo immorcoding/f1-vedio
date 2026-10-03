@@ -1,27 +1,50 @@
-// PROTOTYPE — draws a CarSpec's traced paths as thin lines in the reference photo's pixel space,
-// on a transparent background, so it can be laid over the photo to check the trace.
+// PROTOTYPE — draws a CarSpec in the reference photo's own pixel space on a transparent background,
+// so it can be laid over the photo to check the trace. `mode: "lines"` draws the traced paths as thin lines;
+// `mode: "art"` draws the finished manga car, for a side-by-side or blended comparison.
 import { RB16B, W12, type CarSpec } from "./cars-2021";
+import { MangaCarArt } from "./MangaCar";
 
 const CARS: Record<string, CarSpec> = { W12, RB16B };
 
-export const TraceCheck: React.FC<{ car: string }> = ({ car }) => {
+const tone = (id: string, r: number, gap = 7) => (
+  <pattern id={id} width={gap} height={gap} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <rect width={gap} height={gap} fill="#fbfaf6" />
+    <circle cx={gap / 2} cy={gap / 2} r={r} fill="#0d0d0d" />
+  </pattern>
+);
+
+export const TraceCheck: React.FC<{ car: string; mode?: "lines" | "art" }> = ({ car, mode = "lines" }) => {
   const c = CARS[car];
+  if (mode === "art") {
+    return (
+      <svg width={1920} height={1080}>
+        <defs>
+          {tone("b-tone-dark", 2.7)}
+          {tone("b-tone-light", 1.05)}
+        </defs>
+        <MangaCarArt car={c} id="trace" />
+      </svg>
+    );
+  }
+  const fw = c.frontWing;
   const lines = [
     c.body,
     c.floor,
-    c.frontWing.near,
-    c.frontWing.far,
-    ...c.frontWing.elements,
+    fw.near,
+    fw.far,
+    fw.farDeck,
+    fw.nearDeck,
+    ...fw.farFlaps.map((a) => a.d),
+    ...fw.nearFlaps.map((a) => a.d),
+    c.haloFar,
     c.rearWing.near,
     c.rearWing.top,
     c.rearWing.pylon,
     ...c.rearWing.elements,
     ...c.rearWing.beam,
     ...c.panelLines,
-    ...c.bargeboards,
     ...c.suspension,
     c.halo,
-    c.helmet.visor,
     c.mirror,
     c.tcam,
     c.antenna,

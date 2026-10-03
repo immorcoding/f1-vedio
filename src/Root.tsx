@@ -20,6 +20,8 @@ export const RemotionRoot: React.FC = () => {
         <Still id="Sheet-Cars2021" component={CarSheet2021} width={1920} height={1080} />
         <Still id="Trace-W12" component={TraceCheck} defaultProps={{ car: "W12" }} width={1920} height={1080} />
         <Still id="Trace-RB16B" component={TraceCheck} defaultProps={{ car: "RB16B" }} width={1920} height={1080} />
+        <Still id="Art-W12" component={TraceCheck} defaultProps={{ car: "W12", mode: "art" as const }} width={1920} height={1080} />
+        <Still id="Art-RB16B" component={TraceCheck} defaultProps={{ car: "RB16B", mode: "art" as const }} width={1920} height={1080} />
       </Folder>
     </>
   );
