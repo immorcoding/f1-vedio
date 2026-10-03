@@ -123,6 +123,79 @@ const armJoints = (shoulder: V, a: ArmPose, lean: number): Arm => {
   return { shoulder, elbow, wrist, hand };
 };
 
+// The joints of a pose, in metres from the person's ground point, facing +x (y up). The hips sit where the lowest point
+// of either foot touches the ground, unless the pose fixes hipY (climbing, sitting).
+export const solveBody = (pose: BodyPose) => {
+  const probe = [
+    legJoints({ x: 0, y: 1 }, pose.near.leg),
+    legJoints({ x: 0, y: 1 }, pose.far.leg),
+  ];
+  const low = Math.min(...probe.flatMap((l) => [l.heel.y, l.toe.y]));
+  const hipY = pose.hipY ?? 1 - low;
+  const hip = { x: 0, y: hipY };
+  const nearLeg = legJoints({ x: 0.03, y: hipY }, pose.near.leg);
+  const farLeg = legJoints({ x: -0.03, y: hipY }, pose.far.leg);
+  const up = 180 - pose.lean;
+  const shoulder = add(hip, polar(TORSO, up));
+  const neck = add(shoulder, polar(0.06, 180 - pose.lean * 0.6));
+  const nearArm = armJoints(
+    add(shoulder, polar(0.06, up + 180)),
+    pose.near.arm,
+    pose.lean,
+  );
+  const farArm = armJoints(
+    add(shoulder, { x: -0.03, y: -0.05 }),
+    pose.far.arm,
+    pose.lean,
+  );
+  const headC = add(
+    neck,
+    polar(0.15, 180 - pose.lean * 0.4 + (pose.head ?? 0) * 0.3),
+  );
+  return {
+    hipY,
+    hip,
+    nearLeg,
+    farLeg,
+    up,
+    shoulder,
+    neck,
+    nearArm,
+    farArm,
+    headC,
+  };
+};
+
+// How far a walker has moved (metres, forward) at gait phase p of walkPose(p, stride, lean), with the stance foot
+// planted: between two phases the body moves exactly as far as the foot on the ground slides back under it, so feet
+// never skate. Drive both the pose and the position from the same phase (and hold both on the same frames).
+const advanceTables = new Map<string, number[]>();
+const ADV_N = 240;
+export const walkAdvance = (p: number, stride = 1, lean = 6) => {
+  const key = `${stride}|${lean}`;
+  let table = advanceTables.get(key);
+  if (!table) {
+    table = [0];
+    for (let k = 0; k < ADV_N; k++) {
+      const a = solveBody(walkPose(k / ADV_N, stride, lean));
+      const b = solveBody(walkPose((k + 1) / ADV_N, stride, lean));
+      const lowA = (l: Leg) => Math.min(l.heel.y, l.toe.y);
+      // the stance foot: the lower one at the start of the interval
+      const near = lowA(a.nearLeg) <= lowA(a.farLeg);
+      const fa = near ? a.nearLeg.ankle.x : a.farLeg.ankle.x;
+      const fb = near ? b.nearLeg.ankle.x : b.farLeg.ankle.x;
+      table.push(table[k] + Math.max(0, fa - fb));
+    }
+    advanceTables.set(key, table);
+  }
+  const cycle = table[ADV_N];
+  const whole = Math.floor(p);
+  const u = (p - whole) * ADV_N;
+  const i = Math.floor(u);
+  const part = table[i] + (table[Math.min(ADV_N, i + 1)] - table[i]) * (u - i);
+  return whole * cycle + part;
+};
+
 export type Outfit = {
   suit: string; // overall colour
   suitShade: string; // far limbs and the shaded side
@@ -209,33 +282,8 @@ export const Figure: React.FC<{
   const P = (v: V) =>
     `${(at.x + v.x * s * dir).toFixed(1)} ${(at.y - v.y * s).toFixed(1)}`;
 
-  // put the hips where the lowest point of either foot touches the ground
-  const probe = [
-    legJoints({ x: 0, y: 1 }, pose.near.leg),
-    legJoints({ x: 0, y: 1 }, pose.far.leg),
-  ];
-  const low = Math.min(...probe.flatMap((l) => [l.heel.y, l.toe.y]));
-  const hipY = pose.hipY ?? 1 - low;
-  const hip = { x: 0, y: hipY };
-  const nearLeg = legJoints({ x: 0.03, y: hipY }, pose.near.leg);
-  const farLeg = legJoints({ x: -0.03, y: hipY }, pose.far.leg);
-  const up = 180 - pose.lean;
-  const shoulder = add(hip, polar(TORSO, up));
-  const neck = add(shoulder, polar(0.06, 180 - pose.lean * 0.6));
-  const nearArm = armJoints(
-    add(shoulder, polar(0.06, up + 180)),
-    pose.near.arm,
-    pose.lean,
-  );
-  const farArm = armJoints(
-    add(shoulder, { x: -0.03, y: -0.05 }),
-    pose.far.arm,
-    pose.lean,
-  );
-  const headC = add(
-    neck,
-    polar(0.15, 180 - pose.lean * 0.4 + (pose.head ?? 0) * 0.3),
-  );
+  const { hip, nearLeg, farLeg, up, shoulder, neck, nearArm, farArm, headC } =
+    solveBody(pose);
   const fwd = (v: V, d: number) => add(v, polar(d, 90 - pose.lean));
   const upT = (v: V, d: number) => add(v, polar(d, up));
   const ink = Math.max(1.6, s * 0.011);
@@ -264,6 +312,16 @@ export const Figure: React.FC<{
       ],
       [0.16, 0.13, 0.105, 0.115, 0.095],
     );
+  // the thumb: a small lobe on the front of the glove, angled off the hand
+  const thumbD = (a: Arm) =>
+    tube(
+      P,
+      [
+        lerp(a.wrist, a.hand, 0.25),
+        add(lerp(a.wrist, a.hand, 0.55), polar(0.045, 90 - pose.lean * 0.3)),
+      ],
+      [0.045, 0.035],
+    );
   const gloveD = (a: Arm) =>
     tube(P, [a.wrist, lerp(a.wrist, a.hand, 0.5), a.hand], [0.095, 0.1, 0.075]);
   const bootD = (l: Leg) =>
@@ -280,6 +338,8 @@ export const Figure: React.FC<{
     `Q ${P(upT(hip, -0.14))} ${P(fwd(upT(hip, -0.04), -0.16))} ` +
     `C ${P(fwd(upT(hip, 0.06), -0.18))} ${P(fwd(upT(hip, 0.2), -0.12))} ${P(fwd(upT(hip, 0.3), -0.13))} ` +
     `C ${P(fwd(upT(shoulder, -0.18), -0.17))} ${P(fwd(upT(shoulder, 0.0), -0.17))} ${P(fwd(neck, -0.07))} Z`;
+  // a stand-up collar, a band round the base of the neck
+  const collarD = tube(P, [fwd(neck, -0.07), fwd(neck, 0.07)], [0.05, 0.05]);
   const neckD = tube(
     P,
     [upT(shoulder, 0.0), neck, add(neck, polar(0.06, 180 - pose.lean * 0.4))],
@@ -351,11 +411,28 @@ export const Figure: React.FC<{
       {/* far side, in shadow */}
       {part(armD(farArm), outfit.suitShade)}
       {part(gloveD(farArm), outfit.gloves)}
+      {part(thumbD(farArm), outfit.gloves)}
+      {/* folds where the far sleeve and trouser leg bend */}
+      {line(
+        `M ${P(add(farArm.elbow, { x: -0.03, y: 0.04 }))} Q ${P(add(farArm.elbow, { x: 0.01, y: 0 }))} ${P(add(farArm.elbow, { x: 0.025, y: -0.04 }))}`,
+        0.7,
+        INK,
+      )}
       {part(legD(farLeg), outfit.suitShade)}
       {part(bootD(farLeg), outfit.boots)}
+      {line(
+        `M ${P(add(farLeg.knee, { x: -0.06, y: 0.04 }))} Q ${P(add(farLeg.knee, { x: 0, y: 0 }))} ${P(add(farLeg.knee, { x: 0.06, y: 0.045 }))}`,
+        0.7,
+        INK,
+      )}
       {/* body */}
       {part(neckD, outfit.suitShade)}
       {part(torsoD, outfit.suit)}
+      {part(collarD, outfit.suitShade)}
+      {line(
+        `M ${P(fwd(neck, -0.04))} Q ${P(fwd(upT(shoulder, -0.02), -0.02))} ${P(fwd(upT(shoulder, -0.1), 0.02))}`,
+        0.8,
+      )}
       {outfit.stripe
         ? line(
             `M ${P(fwd(upT(hip, 0.02), -0.01))} C ${P(fwd(upT(hip, 0.25), 0.0))} ${P(fwd(upT(shoulder, -0.2), 0.02))} ${P(fwd(upT(shoulder, -0.05), 0.0))}`,
@@ -403,6 +480,10 @@ export const Figure: React.FC<{
       )}
       {part(bootD(nearLeg), outfit.boots)}
       {line(
+        `M ${P(add(nearLeg.ankle, { x: -0.075, y: 0.13 }))} q ${0.04 * s * dir} ${-0.025 * s} ${0.075 * s * dir} ${-0.005 * s} q ${0.03 * s * dir} ${0.02 * s} ${0.07 * s * dir} ${0.005 * s}`,
+        0.8,
+      )}
+      {line(
         `M ${P(add(nearLeg.heel, { x: -0.01, y: 0.02 }))} L ${P(add(nearLeg.toe, { x: 0, y: 0.02 }))}`,
         0.8,
         "#5a5a5a",
@@ -449,6 +530,7 @@ export const Figure: React.FC<{
         0.6,
       )}
       {part(gloveD(nearArm), outfit.gloves)}
+      {part(thumbD(nearArm), outfit.gloves)}
       {line(
         `M ${P(add(nearArm.wrist, polar(0.055, 90)))} L ${P(add(nearArm.wrist, polar(0.055, -90)))}`,
         1.4,
