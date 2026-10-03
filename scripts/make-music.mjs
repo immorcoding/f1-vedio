@@ -402,7 +402,9 @@ for (const k of kicks) {
 {
   const rng = mulberry32(202);
   const noise = () => rng() * 2 - 1;
+  const HISS = Math.pow(10, -3 / 20); // rev 2: every hiss-type layer (hats, clap and snare noise, rain, wind, riser noise) sits 3 dB lower
   const hat = (n, gain, decay, pan, fc = 7000) => {
+    gain *= HISS;
     const hp = highpass1(fc);
     addEvent(n, Math.round(SR * decay * 5), (i) => {
       const s = hp(noise()) * Math.exp(-i / (SR * decay)) * gain;
@@ -419,7 +421,7 @@ for (const k of kicks) {
           ? Math.exp(-((t * 1000) % 10) / 2.5)
           : Math.exp(-(t - 0.03) / 0.07);
       const body = Math.sin(2 * Math.PI * 190 * t) * Math.exp(-t / 0.04) * 0.4;
-      return (hp(noise()) * burst + body) * gain;
+      return (hp(noise()) * burst * HISS + body) * gain;
     });
   };
   const snare = (n, gain, decay = 0.13) => {
@@ -429,7 +431,9 @@ for (const k of kicks) {
       const body =
         Math.sin(2 * Math.PI * (185 + 90 * Math.exp(-t * 60)) * t) *
         Math.exp(-t / 0.07);
-      return (hp(noise()) * Math.exp(-t / decay) * 0.8 + body * 0.6) * gain;
+      return (
+        (hp(noise()) * Math.exp(-t / decay) * 0.8 * HISS + body * 0.6) * gain
+      );
     });
   };
   const tom = (n, f0, gain) => {
@@ -515,26 +519,60 @@ for (const k of kicks) {
   }
 }
 
-// -- rain: Brazil's high end is a hiss of drops, a bed of ticks and sparse pentatonic pings --
+// -- rain: Brazil only (bars 33-56). A soft band-limited bed plus sparse droplet ticks that thicken
+// toward the final laps, then recede. Deterministic, stereo, always under the music. ----------
 {
   const rng = mulberry32(303);
-  const hp = highpass1(5000);
   const hpDrop = highpass1(2500);
+  // bed: noise low-passed around 2 kHz and high-passed at 350 Hz, one decorrelated copy per side,
+  // with a slow swell so it never sounds like a static hiss
+  const lpL = lowpass(0.6);
+  const lpR = lowpass(0.6);
+  const hpL = highpass1(350);
+  const hpR = highpass1(350);
   const level = curve([
     [at(33), 0],
-    [at(35), 0.06],
-    [at(45), 0.1],
-    [at(60, 4.8), 0.16],
-    [at(61), 0],
+    [at(34), 0.12],
+    [at(43), 0.45],
+    [at(52), 1],
+    [at(56), 0.12],
+    [at(57), 0],
   ]);
-  for (let n = S(33); n < S(61); n++) {
-    const bar = barOf(n);
-    const dens = ramp(bar, 33, 56, 0.0007, 0.0025);
-    const drop = rng() < dens ? 7 : 1;
-    const s = hp(rng() * 2 - 1) * level(n) * drop;
-    const pan = Math.sin(n / 9000) * 0.5;
-    L[n] += s * (1 - pan);
-    R[n] += s * (1 + pan);
+  const BED = 0.2;
+  for (let n = S(33); n < S(57); n++) {
+    const t = n / SR;
+    const swell = 0.8 + 0.2 * Math.sin(2 * Math.PI * t * 0.13 + 1.3);
+    const fc = 1900 + 500 * Math.sin(2 * Math.PI * t * 0.07);
+    const g = BED * level(n) * swell;
+    L[n] += hpL(lpL(rng() * 2 - 1, fc)) * g;
+    R[n] += hpR(lpR(rng() * 2 - 1, fc)) * g;
+  }
+  // droplets: short band-limited ticks at random sample positions, random pan, density and size
+  // growing with the level
+  for (let bar = 33; bar <= 56; bar++) {
+    const len = S(bar + 1) - S(bar);
+    const count = Math.round(ramp(bar, 33, 52, 3, 26) * (bar > 52 ? 0.5 : 1));
+    for (let k = 0; k < count; k++) {
+      const n = S(bar) + Math.floor(rng() * len);
+      const lv = level(n);
+      if (lv <= 0) continue;
+      const pan = rng() * 1.6 - 0.8;
+      const f = 1800 + 3200 * rng();
+      const gain = (0.016 + 0.025 * rng()) * (0.3 + 0.7 * lv);
+      const decay = 0.002 + 0.003 * rng();
+      const lpD = lowpass(1.2);
+      addEvent(
+        n,
+        Math.round(SR * decay * 7),
+        (i) => {
+          const t = i / SR;
+          const s = lpD(hpDrop(rng() * 2 - 1), f) * Math.exp(-t / decay) * gain;
+          return [s * (1 - pan), s * (1 + pan)];
+        },
+        [L, R],
+        0.5,
+      );
+    }
   }
   // sparse, wet pings: D minor pentatonic in the top octaves, a few per bar, growing in number
   const penta = [86, 89, 91, 93, 96, 98];
@@ -720,7 +758,7 @@ for (const k of kicks) {
       260 +
       500 * (0.5 + 0.5 * Math.sin((2 * Math.PI * t) / 6.3)) +
       400 * clamp01((n - S(64)) / (b - S(64)));
-    const g = 0.045 * wind(n);
+    const g = 0.045 * 0.708 * wind(n);
     const s = lp(rng() * 2 - 1, fc) * g;
     const pan = 0.35 * Math.sin((2 * Math.PI * t) / 9.1);
     L[n] += s * (1 - pan);
@@ -806,7 +844,7 @@ for (const k of kicks) {
     const saw = 2 * ph - 1 - polyblep(ph, dt);
     ph2 += (midi(62) * Math.pow(2, 3.5 * x * x * x)) / SR;
     const s =
-      (lpN(rng() * 2 - 1, 400 + 9000 * x * x) * 0.5 +
+      (lpN(rng() * 2 - 1, 400 + 9000 * x * x) * 0.5 * 0.708 +
         lpS(saw, 400 + 3000 * x) * 0.25 +
         Math.sin(2 * Math.PI * ph2) * 0.12) *
       0.38 *
@@ -831,8 +869,8 @@ for (const k of kicks) {
     [at(9, 2), -1.5],
     [at(32), 0],
     [at(33), -1.5],
-    [at(56), 1],
-    [at(60, 4.8), 1.5],
+    [at(56), 0.5], // rev 2: the old rain spikes used to push the limiter down here; keep the loudness the user heard
+    [at(60, 4.8), 0.5],
     [at(61, 3), -2],
     [at(63), -5],
     [at(72), -3.5],
