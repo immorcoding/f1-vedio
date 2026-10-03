@@ -16,6 +16,7 @@ import {
 import { at } from "../../timing.ts";
 import { ramp, secondsInShot, type ShotTime } from "../abuDhabi2021/shotClock";
 import { Page, Panel, RainCloseup } from "./common";
+import { split23 } from "./staging.ts";
 
 const MAS_BOX = { x: 40, y: 40, w: 1090, h: 480 };
 const GARAGE_BOX = { x: 1160, y: 40, w: 720, h: 480 };
@@ -70,7 +71,7 @@ export const Split: React.FC<{ st: ShotTime }> = ({ st }) => {
   const camMas = 58 * t;
   const joy = ramp(t, garageIn, garageIn + 0.6);
   // HAM behind VET, both on intermediates, the gap breathing
-  const gap = 0.8 + 0.6 * Math.sin(t * 1.3);
+  const pos = split23(t);
   return (
     <Page>
       <Waiting box={MAS_BOX} t={t} seed="w-mas" />
@@ -118,14 +119,14 @@ export const Split: React.FC<{ st: ShotTime }> = ({ st }) => {
               cars={[
                 {
                   car: STR3,
-                  x: 0.6 + gap,
-                  z: 15,
+                  x: pos.vet.x,
+                  z: pos.vet.z,
                   state: { wheelAngle: t * 900, tread: "wet" },
                 },
                 {
                   car: MP4_23,
-                  x: -4.6,
-                  z: 11,
+                  x: pos.ham.x,
+                  z: pos.ham.z,
                   state: { wheelAngle: t * 900 + 30, tread: "wet" },
                 },
               ]}

@@ -9,17 +9,15 @@ import { Sfx } from "../../../kit/lettering";
 import { focusLines } from "../../../kit/lines";
 import { hit, ramp, type ShotTime } from "../abuDhabi2021/shotClock";
 import { Page, RainCloseup } from "./common";
+import { pass25 } from "./staging.ts";
 
 const V = 34; // m/s, the Toyota climbing out of Junção
 
 export const Pass: React.FC<{ st: ShotTime }> = ({ st }) => {
   const { t } = st;
   const flash = hit(t, 0, 0.12);
-  // HAM on the near side, GLO 6 m further across the road (true widths, ART-18): noses level on the cue, then HAM
-  // draws away at ~1.6 m/s more; the camera splits the difference so both stay in frame
-  const d = -1 + 1.6 * t;
-  const gloX = -2.6 - 0.6 * d;
-  const hamX = gloX + d;
+  // HAM on the near side, GLO 6 m further across the road (true widths, ART-18): staging.ts
+  const pos = pass25(t);
   const twitch = Math.sin(t * 9) * 1.2;
   const sfx = ramp(t, 0, 0.12);
   return (
@@ -38,15 +36,15 @@ export const Pass: React.FC<{ st: ShotTime }> = ({ st }) => {
         cars={[
           {
             car: TF108,
-            x: gloX,
-            z: 16,
+            x: pos.glo.x,
+            z: pos.glo.z,
             spray: 0.45,
             state: { wheelAngle: t * 600, tread: "dry", tilt: twitch * 0.5 },
           },
           {
             car: MP4_23,
-            x: hamX,
-            z: 10,
+            x: pos.ham.x,
+            z: pos.ham.z,
             state: { wheelAngle: t * 700, tread: "wet" },
           },
         ]}

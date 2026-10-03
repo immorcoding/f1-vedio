@@ -3,8 +3,8 @@
 // lap 4294 m against the official 4309 m (0.4 % short: OSM's line cuts the corners a little). Anticlockwise.
 // The finish line sits on the pit straight about 210 m after the pit entry, as on the circuit map
 // (docs/assets/reference-register.md); corner distances are where OSM's named ways begin. Kerbs: autoKerbs.
-import { INTERLAGOS_LINE } from "./interlagos-2008.line";
-import { parseLine, type Track } from "./track";
+import { INTERLAGOS_LINE } from "./interlagos-2008.line.ts";
+import { parseLine, type Track } from "./track.ts";
 
 export const INTERLAGOS_2008: Track = {
   name: "Interlagos (2008)",
