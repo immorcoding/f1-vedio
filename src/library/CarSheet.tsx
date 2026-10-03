@@ -80,4 +80,17 @@ export const SHEETS = {
     ],
     topPxPerMetre: 62,
   },
+  // Suzuka 1990: PRO's Ferrari 641 above SEN's MP4/5B, at the 1989 sheet's 340 px per metre, each with its top view.
+  1990: {
+    rows: [
+      { car: "F641-PRO", x: 120, ground: 470 },
+      { car: "MP45B-SEN", x: 120, ground: 980 },
+    ],
+    pxPerMetre: 340,
+    tops: [
+      { car: "F641-PRO", x: 1590, y: 160 },
+      { car: "MP45B-SEN", x: 1590, y: 670 },
+    ],
+    topPxPerMetre: 62,
+  },
 } satisfies Record<number, CarSheetProps>;

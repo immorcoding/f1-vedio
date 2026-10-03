@@ -22,8 +22,21 @@ export const SUZUKA_1989: Track = {
     chicane: 5164,
     chicaneLeft: 5216,
     lastCurve: 5340,
+    // Turn 1 (1990 start crash, #7): a fast right-hander from the end of the main straight, tightening into Turn 2.
+    // On this line the curve starts at 350 m (radius ~140 m) and turns 45° by 460 m; Turn 2 is the tighter right
+    // (radius ~50–60 m) at 500–620 m. The pole slot sits just behind the line at s ≈ 0.
+    turn1TurnIn: 352,
+    turn1Apex: 410,
+    turn1Exit: 470,
+    turn2Apex: 545,
   },
   kerbs: [
+    // Turn 1 and Turn 2 (#7): outside kerb at the turn-in, inside kerb along the apex, outside kerb at the exit.
+    { from: 336, to: 368, side: "left" },
+    { from: 372, to: 452, side: "right" },
+    { from: 452, to: 492, side: "left" },
+    { from: 506, to: 600, side: "right" },
+    { from: 598, to: 640, side: "left" },
     { from: 5146, to: 5180, side: "right" },
     { from: 5174, to: 5200, side: "left" },
     { from: 5202, to: 5230, side: "left" },

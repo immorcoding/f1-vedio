@@ -6,6 +6,7 @@ import { RB16B, W12 } from "./cars-2021";
 import { AT01, VF20 } from "./cars-2020";
 import { CARS_2008 } from "./cars-2008";
 import { MP4_5_PRO, MP4_5_SEN } from "./cars-1989";
+import { F641_PRO, MP4_5B_SEN } from "./cars-1990";
 import type { CarSpec } from "./spec";
 
 export {
@@ -33,6 +34,17 @@ export { PIRELLI_2021, RB16B, W12 } from "./cars-2021";
 export { AT01, GRO_2020, KVY_2020, PIRELLI_2020, VF20 } from "./cars-2020";
 export { CARS_2008, F2008, MP4_23, STR3, TF108 } from "./cars-2008";
 export { MP4_5, MP4_5_PRO, MP4_5_SEN, PRO_1989, SEN_1989 } from "./cars-1989";
+export {
+  BER_1990,
+  F641,
+  F641_MAN,
+  F641_PRO,
+  MAN_1990,
+  MP4_5B_BER,
+  MP4_5B_SEN,
+  PRO_1990,
+  SEN_1990,
+} from "./cars-1990";
 
 // Every traced car by id, for the asset sheets and the Trace/Art check stills.
 export const CARS = {
@@ -43,5 +55,7 @@ export const CARS = {
   ...CARS_2008,
   "MP45-SEN": MP4_5_SEN,
   "MP45-PRO": MP4_5_PRO,
+  "F641-PRO": F641_PRO,
+  "MP45B-SEN": MP4_5B_SEN,
 } satisfies Record<string, CarSpec>;
 export type CarId = keyof typeof CARS;
