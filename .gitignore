@@ -8,3 +8,6 @@ out/
 
 # Real-world reference photos: local only, never committed (see the asset reference register).
 /references/
+
+# Agent worktrees
+.claude/worktrees/
