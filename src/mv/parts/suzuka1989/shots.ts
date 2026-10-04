@@ -22,7 +22,12 @@ export const EDIT: PartEdit = {
       content:
         "白天的铃鹿，转播式侧面跟拍：两台 McLaren MP4/5 一前一后贴着跑，PRO 在前、SEN 紧咬；第 13 小节起两个头盔小格对比",
       text: ["PRO +16 PTS", "SEN MUST WIN"],
-      cues: [{ id: "suzuka1989.helmets", at: at(13) }],
+      cues: [
+        { id: "suzuka1989.helmets", at: at(13) },
+        // PRO's lead in the points box (#17), then its gold stroke
+        { id: "suzuka1989.margin", at: at(13, 2) },
+        { id: "suzuka1989.marginGold", at: at(13, 3) },
+      ],
     },
     {
       id: "1.3",
