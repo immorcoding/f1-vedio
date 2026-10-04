@@ -306,12 +306,17 @@ export const CrashStage: React.FC<{
   );
 };
 
+// The impact freeze, frames (as 1989's FREEZE_14).
+const FREEZE = 14;
+
 export const Crash: React.FC<PictureProps> = ({ f }) => {
   const shot = shotById("1.7");
   const t = (f - HIT) / 60;
-  // the frame freezes for half a beat on the star, then shakes out
-  const freeze = f - HIT < 14;
-  const shake = freeze ? 0 : 16 * Math.exp(-(f - HIT - 14) / 12);
+  // The impact frame echoes 1989's (suzuka1989/Crash.tsx), mirrored because the cars now run right to left and the
+  // roles are reversed (SEN runs into PRO): the same half-beat freeze on the same-size impact star, the same focus
+  // lines, the frame tilted the other way, and the sound effect in the mirrored corner, over the space the cars left.
+  const freeze = f - HIT < FREEZE;
+  const shake = freeze ? 0 : 12 * Math.exp(-(f - HIT - FREEZE) / 10);
   const sx = shake * Math.sin((f - HIT) * 2.7);
   const sy = shake * Math.cos((f - HIT) * 2.1);
   // the contact: SEN's left front tyre against PRO's right rear tyre, halfway between the two cars' depths
@@ -320,8 +325,8 @@ export const Crash: React.FC<PictureProps> = ({ f }) => {
   const zC = Z_SEN_17 + 1.06 + (c.sen.z - Z_SEN_17) - camZ17(f);
   const senFrontX = c.sen.x - 2.94 / 2;
   const contact = CAM_17.project({ x: senFrontX - camX, y: 0.34, z: zC });
-  const star = ramp(f, HIT, HIT + 10, Easing.out(Easing.cubic));
-  const starFade = 1 - ramp(f, HIT + 30, HIT + 56);
+  const star = ramp(f, HIT, HIT + 8, Easing.out(Easing.cubic));
+  const starFade = 1 - ramp(f, HIT + FREEZE + 6, HIT + FREEZE + 30);
   const sfx = ramp(f, HIT, HIT + 6, Easing.out(Easing.back(2.5)));
   const sfxFade = 1 - ramp(f, shot.to - 30, shot.to - 4);
   return (
@@ -333,12 +338,12 @@ export const Crash: React.FC<PictureProps> = ({ f }) => {
       <rect width={1920} height={1080} fill="#fbfaf6" />
       <g filter={inkFilter()}>
         <g
-          transform={`translate(${sx} ${sy}) rotate(${freeze ? 3 : 3 * (1 - ramp(t, 0.3, 1.2))} 960 540)`}
+          transform={`translate(${sx} ${sy}) rotate(${freeze ? 3 : 3 * (1 - ramp(f - HIT, FREEZE, FREEZE + 50))} 960 540)`}
         >
           <CrashStage f={f} />
           {freeze ? (
             <path
-              d={focusLines(contact.x, contact.y, 280, 130, 5)}
+              d={focusLines(contact.x, contact.y, 240, 130, 5)}
               fill={INK}
             />
           ) : null}
@@ -354,8 +359,8 @@ export const Crash: React.FC<PictureProps> = ({ f }) => {
             <g opacity={starFade}>
               <ImpactStar
                 x={contact.x}
-                y={contact.y}
-                r={200}
+                y={contact.y - 20}
+                r={150}
                 seed="suzuka90"
                 t={star}
               />
@@ -365,9 +370,9 @@ export const Crash: React.FC<PictureProps> = ({ f }) => {
         {sfx > 0 ? (
           <g
             opacity={sfxFade}
-            transform={`translate(240 330) scale(${0.6 + 0.4 * sfx})`}
+            transform={`translate(${1920 - 330 - 460} 300) scale(${0.6 + 0.4 * sfx})`}
           >
-            <Sfx x={0} y={0} size={240} rotate={-10}>
+            <Sfx x={0} y={0} size={230} rotate={12}>
               {shot.text[0]}
             </Sfx>
           </g>

@@ -3,6 +3,8 @@
 // 130R — where the next shots happen — is ringed and blown up in a round callout under the title: the right-left
 // flick of the Casio Triangle with the escape road running straight on between its bollards, turned the way 1.3 sees
 // it (racing left to right). Clean lines only: a thin ribbon on the map so the chicane does not clot into a blob.
+// Under the title one small brushed line sets up the story of both Suzuka parts: "队友 · 宿敌" (team-mates, rivals).
+// The 1990 page turn (suzuka1990/Title.tsx) shows this page's last frame through Title89Page.
 import { Easing } from "remotion";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
@@ -58,6 +60,7 @@ export const Title: React.FC<PictureProps> = ({ f }) => {
   const len = shot.to - shot.from;
   const draw = ramp(t, 2, len * 0.55, Easing.inOut(Easing.quad));
   const title = ramp(t, 14, 40, Easing.out(Easing.back(2)));
+  const sub = ramp(t, 36, 60, Easing.out(Easing.back(1.8)));
   const ring = ramp(t, len * 0.56, len * 0.64, Easing.out(Easing.back(1.6)));
   const bubble = ramp(t, len * 0.62, len * 0.74, Easing.out(Easing.back(1.4)));
   const route = ramp(t, len * 0.72, len * 0.92, Easing.inOut(Easing.quad));
@@ -124,18 +127,9 @@ export const Title: React.FC<PictureProps> = ({ f }) => {
           opacity={title}
           transform={`translate(110 610) scale(${0.85 + 0.15 * title})`}
         >
-          {shot.text.map((line) => (
-            <text
-              key={line}
-              x={0}
-              y={0}
-              fontFamily={BRUSH_FONT}
-              fontSize={150}
-              fill={INK}
-            >
-              {line}
-            </text>
-          ))}
+          <text x={0} y={0} fontFamily={BRUSH_FONT} fontSize={150} fill={INK}>
+            {shot.text[0]}
+          </text>
           <path
             d="M 6 40 L 560 28"
             stroke={INK}
@@ -143,6 +137,19 @@ export const Title: React.FC<PictureProps> = ({ f }) => {
             strokeLinecap="round"
           />
         </g>
+        {sub > 0 ? (
+          <text
+            x={118 + 30 * (1 - sub)}
+            y={710}
+            opacity={sub}
+            fontFamily={BRUSH_FONT}
+            fontSize={56}
+            fill={INK}
+          >
+            {/* the story line (STO-5: a few characters; facts.md: McLaren team-mates in 1988–1989) */}
+            {shot.text[1]}
+          </text>
+        ) : null}
         {bubble > 0 ? (
           <g>
             {[-1, 1].map((s) => {
@@ -219,7 +226,20 @@ export const Title: React.FC<PictureProps> = ({ f }) => {
             </g>
           </g>
         ) : null}
+        {/* the page's frame, as on every other page of the Suzuka story */}
+        <rect
+          x={0}
+          y={0}
+          width={1920}
+          height={1080}
+          fill="none"
+          stroke={INK}
+          strokeWidth={18}
+        />
       </g>
     </svg>
   );
 };
+
+// The finished 1989 page (the last frame of 1.1), for the page turn into 1990.
+export const Title89Page: React.FC = () => <Title f={shotById("1.1").to - 1} />;

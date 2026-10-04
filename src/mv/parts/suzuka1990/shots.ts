@@ -11,9 +11,12 @@ export const EDIT: PartEdit = {
       to: at(23),
       view: "title",
       content:
-        "1989 那一页（减速弯画着圈）翻过去，下一页是同一条铃鹿，圈落在 1 号弯，镜头推向发车直道",
-      text: ["1990 · 铃鹿"],
-      cues: [{ id: "suzuka1990.flip", at: at(21, 1) }],
+        "1989 那一页（1.1 的成品：减速弯圈和放大小格、“队友 · 宿敌”）翻过去，下一页是同一条铃鹿，圈落在 1 号弯；PRO 的头盔格落在 1.2 的左上位置，第 22 小节翻面，同一顶头盔从 McLaren 红白换到法拉利红；镜头推向发车直道",
+      text: ["1990 · 铃鹿", "PRO 转投法拉利", "积分 SEN 78 · PRO 69"],
+      cues: [
+        { id: "suzuka1990.flip", at: at(21, 1) },
+        { id: "suzuka1990.move", at: at(22, 1) },
+      ],
     },
     {
       id: "1.6",
@@ -31,7 +34,7 @@ export const EDIT: PartEdit = {
       to: at(29),
       view: "closeup",
       content:
-        "1 号弯相撞：SEN 左前轮撞上 PRO 右后轮，定格成撞击星；两车锁在一起冲出赛道，滑进砂石缓冲区，尘土与碎片飞起",
+        "1 号弯相撞，与 1989 的撞击格同一套画法、左右镜像、角色对调：SEN 左前轮撞上 PRO 右后轮，定格成撞击星加集中线，拟声字在镜像的一角；两车锁在一起冲出赛道，滑进砂石缓冲区，尘土与碎片飞起",
       text: ["轰！"],
       cues: [hitCue("suzuka1990.crash")],
     },
@@ -41,9 +44,14 @@ export const EDIT: PartEdit = {
       to: at(33),
       view: "panel",
       content:
-        "尘土落定，两车停在缓冲区；第 30 小节两格头盔一左一右滑入：1989 年冠军 PRO、1990 年冠军 SEN",
-      text: ["89 PRO · 90 SEN"],
-      cues: [{ id: "suzuka1990.helmets", at: at(30) }],
+        "尘土落定，两车停在缓冲区；第 30 小节画面压暗，1.2/1.4 的两格头盔放大回到左右对称的位置、面对面：PRO（法拉利）盖“1989 冠军”，SEN 盖“1990 冠军”（与 1.4 同款红章），最后一行小字",
+      text: ["1989 冠军", "1990 冠军", "SEN 后来承认是故意的"],
+      cues: [
+        { id: "suzuka1990.helmets", at: at(30) },
+        { id: "suzuka1990.stamp89", at: at(30, 2) },
+        { id: "suzuka1990.stamp90", at: at(31) },
+        { id: "suzuka1990.admitted", at: at(31, 3) },
+      ],
     },
   ],
 };

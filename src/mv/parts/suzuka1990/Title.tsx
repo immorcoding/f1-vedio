@@ -1,48 +1,72 @@
-// Shot 1.5 (bars 21–22): title card, a page turn. The 1989 page — the Suzuka figure-eight with the chicane ringed and
-// "1989 · 铃鹿" — turns over on 21.1 like a manga page, and under it is the same circuit on a fresh page: "1990 · 铃鹿"
-// is brushed in and the ring lands on Turn 1, where this year's crash happens. On the last beats the page pushes in
-// toward the main straight and Turn 1, into the top view of shot 1.6.
+// Shot 1.5 (bars 21–22): title card, a page turn. The finished 1989 page — drawn by the 1989 part itself
+// (suzuka1989/Title.tsx: the figure-eight, the chicane ringed and blown up in its callout, "1989 · 铃鹿 / 队友 · 宿敌")
+// — turns over on 21.1 like a manga page, and under it is the same circuit on a fresh page in the same hand:
+// "1990 · 铃鹿" is brushed in and the ring lands on Turn 1, where this year's crash happens. PRO's helmet card drops
+// into his slot of 1.2 (top left) in the 1989 McLaren and flips over on 22.1: the same helmet — a driver keeps his
+// helmet when he changes team — now sits in the red Ferrari, "PRO 转投法拉利". Then the stakes, and on the last beats
+// the page pushes in toward the main straight and Turn 1, into the top view of shot 1.6.
 import { Easing } from "remotion";
+import { F641_PRO, MP4_5_PRO } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
 import { BRUSH_FONT, Caption } from "../../../kit/lettering";
 import { ToneDefs, tone } from "../../../kit/tone";
 import { fitMap, poseAt, SUZUKA_1989, TrackMap } from "../../../tracks";
+import { CARD_PRO, CardCaption, HelmetCard } from "../suzuka1989/Helmets";
+import { Title89Page } from "../suzuka1989/Title";
 import { cueFrame, ramp, shotById, type PictureProps } from "./common";
 
 const T = SUZUKA_1989;
-// The title stakes before the race (facts.md): SEN leads PRO by 9 points with two races left; the crash that put both
-// out here settled the title for SEN.
-const STAKES = "积分 SEN 78 · PRO 69";
+// The same map frame, ribbon width and ring as the 1989 page, so the two pages read as one book.
 const VIEW = fitMap(T, { x: 760, y: 120, w: 1100, h: 860 }, 0);
 const W = 1920;
 const H = 1080;
 
 type Pt = { x: number; y: number };
 
-// One page of the title: the inked lap, the year's ring and the brushed title.
+// The 1990 page: the inked lap, the Turn 1 ring, the brushed title, PRO's card and the stakes.
 const Page: React.FC<{
   title: string;
-  ringAt: number;
   ring: number;
   title01: number;
-  // the title stakes under the title (1990 page only)
-  sub?: string;
-  sub01?: number;
-}> = ({ title, ringAt, ring, title01, sub, sub01 = 0 }) => {
-  const c = VIEW.project(poseAt(T, ringAt));
+  card: number;
+  flip: number;
+  move: number;
+  stakes: number;
+  // PRO's move (facts.md: Prost drove Ferrari #1 in 1990) and the stakes before the race (facts.md: SEN leads PRO by 9
+  // points with two races left; the crash that put both out here settled the title for SEN)
+  moveText: string;
+  stakesText: string;
+}> = ({
+  title,
+  ring,
+  title01,
+  card,
+  flip,
+  move,
+  stakes,
+  moveText,
+  stakesText,
+}) => {
+  const c = VIEW.project(poseAt(T, T.corners.turn1Apex));
+  // the card flips about its vertical middle: the McLaren face turns away, the Ferrari face turns in
+  const sx = Math.abs(Math.cos(Math.PI * flip));
+  const ferrari = flip >= 0.5;
+  const cx = CARD_PRO.x + CARD_PRO.w / 2;
+  const cy = CARD_PRO.y + CARD_PRO.h / 2;
+  const dropY = -(1 - card) * (CARD_PRO.y + CARD_PRO.h + 140);
   return (
     <g>
       <rect width={W} height={H} fill={PAPER} />
-      <TrackMap track={T} view={VIEW} shadow finish road={22} />
+      <TrackMap track={T} view={VIEW} shadow finish road={15} />
       {ring > 0 ? (
         <circle
           cx={c.x}
           cy={c.y}
-          r={62 * ring}
+          r={40 * ring}
           fill="none"
           stroke={INK}
-          strokeWidth={7}
+          strokeWidth={6}
         />
       ) : null}
       <g
@@ -59,12 +83,34 @@ const Page: React.FC<{
           strokeLinecap="round"
         />
       </g>
-      {sub && sub01 > 0 ? (
+      {card > 0 ? (
         <g
-          opacity={sub01}
-          transform={`translate(${120 - 30 * (1 - sub01)} 740)`}
+          transform={`translate(0 ${dropY}) rotate(${(1 - card) * -4} ${cx} ${cy})`}
         >
-          <Caption x={0} y={0} w={640} h={96} lines={[sub]} size={50} />
+          <g
+            transform={`translate(${cx} 0) scale(${Math.max(0.02, sx)} 1) translate(${-cx} 0)`}
+          >
+            <HelmetCard
+              car={ferrari ? F641_PRO : MP4_5_PRO}
+              box={CARD_PRO}
+              id={ferrari ? "s15-pro-ferrari" : "s15-pro-mclaren"}
+              seed={3}
+              shadow
+            />
+          </g>
+          {move > 0 ? (
+            <g opacity={move}>
+              <CardCaption box={CARD_PRO} text={moveText} />
+            </g>
+          ) : null}
+        </g>
+      ) : null}
+      {stakes > 0 ? (
+        <g
+          opacity={stakes}
+          transform={`translate(${120 - 30 * (1 - stakes)} 740)`}
+        >
+          <Caption x={0} y={0} w={640} h={96} lines={[stakesText]} size={50} />
         </g>
       ) : null}
     </g>
@@ -121,8 +167,18 @@ export const Title: React.FC<PictureProps> = ({ f }) => {
   const flap = lifted.map((p) => reflect(p, c));
   const left = `M -2000 -2000 L ${c + K * (-2000 - H / 2)} -2000 L ${c + K * (3000 - H / 2)} 3000 L -2000 3000 Z`;
   const title = ramp(t, 40, 66, Easing.out(Easing.back(2)));
+  const card = ramp(t, 58, 74, Easing.out(Easing.back(1.4)));
   const ring = ramp(t, 74, 92, Easing.out(Easing.back(1.6)));
-  const stakes = ramp(t, 96, 114, Easing.out(Easing.back(1.6)));
+  // the card turns over across 22.1: edge-on exactly on the beat
+  const moveAt = cueFrame("suzuka1990.move");
+  const cardFlip = ramp(
+    f,
+    moveAt - 12,
+    moveAt + 12,
+    Easing.inOut(Easing.cubic),
+  );
+  const move = ramp(f, moveAt + 6, moveAt + 20, Easing.out(Easing.back(1.6)));
+  const stakes = ramp(t, 132, 148, Easing.out(Easing.back(1.6)));
   // the push-in toward Turn 1 and the main straight on the last beats
   const push = ramp(t, len - 46, len, Easing.in(Easing.cubic));
   const t1 = VIEW.project(poseAt(T, 200));
@@ -144,24 +200,24 @@ export const Title: React.FC<PictureProps> = ({ f }) => {
         >
           <Page
             title={shot.text[0]}
-            ringAt={T.corners.turn1Apex}
             ring={ring}
             title01={title}
-            sub={STAKES}
-            sub01={stakes}
+            card={card}
+            flip={cardFlip}
+            move={move}
+            stakes={stakes}
+            moveText={shot.text[1]}
+            stakesText={shot.text[2]}
           />
         </g>
-        {turn < 1 ? (
-          <g>
-            {/* the 1989 page, still lying on the left of the fold */}
-            <g clipPath="url(#s15-left)">
-              <Page
-                title="1989 · 铃鹿"
-                ringAt={T.corners.chicane}
-                ring={1}
-                title01={1}
-              />
-            </g>
+      </g>
+      {turn < 1 ? (
+        <g>
+          {/* the 1989 page, still lying on the left of the fold (inked by its own picture) */}
+          <g clipPath="url(#s15-left)">
+            <Title89Page />
+          </g>
+          <g filter={inkFilter()}>
             {/* shadow the turning page throws on the new one */}
             <path
               d={poly(flap)}
@@ -180,7 +236,9 @@ export const Title: React.FC<PictureProps> = ({ f }) => {
               strokeLinejoin="round"
             />
           </g>
-        ) : null}
+        </g>
+      ) : null}
+      <g filter={inkFilter()}>
         <rect
           x={0}
           y={0}
