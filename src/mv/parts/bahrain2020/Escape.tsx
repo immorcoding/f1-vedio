@@ -113,6 +113,12 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   const aim = cam.project(AIM);
   const hb = heartbeat(f);
   const text = ramp(f, timeCue, timeCue + 8);
+  // the fire drops a step before 70.3 (the powder knocking it down), so the cockpit's rim and the halo's edge show
+  // round him as he hauls himself out: he reads as coming out of the car (review 1, #20). The low fire in front of
+  // the cell comes down below the rim; the big fire behind it a little. The heat haze keeps its full extent.
+  const lower = ramp(f, shot.from, frameAt(at(70, 3)) - 4);
+  const fireLevel = 1 - 0.15 * lower;
+  const frontFire = 1 - 0.55 * lower;
   // everyone at the wreck stands in its heat haze with a lighter ripple, so they still read (haze.tsx)
   const calmAt = (at: { x: number; z: number }, k: number, s: number) => {
     const base = g(at);
@@ -170,7 +176,8 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
           cam={cam}
           f={f}
           palette={palette}
-          intensity={1}
+          intensity={fireLevel}
+          frontFire={frontFire}
           tonePrefix="b36"
           cockpit={gro.cockpit}
           behindRails={gro.behindRails}

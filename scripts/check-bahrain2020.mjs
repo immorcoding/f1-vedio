@@ -2,7 +2,8 @@
 // Run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-bahrain2020.mjs
 // - the impact force and the escape time (27 秒, the FIA summary's figure) the scene draws (FACTS in shots.ts) are the ones in docs/production/facts.md
 //   under "2020 巴林大奖赛";
-// - the edit list's on-screen text for 3.3, 3.5 and 3.6 carries the same numbers (in English: "67G", "11s", "27s").
+// - the edit list's on-screen text for 3.3, 3.5 and 3.6 carries the same numbers (in English: "67G", "11s", "27s");
+// - the halo note on 3.6 ("HALO · MANDATORY SINCE 2018") matches the year registered in facts.md.
 import { readFileSync } from "node:fs";
 import { EDIT, FACTS } from "../src/mv/parts/bahrain2020/shots.ts";
 
@@ -24,6 +25,14 @@ else {
     problems.push(
       `facts.md does not register the medical car on scene within ${FACTS.medicalCarSeconds} 秒`,
     );
+  if (
+    !new RegExp(
+      `从\\s*${FACTS.haloMandatorySince}\\s*赛季起所有 F1 赛车必须装 halo`,
+    ).test(section)
+  )
+    problems.push(
+      `facts.md does not register the halo as mandatory from ${FACTS.haloMandatorySince}`,
+    );
   if (!/来源/.test(section)) problems.push("the Bahrain facts have no source");
 }
 const text = (id) =>
@@ -42,10 +51,16 @@ if (!seconds("3.6", FACTS.escapeSeconds))
   problems.push(
     `shot 3.6 text "${text("3.6")}" does not show ${FACTS.escapeSeconds}s`,
   );
+if (
+  !text("3.6").includes(`HALO · MANDATORY SINCE ${FACTS.haloMandatorySince}`)
+)
+  problems.push(
+    `shot 3.6 text "${text("3.6")}" does not show HALO · MANDATORY SINCE ${FACTS.haloMandatorySince}`,
+  );
 
 // (3.2's cars are checked by the shared interpenetration check: npm run check:overlap, src/mv/top-views.ts)
 console.log(
-  `impact ${FACTS.impactG}G, medical car ${FACTS.medicalCarSeconds}s, escape ${FACTS.escapeSeconds}s`,
+  `impact ${FACTS.impactG}G, medical car ${FACTS.medicalCarSeconds}s, escape ${FACTS.escapeSeconds}s, halo mandatory since ${FACTS.haloMandatorySince}`,
 );
 for (const p of problems) console.log(`FAIL  ${p}`);
 console.log(

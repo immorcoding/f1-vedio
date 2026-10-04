@@ -24,6 +24,8 @@ export const carPointOnScreen = (
   at: ScreenAnchor,
   p: { x: number; y: number },
   pose: PiecePose = {},
+  // as MangaCar's `facing`: the trace faces left; facing right it is mirrored about `at`
+  facing: "left" | "right" = "left",
 ) => {
   const a = ((pose.rotate ?? 0) * Math.PI) / 180;
   const rx = p.x - BREAK_PIVOT.x;
@@ -42,7 +44,7 @@ export const carPointOnScreen = (
   };
   const k = (VF20.frame.k * at.pxPerMetre) / 250;
   return {
-    x: at.x + (q.x - VF20.frame.x) * k,
+    x: at.x + (facing === "left" ? 1 : -1) * (q.x - VF20.frame.x) * k,
     y: at.y + (q.y - VF20.frame.ground) * k,
   };
 };

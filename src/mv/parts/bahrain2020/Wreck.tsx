@@ -17,7 +17,7 @@ import {
   type ScreenRect,
 } from "../../../kit/fire";
 import { ToneDefs, TonePattern } from "../../../kit/tone";
-import { beatsAtFrame, FRAMES_PER_BEAT } from "../../timing.ts";
+import { at, beatsAtFrame, frameAt, FRAMES_PER_BEAT } from "../../timing.ts";
 import { ramp, shotById, type PictureProps } from "./common";
 import { BentGuardrail } from "./bent-rail";
 import { Haze } from "./haze";
@@ -146,6 +146,8 @@ export const WreckWorld: React.FC<{
   shimmer?: number;
   // the fire is out (halo finale): the cell charred, embers and a few small flames left along the rails
   burntOut?: boolean;
+  // 0–1: the smoke drifting over the torn-off rear parts and thins away, so the rear reads (3.4 around 64.1)
+  veilOpen?: number;
 }> = ({
   cam,
   f,
@@ -161,6 +163,7 @@ export const WreckWorld: React.FC<{
   frontFire = 1,
   shimmer,
   burntOut = false,
+  veilOpen = 0,
 }) => {
   const p = noGlow
     ? { ...FIRE_PALETTES[palette], glow: null }
@@ -187,7 +190,8 @@ export const WreckWorld: React.FC<{
   const cellK = (VF20.frame.k * cellAt.pxPerMetre) / 250;
   const rearAt = cam.anchor({ x: REAR_ANCHOR_X, z: REAR_Z });
   // the veil of smoke over the rear piece: from the top of the gap fire across to above the rear wing
-  const veil = Math.min(1, Math.max(0, (intensity - 0.2) / 0.5));
+  const veil =
+    Math.min(1, Math.max(0, (intensity - 0.2) / 0.5)) * (1 - 0.88 * veilOpen);
   const veilFrom = cam.project({
     x: CELL_TO + 1.0,
     y: 1.3,
@@ -207,6 +211,8 @@ export const WreckWorld: React.FC<{
   const veilLowAngle =
     (Math.atan2(veilLowTo.x - veilLow.x, -(veilLowTo.y - veilLow.y)) * 180) /
     Math.PI;
+  // as the veil parts, the upper drift lifts and the lower one sinks, opening a gap over the rear piece
+  const part = veilOpen * cam.pxPerMetre(REAR_Z) * 0.45;
   const veilLowLength = Math.hypot(
     veilLowTo.x - veilLow.x,
     veilLowTo.y - veilLow.y,
@@ -409,7 +415,7 @@ export const WreckWorld: React.FC<{
       {/* bubble smoke (ART-20) drifting across from the fire in the gap over the torn-off rear, partly veiling it */}
       {veil > 0 ? (
         <g
-          transform={`translate(${veilFrom.x} ${veilFrom.y}) rotate(${veilAngle})`}
+          transform={`translate(${veilFrom.x} ${veilFrom.y - part}) rotate(${veilAngle})`}
         >
           <BubbleSmoke
             w={cam.pxPerMetre(REAR_Z) * 1.3}
@@ -427,7 +433,7 @@ export const WreckWorld: React.FC<{
       {/* and a second, lower drift across the rear's flank, from the gap fire toward the camera's right */}
       {veil > 0 ? (
         <g
-          transform={`translate(${veilLow.x} ${veilLow.y}) rotate(${veilLowAngle})`}
+          transform={`translate(${veilLow.x} ${veilLow.y + part * 0.6}) rotate(${veilLowAngle})`}
         >
           <BubbleSmoke
             w={cam.pxPerMetre(REAR_Z) * 1.0}
@@ -488,6 +494,11 @@ export const WreckShot: React.FC<PictureProps> = ({ f, palette }) => {
     x: 960 + 420 * (1 - u), // the rear piece starts at the right edge, half out of frame (user review 2026-10-04)
     y: 560,
   });
+  // once, round 64.1 (halfway in, the rear piece on screen at the right): the smoke over the torn-off rear parts for
+  // a moment, so it reads that the car is in two (review 1, #20); the rear stays the dark, muted silhouette (ART-23)
+  const veilOpen =
+    ramp(f, frameAt(at(63, 3)), frameAt(at(64))) *
+    (1 - ramp(f, frameAt(at(64, 3)), frameAt(at(65))));
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
@@ -500,6 +511,7 @@ export const WreckShot: React.FC<PictureProps> = ({ f, palette }) => {
           palette={palette}
           intensity={intensity}
           tonePrefix="b34"
+          veilOpen={veilOpen}
         />
       </Haze>
       <Vignette amount={0.5 + 0.35 * hb} />
