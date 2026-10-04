@@ -40,11 +40,11 @@ MV 画面上出现的每个事实及其来源（STO-3）。来源核对日期：
 ## 2020 巴林大奖赛
 
 - 第 1 圈 3 号弯后的直道，Grosjean（Haas VF-20）擦到 Kvyat（AlphaTauri）后以 192 km/h 撞穿护栏，冲击约 67 G，赛车断裂起火。
-- 约 28 秒后 Grosjean 自己从火中脱身；halo 护住了他的头部和身体，伤势为双手二度烧伤。
+- 撞击后 27 秒 Grosjean 自己从火中脱身（FIA 事故调查摘要：“was out of car after 27 seconds”，画面用这个数字）；维基百科写约 28 秒，是取整或另一种计时，不采用。halo 护住了他的头部和身体，伤势为双手二度烧伤。
 - 来源：[2020 Bahrain Grand Prix — Wikipedia](https://en.wikipedia.org/wiki/2020_Bahrain_Grand_Prix)
-- 画面细节（镜头 3.2–3.6）：Grosjean 从赛道左侧往右侧并线时，右后轮碰到 Kvyat 左前轮，当时车速 241 km/h；撞击点在 3 号弯弯心后约 180 米、缓冲区后面的三层护栏，撞击角 29°；座舱穿过中间那层护栏，动力单元整体与车身前段分离。发车轮胎：Grosjean 硬胎（白），Kvyat 中性胎（黄），前 10 名都用中性胎。
+- 画面细节（镜头 3.2–3.6）：Grosjean 从赛道左侧往右侧并线时，右后轮碰到 Kvyat 左前轮，当时车速 241 km/h；撞击点在 3 号弯弯心后约 180 米、缓冲区后面的三层护栏，以 192 km/h 撞上；FIA 调查摘要原文“at an angle of 29 degrees, with an estimated yaw of 22 degrees to the direction of travel”：29° 是行进方向（轨迹）与护栏的夹角，22° 是偏航角，即车身纵轴偏离行进方向的角度（车是斜着滑过去的，不是车头正对行进方向）。两者是不同的量。偏航方向摘要没写；摘要说碰撞让车尾抬起、车“向右偏航”，所以画面按车头比行进方向更偏向护栏处理，车身与护栏约成 29° + 22° = 51°（镜头 3.2 的轨迹与车头朝向、镜头 3.3 护栏与车身的夹角都按此画）；座舱穿过中间那层护栏，动力单元整体与车身前段分离。发车轮胎：Grosjean 硬胎（白），Kvyat 中性胎（黄），前 10 名都用中性胎。
 - 彩蛋（STO-7）：医疗车 11 秒内到场，FIA 医疗救援协调员 Ian Roberts 让一名工作人员用干粉灭火器对着座舱喷，Grosjean 从火里爬出翻过护栏时，Roberts 把他拉离残骸；医疗车司机 Alan van der Merwe 也在场。烧毁的车身前段（halo 完好，表面烧黑）后来在伦敦 F1 展览展出。
-- 镜头 3.5 的“28 秒”时间线：0 秒撞击；医疗车 11 秒内到场（FIA）；工作人员用干粉灭火器喷座舱的确切秒数，FIA 调查摘要和查到的报道（The Race、ESPN、RaceFans、Motorsport Technology）都没有给出，未核实，画面不标秒数；28 秒脱身沿用上面的维基百科数字。注意：FIA 调查摘要写的是 GRO "was out of car after 27 seconds"，与维基百科的约 28 秒差 1 秒，待用户决定是否改用 27 秒。
+- 镜头 3.5 的“27 秒”时间线：0 秒撞击；医疗车 11 秒内到场（FIA）；工作人员用干粉灭火器喷座舱的确切秒数，FIA 调查摘要和查到的报道（The Race、ESPN、RaceFans、Motorsport Technology）都没有给出，未核实，画面不标秒数；27 秒脱身用 FIA 调查摘要的数字（用户 2026-10-03 批准改用 27 秒；维基百科的约 28 秒不用）。
 - FIA 调查摘要还写明：中间一层护栏先失效，上下两层严重变形，座舱随后穿过护栏；动力总成与座舱分离（镜头 3.3、3.4 的护栏和断车画法依据）。
 - 来源：[FIA accident investigation summary (2021-03-05)](https://api.fia.com/news/fia-concludes-investigation-romain-grosjeans-accident-2020-bahrain-formula-1-grand-prix-and)、[The Race: investigation findings](https://www.the-race.com/formula-1/fia-completes-investigation-into-grosjean-bahrain-crash/)（查灭火器时间，未给出）、[Pirelli 2020 Bahrain GP race report](https://press.pirelli.com/2020-bahrain-grand-prix--race/)、[Burned remains at the F1 Exhibition, London (Wikimedia Commons)](https://commons.wikimedia.org/wiki/File:Romain_Grosjean_Haas_VF-20_Remains_at_Formula_1_Exhibition,_London_01.jpg)
 

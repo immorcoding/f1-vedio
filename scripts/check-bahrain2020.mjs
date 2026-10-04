@@ -1,6 +1,6 @@
 // Fact check for the Bahrain 2020 part (STO-3): every number on screen must match the fact register.
 // Run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-bahrain2020.mjs
-// - the impact force and the escape time the scene draws (FACTS in shots.ts) are the ones in docs/production/facts.md
+// - the impact force and the escape time (27 秒, the FIA summary's figure) the scene draws (FACTS in shots.ts) are the ones in docs/production/facts.md
 //   under "2020 巴林大奖赛";
 // - the edit list's on-screen text for 3.3 and 3.6 carries the same numbers.
 import { readFileSync } from "node:fs";
@@ -16,7 +16,7 @@ if (!section) problems.push("facts.md has no '2020 巴林大奖赛' section");
 else {
   if (!new RegExp(`约\\s*${FACTS.impactG}\\s*G`).test(section))
     problems.push(`facts.md does not register an impact of ${FACTS.impactG} G`);
-  if (!new RegExp(`约\\s*${FACTS.escapeSeconds}\\s*秒`).test(section))
+  if (!new RegExp(`${FACTS.escapeSeconds}\\s*秒[^\\n。]*脱身`).test(section))
     problems.push(
       `facts.md does not register an escape after ${FACTS.escapeSeconds} 秒`,
     );
