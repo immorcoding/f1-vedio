@@ -2,7 +2,12 @@
 // both cars from above (CarState.split, view "top"), and the fire in either palette (an open ART-8 decision: black
 // and white or colour).
 import { AbsoluteFill } from "remotion";
-import { AT01, MangaCar, VF20 } from "../cars";
+import {
+  photoCameraState,
+  AT01,
+  MangaCar,
+  VF20,
+} from "../cars";
 import { INK, PAPER } from "../kit/colors";
 import { Fire, FIRE_PALETTES, type FirePaletteName } from "../kit/fire";
 import { CAPTION_FONT } from "../kit/lettering";
@@ -28,6 +33,7 @@ export const Cars2020States: React.FC = () => (
         car={VF20}
         at={{ x: 260, y: 470, pxPerMetre: 230 }}
         state={{
+          ...photoCameraState(VF20),
           split: {
             front: { dx: 0.9, dy: 0.05, rotate: -4 },
             rear: { dx: -0.5, rotate: 3 },

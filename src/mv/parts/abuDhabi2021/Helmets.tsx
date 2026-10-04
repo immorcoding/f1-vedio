@@ -5,7 +5,15 @@
 // the race runs; VER on top because he is on the inside line. The night streams past in white speed lines and focus
 // lines close on each visor. Unlike the 4.2 face-off (helmets eye to eye, still), these are driving: wheels turning,
 // the cockpit shivering.
-import { MangaCar, PIRELLI_2021, RB16B, W12, type CarSpec } from "../../../cars";
+import {
+  HELMET_LENS,
+  cameraAt,
+  MangaCar,
+  PIRELLI_2021,
+  RB16B,
+  W12,
+  type CarSpec,
+} from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
 import { CAPTION_FONT } from "../../../kit/lettering";
@@ -62,7 +70,7 @@ const Strip: React.FC<{
         />
         <path d={focusLines(helmet.x + 40, helmet.y, 260, 110, seed)} fill={PAPER} opacity={0.35} />
         <g transform={`translate(0 ${Math.sin(t * 41) * 3})`}>
-          <MangaCar car={car} at={a} state={{ wheelAngle: t * 1200, compound }} />
+          <MangaCar car={car} at={a} state={{ ...cameraAt(car, HELMET_LENS.height, HELMET_LENS.distance), wheelAngle: t * 1200, compound }} />
         </g>
         <g transform={`translate(${tagAt.x} ${tagAt.y}) rotate(-4)`}>
           <rect x={-70} y={-34} width={140} height={68} fill={tag === "VER" ? INK : PAPER} stroke={PAPER} strokeWidth={6} />

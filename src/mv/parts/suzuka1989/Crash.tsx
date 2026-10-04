@@ -11,7 +11,13 @@
 // PRO "1989 冠军" (the title is his) on 21.1. Bar 21 holds the result while the page keeps pushing in, to the cut on
 // 22.1. The stamps replace the push-start easter egg (STO-7, docs/production/facts.md).
 import { Easing, random } from "remotion";
-import { carPoint, MangaCar, MP4_5_PRO, MP4_5_SEN } from "../../../cars";
+import {
+  carCamera,
+  carPoint,
+  MangaCar,
+  MP4_5_PRO,
+  MP4_5_SEN,
+} from "../../../cars";
 import type { CarSpec, CarState } from "../../../cars";
 import { pinhole, type Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
@@ -97,7 +103,11 @@ const YawedCar: React.FC<{
   const m = [(n.x - r.x) / (L * P), (n.y - r.y) / (L * P), 0, up / P, r.x, r.y];
   return (
     <g transform={`matrix(${m.map((v) => v.toFixed(5)).join(" ")})`}>
-      <MangaCar car={car} at={{ x: 0, y: 0, pxPerMetre: P }} state={state} />
+      <MangaCar
+        car={car}
+        at={{ x: 0, y: 0, pxPerMetre: P }}
+        state={{ ...carCamera(car, cam, mid.z, { x: rear.x }), ...state }}
+      />
     </g>
   );
 };
@@ -324,6 +334,7 @@ export const Crash: React.FC<PictureProps> = ({ f }) => {
                 car={MP4_5_SEN}
                 at={senA}
                 state={{
+                  ...carCamera(MP4_5_SEN, CAM, senRear.z, { x: senRear.x }),
                   lockFront: 40,
                   wheelAngle: 40,
                   tilt: senTilt,

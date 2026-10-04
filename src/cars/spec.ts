@@ -146,8 +146,14 @@ export type CarSpec = {
   frontWing: {
     near: string;
     farFrom?: EndplateCopy;
+    // The wing surface and its flap as traced on the photo (the Trace check). The renderer sweeps the side-on outline
+    // (`deckSide`, `flapSide`: the wing seen dead level at its near endplate) across the span for the scene's camera
+    // (far-side.ts `sweptWing`); a car traced from a low photo camera (2–11°) leaves them out and its traced deck and
+    // flap stand in for them.
     deck: string;
     flap: Accent;
+    deckSide?: string;
+    flapSide?: string;
     livery?: Accent[];
   };
   rearWing: {

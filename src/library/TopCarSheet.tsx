@@ -2,6 +2,7 @@
 // axles, cockpit, helmet and wings must line up vertically (the modern top view is built from the side trace, ART-10).
 import { AbsoluteFill } from "remotion";
 import {
+  photoCameraState,
   CARS,
   carPoint,
   FW43B,
@@ -99,7 +100,7 @@ export const TopCarSheet: React.FC<TopCarSheetProps> = ({ rows }) => (
             <MangaCar
               car={car}
               at={{ x: x0, y: y + 190, pxPerMetre: PPM }}
-              state={{ compound, tread }}
+              state={{ ...photoCameraState(car), compound, tread }}
             />
             <MangaCar
               car={car}

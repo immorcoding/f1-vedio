@@ -6,7 +6,15 @@
 // 102.2 (`abuDhabi2021.pointsLead`) the leader's screentone block lands behind VER's 395.5. It is tone, not gold: the
 // gold is kept for the champion card that follows (5.8, ART-8). The helmets sit at opposite ends of the diagonal so
 // the box covers neither (ART-14).
-import { MangaCar, PIRELLI_2021, RB16B, W12, type CarSpec } from "../../../cars";
+import {
+  HELMET_LENS,
+  cameraAt,
+  MangaCar,
+  PIRELLI_2021,
+  RB16B,
+  W12,
+  type CarSpec,
+} from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
 import { CAPTION_FONT, useLettering } from "../../../kit/lettering";
@@ -44,7 +52,7 @@ const HelmetPanel: React.FC<{
     <g clipPath={`url(#${id})`}>
       <rect x={0} y={0} width={1920} height={1080} fill={INK} />
       <path d={focusLines(helmet.x, helmet.y, 300, 120, Math.floor(t * 6) + (tag === "VER" ? 0 : 40))} fill={PAPER} opacity={0.45 - 0.3 * dim} />
-      <MangaCar car={car} at={helmetAnchor(car, helmet.x, helmet.y, ppm)} state={{ wheelAngle: 0, compound }} />
+      <MangaCar car={car} at={helmetAnchor(car, helmet.x, helmet.y, ppm)} state={{ ...cameraAt(car, HELMET_LENS.height, HELMET_LENS.distance), wheelAngle: 0, compound }} />
       {dim > 0 ? <rect x={0} y={0} width={1920} height={1080} fill={tone("dark")} opacity={dim} /> : null}
       <g transform={`translate(${tagAt.x} ${tagAt.y}) rotate(-4)`}>
         <rect x={-70} y={-34} width={140} height={68} fill={tag === "VER" ? INK : PAPER} stroke={PAPER} strokeWidth={6} />

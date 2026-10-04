@@ -132,10 +132,10 @@ const Track: React.FC<{
   const senA0 = cam.anchor({ x: senX - camX, z: zSen });
   const proA = { ...proA0, y: proA0.y + bPro.dy };
   const senA = { ...senA0, y: senA0.y + bSen.dy };
-  // the low kerb camera sees the far wheels and endplates from its own height (ART-26); the tower camera keeps the
-  // default low view: its true 14–18° would lift the far wheels 0.4–0.5 m (docs/shape/inbox/feat-v2-far-side.md)
-  const camPro = low ? carCamera(MP4_5_PRO, cam, zPro) : {};
-  const camSen = low ? carCamera(MP4_5_SEN, cam, zSen) : {};
+  // each camera sees the far wheels and endplates from its own place (ART-26): the tower 14–18° up shows them
+  // above the near ones, the kerb camera at tyre height hides them
+  const camPro = carCamera(MP4_5_PRO, cam, zPro, { x: proX - camX });
+  const camSen = carCamera(MP4_5_SEN, cam, zSen, { x: senX - camX });
   const spin = f * 37; // blur arcs creep round at a readable rate (the true rate aliases)
   // streaks from `back` metres behind the rear end, `w` metres long; line weight grows with the car's size
   const streaks = (

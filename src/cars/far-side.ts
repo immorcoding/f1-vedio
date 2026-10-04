@@ -33,16 +33,36 @@ export type CarCamera = {
 // (ART-17).
 export const DEFAULT_CAR_CAMERA: CarCamera = { elevation: 1, distance: 10 };
 
-// The camera of a car drawn with `camera.anchor(p)` at depth p.z: its elevation over the car's axles and its
-// distance. Pass the result's fields into CarState (`{ ...carCamera(car, cam, z), wheelAngle }`).
+// The camera of a car drawn with `camera.anchor({ x, z })` at depth z: its elevation over the car's axles and its
+// distance, and, given `place` (the same world x of the car's rear end, and which way the car faces on screen),
+// where the camera's optical axis crosses the car, so the far parts also converge toward the axis horizontally.
+// Pass the result's fields into CarState (`{ ...carCamera(car, cam, z, { x, facing }), wheelAngle }`).
 export const carCamera = (
   car: CarSpec,
   cam: Camera,
   z: number,
-): { camElevation: number; camDistance: number } => ({
-  camElevation: (Math.atan2(cam.height - axleHeight(car), z) * 180) / Math.PI,
-  camDistance: z,
+  place?: { x: number; facing?: "left" | "right" },
+): { camElevation: number; camDistance: number; camAxisAt?: number } => {
+  // the lens' true distance to the car (a dollied camera keeps the world's depths but sees them from further back)
+  const d = cam.f / cam.pxPerMetre(z);
+  return {
+    camElevation: (Math.atan2(cam.height - axleHeight(car), d) * 180) / Math.PI,
+    camDistance: d,
+    ...(place
+      ? { camAxisAt: place.facing === "left" ? place.x : -place.x }
+      : {}),
+  };
+};
+
+// The camera of a panel drawn without a pinhole but shot by a camera the story implies (a long-lens tracking camera on
+// a cockpit close-up): `height` m above the ground, `distance` m from the car's near side.
+export const cameraAt = (car: CarSpec, height: number, distance: number) => ({
+  camElevation: (Math.atan2(height - axleHeight(car), distance) * 180) / Math.PI,
+  camDistance: distance,
 });
+// The long-lens tracking camera of the cockpit close-ups (1.2/1.4 helmet cards, 4.2, 5.1e, 5.7): level with the
+// helmet, 20 m off the car, so the car's far side stays behind its near side.
+export const HELMET_LENS = { height: 0.95, distance: 20 };
 
 // The car's own axle height, m (the near wheels' mean centre).
 export const axleHeight = (car: CarSpec) =>
@@ -127,6 +147,106 @@ export const cameraOf = (state: {
   distance: state.camDistance ?? DEFAULT_CAR_CAMERA.distance,
   axisAt: state.camAxisAt,
 });
+
+// The camera of the car's reference photo, backed out of its traced far wheels (perspective.md): per wheel
+// s = r_far / r_near gives the distance z = W·s/(1 − s), and the far wheel's lift L (m) gives the camera's height over
+// the hub, L/(1 − s); the elevation is atan(height over the axle / z). Front and rear are averaged (they agree within
+// 1–2° on most cars). Asset sheets and the Art check draw the car from this camera, so they still match the photo.
+export const photoCamera = (car: CarSpec): CarCamera => {
+  const ppm = photoPxPerMetre(car);
+  const w = farSideWidths(car);
+  const axle = axleHeight(car);
+  const seen = car.nearWheels.flatMap((near, i) => {
+    const far = car.farWheels[i];
+    const s = far.r / near.r;
+    if (!(s > 0.5 && s < 0.995)) return [];
+    const width = i === 0 ? w.frontTrack : w.rearTrack;
+    const z = (width * s) / (1 - s);
+    const hub = (car.frame.ground - near.cy) / ppm;
+    const height = hub + (near.cy - far.cy) / ppm / (1 - s);
+    return [{ z, elevation: (Math.atan2(height - axle, z) * 180) / Math.PI }];
+  });
+  if (!seen.length) return DEFAULT_CAR_CAMERA;
+  const mean = (f: (v: (typeof seen)[number]) => number) =>
+    seen.reduce((a, v) => a + f(v), 0) / seen.length;
+  return { elevation: mean((v) => v.elevation), distance: mean((v) => v.z) };
+};
+
+// The same, as CarState fields for a sheet: `state={{ ...photoCameraState(car) }}`.
+export const photoCameraState = (car: CarSpec) => {
+  const c = photoCamera(car);
+  return { camElevation: c.elevation, camDistance: c.distance };
+};
+
+// A wing between its two endplates, as the camera sees it (ART-12, ART-17): the side-on outline `side` (the wing as
+// seen dead level, at its near endplate) swept across the span to its far copy. The silhouette of that sweep is the
+// convex hull of the outline and its far copy: from a camera at wing height the wing is just its side outline (the
+// STR3 look), and as the camera rises the far half shows above it, up to the deck traced on a photo shot from above.
+// The flap accent is the same sweep of its own side-on strip. Paths: absolute M/L/C/Z, as traced.
+export const sweptWing = (
+  car: CarSpec,
+  cam: CarCamera,
+  side: string,
+  span: number,
+) => {
+  const pts = flatten(side);
+  const xs = pts.map((p) => p.x);
+  const mid = (Math.min(...xs) + Math.max(...xs)) / 2;
+  const c = farCopy(car, cam, span, mid);
+  const all = [
+    ...pts,
+    ...pts.map((p) => ({ x: c.ox + p.x * c.s, y: c.oy + p.y * c.s })),
+  ];
+  const hull = convexHull(all);
+  return `${hull.map((p, i) => `${i ? "L" : "M"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ")} Z`;
+};
+
+// Points along an absolute M/L/C/Z path (cubic curves sampled at 8 steps).
+const flatten = (d: string) => {
+  const tokens = d.match(/[MLCZ]|-?\d*\.?\d+(?:e-?\d+)?/g) ?? [];
+  const out: { x: number; y: number }[] = [];
+  let cmd = "M";
+  let i = 0;
+  const num = () => Number(tokens[i++]);
+  while (i < tokens.length) {
+    if (/[MLCZ]/.test(tokens[i])) cmd = tokens[i++];
+    if (cmd === "Z") continue;
+    if (cmd === "C") {
+      const p0 = out[out.length - 1];
+      const [x1, y1, x2, y2, x, y] = [num(), num(), num(), num(), num(), num()];
+      for (let k = 1; k <= 8; k++) {
+        const t = k / 8;
+        const u = 1 - t;
+        out.push({
+          x: u * u * u * p0.x + 3 * u * u * t * x1 + 3 * u * t * t * x2 + t * t * t * x,
+          y: u * u * u * p0.y + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t * t * t * y,
+        });
+      }
+    } else out.push({ x: num(), y: num() });
+  }
+  return out;
+};
+
+// Andrew's monotone chain.
+const convexHull = (points: { x: number; y: number }[]) => {
+  const p = [...points].sort((a, b) => a.x - b.x || a.y - b.y);
+  const cross = (
+    o: { x: number; y: number },
+    a: { x: number; y: number },
+    b: { x: number; y: number },
+  ) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  const half = (list: typeof p) => {
+    const h: typeof p = [];
+    for (const q of list) {
+      while (h.length >= 2 && cross(h[h.length - 2], h[h.length - 1], q) <= 0)
+        h.pop();
+      h.push(q);
+    }
+    h.pop();
+    return h;
+  };
+  return [...half(p), ...half([...p].reverse())];
+};
 
 const pathNumbers = (d: string) =>
   d
