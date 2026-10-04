@@ -13,7 +13,7 @@ import {
   BRAZIL_CAM,
   FinishStripe,
 } from "../../../scenes/brazil-2008/trackside";
-import { at } from "../../timing.ts";
+import { SECONDS_PER_BEAT, at } from "../../timing.ts";
 import { ramp, secondsInShot, type ShotTime } from "../abuDhabi2021/shotClock";
 import { Page, Panel, RainCloseup } from "./common";
 import { PosTag } from "./PosTag";
@@ -110,7 +110,11 @@ export const Split: React.FC<{ st: ShotTime }> = ({ st }) => {
       {t >= 0.12 ? (
         <g opacity={sGar} transform={`translate(${60 * (1 - sGar)} 0)`}>
           <Panel box={GARAGE_BOX} view={{ x: 180, y: 120, w: 1560, h: 1040 }}>
-            <Garage t={t} joy={joy} />
+            <Garage
+              t={t}
+              beat={t / SECONDS_PER_BEAT}
+              erupt={garageIn / SECONDS_PER_BEAT}
+            />
             <path
               d={focusLines(960, 520, 560, 90, Math.floor(t * 8))}
               fill={INK}

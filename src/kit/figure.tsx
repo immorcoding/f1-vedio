@@ -1111,7 +1111,7 @@ export const Figure: React.FC<{
           {silhouette.filter(Boolean).map((d, i) => (
             <path key={i} d={d} />
           ))}
-          {head.kind === "helmet" && show.has("body") ? <path d={SHELL} transform={helmetT} /> : null}
+          {head.kind === "helmet" && show.has("body") ? <path d={SHELL} transform={helmetT} strokeWidth={(ink * 2.4) / (HELMET_R * s)} /> : null}
         </g>
       ) : null}
       {/* the silhouette contour, heavier toward the lower right */}

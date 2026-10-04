@@ -9,9 +9,13 @@ import { offsetFrom, pinhole, type Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import {
   Figure,
-  walkPose,
-  type BodyPose,
+  mixPose,
+  push,
+  stand,
+  v,
+  walk,
   type Outfit,
+  type Pose,
 } from "../../../kit/figure";
 import { ImpactStar } from "../../../kit/impact";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
@@ -37,26 +41,26 @@ import {
 // The main panel's camera: 1.2 m up, close, f = 1700 px (ART-9).
 const CAM = pinhole({ f: 1700, horizon: 400, cx: 960, height: 2.2 });
 
-// Marshals of 1989: white overalls, light hoods (no faces, ART-5).
+// Marshals of 1989: white overalls with a red band, light head covering (no faces, ART-5).
 const MARSHAL: Outfit = {
+  fit: "overall",
   suit: "#ecebe6",
-  suitShade: "#bdbcb6",
-  seam: "#8a8984",
-  stripe: "#ee3a24",
+  shade: "#bdbcb6",
+  band: "#ee3a24",
   gloves: "#d8d7d2",
   boots: "#222222",
-  head: { kind: "hood", color: "#d9d8d2" },
+  head: { kind: "openHelmet", color: "#d9d8d2" },
 };
 
-// Pushing: leaning hard into the car, arms out straight at the rear wing, legs driving.
-const pushPose = (p: number): BodyPose => {
-  const w = walkPose(p, 1.15, 34);
-  return {
-    ...w,
-    head: -10,
-    near: { ...w.near, arm: { shoulder: 92, elbow: 4 } },
-    far: { ...w.far, arm: { shoulder: 86, elbow: 8 } },
-  };
+// A marshal `d` metres down the escape road (the ground point moves by the same d, so the feet stay planted):
+// pushing at the side of the car's rear, palms on it, until the engine catches at `dFire`; then letting go, a few
+// running steps falling back, and standing.
+const marshalPose = (d: number, dFire: number, stopped: number): Pose => {
+  const pushing = push(d, v(0.62, 0.86), { stride: 0.8, lean: 40, pelvis: 24 });
+  if (d < dFire) return pushing;
+  const letGo = Math.min(1, (d - dFire) / 0.6);
+  const running = mixPose(pushing, walk(d, { stride: 0.8, lean: 12, armSwing: 26 }), letGo);
+  return stopped > 0 ? mixPose(running, stand({ lean: 2 }), stopped) : running;
 };
 
 // Smoke from a locked tyre: inked puffs trailing back from (x, y).
@@ -110,8 +114,29 @@ const PushPanel: React.FC<{ t: number }> = ({ t }) => {
   const fired = t >= FIRE;
   const marshals = [
     { dx: -0.55, z: 8.9, ph: 0 },
-    { dx: -0.4, z: 10.2, ph: 0.45 },
+    { dx: -0.4, z: 10.2, ph: 0.7 },
   ];
+  // how far the marshals have gone: with the car until it fires, then slowing from 2.2 m/s to a stop in a second
+  const tau = Math.max(0, t - FIRE);
+  const STOP = 1.0;
+  const dMarshal =
+    t < FIRE ? x : 2.2 * FIRE + 2.2 * Math.min(tau, STOP) - 1.1 * Math.min(tau, STOP) ** 2;
+  const stopped = Math.min(1, Math.max(0, (tau - STOP) / 0.4));
+  const marshalAt = (m: (typeof marshals)[number]) =>
+    cam.anchor({ x: dMarshal - 1.9 + rearM + m.dx - camX, z: m.z });
+  const marshalFig = (m: (typeof marshals)[number]) => {
+    const p = marshalAt(m);
+    return (
+      <Figure
+        key={m.z}
+        at={p}
+        pxPerMetre={p.pxPerMetre}
+        pose={marshalPose(dMarshal + m.ph, 2.2 * FIRE + m.ph, stopped)}
+        outfit={MARSHAL}
+        facing="right"
+      />
+    );
+  };
   // bollards in the escape road: striped posts, one in front of the car's path, two beyond it
   const bollards = [
     { x: 6.5, z: 8.1 },
@@ -168,24 +193,7 @@ const PushPanel: React.FC<{ t: number }> = ({ t }) => {
       {far.map((b) => (
         <Bollard key={`${b.x}`} b={b} />
       ))}
-      {marshals
-        .filter((m) => m.z > 9.5)
-        .map((m) => {
-          const p = cam.anchor({
-            x: x - 1.9 + rearM + m.dx - camX - (fired ? 0.8 * (t - FIRE) : 0),
-            z: m.z,
-          });
-          return (
-            <Figure
-              key={m.z}
-              at={p}
-              pxPerMetre={p.pxPerMetre}
-              pose={fired ? walkPose(0.1, 0.5, 8) : pushPose(t * 1.4 + m.ph)}
-              outfit={MARSHAL}
-              facing="right"
-            />
-          );
-        })}
+      {marshals.filter((m) => m.z > 9.5).map(marshalFig)}
       {fired ? (
         <path
           d={speedLines({
@@ -215,24 +223,7 @@ const PushPanel: React.FC<{ t: number }> = ({ t }) => {
           o={Math.max(0, 1 - (t - FIRE) * 1.2)}
         />
       ) : null}
-      {marshals
-        .filter((m) => m.z <= 9.5)
-        .map((m) => {
-          const p = cam.anchor({
-            x: x - 1.9 + rearM + m.dx - camX - (fired ? 0.8 * (t - FIRE) : 0),
-            z: m.z,
-          });
-          return (
-            <Figure
-              key={m.z}
-              at={p}
-              pxPerMetre={p.pxPerMetre}
-              pose={fired ? walkPose(0.6, 0.5, 8) : pushPose(t * 1.4 + m.ph)}
-              outfit={MARSHAL}
-              facing="right"
-            />
-          );
-        })}
+      {marshals.filter((m) => m.z <= 9.5).map(marshalFig)}
       {near.map((b) => (
         <Bollard key={`${b.x}`} b={b} />
       ))}

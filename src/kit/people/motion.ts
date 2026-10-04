@@ -608,7 +608,7 @@ export type Placed = { pose: Pose; x: number; cross: number };
 export const ESCAPE = {
   climb: 1.6, // s over the rail
   speed: 0.7, // m/s walking away
-  docStart: -0.55, // the doctor's spot at the rail, forward of the climb spot
+  docStart: -0.75, // the doctor's spot at the rail, forward of the climb spot
   gap: 0.62, // the doctor walks this far behind
 };
 export const assistedEscape = (
