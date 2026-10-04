@@ -56,11 +56,11 @@ export const W12: CarSpec = {
   // endplate to the nose (ART-26).
   farSide: {
     // HIGH camera: the car as traced (the photo camera looks down ~18°, like the MV's 2.6–3.2 m cameras); the far
-    // wheels at 80% of the traced lift (user review 2026-10-04: still peeking, a little lower), x at the near wheels.
+    // wheels at 2/3 of the earlier 80% lift (user reviews 2026-10-04: still peeking, lower again by a third), x at the near wheels.
     high: {
       wheels: [
-        { cx: 452, cy: 622, r: 95 },
-        { cx: 1585, cy: 621, r: 98 },
+        { cx: 452, cy: 661, r: 95 },
+        { cx: 1585, cy: 662, r: 98 },
       ],
     },
     low: {
@@ -203,11 +203,11 @@ export const RB16B: CarSpec = {
   // endplate to the nose (ART-26).
   farSide: {
     // HIGH camera: the car as traced (the photo camera looks down ~16°, like the MV's 2.6–3.2 m cameras); the far
-    // wheels at 80% of the traced lift (user review 2026-10-04: still peeking, a little lower), x at the near wheels.
+    // wheels at 2/3 of the earlier 80% lift (user reviews 2026-10-04: still peeking, lower again by a third), x at the near wheels.
     high: {
       wheels: [
-        { cx: 450, cy: 618, r: 96 },
-        { cx: 1565, cy: 617, r: 98 },
+        { cx: 450, cy: 655, r: 96 },
+        { cx: 1565, cy: 653, r: 98 },
       ],
     },
     low: {
