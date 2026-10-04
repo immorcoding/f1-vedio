@@ -1,5 +1,6 @@
 // Shot 3.3 (bar 61, on the music's stop): the Haas hits the triple guardrail, its path at 29° and the car yawed 22°
-// further (FIA), so the barrier meets the car's side at 51°. The contact lands on the bar's
+// further (FIA), so the barrier meets the car's side at 51°, running into depth. The car runs left → right, as in
+// 3.2's top view, and the sparks start on the frame it touches the rails. The contact lands on the bar's
 // first beat; then an explicit slow motion of the 0.1 s that matter (MOT-5): sparks spray off the rails, the nose bends
 // the rails back, then all three rails split along the survival cell as it goes through — their torn ends
 // curling up and back, the same torn gap every later shot shows (wreck-geometry.ts tornCurl) — the car breaks at the
@@ -8,7 +9,7 @@
 // nose with 67G, the fireball still burning in colour (facts.md; FIA accident investigation summary).
 import { random } from "remotion";
 import { MangaCar, VF20, carLength } from "../../../cars";
-import { pinhole } from "../../../kit/camera";
+import { pinhole, type Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import { BubbleSmoke, FIRE_PALETTES, Fireball } from "../../../kit/fire";
 import { BigText } from "../../../kit/lettering";
@@ -24,32 +25,64 @@ import { tornCurl } from "./wreck-geometry.ts";
 import { IMPACT_ANGLE, IMPACT_YAW } from "./crash-geometry.ts";
 import { FACTS } from "./shots.ts";
 
-// Trackside camera, low, square to the car: the car is side-on, the barrier runs away from it at 29° + 22° = 51° to
-// the car's long axis (path angle plus yaw, crash-geometry.ts; ART-9).
-const CAM = pinhole({ f: 1500, horizon: 330, cx: 960, height: 1.3 });
-const CAR_Z = 9;
-const NOSE_X = -1.6; // world x where the barrier crosses the car's line
+// Trackside camera, square to the car: the car is side-on, the barrier runs away from it at 29° + 22° = 51° to the
+// car's long axis (path angle plus yaw, crash-geometry.ts; ART-9). Review 1 (#20): the old low, long-lens camera
+// (f 1500, 1.3 m up, car 9 m away) flattened the 51° into a near-parallel strip of rails. A wider lens, closer to the
+// car and a little higher (2.2 m) puts the barrier's vanishing point inside the frame and lifts its far stretch clear
+// above the car's top, so the rails visibly sweep from the near corner of the frame past the nose into depth.
+const BASE_CAM = pinhole({ f: 1000, horizon: 330, cx: 960, height: 2.2 });
+// The picture is that trackside view flipped left to right (a manga flip), so the car runs left → right, the screen
+// direction it has in 3.2's top view (review 1: the close-up crossed the line). The world below stays as staged
+// (the car travels −x); only the screen is mirrored, the car drawn facing right.
+const mirrored = (c: Camera): Camera => {
+  const sx = (x: number, z: number) => 2 * c.cx - c.screenX(x, z);
+  return {
+    ...c,
+    screenX: sx,
+    project: (p) => {
+      const q = c.project(p);
+      return { x: 2 * c.cx - q.x, y: q.y };
+    },
+    anchor: (p) => {
+      const a = c.anchor(p);
+      return { ...a, x: 2 * c.cx - a.x };
+    },
+    groundQuad: (z0, z1, x0, x1) =>
+      `M ${sx(x0, z0)} ${c.screenY(0, z0)} L ${sx(x1, z0)} ${c.screenY(0, z0)} L ${sx(x1, z1)} ${c.screenY(0, z1)} L ${sx(x0, z1)} ${c.screenY(0, z1)} Z`,
+  };
+};
+const CAM = mirrored(BASE_CAM);
+// screen x of the world's −x (the car's travel): sparks thrown "back" go the other way
+const MX = -1;
+const CAR_Z = 6;
 const ANGLE = ((IMPACT_ANGLE + IMPACT_YAW) * Math.PI) / 180;
-const NEAR = 5.6 / Math.sin(ANGLE); // metres of barrier on the camera side of the contact, ending ~3 m from the lens
-const L = carLength(VF20);
-// The barrier through the contact point. The car faces left (we see its left side, the barrier on its right, behind):
-// the barrier runs toward the camera on the left and away on the right.
-const dir = { x: -Math.cos(ANGLE), z: -Math.sin(ANGLE) };
 const BAR_BEHIND = 0.15; // the barrier crosses the car's line this far behind its centre line
+// World x where the barrier crosses the car's line, set so that the car's far front corner (CAR_HALF_WIDTH behind its
+// centre line) touches the rails at world x 0, where the nose is on the contact frame: nothing touches before it.
+const NOSE_X = -(CAR_HALF_WIDTH - BAR_BEHIND) / Math.tan(ANGLE);
+// metres of barrier on the camera side of the contact, ending 1.5 m from the lens (well past the frame's edge)
+const NEAR = (CAR_Z + BAR_BEHIND - 1.5) / Math.sin(ANGLE);
+const L = carLength(VF20);
+// The barrier through the contact point. In the world the car travels −x with the barrier on its far side, running
+// toward the camera ahead of the nose and away behind it; on the mirrored screen that is toward the camera on the
+// right (out past the frame's bottom-right corner) and away on the left, to a vanishing point inside the frame.
+const dir = { x: -Math.cos(ANGLE), z: -Math.sin(ANGLE) };
 const BAR_A = {
   x: NOSE_X + dir.x * NEAR,
   z: CAR_Z + BAR_BEHIND + dir.z * NEAR,
 }; // near end
-// far end: 140 m on, so the barrier runs on unbroken past the frame's right edge (user review 2026-10-04)
+// far end: 140 m on, so the barrier runs on unbroken toward its vanishing point (user review 2026-10-04)
 const FAR = 140;
 const BAR_B = { x: NOSE_X - dir.x * FAR, z: CAR_Z + BAR_BEHIND - dir.z * FAR };
 const RUN = Math.hypot(BAR_B.x - BAR_A.x, BAR_B.z - BAR_A.z);
 const S_CONTACT = NEAR; // metres from the near end to the contact
 const U_CONTACT = S_CONTACT / RUN;
-// The car's far front corner meets the rails with the nose at world x 0 (the barrier crosses z = 10 there).
+// The car's far front corner meets the rails with the nose at world x 0 (NOSE_X above), on the contact frame.
 const NOSE0 = 0;
+// first touch on the barrier, metres from the near end: where the car's far side (CAR_Z + CAR_HALF_WIDTH) crosses it
+const S_TOUCH = S_CONTACT + (CAR_HALF_WIDTH - BAR_BEHIND) / Math.sin(ANGLE);
 const SLOW = 70; // frames of slow motion before the freeze
-const PIERCE = 4.2; // metres the cell travels into the barrier
+const PIERCE = 3.3; // metres the cell travels into the barrier from the touch
 const BREAK_AT = 12; // frame the car starts to tear in two
 const BALL_AT = 15; // frame the fuel cell bursts
 // The torn gap: where the cell's footprint (2.0 m wide) crosses the barrier at 51°, a hand's breadth to spare either
@@ -59,7 +92,8 @@ const TEAR = {
   from: S_CONTACT - (CAR_HALF_WIDTH + BAR_BEHIND) / Math.sin(ANGLE) - 0.12, // the near side crosses here
   to: S_CONTACT + (CAR_HALF_WIDTH - BAR_BEHIND) / Math.sin(ANGLE) + 0.12, // the far side
 };
-const SPLIT_AT = [2.3, 1.6, 2.0]; // cell travel (m) when each rail starts to split: middle, top, then bottom
+// cell travel (m, from the touch) when each rail starts to split: middle, top, then bottom
+const SPLIT_AT = [1.4, 0.7, 1.1];
 const SPLIT_OPEN = 1.0; // more metres of travel until it is fully open
 const opened = (travel: number, rail: number) =>
   Math.min(1, Math.max(0, (travel - SPLIT_AT[rail]) / SPLIT_OPEN));
@@ -133,9 +167,12 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
   const wheelAngle = 13 * Math.min(t, SLOW) * (1 - stage(t).p * 0.6);
   const nose = CAM.project({ x: NOSE0 - travel - 0.1, y: 0.45, z: CAR_Z });
   const hit = CAM.project({ x: NOSE0 - travel + 0.3, y: 0.6, z: CAR_Z + 0.9 });
-  const breakAt = carPointOnScreen(at, BREAK_PIVOT, {
-    dx: (front.dx + rear.dx) / 2,
-  });
+  const breakAt = carPointOnScreen(
+    at,
+    BREAK_PIVOT,
+    { dx: (front.dx + rear.dx) / 2 },
+    "right",
+  );
   const ppm = CAM.pxPerMetre(CAR_Z);
   // camera: a hard, jagged jolt on the contact (a few frames, random direction each frame), then the slow motion's
   // long shudder, and a last kick as the frame freezes
@@ -174,19 +211,23 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
     const ang = -Math.PI * (0.05 + ((i * 0.618) % 1) * 0.55);
     const v = 16 + ((i * 7) % 11) * 2.2;
     const pos = (a: number) => ({
-      x: hit.x + Math.cos(ang) * v * a,
+      x: hit.x + MX * Math.cos(ang) * v * a,
       y: hit.y + Math.sin(ang) * v * a + 0.45 * a * a,
     });
     return { a: pos(Math.max(0, age - 2.5)), b: pos(age), w: 3 + (i % 3) };
   }).filter((s) => s !== null);
-  // the spark shower along the rail the car scrapes: from points all along the stretch between the nose and where the
-  // car first touched, on each rail's face, thrown back (right, away from the car's travel) and up in long streaks
+  // the spark shower along the rail the car scrapes: from points along the stretch the car has touched so far — the
+  // first touch (its far front corner) on the contact frame, then on toward the near side as its nose face goes
+  // through (review 1: no sparks before the car reaches the rails) — on each rail's face, thrown back (away from the
+  // car's travel) and up in long streaks
+  const touched = Math.min(travel * Math.tan(ANGLE), 2 * CAR_HALF_WIDTH);
   const scrape = Array.from({ length: 120 }, (_, i) => {
     const born = (i * 13) % 52;
     const life = 10 + (i % 7);
     const age = ts - born;
     if (age < 0 || age > life || frozen) return null;
-    const along = S_CONTACT - (travel + 0.6) * ((i * 0.618) % 1) + 0.3;
+    const along =
+      S_TOUCH - ((touched + 0.15) / Math.sin(ANGLE)) * ((i * 0.618) % 1);
     const u = Math.max(0, Math.min(1, along / RUN));
     const rail = RAILS[i % 3];
     const o = CAM.project({
@@ -197,7 +238,7 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
     const ang = -Math.PI * (0.02 + ((i * 0.377) % 1) * 0.32);
     const v = 22 + ((i * 11) % 13) * 2.4;
     const pos = (a: number) => ({
-      x: o.x + Math.cos(ang) * v * a,
+      x: o.x + MX * Math.cos(ang) * v * a,
       y: o.y + Math.sin(ang) * v * a + 0.6 * a * a,
     });
     return {
@@ -222,7 +263,7 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
     const s = 2.2 + ((i * 3) % 5) * 1.1;
     return [
       {
-        x: o.x + Math.cos(ang) * v * age,
+        x: o.x + MX * Math.cos(ang) * v * age,
         y: o.y + Math.sin(ang) * v * age + 0.35 * age * age,
         s,
         rot: i * 47 + age * (i % 2 ? 14 : -11),
@@ -326,7 +367,7 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
             />
             <MangaCar
               car={VF20}
-              facing="left"
+              facing="right"
               at={at}
               state={{
                 wheelAngle,
@@ -338,7 +379,7 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
             {split > 0 ? (
               <MangaCar
                 car={VF20}
-                facing="left"
+                facing="right"
                 at={at}
                 state={{ wheelAngle, split: { front, rear, show: "front" } }}
               />
@@ -427,8 +468,9 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
         ))}
       </g>
       {frozen ? (
-        <g transform="rotate(-8 1330 250)">
-          <BigText x={1330} y={250} size={200} haloWidth={22}>
+        <g transform="rotate(-8 590 250)">
+          {/* mirrored with the picture: on the left, clear of the impact star round the nose on the right */}
+          <BigText x={590} y={250} size={200} haloWidth={22} anchor="end">
             {`${FACTS.impactG}G`}
           </BigText>
         </g>

@@ -9,10 +9,11 @@
 // The tagline fades in from 72.3 and stands from the `bahrain2020.tagline` cue (73.1, where the music settles); from
 // 73.3, as the reverse swell rises into the buildup, everything fades to black, black on the `bahrain2020.black` cue
 // (74.1). It is set straight on the dark frame, no box: type system D (Titillium Web 700), letter-spaced caps in paper,
-// centred in the lower third, clear of the halo (ART-14).
+// centred in the lower third, clear of the halo (ART-14). Before it, a small "HALO · MANDATORY SINCE 2018" caption box
+// in the top-left corner says why he lived (#20; facts.md).
 import { INK, PAPER } from "../../../kit/colors";
 import { BubbleSmoke, FIRE_PALETTES } from "../../../kit/fire";
-import { CAPTION_FONT } from "../../../kit/lettering";
+import { CAPTION_FONT, Caption } from "../../../kit/lettering";
 import { ToneDefs } from "../../../kit/tone";
 import { at, frameAt } from "../../timing.ts";
 import { cueFrame, ramp, shotById, type PictureProps } from "./common";
@@ -44,6 +45,11 @@ export const HaloFinale: React.FC<PictureProps> = ({ f, palette }) => {
   const tagline = shotById("3.6").text[1];
   const tagIn = ramp(f, frameAt(at(72, 3)), cueFrame("bahrain2020.tagline"));
   const fade = ramp(f, frameAt(at(73, 3)), to);
+  // the halo note (facts.md: mandatory in F1 since 2018) comes up in the top-left corner just after the cut, a beat
+  // before the tagline starts, and stays to the black: small, in a type D caption box, clear of the halo and of the
+  // tagline in the lower third (ART-14). A quiet fade, not an accent (no sound on 72.2; MOT-6).
+  const haloNote = shotById("3.6").text[2];
+  const noteIn = ramp(f, from + 10, frameAt(at(72, 2)));
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
@@ -86,6 +92,11 @@ export const HaloFinale: React.FC<PictureProps> = ({ f, palette }) => {
       {/* it lands on the beat: a cut in from black */}
       <rect width={1920} height={1080} fill={INK} opacity={1 - ramp(t, 0, 4)} />
       <Vignette amount={0.45 + 0.3 * hb} />
+      {noteIn > 0 && haloNote ? (
+        <g opacity={noteIn}>
+          <Caption x={72} y={72} lines={[haloNote]} size={34} />
+        </g>
+      ) : null}
       {tagIn > 0 ? (
         <text
           x={960}
