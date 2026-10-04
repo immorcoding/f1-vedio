@@ -11,10 +11,9 @@ import { AbsoluteFill, staticFile, useCurrentFrame } from "remotion";
 import { MangaCar, VF20 } from "../cars";
 import type { Camera } from "../kit/camera";
 import { INK, PAPER } from "../kit/colors";
-import { FIRE_COLOR, SmokeStreaks } from "../kit/fire";
-import { ToneDefs } from "../kit/tone";
+import { ToneDefs, TonePattern } from "../kit/tone";
 import { SCORE } from "../mv/MV";
-import { BentGuardrail } from "../mv/parts/bahrain2020/bent-rail";
+import { BentGuardrail, type Deflection } from "../mv/parts/bahrain2020/bent-rail";
 import { NightBackdrop } from "../mv/parts/bahrain2020/night";
 import {
   CELL_FROM,
@@ -43,7 +42,7 @@ export const FIRE_CLIP_START = frameAt(at(62));
 export const FIRE_CLIP_FRAMES = 240;
 
 // ── smooth noise ──────────────────────────────────────────────────────────────────────────────
-const hash = (i: number, s: number) => {
+export const hash = (i: number, s: number) => {
   let h = (Math.imul(i | 0, 374761393) + Math.imul(s | 0, 668265263)) | 0;
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   h ^= h >>> 16;
@@ -51,7 +50,7 @@ const hash = (i: number, s: number) => {
 };
 const fade = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
 // 1-D gradient noise, about -1..1, C2-smooth.
-const n1 = (x: number, s = 0) => {
+export const n1 = (x: number, s = 0) => {
   const i = Math.floor(x);
   const f = x - i;
   const g0 = hash(i, s) * 2 - 1;
@@ -60,7 +59,7 @@ const n1 = (x: number, s = 0) => {
   const b = g1 * (f - 1);
   return (a + (b - a) * fade(f)) * 2;
 };
-const fbm = (x: number, s = 0) => n1(x, s) * 0.7 + n1(x * 2.1 + 3.7, s + 91) * 0.3;
+export const fbm = (x: number, s = 0) => n1(x, s) * 0.7 + n1(x * 2.1 + 3.7, s + 91) * 0.3;
 const smooth = (a: number, b: number, x: number) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);
@@ -86,7 +85,7 @@ const cr = (pts: P[]) => {
 };
 
 // A closed ribbon round a centreline with half-widths `hw` (0 at the tip gives a sharp point; 0 at both ends a sliver).
-const ribbon = (c: P[], hw: number[], floor = Infinity) => {
+export const ribbon = (c: P[], hw: number[], floor = Infinity) => {
   const n = c.length;
   const L: P[] = [];
   const R: P[] = [];
@@ -120,9 +119,9 @@ const sideStroke = (c: P[], hw: number[], side: 1 | -1, a: number, b: number) =>
 };
 
 // ── the flame model ───────────────────────────────────────────────────────────────────────────
-type Tongue = { bx: number; W: number; H: number; s: number; hook: number };
+export type Tongue = { bx: number; W: number; H: number; s: number; hook: number };
 
-type Flow = {
+export type Flow = {
   // seconds
   t: number;
   // how fast the waves climb (cycles / s), how many waves fit on a tongue, how far they swing (× W)
@@ -188,7 +187,7 @@ const layerPath = (tg: Tongue, fl: Flow, k: number, wf: number) => {
   const c = centreline(tg, fl, k);
   return { c, hw: tongueWidths(tg, fl, tg.W * wf, 16, k * 2), d: "" };
 };
-const layerD = (tg: Tongue, fl: Flow, k: number, wf: number) => {
+export const layerD = (tg: Tongue, fl: Flow, k: number, wf: number) => {
   const l = layerPath(tg, fl, k, wf);
   return ribbon(l.c, l.hw, 3);
 };
@@ -246,9 +245,9 @@ const wisps = (tongues: Tongue[], fl: Flow, rate = 1) =>
 
 // ── light, embers, haze ───────────────────────────────────────────────────────────────────────
 // Firelight flicker, smooth, 0..1-ish around 0.5.
-const flicker = (t: number, s = 0) => 0.5 + 0.3 * n1(t * 2.3, s + 70) + 0.15 * n1(t * 5.3, s + 71);
+export const flicker = (t: number, s = 0) => 0.5 + 0.3 * n1(t * 2.3, s + 70) + 0.15 * n1(t * 5.3, s + 71);
 
-const Glow: React.FC<{ w: number; h: number; t: number; color: string; strength?: number; seed?: number }> = ({
+export const Glow: React.FC<{ w: number; h: number; t: number; color: string; strength?: number; seed?: number }> = ({
   w,
   h,
   t,
@@ -280,7 +279,7 @@ const Glow: React.FC<{ w: number; h: number; t: number; color: string; strength?
 
 // Embers rising on curved paths: each lives 1.2–2.2 s, accelerates upward, drifts with the wind and swings on a slow
 // spiral. Drawn as a short tapered streak along its own path plus a bright head.
-const Embers: React.FC<{
+export const Embers: React.FC<{
   w: number;
   h: number;
   t: number;
@@ -333,6 +332,70 @@ const Embers: React.FC<{
   </g>
 );
 
+// Manga bubble smoke (ART-20): round puffs, each a cluster of overlapping circles with one ink outline round the
+// cluster, a smoke-grey fill and a dot screen over it, and a warm rim of firelight on the underside. The puffs leave
+// the flame tips, rise and swell, drift with the wind and fade near the top. Continuous: every frame moves.
+export const BubbleSmoke: React.FC<{
+  w: number;
+  // the flame tips (px above the base) and how high the smoke climbs above them
+  top: number;
+  rise: number;
+  t: number;
+  seed: number;
+  count?: number;
+}> = ({ w, top, rise, t, seed, count = 7 }) => {
+  const id = `bs${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const puffs = Array.from({ length: count }, (_, i) => {
+    const life = 2.6 + 0.8 * hash(i, seed + 60);
+    const off = (i / count) * life + hash(i, seed + 61) * 0.4;
+    const gen = Math.floor((t + off) / life);
+    const age = (t + off) / life - gen;
+    const R = (k: number) => hash(gen * 13 + i, seed + k);
+    const x0 = (R(62) - 0.5) * w * 0.45;
+    const r = w * (0.11 + 0.05 * R(63)) * (0.6 + 1.0 * age);
+    const cx = x0 + wind(t) * rise * 0.25 * age + n1(age * 2 + i, seed + 64) * w * 0.05;
+    const cy = -top - rise * age;
+    const spin = t * 0.25 * (R(65) > 0.5 ? 1 : -1);
+    const lobes = Array.from({ length: 4 }, (_, k) => {
+      const a = spin + (k / 4) * Math.PI * 2 + R(66 + k) * 0.8;
+      const d = r * (k === 0 ? 0 : 0.62);
+      return { x: cx + Math.cos(a) * d, y: cy + Math.sin(a) * d * 0.8, r: r * (k === 0 ? 1 : 0.62 + 0.15 * R(70 + k)) };
+    });
+    const op = Math.min(1, age / 0.12) * (age > 0.65 ? (1 - age) / 0.35 : 1);
+    return { lobes, op, age, r };
+  }).sort((a, b) => b.age - a.age);
+  const lw = Math.max(2.5, w * 0.006);
+  return (
+    <g>
+      <defs>
+        <TonePattern id={`${id}-dots`} r={1.9} gap={7} />
+      </defs>
+      {puffs.map((p, i) => (
+        <g key={i} opacity={p.op}>
+          {p.lobes.map((l, k) => (
+            <circle key={`s${k}`} cx={l.x} cy={l.y} r={l.r} fill={INK} stroke={INK} strokeWidth={lw * 2} />
+          ))}
+          {p.lobes.map((l, k) => (
+            <circle key={`f${k}`} cx={l.x} cy={l.y} r={l.r} fill="#77706b" />
+          ))}
+          {p.lobes.map((l, k) => (
+            <circle key={`d${k}`} cx={l.x} cy={l.y} r={l.r} fill={`url(#${id}-dots)`} />
+          ))}
+          {/* firelight: one warm arc under the puff, fading as it climbs away from the flames */}
+          <path
+            d={`M ${p.lobes[0].x - p.r * 1.25} ${p.lobes[0].y + p.r * 0.55} A ${p.r * 1.45} ${p.r * 1.3} 0 0 0 ${p.lobes[0].x + p.r * 1.25} ${p.lobes[0].y + p.r * 0.55}`}
+            fill="none"
+            stroke="#ff9a3c"
+            strokeWidth={lw * 1.3}
+            strokeLinecap="round"
+            opacity={0.9 * (1 - p.age) ** 1.5}
+          />
+        </g>
+      ))}
+    </g>
+  );
+};
+
 // Smooth heat shimmer: the turbulence pattern scrolls upward (the filtered group is shifted one way and its contents
 // the other), so the air ripples continuously instead of re-seeding every frame.
 const Shimmer: React.FC<{
@@ -373,7 +436,7 @@ const Shimmer: React.FC<{
 };
 
 // ── palette ───────────────────────────────────────────────────────────────────────────────────
-const C = {
+export const C = {
   ink: INK,
   deep: "#6e1006", // dark-red accents
   red: "#d9301a", // tips / outer
@@ -398,6 +461,10 @@ export type FireArgs = {
   glow?: boolean;
   smoke?: boolean;
   embers?: number;
+  // B only: a dark-red under-layer so the soft flames keep their edge on light grounds
+  rimmed?: boolean;
+  // B only: cap the softness in screen px (close-ups and panels), so big flames don't go out of focus
+  crisp?: boolean;
 };
 
 // A. Manga ink flames: few big tongues with hooked, curling tips, one bold ink silhouette round the whole fire, flat
@@ -419,7 +486,7 @@ const FireA: React.FC<FireArgs> = ({ w, h, f, seed, intensity, n, glow = true, s
     <g>
       {glow ? <Glow w={w} h={h * intensity} t={t} color={C.glow} seed={seed} /> : null}
       {smoke ? (
-        <SmokeStreaks w={w} top={h * intensity * 0.9} frame={f} seed={`a${seed}`} palette={FIRE_COLOR} rise={h * 1.3} count={4} opacity={0.5} />
+        <BubbleSmoke w={w} top={h * intensity * 0.85} t={t} seed={seed} rise={h * 1.4} />
       ) : null}
       {/* one bold silhouette: ink strokes behind, fills over them */}
       {[...outer, ...wd].map((d, i) => (
@@ -458,7 +525,7 @@ const FireA: React.FC<FireArgs> = ({ w, h, f, seed, intensity, n, glow = true, s
 // B. Flowing shapes: no outlines. More, narrower tongues in soft-edged translucent layers, their edges licked by a
 // turbulence field that scrolls upward with the flame (feTurbulence + feDisplacementMap), a strong blurred glow, wisps
 // that blur away as they rise, glowing embers.
-const FireB: React.FC<FireArgs> = ({ w, h, f, seed, intensity, n, glow = true, smoke = true, embers = 10 }) => {
+const FireB: React.FC<FireArgs> = ({ w, h, f, seed, intensity, n, glow = true, smoke = true, embers = 10, rimmed = false, crisp = false }) => {
   const id = `fb${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const t = f / FPS;
   const fl: Flow = { t, rise: 1.5, wave: 1.8, sway: 0.55, curl: 0, taper: 1.3, ripple: 0.18 };
@@ -466,7 +533,7 @@ const FireB: React.FC<FireArgs> = ({ w, h, f, seed, intensity, n, glow = true, s
   const ws = wisps(tg, fl, 1.3);
   const scroll = -t * h * 0.55;
   const blur = Math.max(2, h * 0.006);
-  const disp = Math.max(10, h * 0.05);
+  const disp = crisp ? Math.min(26, Math.max(10, h * 0.05)) : Math.max(10, h * 0.05);
   const layer = (k: number, wf: number, fill: string, op: number, b: number, key: string) => (
     <g key={key} filter={`url(#${id}-b${key})`} opacity={op}>
       <defs>
@@ -483,7 +550,7 @@ const FireB: React.FC<FireArgs> = ({ w, h, f, seed, intensity, n, glow = true, s
     <g>
       {glow ? <Glow w={w} h={h * intensity} t={t} color={C.glow} strength={0.7} seed={seed} /> : null}
       {smoke ? (
-        <SmokeStreaks w={w} top={h * intensity * 0.9} frame={f} seed={`b${seed}`} palette={FIRE_COLOR} rise={h * 1.3} count={4} opacity={0.4} />
+        <BubbleSmoke w={w} top={h * intensity * 0.85} t={t} seed={seed} rise={h * 1.4} />
       ) : null}
       <defs>
         <filter id={`${id}-d`} x={-w * 1.5} y={-h * 2.2 - scroll} width={w * 3} height={h * 2.6} filterUnits="userSpaceOnUse">
@@ -497,10 +564,12 @@ const FireB: React.FC<FireArgs> = ({ w, h, f, seed, intensity, n, glow = true, s
       {/* the noise scrolls up with the flame: shift the filtered group, shift its contents back */}
       <g transform={`translate(0 ${scroll})`} filter={`url(#${id}-d)`}>
         <g transform={`translate(0 ${-scroll})`}>
-          {layer(1, 1, C.red, 0.92, blur * 2.2, "r")}
-          {layer(0.8, 0.72, C.orange, 0.95, blur * 1.6, "o")}
-          {layer(0.55, 0.46, C.yellow, 0.95, blur * 1.3, "y")}
-          {layer(0.36, 0.28, C.core, 1, blur, "c")}
+          {rimmed ? layer(1.03, 1.1, C.deep, 1, blur * 0.7, "u") : null}
+          {/* crisp: a near-hard silhouette (opaque, 1.5 px) with the softness kept inside, between the bands */}
+          {layer(1, 1, C.red, crisp ? 1 : 0.92, crisp ? 1.5 : blur * 2.2, "r")}
+          {layer(0.8, 0.72, C.orange, 0.95, crisp ? 5 : blur * 1.6, "o")}
+          {layer(0.55, 0.46, C.yellow, 0.95, crisp ? 4 : blur * 1.3, "y")}
+          {layer(0.36, 0.28, C.core, 1, crisp ? 3 : blur, "c")}
           {/* the white-hot mass at the base, glowing through */}
           <ellipse cx={0} cy={-h * intensity * 0.08} rx={Math.min(w * 0.36, h * 0.3)} ry={h * intensity * 0.1} fill={C.core} opacity={0.75 + 0.2 * flicker(t, seed + 5)} filter={`url(#${id}-w)`} />
           <g filter={`url(#${id}-w)`}>
@@ -536,7 +605,7 @@ const FireC: React.FC<FireArgs> = ({ w, h, f, seed, intensity, n, glow = true, s
     <g>
       {glow ? <Glow w={w} h={h * intensity} t={fh / FPS} color={C.glow} strength={0.5 + 0.25 * Math.min(1, hb)} seed={seed} /> : null}
       {smoke ? (
-        <SmokeStreaks w={w} top={h * intensity * 0.9} frame={fh} seed={`c${seed}`} palette={FIRE_COLOR} rise={h * 1.3} count={4} opacity={0.45} />
+        <BubbleSmoke w={w} top={h * intensity * 0.85} t={fh / FPS} seed={seed} rise={h * 1.4} />
       ) : null}
       {[...outer, ...ws.map((x) => ribbon(x.c, x.hw))].map((d, i) => (
         <path key={`s${i}`} d={d} fill={outlineCol} stroke={outlineCol} strokeWidth={lw * 2} strokeLinejoin="round" />
@@ -581,7 +650,7 @@ const FireD: React.FC<FireArgs> = ({ w, h, f, seed, intensity, n, glow = true, s
     <g>
       {glow ? <Glow w={w} h={h * intensity} t={t} color={C.glow} strength={0.65} seed={seed} /> : null}
       {smoke ? (
-        <SmokeStreaks w={w} top={h * intensity * 0.9} frame={f} seed={`d${seed}`} palette={FIRE_COLOR} rise={h * 1.3} count={4} opacity={0.45} />
+        <BubbleSmoke w={w} top={h * intensity * 0.85} t={t} seed={seed} rise={h * 1.4} />
       ) : null}
       <defs>
         <filter id={`${id}-d`} x={-w * 1.5} y={-h * 2.2 - scroll} width={w * 3} height={h * 2.6} filterUnits="userSpaceOnUse">
@@ -637,7 +706,7 @@ const FireD: React.FC<FireArgs> = ({ w, h, f, seed, intensity, n, glow = true, s
 };
 
 const STYLES = { A: FireA, B: FireB, C: FireC, D: FireD } as const;
-type StyleId = keyof typeof STYLES;
+export type StyleId = keyof typeof STYLES;
 
 // ── the scene: shot 3.4 rebuilt with a pluggable fire ─────────────────────────────────────────
 const CELL_TO = CELL_ANCHOR_X - 2.4 - CELL_POSE.dx;
@@ -689,12 +758,24 @@ const FireLight: React.FC<{ cx: number; cy: number; rx: number; ry: number; t: n
   );
 };
 
-const FireScene: React.FC<{ f: number; style: StyleId }> = ({ f, style }) => {
+// WreckWorld (Wreck.tsx) rebuilt with a pluggable fire: night with shimmer, the big fire behind the cell, the cell, the
+// rails, firelight, the low fire along the rails, the gap fire, the rear piece and the debris. Same props as WreckWorld.
+export const WreckWorldB: React.FC<{
+  cam: Camera;
+  f: number;
+  style: StyleId;
+  intensity: number;
+  tonePrefix: string;
+  behindRails?: React.ReactNode;
+  noGlow?: boolean;
+  driver?: false;
+  bend?: Deflection;
+  // B-fixed: a dark-red under-layer under the soft flames
+  rimmed?: boolean;
+  // B-fixed: softness capped in screen px
+  crisp?: boolean;
+}> = ({ cam, f, style, intensity, tonePrefix, behindRails, noGlow = false, driver, bend = WRECK_BEND, rimmed, crisp }) => {
   const Fire = STYLES[style];
-  const shot = shotById("3.4");
-  const intensity = 0.25 + 0.75 * ramp(f - shot.from, 0, 112);
-  const hb = heartbeat(f);
-  const cam = shotCam(f);
   const t = f / FPS;
   const fireAt = (x: number, z: number, w: number, h: number) => {
     const base = cam.project({ x, y: 0, z });
@@ -708,10 +789,7 @@ const FireScene: React.FC<{ f: number; style: StyleId }> = ({ f, style }) => {
   const rearAt = cam.anchor({ x: REAR_ANCHOR_X, z: REAR_Z });
   const railY = cam.screenY(0.6, BARRIER_Z);
   return (
-    <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
-      <defs>
-        <ToneDefs prefix="pf" />
-      </defs>
+    <g>
       <Shimmer
         t={t}
         cx={back.x}
@@ -720,19 +798,22 @@ const FireScene: React.FC<{ f: number; style: StyleId }> = ({ f, style }) => {
         ry={back.h * 0.7}
         scale={Math.max(8, cam.pxPerMetre(CELL_Z) * 0.08)}
       >
-        <NightBackdrop cam={cam} tonePrefix="pf" />
+        <NightBackdrop cam={cam} tonePrefix={tonePrefix} />
       </Shimmer>
       <g transform={`translate(${back.x} ${back.y})`}>
-        <Fire w={back.w} h={back.h} f={f} seed={1} intensity={intensity} n={5} embers={14} />
+        <Fire w={back.w} h={back.h} f={f} seed={1} intensity={intensity} n={5} embers={14} glow={!noGlow} rimmed={rimmed} crisp={crisp} />
       </g>
-      <MangaCar car={VF20} facing="left" at={cellAt} state={{ split: { front: CELL_POSE, show: "front" } }} />
-      <BentGuardrail cam={cam} a={RUN.a} b={RUN.b} gaps={GAPS} deflect={WRECK_BEND} tonePrefix="pf" />
-      <FireLight cx={back.x} cy={railY} rx={back.w * 1.6} ry={cam.pxPerMetre(BARRIER_Z) * 2.2} t={t} amount={intensity} />
+      <MangaCar car={VF20} facing="left" at={cellAt} state={{ split: { front: CELL_POSE, show: "front" }, driver }} />
+      {behindRails}
+      <BentGuardrail cam={cam} a={RUN.a} b={RUN.b} gaps={GAPS} deflect={bend} tonePrefix={tonePrefix} />
+      {noGlow ? null : (
+        <FireLight cx={back.x} cy={railY} rx={back.w * 1.6} ry={cam.pxPerMetre(BARRIER_Z) * 2.2} t={t} amount={intensity} />
+      )}
       <g transform={`translate(${front.x} ${front.y})`}>
-        <Fire w={front.w} h={front.h} f={f + 7} seed={2} intensity={intensity} n={6} glow={false} smoke={false} embers={6} />
+        <Fire w={front.w} h={front.h} f={f + 7} seed={2} intensity={intensity} n={6} glow={false} smoke={false} embers={6} rimmed={rimmed} crisp={crisp} />
       </g>
       <g transform={`translate(${gap.x} ${gap.y})`}>
-        <Fire w={gap.w} h={gap.h} f={f + 13} seed={3} intensity={intensity * 0.9} n={3} glow={false} smoke={false} embers={4} />
+        <Fire w={gap.w} h={gap.h} f={f + 13} seed={3} intensity={intensity * 0.9} n={3} glow={false} smoke={false} embers={4} rimmed={rimmed} crisp={crisp} />
       </g>
       <MangaCar car={VF20} facing="left" at={rearAt} state={{ split: { rear: REAR_POSE, show: "rear" }, compound: VF20.compound }} />
       {[
@@ -753,6 +834,20 @@ const FireScene: React.FC<{ f: number; style: StyleId }> = ({ f, style }) => {
           />
         );
       })}
+    </g>
+  );
+};
+
+const FireScene: React.FC<{ f: number; style: StyleId }> = ({ f, style }) => {
+  const shot = shotById("3.4");
+  const intensity = 0.25 + 0.75 * ramp(f - shot.from, 0, 112);
+  const hb = heartbeat(f);
+  return (
+    <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
+      <defs>
+        <ToneDefs prefix="pf" />
+      </defs>
+      <WreckWorldB cam={shotCam(f)} f={f} style={style} intensity={intensity} tonePrefix="pf" />
       <Vignette amount={0.5 + 0.35 * hb} />
     </svg>
   );

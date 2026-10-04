@@ -10,6 +10,7 @@ import { StyleC } from "./prototype/styles/StyleC";
 import { TraceCheck } from "./prototype/styles/TraceCheck";
 import { CarSheet2021 } from "./prototype/styles/CarSheet2021";
 import { FIRE_CLIP_FRAMES, FireBaseline, FireStyle } from "./prototype/FireStyles";
+import { CLIP36_FRAMES, FireStressClip36, FireStressStill } from "./prototype/FireStress";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -29,6 +30,10 @@ export const RemotionRoot: React.FC = () => {
         {(["A", "B", "C", "D"] as const).map((s) => (
           <Composition key={s} id={`Proto-Fire-${s}`} component={FireStyle} defaultProps={{ style: s }} durationInFrames={FIRE_CLIP_FRAMES} fps={60} width={1920} height={1080} />
         ))}
+        {(["33-baseline", "33-B", "33-B-fixed", "35-baseline", "35-B", "35-B-fixed", "36-baseline", "36-B"] as const).map((w) => (
+          <Still key={w} id={`Fire-Stress-${w}`} component={FireStressStill} defaultProps={{ which: w }} width={1920} height={1080} />
+        ))}
+        <Composition id="Fire-Stress-36-B-Clip" component={FireStressClip36} durationInFrames={CLIP36_FRAMES} fps={60} width={1920} height={1080} />
         <Still id="Style-A-InkWatercolor" component={StyleA} width={1920} height={1080} />
         <Still id="Style-B-Manga" component={StyleB} width={1920} height={1080} />
         <Still id="Style-C-Illustration" component={StyleC} width={1920} height={1080} />
