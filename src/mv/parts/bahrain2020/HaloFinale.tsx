@@ -1,9 +1,9 @@
 // The last beat of shot 3.6 (bar 72, beat 1 to the cut to black on beat 4): the fire is out, and we close on the empty
 // cockpit — the halo scorched black but whole (facts.md: the burnt front of the car, halo intact, is on show in
-// London; easter egg). Overlaid on Escape by Scene.tsx, so Escape.tsx itself is untouched. Last embers, thin ink
-// smoke rising off the charred cell, a slow push in.
+// London; easter egg). Overlaid on Escape by Scene.tsx, so Escape.tsx itself is untouched. Last embers, small
+// bubble smoke (ART-20) rising off the charred cell, a slow push in.
 import { INK } from "../../../kit/colors";
-import { FIRE_PALETTES, SmokeStreaks } from "../../../kit/fire";
+import { BubbleSmoke, FIRE_PALETTES } from "../../../kit/fire";
 import { ToneDefs } from "../../../kit/tone";
 import { cueFrame, ramp, type PictureProps } from "./common";
 import {
@@ -40,13 +40,12 @@ export const HaloFinale: React.FC<PictureProps> = ({ f, palette }) => {
         palette={palette}
         intensity={0.12}
         noGlow
-        fireDetail={3}
         driver={false}
         tonePrefix="b3h"
       />
       <HaloScorch cam={cam} f={f} />
       <g transform={`translate(${halo.x} ${halo.y - 0.1 * ppm})`}>
-        <SmokeStreaks
+        <BubbleSmoke
           w={1.6 * ppm}
           top={0}
           frame={f}
@@ -54,7 +53,8 @@ export const HaloFinale: React.FC<PictureProps> = ({ f, palette }) => {
           palette={FIRE_PALETTES[palette]}
           rise={1.4 * ppm}
           count={5}
-          wind={-0.2}
+          size={0.5}
+          warm={false}
           opacity={0.7}
         />
       </g>
