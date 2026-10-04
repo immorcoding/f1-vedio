@@ -20,10 +20,14 @@ export const EDIT: PartEdit = {
       to: at(15),
       view: "closeup",
       content:
-        "白天的铃鹿，转播式侧面跟拍：两台 McLaren MP4/5 一前一后贴着跑，PRO 在前、SEN 紧咬；第 13 小节起两个头盔小格对比",
+        "白天的铃鹿，转播式侧面跟拍：两台 McLaren MP4/5 一前一后贴着跑，PRO 在前、SEN 紧咬；两个头盔小格 11.1（PRO）、11.3（SEN）先后砸入；第 13 小节切成贴地的低角度跟拍，SEN 咬在 PRO 变速箱后面，路面和路肩贴着镜头流过",
       text: ["PRO +16 PTS", "SEN MUST WIN"],
       cues: [
-        { id: "suzuka1989.helmets", at: at(13) },
+        // the helmet panels slam in, one per beat (review-1: no dead first half of the shot)
+        { id: "suzuka1989.helmetPro", at: at(11, 1) },
+        { id: "suzuka1989.helmetSen", at: at(11, 3) },
+        // the new framing: a low-angle tracking shot from the kerb
+        { id: "suzuka1989.lowAngle", at: at(13, 1) },
         // PRO's lead in the points box (#17), then its gold stroke
         { id: "suzuka1989.margin", at: at(13, 2) },
         { id: "suzuka1989.marginGold", at: at(13, 3) },
@@ -35,8 +39,9 @@ export const EDIT: PartEdit = {
       to: at(19),
       view: "top",
       content:
-        "俯视 130R 之后的减速弯：PRO 走外侧准备右转入弯，SEN 从内线切入，走线箭头画出",
-      text: ["LAP 47"],
+        "俯视 130R 之后的减速弯：PRO 走外侧准备右转入弯，SEN 从内线切入，走线箭头画出；SEN/PRO 标签一直保留到 18.4，在接触前淡出；减速弯标真名 CASIO TRIANGLE（facts.md）",
+      text: ["LAP 47", "CASIO TRIANGLE"],
+      cues: [{ id: "suzuka1989.tagsOut", at: at(18, 4) }],
     },
     {
       id: "1.4",

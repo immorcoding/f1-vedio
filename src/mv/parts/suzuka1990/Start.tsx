@@ -27,7 +27,7 @@ import {
   TrackSection,
   type MapView,
 } from "../../../tracks";
-import { ramp, shotById, type PictureProps } from "./common";
+import { cueFrame, ramp, shotById, type PictureProps } from "./common";
 import {
   cars16,
   LANE,
@@ -53,6 +53,8 @@ const SLOTS = Array.from({ length: 8 }, (_, k) => ({
 }));
 // the screen turned so the main straight runs left to right
 const ROTATION = -poseAt(T, 100).heading;
+// The whip pan on the last beat of the shot (cue suzuka1990.whip, 27.4).
+const WHIP = cueFrame("suzuka1990.whip");
 // Turn 1's gravel trap on the outside (left) of the corner
 const GRAVEL = { from: 330, to: 560, depth: 42 };
 
@@ -123,12 +125,35 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
     -7 * ramp(tau, 0.4, 2.4, Easing.inOut(Easing.quad)) +
     11 * ramp(tau, 2.4, 5.2, Easing.inOut(Easing.quad)) -
     4 * ramp(tau, 5.2, 6.6);
-  const view = mapView({
+  const view0 = mapView({
     centre,
     rotation: ROTATION + swing,
     pxPerMetre: ppm,
     screen: { x: 900, y: 540 },
   });
+  // The whip into 1.7 (review-1: the impact panel runs right to left, mirrored on 1989, so the direction flip must
+  // read as intentional): on the last beat (27.4) the map spins half a turn about SEN and PRO, accelerating into the
+  // cut, and the pair slides to the middle of the frame — they leave this shot heading right to left, the way 1.7
+  // picks them up on 28.1.
+  const whip = ramp(f, WHIP, shot.to, Easing.in(Easing.cubic));
+  const pair = poseAt(T, (sen.s + pro.s) / 2, (sen.lat + pro.lat) / 2);
+  const pair0 = view0.project(pair);
+  const view =
+    whip > 0
+      ? mapView({
+          centre: pair,
+          rotation: ROTATION + swing + 180 * whip,
+          pxPerMetre: ppm,
+          screen: {
+            x: pair0.x + (960 - pair0.x) * whip,
+            y: pair0.y + (540 - pair0.y) * whip,
+          },
+        })
+      : view0;
+  // how far the map turned over the last three frames, degrees: the length of the whip's blur arcs
+  const whipRate =
+    180 * (whip - ramp(f - 3, WHIP, shot.to, Easing.in(Easing.cubic)));
+  const whipCentre = view.project(pair);
   const g = grit(view);
   const caption = ramp(t, 10, 26, Easing.out(Easing.back(1.5)));
   const tags = 1 - ramp(tau, 3.8, 4.6);
@@ -591,6 +616,29 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
                     {id}
                   </text>
                 </g>
+              );
+            })
+          : null}
+        {/* the whip's blur: ink arcs round the pair, as long as the map turned in the last three frames */}
+        {whipRate > 0.5
+          ? Array.from({ length: 22 }, (_, i) => {
+              const r = 230 + 46 * i + 30 * random(`whip-r-${i}`);
+              const a0 =
+                ((random(`whip-a-${i}`) * 360 + view.rotation) * Math.PI) /
+                180;
+              const a1 = a0 + (Math.min(80, whipRate * 1.4) * Math.PI) / 180;
+              const P = (a: number) =>
+                `${(whipCentre.x + Math.cos(a) * r).toFixed(1)} ${(whipCentre.y + Math.sin(a) * r).toFixed(1)}`;
+              return (
+                <path
+                  key={`whip-${i}`}
+                  d={`M ${P(a0)} A ${r} ${r} 0 0 1 ${P(a1)}`}
+                  fill="none"
+                  stroke={i % 3 === 0 ? PAPER : INK}
+                  strokeWidth={3 + 4 * random(`whip-w-${i}`)}
+                  strokeLinecap="round"
+                  opacity={Math.min(0.75, whipRate / 12)}
+                />
               );
             })
           : null}

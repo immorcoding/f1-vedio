@@ -4,13 +4,15 @@ MV 画面上出现的每个事实及其来源（STO-3）。来源核对日期：
 
 ## 1989 日本大奖赛（铃鹿）
 
-- 全场 53 圈；第 47 圈，Senna 在 130R 之后的减速弯（Casio 三角）内线超车未完全并排，Prost 转向入弯时两车相撞，双双停在减速弯入口。
+- 全场 53 圈；第 47 圈，Senna 在 130R 之后的减速弯（Casio Triangle，名称见下）内线超车未完全并排，Prost 转向入弯时两车相撞，双双停在减速弯入口。
 - Senna 被推车重新发动后从减速弯缓冲区直接驶出（未通过减速弯）、换鼻锥后追上并第一个冲线，但因"未通过减速弯"被取消成绩，Nannini 获胜；Prost 因此锁定 1989 年车手冠军。
 - 两人同为 McLaren-Honda 车手：Senna 1988 年加盟 McLaren 与 Prost 做队友，1988、1989 两季同队，关系由队友变成宿敌（镜头 1.1 标题下的字："队友 · 宿敌"）。来源：[Prost–Senna rivalry — Wikipedia](https://en.wikipedia.org/wiki/Prost%E2%80%93Senna_rivalry)（核对 2026-10-03）
 - 赛前积分：Prost 76 分、Senna 60 分，Prost 领先 16 分；Senna 必须赢下本场和最后一站澳大利亚才有机会卫冕（镜头 1.2 头盔小格下的字："PRO 领先 16 分" / "SEN 必须赢"）。（核对 2026-10-03；2026-10-04 复核 [Jolpica-F1（Ergast 数据）1989 第 14 站后车手积分](https://api.jolpi.ca/ergast/f1/1989/14/driverStandings.json)：Prost 76、Senna 60）
 - 第 47 圈 Senna 在 Spoon 弯后紧跟 Prost 进入尾流，过 130R 时只落后约两个车身；他从减速弯内线切入时始终没能完全超前，前轮一直在 Prost 的前轮之后（镜头 1.3 的走位依据）。（核对 2026-10-03）
 - 彩蛋（镜头 1.4 第 20 小节结果页）：Senna 冲线第一却被取消成绩，Prost 成为 1989 年冠军——两格头盔分别盖红章"DISQUALIFIED"和"1989 CHAMPION"（依据上面第 2 条）。背景（画面不再出现，2026-10-03 起删去推车小格）：两车停在部分封闭的减速弯缓冲道入口；Prost 下车，Senna 示意工作人员把他沿缓冲道往前推，借推力重新发动引擎后直接从缓冲道驶出，在缓冲道上摆放的临时路标之间穿行。（核对 2026-10-03）
 - 来源：[1989 Japanese Grand Prix — Wikipedia](https://en.wikipedia.org/wiki/1989_Japanese_Grand_Prix)
+- 减速弯的名称（镜头 1.3 的标注 "CASIO TRIANGLE"，#18）：这个减速弯 1983 年建成，因为建成时那里立着 Casio 的大幅广告牌、中间是三角形的草地分隔，从一开始就叫"カシオ・トライアングル"（Casio Triangle），一直沿用到 2014 年日立取得冠名权、改名"日立オートモティブシステムズシケイン"；所以 1989 年这里就叫 Casio Triangle，标注用真名。F1 官方回顾 1989 年这次相撞时也称"the Casio Triangle chicane"。当年的英文赛报（Motor Sport 1989 年 12 月号）只写"the chicane"，没有给出名字，与此不冲突。只是弯名，画面上不画 Casio 的标志（ART-5）。来源：[鈴鹿サーキット — Wikipedia 日文版](https://ja.wikipedia.org/wiki/%E9%88%B4%E9%B9%BF%E3%82%B5%E3%83%BC%E3%82%AD%E3%83%83%E3%83%88)（"1983年に新設…カシオの広告看板があったこと、コース形状から、『カシオ・トライアングル』と命名された"，引自橋田克己 2019）、[TOYOTA GAZOO Racing 专栏 389](https://toyotagazooracing.com/jp/blogcolumn/column/389/)（"かつて「カシオトライアングル」として親しまれていましたが、日立…が命名権を取得してから…"）、[formula1.com：Prost vs Senna, the top 10 moments](https://www.formula1.com/en/latest/article/prost-vs-senna-the-top-10-moments-of-f1s-defining-rivalry.HXTkvgrOpnaYJoanGiwGq)、[Motor Sport 1989 年 12 月赛报](https://www.motorsportmagazine.com/archive/article/december-1989/8/a-flash-in-japan/)（核对 2026-10-04）
+- 撞击的画法（镜头 1.4，#18）：Senna 的鼻锥撞上 Prost 的右前轮，在 Senna 的左侧（1.4 相机的远侧），车速低（减速弯入弯，片中取约 80 km/h，与 1.3 的入弯速度一致，是取景值不是实测）；Senna 随后进维修区换了鼻锥（见上第 2 条），所以画面上的损伤只落在他的前翼左半边和鼻锥尖：左半边沿根部折断、向上向后翻起，外侧襟翼和端板前下角断落，鼻锥尖压皱。具体的断裂形状是示意，不声称照片级还原。
 
 ## 1990 日本大奖赛（铃鹿）
 

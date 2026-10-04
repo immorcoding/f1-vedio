@@ -27,9 +27,13 @@ export const EDIT: PartEdit = {
       to: at(28),
       view: "top",
       content:
-        "俯视发车区与 1 号弯：SEN 杆位在较脏的右侧（网点），PRO 在干净的行车线一侧；起步 PRO 领先，SEN 从内线冲向 1 号弯（彩蛋）",
+        "俯视发车区与 1 号弯：SEN 杆位在较脏的右侧（网点），PRO 在干净的行车线一侧；起步 PRO 领先，SEN 从内线冲向 1 号弯（彩蛋）；最后一拍（27.4）俯视图绕两车甩转半圈、越转越快，切进 1.7 时两车已是从右往左开，和镜像的撞击格同向",
       text: ["LAP 1", "POLE ON THE DIRTY SIDE"],
-      cues: [{ id: "suzuka1990.start", at: at(24, 3) }],
+      cues: [
+        { id: "suzuka1990.start", at: at(24, 3) },
+        // the whip into the mirrored impact panel
+        { id: "suzuka1990.whip", at: at(27, 4) },
+      ],
     },
     {
       id: "1.7",

@@ -13,9 +13,9 @@
 //
 // MP4/5B: Senna's 1990 car is the car the MP4/5 trace was taken from (Senna's #27 MP4/5B, cars-1989.ts), so it reuses
 // that spec with the 1990 driver.
-import { MP4_5, PRO_1989 } from "./cars-1989";
+import { MP4_5, PRO_1989, SENNA_HELMET } from "./cars-1989";
 import { roundedBox, symmetric, symmetricSide } from "./plan";
-import type { Accent, CarPlan, CarSpec, Driver } from "./spec";
+import type { CarPlan, CarSpec, Driver } from "./spec";
 
 const RED = "#dc1218";
 const RED_LIT = "#e8242a";
@@ -25,35 +25,8 @@ const CARBON = "#232327";
 // Agip yellow at the top of the rear endplates (a colour block, no lettering: ART-5)
 const YELLOW = "#f4cf00";
 
-// Senna 1990 (Honda F1 Exposition 2015 helmet photo by Morio, CC BY-SA 3.0; Ayrton Senna Integralhelm 1990 by
-// Auge=mit, CC BY-SA 4.0): yellow, a green band over the eyeport, a broad dark-blue band at the visor running back
-// round the shell, thin green lines under it. Helmet units: centre 0 0, radius 1, facing left, y down.
-const SENNA_GREEN = "#0f8a3c";
-const SENNA_NAVY = "#14215e";
-const SENNA_1990: Accent[] = [
-  {
-    d: "M -1.1 -0.7 C -0.4 -0.78 0.4 -0.7 1.15 -0.42 L 1.15 -0.12 C 0.4 -0.4 -0.4 -0.47 -1.1 -0.44 Z",
-    color: SENNA_GREEN,
-  },
-  {
-    d: "M -1.1 -0.06 C -0.4 -0.08 0.4 -0.04 1.15 0.1 L 1.15 0.4 C 0.4 0.26 -0.4 0.22 -1.1 0.24 Z",
-    color: SENNA_NAVY,
-  },
-  {
-    d: "M -1.1 0.3 C -0.4 0.28 0.4 0.32 1.15 0.46 L 1.15 0.52 C 0.4 0.38 -0.4 0.35 -1.1 0.36 Z",
-    color: SENNA_GREEN,
-  },
-];
-
-export const SEN_1990: Driver = {
-  number: "27",
-  helmet: {
-    base: "#f7c600",
-    stripe: SENNA_GREEN,
-    shell: "classic",
-    design: SENNA_1990,
-  },
-};
+// Senna wore the same helmet design in 1989 and 1990: one data source (SENNA_HELMET, cars-1989.ts) for both years.
+export const SEN_1990: Driver = { number: "27", helmet: SENNA_HELMET };
 
 // Prost kept his helmet at Ferrari: white, the blue panel round visor and chin, orange-red pin stripes (1990 USA GP
 // photo by Stuart Seeger, CC BY 2.0). Champion's number 1.

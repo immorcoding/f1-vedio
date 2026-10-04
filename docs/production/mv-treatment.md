@@ -54,11 +54,11 @@
 | 镜头 | 小节 | 视角 | 内容 | 文字 | 卡点 |
 |---|---|---|---|---|---|
 | 1.1 | 9–10 | 标题卡 | 铃鹿 8 字形赛道全图画出，减速弯圈出并放大成小格；标题下一行小字点出两人关系 | SUZUKA 1989 / SUZUKA INTERNATIONAL RACING COURSE（方格条下小字）/ TEAM-MATES · RIVALS | — |
-| 1.2 | 11–14 | 特写 | 两台 McLaren MP4/5 并排，SEN 与 PRO 头盔对比 | PRO +16 PTS / SEN MUST WIN | — |
-| 1.3 | 15–18 | 俯视 | 130R 之后的减速弯，SEN 从内线切入 | LAP 47；CHICANE | — |
+| 1.2 | 11–14 | 特写 | 两台 McLaren MP4/5 一前一后，SEN 与 PRO 头盔对比：两格头盔 11.1、11.3 先后砸入；第 13 小节切成贴地的低角度跟拍，SEN 咬在 PRO 变速箱后面（#18） | PRO +16 PTS / SEN MUST WIN | 11.1 PRO 头盔格，11.3 SEN 头盔格，13.1 切低角度，13.2 积分框 |
+| 1.3 | 15–18 | 俯视 | 130R 之后的减速弯，SEN 从内线切入；SEN/PRO 标签保留到撞击前（#18） | LAP 47；CASIO TRIANGLE（核实见 facts.md） | 18.4 标签淡出 |
 | 1.4 | 19–21 | 特写 + 结果页 | 两车相撞定格成撞击星，滑停在减速弯入口；第 20 小节画面压暗，1.2 的两格头盔落回原位（PRO 左、SEN 右），SEN 盖红章、PRO 盖红章，各占一拍、中间留白；第 21 小节停留，画面继续缓推 | CRASH! / DISQUALIFIED / 1989 CHAMPION | 第 19 小节第一拍撞上；20.1 结果页，20.3 SEN 盖章，21.1 PRO 盖章；第 21 小节末尾切 |
 | 1.5 | 22–23 | 标题卡 | 1.1 那一页（原样，含减速弯小格和"TEAM-MATES · RIVALS"）翻过去，同一条赛道换成 1990、圈落在 1 号弯；PRO 的头盔格落在左上，第 23 小节翻面，同一顶头盔从 McLaren 红白换成法拉利红 | SUZUKA 1990 / SUZUKA INTERNATIONAL RACING COURSE / PRO MOVES TO FERRARI / SEN 78 · PRO 69 PTS | 22.1 翻页，23.1 头盔格翻面 |
-| 1.6 | 24–27 | 俯视 | 第 1 圈冲向 1 号弯，SEN（McLaren）与 PRO（Ferrari） | LAP 1 / POLE ON THE DIRTY SIDE | 24.3 发车 |
+| 1.6 | 24–27 | 俯视 | 第 1 圈冲向 1 号弯，SEN（McLaren）与 PRO（Ferrari）；最后一拍俯视图绕两车甩转半圈，把行驶方向带成 1.7 镜像撞击格的从右往左（#18） | LAP 1 / POLE ON THE DIRTY SIDE | 24.3 发车，27.4 甩转 |
 | 1.7 | 28–29 | 特写 | 1 号弯相撞，撞击格与 1.4 同一套画法（定格撞击星、集中线、拟声字位置）左右镜像、角色对调：这次 SEN 撞上 PRO；两车冲进缓冲区 | 轰！ | 第 28 小节第一拍撞上（音乐冲击点 suzuka1990.crash，2026-10-04 从 27.1 移到 28.1） |
 | 1.8 | 30–32 | 特写 | 尘土落定后画面压暗，两格头盔按 1.2/1.4 的布局放大、左右对称面对面（PRO 在法拉利、SEN 在 McLaren），与 1.4 同款红章，最后一行小字；从头盔进场起一路推近到切点，不留静止段 | 1989 CHAMPION / 1990 CHAMPION / SEN LATER ADMITTED IT WAS DELIBERATE | 30.2 头盔，30.4 PRO 盖章，31.2 SEN 盖章，31.4 小字；第 32 小节末尾切 |
 
