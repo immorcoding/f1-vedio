@@ -1,7 +1,7 @@
 // Where the two McLarens are in every shot of the Suzuka 1989 part, as plain data: the pictures draw from it and the
 // interpenetration check (src/mv/overlap.ts, ART-18) tests it. Pure TypeScript (no React, no Remotion) so node can
 // load it.
-import type { TopViewSampler } from "../../overlap.ts";
+import { corners, type Footprint, type TopViewSampler } from "../../overlap.ts";
 import { frameAt } from "../../timing.ts";
 import {
   footprintOf,
@@ -10,6 +10,7 @@ import {
   senAt,
   SHOT_SECONDS,
   SLOWMO_AT,
+  T_CONTACT,
 } from "./drive13.ts";
 import { SUZUKA_1989 } from "../../../tracks/suzuka-1989.ts";
 import { EDIT } from "./shots.ts";
@@ -91,18 +92,72 @@ export const camX12 = (f: number) => {
   return mid + 18 * Math.exp(-t / 0.55);
 };
 
-// 1.4: SEN on the near side, PRO alongside on the far side, a car width further away: SEN's nose wedged against
-// PRO's right front wheel. Both slide on together after the hit and stop.
+// 1.4: the two cars locked together exactly as they touched at the end of 1.3 (drive13.ts): SEN on the near side,
+// PRO a car width and a bit further away, ~0.7 m ahead and yawed ~23° toward the camera — turned in across SEN's
+// nose, so PRO's right front wheel sits over SEN's front wing (the interlocked noses of the 1989 photo). Seen from
+// SEN's right, the 1.3 plan is mirrored (left of SEN = away from the camera); distances are kept. On 19.1 the
+// picture freezes on the impact star for FREEZE_14 frames, then the pair slides on together and stops.
+const P_TOUCH = proAt(T_CONTACT);
+const S_TOUCH = senAt(T_CONTACT);
+const REL = (() => {
+  const h = (S_TOUCH.heading * Math.PI) / 180;
+  const dx = P_TOUCH.x - S_TOUCH.x;
+  const dy = P_TOUCH.y - S_TOUCH.y;
+  return {
+    ahead: dx * Math.cos(h) + dy * Math.sin(h),
+    // map frame y down, headings clockwise: SEN's right is heading + 90°
+    left: -(dx * -Math.sin(h) + dy * Math.cos(h)),
+    yaw: P_TOUCH.heading - S_TOUCH.heading,
+  };
+})();
+export const PRO_AHEAD_14 = REL.ahead; // m, PRO's middle of the wheelbase ahead of SEN's
+export const PRO_YAW_14 = REL.yaw; // degrees, PRO's nose turned toward the camera
 export const Z_SEN_14 = 8;
-export const Z_PRO_14 = Z_SEN_14 + MP45.width; // tyres touching
+export const Z_PRO_14 = Z_SEN_14 + REL.left; // PRO's middle of the wheelbase
+// Middle of the wheelbase from the car's rear end (MangaCar's origin), m.
+export const MID_WHEELBASE = MP45.length / 2 - MP45.centreAhead;
+// SEN's middle of the wheelbase relative to the camera's x (the camera pans with the slide).
+export const SEN_MID_14 = -0.6;
+export const FREEZE_14 = 14; // frames
 const V0 = 22;
 const TAU = 0.45;
+export const slideTime14 = (f: number) =>
+  Math.max(0, (f - HIT - FREEZE_14) / 60);
 export const slide14 = (f: number) =>
-  V0 * TAU * (1 - Math.exp(-Math.max(0, (f - HIT) / 60) / TAU));
-// Rear ends relative to the camera's x (which pans with the slide): PRO 1.1 m ahead, so SEN's left front wheel is
-// jammed against PRO's right front wheel and sidepod.
-export const SEN_X_14 = -3.6;
-export const PRO_X_14 = SEN_X_14 + 1.1;
+  V0 * TAU * (1 - Math.exp(-slideTime14(f) / TAU));
+export const slideSpeed14 = (f: number) =>
+  f - HIT < FREEZE_14 ? 0 : V0 * Math.exp(-slideTime14(f) / TAU);
+// PRO's heading in the side-on plan (x along the track, y = depth z): negative = nose toward the camera.
+export const PRO_HEADING_14 = -PRO_YAW_14;
+export const footprints14 = (f: number) => {
+  const s = slide14(f);
+  const a = (PRO_HEADING_14 * Math.PI) / 180;
+  const sen: Footprint = {
+    id: "SEN",
+    x: s + SEN_MID_14 + MP45.centreAhead,
+    y: Z_SEN_14,
+    heading: 0,
+    length: MP45.length,
+    width: MP45.width,
+  };
+  const pro: Footprint = {
+    id: "PRO",
+    x: s + SEN_MID_14 + PRO_AHEAD_14 + Math.cos(a) * MP45.centreAhead,
+    y: Z_PRO_14 + Math.sin(a) * MP45.centreAhead,
+    heading: PRO_HEADING_14,
+    length: MP45.length,
+    width: MP45.width,
+  };
+  return { sen, pro };
+};
+// Where they touch: the corner of PRO's footprint nearest the camera (his right front wheel and wing end), x
+// relative to the camera (slide taken out), z depth.
+export const CONTACT_14 = (() => {
+  const c = corners(footprints14(HIT).pro).reduce((m, p) =>
+    p.y < m.y ? p : m,
+  );
+  return { x: c.x, z: c.y };
+})();
 
 export const SAMPLERS: TopViewSampler[] = [
   {
@@ -148,30 +203,13 @@ export const SAMPLERS: TopViewSampler[] = [
   {
     part: "suzuka1989",
     shot: "1.4",
-    from: SHOT_14.from,
-    to: PUSH, // the push panel shows SEN alone
-    // the hit itself: the cars touch, tyre to tyre, from 19.1 to the stop — touching, not passing through
-    contact: [{ from: HIT, to: PUSH, ids: ["PRO", "SEN"], depth: 0.05 }],
+    ...SHOT_14,
+    // locked together from 19.1 to the end (the left panel keeps the stopped pair after 20.1): PRO's right front
+    // wheel over SEN's wing, the footprints touching, never passing through
+    contact: [{ from: HIT, to: SHOT_14.to, ids: ["PRO", "SEN"], depth: 0.05 }],
     poses: (f) => {
-      const s = slide14(f);
-      return [
-        {
-          id: "SEN",
-          x: s + SEN_X_14 + MP45.length / 2,
-          y: Z_SEN_14,
-          heading: 0,
-          length: MP45.length,
-          width: MP45.width,
-        },
-        {
-          id: "PRO",
-          x: s + PRO_X_14 + MP45.length / 2,
-          y: Z_PRO_14,
-          heading: 0,
-          length: MP45.length,
-          width: MP45.width,
-        },
-      ];
+      const { sen, pro } = footprints14(f);
+      return [sen, pro];
     },
   },
 ];
