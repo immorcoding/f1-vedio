@@ -591,12 +591,23 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
   const deck = look.frontDeck ?? fw.deck;
   const flap = look.frontFlap ?? fw.flap.d;
   const farWheels = drawnFarWheels(car, camera);
+  // HIGH look: the car's shadow on the ground, an ellipse centred between the near and the far wheels' contact lines
+  // (a camera looking down sees it on both sides of the car; the floor edge alone would sit under the near side only)
+  const nearGround = (front.cy + front.r + rear.cy + rear.r) / 2;
+  const farGround =
+    (farWheels[0].cy + farWheels[0].r + farWheels[1].cy + farWheels[1].r) / 2;
   const groundShadow = look.groundShadow
-    ? `M ${front.cx} ${front.cy + front.r} L ${rear.cx} ${rear.cy + rear.r} L ${farWheels[1].cx} ${farWheels[1].cy + farWheels[1].r} L ${farWheels[0].cx} ${farWheels[0].cy + farWheels[0].r} Z`
+    ? {
+        cx: (front.cx + rear.cx) / 2,
+        cy: (nearGround + farGround) / 2,
+        // the length of the car, so its ends show past the nose and the rear wing
+        rx: Math.abs(rear.cx - front.cx) / 2 + 2 * front.r,
+        ry: (nearGround - farGround) / 2 + 0.25 * front.r,
+      }
     : null;
   return (
     <>
-      {groundShadow ? <path d={groundShadow} fill={INK} /> : null}
+      {groundShadow ? <ellipse {...groundShadow} fill={INK} /> : null}
       {farWheels.map((w, i) => (
         <FarWheel
           key={`f${w.cx}`}
@@ -771,7 +782,7 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
             transform="translate(0 4)"
           />
         </g>
-        <path d={car.floor} fill={INK} />
+        {look.groundShadow ? null : <path d={car.floor} fill={INK} />}
         {car.panelLines.map((d) => (
           <g key={d}>
             <Ink d={d} w={6} />
