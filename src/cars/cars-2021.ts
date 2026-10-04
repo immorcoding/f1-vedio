@@ -6,6 +6,10 @@ import type { CarSpec } from "./spec";
 // Pirelli 2021 sidewall bands.
 export const PIRELLI_2021 = { soft: "#e3262b", hard: "#f4f4f4" };
 
+// The W12's DRS flap only: Petronas teal (#00a19b) muted a little (saturation 100% -> 65%, same hue), so it sits calmer
+// against the black wing and still reads teal (user review 2026-10-04). The rim rings and livery accents keep #00a19b.
+const W12_FLAP_TEAL = "#1e8d89";
+
 export const W12: CarSpec = {
   name: "2021 Mercedes-AMG W12",
   reference:
@@ -126,8 +130,8 @@ export const W12: CarSpec = {
       flap: "M 1757.0 562.8 C 1755.4 560.5 1755.8 559.3 1757.8 557.9 C 1772.8 546.7 1786.2 539.9 1796.5 533.0 C 1797.3 532.4 1798.4 533.8 1797.5 534.5 C 1787.7 542.0 1777.2 552.7 1761.9 563.5 C 1759.9 565.0 1758.6 565.0 1757.0 562.8 Z",
       pivot: { x: 1797, y: 533.8 },
       drsOpen: 29.3,
-      // the upper flap is Petronas teal in the photo, the teal of the livery accents and rim rings
-      flapColor: "#00a19b",
+      // the upper flap is Petronas teal in the photo, a muted shade of the livery's teal
+      flapColor: W12_FLAP_TEAL,
     },
     // no pylon: on the centre line under the main plane's mid-chord it stays behind the near endplate in both looks
     // (user review 2026-10-04: the old one stood beside the endplate as a stray black column)

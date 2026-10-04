@@ -69,7 +69,8 @@ export const RearWingPlanesView: React.FC<{
     return flap ? pts.map((p) => rotate(p, planes.pivot, turn)) : pts;
   };
   const elements = [profile(planes.main, false), profile(planes.flap, true)];
-  const fills = [fill, planes.flapColor ?? lighter(fill)];
+  const main = planes.mainColor ?? fill;
+  const fills = [main, planes.flapColor ?? lighter(main)];
   const far = rw.farFrom;
   if (far) {
     const o = pathMin(rw.near);
