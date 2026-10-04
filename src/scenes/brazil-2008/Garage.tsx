@@ -1,7 +1,7 @@
 // The Ferrari garage at Interlagos as Massa crosses the line (shot 2.3, easter egg; facts.md): mechanics in team
 // overalls and Massa's family watch the screens — arms folded, a hand on the head — then erupt on the beat: fists up,
 // a fist pump on every beat, a jump every two beats, a head thrown back, and two of them turning round to high-five
-// and hug. Black-and-white garage (ART-8): roller door, ceiling lights, tyre racks, a TV on the tyre-rack side and
+// and then cheer face to face with both fists up. Black-and-white garage (ART-8): roller door, ceiling lights, tyre racks, a TV on the tyre-rack side and
 // monitors on the pit-wall side; the people are the shared people module (src/kit/figure.tsx, ART-16), Ferrari red
 // overalls and the family in street clothes.
 import { INK, PAPER } from "../../kit/colors";
@@ -9,7 +9,6 @@ import {
   FERRARI_MECHANIC,
   Figure,
   HIGH_FIVE_AT,
-  HUG_GAP,
   armsFolded,
   armsUp,
   crowdOutfit,
@@ -17,18 +16,23 @@ import {
   handOnHead,
   headBack,
   highFive,
-  hug,
   jump,
   mixPose,
-  walk,
   type Outfit,
   type Pose,
 } from "../../kit/figure";
 import { tone } from "../../kit/tone";
 
 // Massa's family and guests in street clothes (a Ferrari-red shirt, a light shirt).
-const FAMILY_RED: Outfit = crowdOutfit("#d4201d", { trousers: "#2f3640", hair: "#2a2420" });
-const FAMILY_LIGHT: Outfit = crowdOutfit("#eceae4", { trousers: "#4d5360", hair: "#5a3e28", sleeves: "long" });
+const FAMILY_RED: Outfit = crowdOutfit("#d4201d", {
+  trousers: "#2f3640",
+  hair: "#2a2420",
+});
+const FAMILY_LIGHT: Outfit = crowdOutfit("#eceae4", {
+  trousers: "#4d5360",
+  hair: "#5a3e28",
+  sleeves: "long",
+});
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const smooth = (x: number) => {
@@ -53,33 +57,62 @@ type Person = {
 const PAIR_A = 840;
 const PAIR_B = 1100;
 const PEOPLE: Person[] = [
-  { x: 600, scale: 0.93, outfit: FERRARI_MECHANIC, watch: "left", idle: (t) => armsFolded({ t, head: -10 }), react: (b) => fistPump(b) },
-  { x: 335, scale: 0.96, outfit: FAMILY_RED, watch: "left", idle: (t) => handOnHead({ t: t + 2, head: -10 }), react: (b) => jump((b / 2) % 1) },
-  { x: 1380, scale: 0.97, outfit: FAMILY_LIGHT, watch: "right", idle: (t) => handOnHead({ t: t + 1, head: -10 }), react: (_b, t) => headBack(t) },
-  { x: 1640, scale: 0.94, outfit: FERRARI_MECHANIC, watch: "right", idle: (t) => armsFolded({ t: t + 3, head: -10 }), react: (b) => armsUp(b) },
+  {
+    x: 600,
+    scale: 0.93,
+    outfit: FERRARI_MECHANIC,
+    watch: "left",
+    idle: (t) => armsFolded({ t, head: -10 }),
+    react: (b) => fistPump(b),
+  },
+  {
+    x: 335,
+    scale: 0.96,
+    outfit: FAMILY_RED,
+    watch: "left",
+    idle: (t) => handOnHead({ t: t + 2, head: -10 }),
+    react: (b) => jump((b / 2) % 1),
+  },
+  {
+    x: 1380,
+    scale: 0.97,
+    outfit: FAMILY_LIGHT,
+    watch: "right",
+    idle: (t) => handOnHead({ t: t + 1, head: -10 }),
+    react: (_b, t) => headBack(t),
+  },
+  {
+    x: 1640,
+    scale: 0.94,
+    outfit: FERRARI_MECHANIC,
+    watch: "right",
+    idle: (t) => armsFolded({ t: t + 3, head: -10 }),
+    react: (b) => armsUp(b),
+  },
 ];
 
-// The pair: turn round on the eruption, slap hands on the next beat, step in and hug from two beats after.
+// The pair: turn round on the eruption, slap hands on the next beat, then both fists up face to face. (No hug: two
+// side-view figures hugging cannot be layered convincingly; the user allowed dropping it.)
 const TURN = 0.25; // beats after the eruption
 const FIVE_LEN = 1.5; // the high five runs over 1.5 beats with the slap (HIGH_FIVE_AT) on beat 1 after the eruption
 const FIVE_FROM = 1 - HIGH_FIVE_AT * FIVE_LEN;
-const HUG_FROM = 2.0;
-const STEP_LEN = 0.75; // beats to step in
+const CHEER_FROM = 2.0;
+const CHEER_IN = 0.5; // beats to blend from the high five into the cheer
 const pairGap = (PAIR_B - PAIR_A) / 300; // m between their ground points at 300 px/m
-const pairPose = (b: number, t: number, phase: number): { pose: Pose; inward: number } => {
-  if (b < FIVE_FROM) return { pose: armsFolded({ t: t + phase, head: -10 }), inward: 0 };
-  if (b < HUG_FROM)
-    return { pose: highFive(clamp01((b - FIVE_FROM) / FIVE_LEN), pairGap), inward: 0 };
-  // step in (each walks half the difference, so the feet stay planted), then the hug
-  const step = ((pairGap - HUG_GAP) / 2) * smooth((b - HUG_FROM) / STEP_LEN);
-  const w = smooth((b - HUG_FROM) / STEP_LEN);
-  const hugPose = hug((b - HUG_FROM) / 1.5, HUG_GAP, t + phase);
-  return { pose: mixPose(walk(step, { stride: 0.3, armSwing: 4 }), hugPose, w), inward: step };
+const pairPose = (b: number, t: number, phase: number): Pose => {
+  if (b < FIVE_FROM) return armsFolded({ t: t + phase, head: -10 });
+  const five = highFive(clamp01((b - FIVE_FROM) / FIVE_LEN), pairGap);
+  if (b < CHEER_FROM) return five;
+  return mixPose(five, armsUp(b + phase), smooth((b - CHEER_FROM) / CHEER_IN));
 };
 
 // The garage panel, laid out for a 1920×1080 frame. `t` seconds into the shot, `beat` beats into it (timing.ts),
 // `erupt` the beat the celebration starts on.
-export const Garage: React.FC<{ t: number; beat: number; erupt: number }> = ({ t, beat, erupt }) => {
+export const Garage: React.FC<{ t: number; beat: number; erupt: number }> = ({
+  t,
+  beat,
+  erupt,
+}) => {
   const floor = 960;
   const ppm = 300;
   const b = beat - erupt; // beats since the eruption (negative while they watch)
@@ -170,37 +203,43 @@ export const Garage: React.FC<{ t: number; beat: number; erupt: number }> = ({ t
         .sort((p, q) => p.scale - q.scale)
         .map((p, i) => {
           const s = ppm * p.scale;
-          const pose = b < -0.05 ? p.idle(t) : mixPose(p.idle(t), p.react(Math.max(0, b), t), into);
+          const pose =
+            b < -0.05
+              ? p.idle(t)
+              : mixPose(p.idle(t), p.react(Math.max(0, b), t), into);
           return (
-            <Figure key={i} at={{ x: p.x, y: ground(p.scale) }} pxPerMetre={s} pose={pose} outfit={p.outfit} facing={p.watch} />
+            <Figure
+              key={i}
+              at={{ x: p.x, y: ground(p.scale) }}
+              pxPerMetre={s}
+              pose={pose}
+              outfit={p.outfit}
+              facing={p.watch}
+            />
           );
         })}
       {(() => {
-        // the pair, back to back until they turn; while hugging, both bodies first and then both near arms (each
-        // arm wraps round the other's back, in front of the other's body)
+        // the pair, back to back until they turn, then facing each other
         const turned = b >= TURN;
-        const A = pairPose(b, t, 0);
-        const B = pairPose(b, t, 0.4);
         const y = ground(1);
-        const xa = PAIR_A + A.inward * ppm;
-        const xb = PAIR_B - B.inward * ppm;
-        const fa = turned ? "right" : "left";
-        const fb = turned ? "left" : "right";
-        const hugging = b >= HUG_FROM;
-        const fig = (key: string, x: number, pose: Pose, facing: "left" | "right", parts?: ("farLeg" | "body" | "nearLeg" | "nearArm")[]) => (
-          <Figure key={key} at={{ x, y }} pxPerMetre={ppm} pose={pose} outfit={FERRARI_MECHANIC} facing={facing} parts={parts} />
-        );
-        return hugging ? (
+        return (
           <g>
-            {fig("a", xa, A.pose, fa, ["farLeg", "body", "nearLeg"])}
-            {fig("b", xb, B.pose, fb, ["farLeg", "body", "nearLeg"])}
-            {fig("a-arm", xa, A.pose, fa, ["nearArm"])}
-            {fig("b-arm", xb, B.pose, fb, ["nearArm"])}
-          </g>
-        ) : (
-          <g>
-            {fig("a", xa, A.pose, fa)}
-            {fig("b", xb, B.pose, fb)}
+            <Figure
+              key="a"
+              at={{ x: PAIR_A, y }}
+              pxPerMetre={ppm}
+              pose={pairPose(b, t, 0)}
+              outfit={FERRARI_MECHANIC}
+              facing={turned ? "right" : "left"}
+            />
+            <Figure
+              key="b"
+              at={{ x: PAIR_B, y }}
+              pxPerMetre={ppm}
+              pose={pairPose(b, t, 0.4)}
+              outfit={FERRARI_MECHANIC}
+              facing={turned ? "left" : "right"}
+            />
           </g>
         );
       })()}
