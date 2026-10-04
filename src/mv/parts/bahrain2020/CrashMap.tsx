@@ -331,7 +331,13 @@ export const CrashMap: React.FC<PictureProps> = ({ f }) => {
         />
       ) : null}
       {sinceContact >= 0 && sinceContact < 70 ? (
-        <Sfx x={contact.x - 60} y={contact.y - 80} size={96} rotate={-10}>
+        <Sfx
+          x={Math.min(1700, Math.max(230, contact.x))}
+          y={contact.y - 110}
+          size={96}
+          rotate={-10}
+          anchor="middle"
+        >
           {shot.text[1]}
         </Sfx>
       ) : null}

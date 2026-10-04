@@ -9,7 +9,7 @@ MV 画面上出现的每个事实及其来源（STO-3）。来源核对日期：
 - 两人同为 McLaren-Honda 车手：Senna 1988 年加盟 McLaren 与 Prost 做队友，1988、1989 两季同队，关系由队友变成宿敌（镜头 1.1 标题下的字："队友 · 宿敌"）。来源：[Prost–Senna rivalry — Wikipedia](https://en.wikipedia.org/wiki/Prost%E2%80%93Senna_rivalry)（核对 2026-10-03）
 - 赛前积分：Prost 76 分、Senna 60 分，Prost 领先 16 分；Senna 必须赢下本场和最后一站澳大利亚才有机会卫冕（镜头 1.2 头盔小格下的字："PRO 领先 16 分" / "SEN 必须赢"）。（核对 2026-10-03）
 - 第 47 圈 Senna 在 Spoon 弯后紧跟 Prost 进入尾流，过 130R 时只落后约两个车身；他从减速弯内线切入时始终没能完全超前，前轮一直在 Prost 的前轮之后（镜头 1.3 的走位依据）。（核对 2026-10-03）
-- 彩蛋（镜头 1.4 第 20 小节结果页）：Senna 冲线第一却被取消成绩，Prost 成为 1989 年冠军——两格头盔分别盖红章"取消成绩"和"1989 冠军"（依据上面第 2 条）。背景（画面不再出现，2026-10-03 起删去推车小格）：两车停在部分封闭的减速弯缓冲道入口；Prost 下车，Senna 示意工作人员把他沿缓冲道往前推，借推力重新发动引擎后直接从缓冲道驶出，在缓冲道上摆放的临时路标之间穿行。（核对 2026-10-03）
+- 彩蛋（镜头 1.4 第 20 小节结果页）：Senna 冲线第一却被取消成绩，Prost 成为 1989 年冠军——两格头盔分别盖红章"DISQUALIFIED"和"1989 CHAMPION"（依据上面第 2 条）。背景（画面不再出现，2026-10-03 起删去推车小格）：两车停在部分封闭的减速弯缓冲道入口；Prost 下车，Senna 示意工作人员把他沿缓冲道往前推，借推力重新发动引擎后直接从缓冲道驶出，在缓冲道上摆放的临时路标之间穿行。（核对 2026-10-03）
 - 来源：[1989 Japanese Grand Prix — Wikipedia](https://en.wikipedia.org/wiki/1989_Japanese_Grand_Prix)
 
 ## 1990 日本大奖赛（铃鹿）
@@ -44,7 +44,7 @@ MV 画面上出现的每个事实及其来源（STO-3）。来源核对日期：
 - 来源：[2020 Bahrain Grand Prix — Wikipedia](https://en.wikipedia.org/wiki/2020_Bahrain_Grand_Prix)
 - 画面细节（镜头 3.2–3.6）：Grosjean 从赛道左侧往右侧并线时，右后轮碰到 Kvyat 左前轮，当时车速 241 km/h；撞击点在 3 号弯弯心后约 180 米、缓冲区后面的三层护栏，以 192 km/h 撞上；FIA 调查摘要原文“at an angle of 29 degrees, with an estimated yaw of 22 degrees to the direction of travel”：29° 是行进方向（轨迹）与护栏的夹角，22° 是偏航角，即车身纵轴偏离行进方向的角度（车是斜着滑过去的，不是车头正对行进方向）。两者是不同的量。偏航方向摘要没写；摘要说碰撞让车尾抬起、车“向右偏航”，所以画面按车头比行进方向更偏向护栏处理，车身与护栏约成 29° + 22° = 51°（镜头 3.2 的轨迹与车头朝向、镜头 3.3 护栏与车身的夹角都按此画）；座舱穿过中间那层护栏，动力单元整体与车身前段分离。发车轮胎：Grosjean 硬胎（白），Kvyat 中性胎（黄），前 10 名都用中性胎。
 - 彩蛋（STO-7）：医疗车 11 秒内到场，FIA 医疗救援协调员 Ian Roberts 让一名工作人员用干粉灭火器对着座舱喷，Grosjean 从火里爬出翻过护栏时，Roberts 把他拉离残骸；医疗车司机 Alan van der Merwe 也在场。烧毁的车身前段（halo 完好，表面烧黑）后来在伦敦 F1 展览展出。
-- 镜头 3.5 的“27 秒”时间线：0 秒撞击；医疗车 11 秒内到场（FIA）；工作人员用干粉灭火器喷座舱的确切秒数，FIA 调查摘要和查到的报道（The Race、ESPN、RaceFans、Motorsport Technology）都没有给出，未核实，画面不标秒数；27 秒脱身用 FIA 调查摘要的数字（用户 2026-10-03 批准改用 27 秒；维基百科的约 28 秒不用）。
+- 镜头 3.5 的“27s”时间线（画面写 0s、11s、27s）：0 秒撞击；医疗车 11 秒内到场（FIA）；工作人员用干粉灭火器喷座舱的确切秒数，FIA 调查摘要和查到的报道（The Race、ESPN、RaceFans、Motorsport Technology）都没有给出，未核实，画面不标秒数；27 秒脱身用 FIA 调查摘要的数字（用户 2026-10-03 批准改用 27 秒；维基百科的约 28 秒不用）。
 - FIA 调查摘要还写明：中间一层护栏先失效，上下两层严重变形，座舱随后穿过护栏；动力总成与座舱分离（镜头 3.3、3.4 的护栏和断车画法依据）。
 - 来源：[FIA accident investigation summary (2021-03-05)](https://api.fia.com/news/fia-concludes-investigation-romain-grosjeans-accident-2020-bahrain-formula-1-grand-prix-and)、[The Race: investigation findings](https://www.the-race.com/formula-1/fia-completes-investigation-into-grosjean-bahrain-crash/)（查灭火器时间，未给出）、[Pirelli 2020 Bahrain GP race report](https://press.pirelli.com/2020-bahrain-grand-prix--race/)、[Burned remains at the F1 Exhibition, London (Wikimedia Commons)](https://commons.wikimedia.org/wiki/File:Romain_Grosjean_Haas_VF-20_Remains_at_Formula_1_Exhibition,_London_01.jpg)
 
