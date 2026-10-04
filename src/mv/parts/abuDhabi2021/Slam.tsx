@@ -12,6 +12,7 @@ import { ToneDefs, tone } from "../../../kit/tone";
 import { T5_SECTION } from "../../../scenes/abu-dhabi-2021/t5-map";
 import { autoKerbs, mapView, poseAt, TrackSection, YAS_MARINA_2021 } from "../../../tracks";
 import { hit, ramp, type ShotTime } from "./shotClock";
+import { rollAt, TopShadow } from "./TopShadow";
 import { hamSpeed, SLAM_SCALE, slamPlan, verSpeed } from "./staging.ts";
 
 const T = YAS_MARINA_2021;
@@ -96,14 +97,17 @@ export const Slam: React.FC<{ st: ShotTime }> = ({ st }) => {
                 const pose = poseAt(T, s, lat);
                 const heading = view.heading(pose.heading);
                 const p = view.project(pose);
+                const v = car === RB16B ? verSpeed(t) : hamSpeed(t);
                 return (
-                  <MangaCar
-                    key={car.name}
-                    car={car}
-                    view="top"
-                    at={topAnchorAt(car, { x: p.x, y: p.y, pxPerMetre: ppm * SLAM_SCALE }, heading)}
-                    state={{ heading, compound, wheelAngle: wheelAngleAt(car, s), speed: car === RB16B ? verSpeed(t) : hamSpeed(t) }}
-                  />
+                  <g key={car.name}>
+                    <TopShadow car={car} at={p} heading={heading} ppm={ppm * SLAM_SCALE} roll={rollAt(T, s, v)} />
+                    <MangaCar
+                      car={car}
+                      view="top"
+                      at={topAnchorAt(car, { x: p.x, y: p.y, pxPerMetre: ppm * SLAM_SCALE }, heading)}
+                      state={{ heading, compound, wheelAngle: wheelAngleAt(car, s), speed: v }}
+                    />
+                  </g>
                 );
               })}
               {/* focus lines pressing in from every edge on the two noses */}

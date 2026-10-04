@@ -16,6 +16,7 @@ import { T5_SECTION } from "../../../scenes/abu-dhabi-2021/t5-map";
 import { mapView, poseAt, samplePath, TrackSection, YAS_MARINA_2021 } from "../../../tracks";
 import { at } from "../../timing.ts";
 import { hit, ramp, secondsInShot, type ShotTime } from "./shotClock";
+import { rollAt, TopShadow } from "./TopShadow";
 import { braking, hamSpeed, T5_SCALE, t5Plan, verSpeed } from "./staging.ts";
 
 const T = YAS_MARINA_2021;
@@ -119,6 +120,13 @@ export const T5Top: React.FC<{ st: ShotTime; t0: number }> = ({ st, t0 }) => {
                     opacity={0.8 * (1 - 0.5 * b) * speedK}
                   />
                 </g>
+                <TopShadow
+                  car={car}
+                  at={p}
+                  heading={heading}
+                  ppm={k}
+                  roll={rollAt(T, s, who === "VER" ? verSpeed(race) : hamSpeed(race))}
+                />
                 <MangaCar
                   car={car}
                   view="top"

@@ -1,7 +1,7 @@
 // Picture for 阿布扎比 2021 (bars 82–105). The run to T5 cuts its viewpoint every one or two bars (staging.ts is the
 // race clock under all of them): 5.1 the drop slam from above (82), 5.1b wheel level in the tow (83), 5.1c low-angle
 // tracking, VER pulls out (84–85), 5.1d wheel to wheel from above (86), 5.1e helmet panels (87), 5.2 T5 from above, braking (88–89)
-// with HAM's mirror (the 2008 pass, six frames) before the cut; then 5.3 the settled T5 panel (lock-up at 90.1), 5.4
+// with HAM's mirror (the 2008 pass, from 89.4) before the cut; then 5.3 the settled T5 panel (lock-up at 90.1), 5.4
 // the tow down the back straight, 5.5 the map run to the flag, 5.6 the finish (100.1), 5.7 the points (102.1), 5.8
 // the champion photo card (104.1).
 import { AbsoluteFill } from "remotion";
@@ -12,7 +12,7 @@ import { ChampionCard } from "./ChampionCard";
 import { Charge } from "./Charge";
 import { Finish } from "./Finish";
 import { Helmets } from "./Helmets";
-import { MIRROR_FROM, MirrorFlash } from "./MirrorFlash";
+import { MIRROR_FROM, MirrorFlash, mirrorShowsNow } from "./MirrorFlash";
 import { Points } from "./Points";
 import { shotAt, type ShotTime } from "./shotClock";
 import { EDIT } from "./shots.ts";
@@ -46,7 +46,7 @@ export const Scene: React.FC<SceneProps> = ({ part }) => {
   const f = useSongFrame(part);
   const st = shotAt(EDIT, f);
   const Shot = SHOTS[st.shot.id];
-  const mirror = st.shot.id === "5.2" && f >= MIRROR_FROM;
+  const mirror = st.shot.id === "5.2" && f >= MIRROR_FROM && !mirrorShowsNow(f);
   return (
     <AbsoluteFill style={{ backgroundColor: "#0d0d0d" }}>
       {mirror ? <MirrorFlash f={f} /> : <Shot st={st} t0={sinceDrop(st.shot.from)} />}
