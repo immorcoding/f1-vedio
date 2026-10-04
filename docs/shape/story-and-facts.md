@@ -12,7 +12,7 @@ Next id: STO-9
 ## Rules
 
 - **STO-4** · provisional · 成片是 3–3.5 分钟的 MV，复刻 4 个名场面，按时间顺序：1989/1990 铃鹿 → 2008 巴西 → 2020 巴林 → 2021 阿布扎比（高潮）；每个名场面占一个音乐段落。_Why:_ 用户 2026-10-03 定位为"5 分钟以内的短片，类似 MV，不是故事片"，并选了这个篇幅和顺序。
-- **STO-5** · provisional · 没有旁白。画面文字只用少量中文漫画文字：每个名场面一张标题卡（年份 + 大奖赛），拟声字，以及极短的关键信息（如"LAP 58"）；车手用三字母缩写（VER、HAM）。_Why:_ 用户 2026-10-03 选了"只留少量漫画文字"。
+- **STO-5** · provisional · 没有旁白。画面文字只用少量中文漫画文字：每个名场面一张标题卡（年份 + 大奖赛），拟声字，以及极短的关键信息（如"LAP 58"）；车手用三字母缩写（VER、HAM）。例外：夺冠卡（巴西 2.7、阿布扎比 5.8）用大号英文漫画字写车手全名、年份和"WORLD CHAMPION"，逐拍砸入。_Why:_ 用户 2026-10-03 选了"只留少量漫画文字"；夺冠卡的英文大字由用户 2026-10-04 看过原型后批准。
 - **STO-7** · provisional · 可以加入让车迷会心一笑的彩蛋，但每个彩蛋都必须是核实过的真实细节（登记在 `docs/production/facts.md`），不放人物原话（唯一例外见 STO-8）。当前彩蛋清单见 `docs/production/mv-treatment.md`。_Why:_ 用户 2026-10-03 要求"适当增加让车迷惊喜的细节"，并选定了五组彩蛋。
 - **STO-8** · provisional · 阿布扎比 5.7 的夺冠照片卡（ART-19）引用红牛车队无线电原话"Max Verstappen, you are the world champion"（冲线后 Horner 所说），画面上不加出处小字；这是全片唯一一句人物原话，措辞以已核实的来源为准，登记在 `facts.md`。_Why:_ 用户 2026-10-03 要求在夺冠卡上放这句话，并去掉了出处小字（"没有必要"）。_Source:_ [formula1.com：Say what, Abu Dhabi 2021 team radio](https://www.formula1.com/en/latest/article/say-what-enjoy-the-best-team-radio-from-the-abu-dhabi-season-finale.1pUHfdFT1FyhoP7J07jLy9)
 - **STO-3** · provisional · 画面上出现的每个事实（圈数、弯道、轮胎、积分、结果）都要先对照可靠来源核实，并按名场面记下来源。_Why:_ 原型里的事实是凭记忆写的，还没核实过。
