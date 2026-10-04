@@ -193,6 +193,7 @@ export type CarSpec = {
     color?: string;
     angle?: number;
     squash?: number;
+    stretch?: number; // horizontal scale, for a number painted long along the bodywork
   };
   // Where the car tears in two when it breaks up (CarState.split): a jagged polyline from above the car to below it,
   // running down the engine bulkhead between the survival cell (with the fuel cell) and the power unit. Only needed

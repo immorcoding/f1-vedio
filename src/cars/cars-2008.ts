@@ -370,12 +370,13 @@ export const STR3: CarSpec = {
   // photo, Shiny Things): seen from the side it is a thin, foreshortened strip along the nose's top line
   numberAt: {
     x: 714,
-    y: 517,
+    y: 525,
     size: 46,
     color: "#e3242b",
-    // painted to be read from the car's other side: seen from this side it is upside down
-    angle: 176,
+    // upright, painted long along the nose top and seen edge-on: stretched lengthwise, flattened
+    angle: -4,
     squash: 0.6,
+    stretch: 1.8,
   },
   tyreGrooves: 4,
 };

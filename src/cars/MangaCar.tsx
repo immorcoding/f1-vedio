@@ -903,8 +903,8 @@ export const MangaCar: React.FC<{
                 car.numberAt.angle
                   ? `rotate(${-dir * car.numberAt.angle} ${num.x} ${num.y})`
                   : "",
-                car.numberAt.squash
-                  ? `translate(${num.x} ${num.y}) scale(1 ${car.numberAt.squash}) translate(${-num.x} ${-num.y})`
+                car.numberAt.squash || car.numberAt.stretch
+                  ? `translate(${num.x} ${num.y}) scale(${car.numberAt.stretch ?? 1} ${car.numberAt.squash ?? 1}) translate(${-num.x} ${-num.y})`
                   : "",
               ]
                 .join(" ")
