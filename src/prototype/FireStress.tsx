@@ -3,8 +3,8 @@
 // panel, hard-edged figure against soft fire) and 3.6 (figures walking in front of the fire). The shipped scenes are
 // imported as they are; the B versions rebuild only what holds the fire (see FireStyles.tsx WreckWorldB).
 import { Audio } from "@remotion/media";
-import { useId } from "react";
-import { AbsoluteFill, staticFile, useCurrentFrame } from "remotion";
+import { useEffect, useId, useState } from "react";
+import { AbsoluteFill, continueRender, delayRender, staticFile, useCurrentFrame } from "remotion";
 import { GRO_2020, VF20, carLength } from "../cars";
 import { pinhole, type Camera } from "../kit/camera";
 import { INK, PAPER } from "../kit/colors";
@@ -21,8 +21,8 @@ import {
   type Outfit,
   type Pose,
 } from "../kit/figure";
-import { Sfx } from "../kit/lettering";
-import { ToneDefs } from "../kit/tone";
+import { BRUSH_FONT, Sfx } from "../kit/lettering";
+import { ToneDefs, TonePattern } from "../kit/tone";
 import { SCORE } from "../mv/MV";
 import { BREAK_PIVOT, carPointOnScreen } from "../mv/parts/bahrain2020/car-points";
 import { cueFrame, ramp, shotById } from "../mv/parts/bahrain2020/common";
@@ -43,7 +43,7 @@ import { Timeline28 } from "../mv/parts/bahrain2020/Timeline28";
 import { WRECK_CAM, heartbeat, zoomCam } from "../mv/parts/bahrain2020/Wreck";
 import { BARRIER_Z, HALO_WORLD } from "../mv/parts/bahrain2020/wreck-geometry";
 import { at, frameAt, FPS } from "../mv/timing";
-import { BubbleSmoke, C, Glow, WreckWorldB, hash, layerD, type Flow, type Tongue } from "./FireStyles";
+import { B_BLUR_PX, BubbleSmoke, C, Glow, WreckWorldB, hash, layerD, type Flow, type Tongue } from "./FireStyles";
 
 // ── frames under test ─────────────────────────────────────────────────────────────────────────
 export const F33 = frameAt(at(61)) + 100; // deep in the freeze
@@ -58,14 +58,80 @@ const CAM33 = pinhole({ f: 1500, horizon: 330, cx: 960, height: 1.3 });
 const SLOW = 70;
 const BALL_AT = 15;
 
-const FireballB: React.FC<{ x: number; y: number; r: number; age: number; t: number; fixed?: boolean }> = ({
-  x,
-  y,
-  r,
-  age,
-  t,
-  fixed,
-}) => {
+// A burst of dark manga bubble smoke behind the fireball (ART-20): round puffs on a ragged ring round the burst and a
+// few in the middle, one ink outline round the whole cluster, dark grey with a dot screen. Returns the drawing and the
+// puffs (the fireball's glow is clipped to them, so it stays on the smoke and never tints the page).
+const burstPuffs = (R0: number) =>
+  Array.from({ length: 18 }, (_, i) => {
+    const ring = i < 13;
+    const a = ring ? -Math.PI / 2 + ((i + 0.5) / 13 - 0.5) * Math.PI * 1.75 + (hash(i, 80) - 0.5) * 0.3 : hash(i, 81) * Math.PI * 2;
+    const up = Math.max(0, -Math.sin(a));
+    const d = ring ? R0 * (0.62 + 0.55 * up + 0.08 * hash(i, 82)) : R0 * 0.3 * hash(i, 83);
+    return {
+      x: Math.cos(a) * d * 0.8,
+      y: Math.sin(a) * d - R0 * 0.25,
+      r: R0 * (ring ? 0.2 + 0.1 * hash(i, 84) + 0.06 * up : 0.42),
+    };
+  });
+
+const SmokeBurst: React.FC<{ R0: number; id: string }> = ({ R0, id }) => {
+  const puffs = burstPuffs(R0);
+  const lw = Math.max(3, R0 * 0.012);
+  return (
+    <g>
+      <defs>
+        <TonePattern id={`${id}-dots`} r={2.2} gap={7} />
+      </defs>
+      {puffs.map((p, i) => (
+        <circle key={`s${i}`} cx={p.x} cy={p.y} r={p.r} fill={INK} stroke={INK} strokeWidth={lw * 2} />
+      ))}
+      {puffs.map((p, i) => (
+        <circle key={`f${i}`} cx={p.x} cy={p.y} r={p.r} fill="#3b3734" />
+      ))}
+      {puffs.map((p, i) => (
+        <circle key={`d${i}`} cx={p.x} cy={p.y} r={p.r} fill={`url(#${id}-dots)`} />
+      ))}
+      {/* each puff's lower edge drawn again in ink, so the cluster reads as bubbles, not one blob */}
+      {puffs.map((p, i) => (
+        <path
+          key={`e${i}`}
+          d={`M ${p.x - p.r * 0.92} ${p.y + p.r * 0.38} A ${p.r} ${p.r} 0 0 0 ${p.x + p.r * 0.92} ${p.y + p.r * 0.38}`}
+          fill="none"
+          stroke={INK}
+          strokeWidth={lw * 0.8}
+          strokeLinecap="round"
+        />
+      ))}
+    </g>
+  );
+};
+
+// The fireball's light, kept on the smoke: a warm radial glow clipped to the puffs.
+const BurstGlow: React.FC<{ R0: number; id: string; t: number }> = ({ R0, id, t }) => (
+  <g>
+    <defs>
+      <clipPath id={`${id}-clip`}>
+        {burstPuffs(R0).map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r={p.r} />
+        ))}
+      </clipPath>
+    </defs>
+    <g clipPath={`url(#${id}-clip)`}>
+      <Glow w={R0 * 1.2} h={R0 * 1.8} t={t} color={C.glow} strength={0.6} />
+    </g>
+  </g>
+);
+
+const FireballB: React.FC<{
+  x: number;
+  y: number;
+  r: number;
+  age: number;
+  t: number;
+  fixed?: boolean;
+  // drawn on the white page: a dark bubble-smoke burst behind, the glow clipped to it
+  smoke?: boolean;
+}> = ({ x, y, r, age, t, fixed, smoke }) => {
   const id = `fbb${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const grow = 1 - Math.exp(-age / 5);
   const R0 = r * (0.2 + 0.8 * grow);
@@ -86,7 +152,7 @@ const FireballB: React.FC<{ x: number; y: number; r: number; age: number; t: num
     };
     return { a, tg };
   });
-  const blur = fixed ? 2.5 : Math.max(2, R0 * 0.02);
+  const blur = fixed ? 2.5 : B_BLUR_PX;
   const layer = (k: number, wf: number, disc: number, fill: string, op: number, b: number, key: string) => (
     <g key={key} filter={`url(#${id}-${key})`} opacity={op}>
       <defs>
@@ -102,7 +168,9 @@ const FireballB: React.FC<{ x: number; y: number; r: number; age: number; t: num
   );
   return (
     <g transform={`translate(${x} ${y - lift})`}>
-      {fixed ? null : <Glow w={R0 * 1.6} h={R0 * 1.6} t={t} color={C.glow} strength={0.7} />}
+      {smoke ? <SmokeBurst R0={R0} id={id} /> : null}
+      {smoke ? <BurstGlow R0={R0} id={id} t={t} /> : null}
+      {fixed || smoke ? null : <Glow w={R0 * 1.6} h={R0 * 1.6} t={t} color={C.glow} strength={0.7} />}
       {fixed ? layer(1.04, 1.16, 0.4, C.deep, 1, 0.8, "u") : null}
       {layer(1, 1, fixed ? 0.36 : 0.45, C.red, fixed ? 1 : 0.92, blur * 2.2, "r")}
       {layer(0.78, 0.72, fixed ? 0.26 : 0.36, C.orange, 0.95, blur * 1.6, "o")}
@@ -112,7 +180,8 @@ const FireballB: React.FC<{ x: number; y: number; r: number; age: number; t: num
   );
 };
 
-const Impact33: React.FC<{ f: number; style: "baseline" | "B" | "B-fixed" }> = ({ f, style }) => {
+const Impact33: React.FC<{ f: number; style: "baseline" | "B" | "B-fixed" | "B-smoke" }> = ({ f, style }) => {
+  const smoke = style === "B-smoke";
   if (style === "baseline") return <Impact f={f} palette="color" />;
   const shot = shotById("3.3");
   const t = f - shot.from;
@@ -129,7 +198,7 @@ const Impact33: React.FC<{ f: number; style: "baseline" | "B" | "B-fixed" }> = (
     <AbsoluteFill>
       {/* hide the kit fireball (the group holding a gradient whose id starts with "ball") and its stroke smoke */}
       <style>
-        {".hide-kit-ball g:has(> defs > radialGradient[id^='ball']), .hide-kit-ball path[fill='#4d4643'], .hide-kit-ball path[stroke='#a8826a'] { display: none; }"}
+        {".hide-kit-ball g:has(> defs > radialGradient[id^='ball']), .hide-kit-ball path[fill='#4d4643'], .hide-kit-ball path[stroke='#a8826a']" + (smoke ? ", .hide-kit-ball text" : "") + " { display: none; }"}
       </style>
       <AbsoluteFill className="hide-kit-ball">
         <Impact f={f} palette="color" />
@@ -138,11 +207,19 @@ const Impact33: React.FC<{ f: number; style: "baseline" | "B" | "B-fixed" }> = (
         <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
           <g transform={`translate(${960 + dx} ${540 + dy}) scale(${push}) translate(-960 -540)`}>
             {/* ART-20: bubble smoke in place of the kit's ink-stroke smoke, behind the fireball */}
-            <g transform={`translate(${breakAt.x} ${breakAt.y - ppm * 0.6})`}>
-              <BubbleSmoke w={ppm * 2.4} top={ppm * 1.4} rise={ppm * 3.2} t={ts / FPS} seed={33} />
-            </g>
-            <FireballB x={breakAt.x} y={breakAt.y} r={ppm * 2.5} age={ts - BALL_AT} t={ts / FPS} fixed={style === "B-fixed"} />
+            {smoke ? null : (
+              <g transform={`translate(${breakAt.x} ${breakAt.y - ppm * 0.6})`}>
+                <BubbleSmoke w={ppm * 2.4} top={ppm * 1.4} rise={ppm * 3.2} t={ts / FPS} seed={33} />
+              </g>
+            )}
+            <FireballB x={breakAt.x} y={breakAt.y} r={ppm * 2.5} age={ts - BALL_AT} t={ts / FPS} fixed={style === "B-fixed"} smoke={smoke} />
           </g>
+          {/* B-smoke: the 67G redrawn over the fireball (Impact's own copy is hidden), exactly as Impact.tsx draws it */}
+          {smoke ? (
+            <text x={1330} y={250} fontFamily={BRUSH_FONT} fontSize={220} fill={INK} stroke={PAPER} strokeWidth={18} paintOrder="stroke" transform="rotate(-8 1330 250)">
+              {`${FACTS.impactG}G`}
+            </text>
+          ) : null}
         </svg>
       </AbsoluteFill>
     </AbsoluteFill>
@@ -282,13 +359,26 @@ const EscapeB: React.FC<{ f: number }> = ({ f }) => {
 };
 
 // ── compositions ──────────────────────────────────────────────────────────────────────────────
-export type StressCase = "33-baseline" | "33-B" | "33-B-fixed" | "35-baseline" | "35-B" | "35-B-fixed" | "36-baseline" | "36-B";
+export type StressCase = "33-baseline" | "33-B" | "33-B-fixed" | "33-B-smoke" | "35-baseline" | "35-B" | "35-B-fixed" | "36-baseline" | "36-B";
+
+// The brush font's Chinese subset comes in unicode-range chunks; the chunk with "67G" / "28" is only fetched once the
+// text is laid out, so a still could catch the fallback. Load those glyphs explicitly before rendering.
+const useBrushGlyphs = () => {
+  const [handle] = useState(() => delayRender("brush glyphs"));
+  useEffect(() => {
+    Promise.all([document.fonts.load(`220px ${BRUSH_FONT}`, "67G 28 秒"), document.fonts.ready]).then(
+      () => continueRender(handle),
+      () => continueRender(handle),
+    );
+  }, [handle]);
+};
 
 export const FireStressStill: React.FC<{ which: StressCase }> = ({ which }) => {
+  useBrushGlyphs();
   const [shot, style] = [which.slice(0, 2), which.slice(3)];
   return (
     <AbsoluteFill style={{ backgroundColor: INK }}>
-      {shot === "33" ? <Impact33 f={F33} style={style as "baseline" | "B" | "B-fixed"} /> : null}
+      {shot === "33" ? <Impact33 f={F33} style={style as "baseline" | "B" | "B-fixed" | "B-smoke"} /> : null}
       {shot === "35" ? <Panel35 f={F35} style={style as "baseline" | "B" | "B-fixed"} /> : null}
       {shot === "36" ? style === "B" ? <EscapeB f={F36} /> : <Escape f={F36} palette="color" /> : null}
     </AbsoluteFill>
@@ -296,6 +386,7 @@ export const FireStressStill: React.FC<{ which: StressCase }> = ({ which }) => {
 };
 
 export const FireStressClip36: React.FC = () => {
+  useBrushGlyphs();
   const frame = useCurrentFrame();
   const f = CLIP36_FROM + frame;
   return (

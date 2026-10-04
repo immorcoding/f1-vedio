@@ -465,6 +465,9 @@ export type FireArgs = {
   rimmed?: boolean;
   // B only: cap the softness in screen px (close-ups and panels), so big flames don't go out of focus
   crisp?: boolean;
+  // B: where the fire's base sits on screen. The filter regions are clipped to the frame: a region much bigger than
+  // the frame makes the browser rasterise the filter at reduced resolution (a zoomed-in fire went soft and smeared).
+  at?: { x: number; y: number };
 };
 
 // A. Manga ink flames: few big tongues with hooked, curling tips, one bold ink silhouette round the whole fire, flat
@@ -522,22 +525,36 @@ const FireA: React.FC<FireArgs> = ({ w, h, f, seed, intensity, n, glow = true, s
   );
 };
 
+// B's softness in screen px: blur of the core band (outer bands are multiples), displacement, noise frequency.
+export const B_BLUR_PX = 2.5;
+export const B_DISP_PX = 36;
+const B_NOISE_FREQ = "0.0036 0.0032";
+
 // B. Flowing shapes: no outlines. More, narrower tongues in soft-edged translucent layers, their edges licked by a
 // turbulence field that scrolls upward with the flame (feTurbulence + feDisplacementMap), a strong blurred glow, wisps
 // that blur away as they rise, glowing embers.
-const FireB: React.FC<FireArgs> = ({ w, h, f, seed, intensity, n, glow = true, smoke = true, embers = 10, rimmed = false, crisp = false }) => {
+const FireB: React.FC<FireArgs> = ({ w, h, f, seed, intensity, n, glow = true, smoke = true, embers = 10, rimmed = false, crisp = false, at }) => {
   const id = `fb${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const t = f / FPS;
   const fl: Flow = { t, rise: 1.5, wave: 1.8, sway: 0.55, curl: 0, taper: 1.3, ripple: 0.18 };
   const tg = makeTongues(Math.round(n * 1.2), w, h, seed, intensity).map((x) => ({ ...x, W: x.W * 1.15 }));
   const ws = wisps(tg, fl, 1.3);
   const scroll = -t * h * 0.55;
-  const blur = Math.max(2, h * 0.006);
-  const disp = crisp ? Math.min(26, Math.max(10, h * 0.05)) : Math.max(10, h * 0.05);
+  // Softness and licking are constant in SCREEN pixels (not scaled with the fire's size on screen), so a fire zoomed
+  // into a panel has the same edges as the fire in a wide shot.
+  const blur = B_BLUR_PX;
+  const disp = crisp ? Math.min(26, B_DISP_PX) : B_DISP_PX;
+  // the filter region in the fire's own coordinates: its reach, cut to the frame (plus a margin)
+  const M = 60;
+  const rx0 = Math.max(-w * 1.5, at ? -at.x - M : -Infinity);
+  const rx1 = Math.min(w * 1.5, at ? 1920 - at.x + M : Infinity);
+  const ry0 = Math.max(-h * 2.2, at ? -at.y - M : -Infinity);
+  const ry1 = Math.min(h * 0.4, at ? 1080 - at.y + M : Infinity);
+  const region = { x: rx0, y: ry0, width: Math.max(1, rx1 - rx0), height: Math.max(1, ry1 - ry0) };
   const layer = (k: number, wf: number, fill: string, op: number, b: number, key: string) => (
     <g key={key} filter={`url(#${id}-b${key})`} opacity={op}>
       <defs>
-        <filter id={`${id}-b${key}`} x="-30%" y="-30%" width="160%" height="160%">
+        <filter id={`${id}-b${key}`} {...region} filterUnits="userSpaceOnUse">
           <feGaussianBlur stdDeviation={b} />
         </filter>
       </defs>
@@ -553,11 +570,11 @@ const FireB: React.FC<FireArgs> = ({ w, h, f, seed, intensity, n, glow = true, s
         <BubbleSmoke w={w} top={h * intensity * 0.85} t={t} seed={seed} rise={h * 1.4} />
       ) : null}
       <defs>
-        <filter id={`${id}-d`} x={-w * 1.5} y={-h * 2.2 - scroll} width={w * 3} height={h * 2.6} filterUnits="userSpaceOnUse">
-          <feTurbulence type="fractalNoise" baseFrequency={`${(2.2 / w).toFixed(5)} ${(3.2 / h).toFixed(5)}`} numOctaves={2} seed={seed} result="n" />
+        <filter id={`${id}-d`} {...region} y={region.y - scroll} filterUnits="userSpaceOnUse">
+          <feTurbulence type="fractalNoise" baseFrequency={B_NOISE_FREQ} numOctaves={2} seed={seed} result="n" />
           <feDisplacementMap in="SourceGraphic" in2="n" scale={disp} xChannelSelector="R" yChannelSelector="G" />
         </filter>
-        <filter id={`${id}-w`} x="-50%" y="-50%" width="200%" height="200%">
+        <filter id={`${id}-w`} {...region} filterUnits="userSpaceOnUse">
           <feGaussianBlur stdDeviation={blur * 1.6} />
         </filter>
       </defs>
@@ -801,7 +818,7 @@ export const WreckWorldB: React.FC<{
         <NightBackdrop cam={cam} tonePrefix={tonePrefix} />
       </Shimmer>
       <g transform={`translate(${back.x} ${back.y})`}>
-        <Fire w={back.w} h={back.h} f={f} seed={1} intensity={intensity} n={5} embers={14} glow={!noGlow} rimmed={rimmed} crisp={crisp} />
+        <Fire at={back} w={back.w} h={back.h} f={f} seed={1} intensity={intensity} n={5} embers={14} glow={!noGlow} rimmed={rimmed} crisp={crisp} />
       </g>
       <MangaCar car={VF20} facing="left" at={cellAt} state={{ split: { front: CELL_POSE, show: "front" }, driver }} />
       {behindRails}
@@ -810,10 +827,10 @@ export const WreckWorldB: React.FC<{
         <FireLight cx={back.x} cy={railY} rx={back.w * 1.6} ry={cam.pxPerMetre(BARRIER_Z) * 2.2} t={t} amount={intensity} />
       )}
       <g transform={`translate(${front.x} ${front.y})`}>
-        <Fire w={front.w} h={front.h} f={f + 7} seed={2} intensity={intensity} n={6} glow={false} smoke={false} embers={6} rimmed={rimmed} crisp={crisp} />
+        <Fire at={front} w={front.w} h={front.h} f={f + 7} seed={2} intensity={intensity} n={6} glow={false} smoke={false} embers={6} rimmed={rimmed} crisp={crisp} />
       </g>
       <g transform={`translate(${gap.x} ${gap.y})`}>
-        <Fire w={gap.w} h={gap.h} f={f + 13} seed={3} intensity={intensity * 0.9} n={3} glow={false} smoke={false} embers={4} rimmed={rimmed} crisp={crisp} />
+        <Fire at={gap} w={gap.w} h={gap.h} f={f + 13} seed={3} intensity={intensity * 0.9} n={3} glow={false} smoke={false} embers={4} rimmed={rimmed} crisp={crisp} />
       </g>
       <MangaCar car={VF20} facing="left" at={rearAt} state={{ split: { rear: REAR_POSE, show: "rear" }, compound: VF20.compound }} />
       {[
