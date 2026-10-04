@@ -18,6 +18,7 @@ import { ToneDefs } from "../../../kit/tone";
 import { at, frameAt } from "../../timing.ts";
 import { cueFrame, ramp, shotById, type PictureProps } from "./common";
 import {
+  Flip,
   HALO_WORLD,
   HaloScorch,
   Vignette,
@@ -32,12 +33,22 @@ const HALO_ON_SCREEN = { x: 960, y: 390 };
 const TAGLINE_Y = 935;
 const TAGLINE_SIZE = 60;
 
+// The finale's camera at song frame f: the wreck camera closing slowly on the halo.
+export const finaleCam = (f: number) => {
+  const u = ramp(
+    f,
+    cueFrame("bahrain2020.halo"),
+    cueFrame("bahrain2020.black"),
+    (x) => x,
+  );
+  return zoomCam(WRECK_CAM, HALO_WORLD, 2.4 + 0.28 * u, HALO_ON_SCREEN);
+};
+
 export const HaloFinale: React.FC<PictureProps> = ({ f, palette }) => {
   const from = cueFrame("bahrain2020.halo");
   const to = cueFrame("bahrain2020.black");
   const t = f - from;
-  const u = ramp(f, from, to, (x) => x);
-  const cam = zoomCam(WRECK_CAM, HALO_WORLD, 2.4 + 0.28 * u, HALO_ON_SCREEN);
+  const cam = finaleCam(f);
   const halo = cam.project(HALO_WORLD);
   const ppm = cam.pxPerMetre(HALO_WORLD.z);
   // the heart stops after its last beat on 73.1
@@ -60,33 +71,35 @@ export const HaloFinale: React.FC<PictureProps> = ({ f, palette }) => {
           <stop offset="100%" stopColor={INK} stopOpacity={0.92} />
         </linearGradient>
       </defs>
-      <WreckWorld
-        cam={cam}
-        f={f}
-        fireSeed="halo"
-        palette={palette}
-        intensity={0.12}
-        noGlow
-        driver={false}
-        tonePrefix="b3h"
-        shimmer={6}
-        burntOut
-      />
-      <HaloScorch cam={cam} f={f} />
-      <g transform={`translate(${halo.x} ${halo.y - 0.1 * ppm})`}>
-        <BubbleSmoke
-          w={1.6 * ppm}
-          top={0}
-          frame={f}
-          seed="halo-smoke"
-          palette={FIRE_PALETTES[palette]}
-          rise={1.4 * ppm}
-          count={5}
-          size={0.5}
-          warm={false}
-          opacity={0.7}
+      <Flip>
+        <WreckWorld
+          cam={cam}
+          f={f}
+          fireSeed="halo"
+          palette={palette}
+          intensity={0.12}
+          noGlow
+          driver={false}
+          tonePrefix="b3h"
+          shimmer={6}
+          burntOut
         />
-      </g>
+        <HaloScorch cam={cam} f={f} />
+        <g transform={`translate(${halo.x} ${halo.y - 0.1 * ppm})`}>
+          <BubbleSmoke
+            w={1.6 * ppm}
+            top={0}
+            frame={f}
+            seed="halo-smoke"
+            palette={FIRE_PALETTES[palette]}
+            rise={1.4 * ppm}
+            count={5}
+            size={0.5}
+            warm={false}
+            opacity={0.7}
+          />
+        </g>
+      </Flip>
       {/* the lower third: dark ground under the embers, where the tagline stands */}
       <rect y={800} width={1920} height={280} fill="url(#b3h-ground)" />
       {/* it lands on the beat: a cut in from black */}

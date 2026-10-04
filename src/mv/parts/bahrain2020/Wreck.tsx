@@ -30,7 +30,6 @@ import {
   RearShadowFilter,
 } from "./scorch";
 import {
-  BARRIER_Z,
   CELL_ANCHOR_X,
   CELL_FROM,
   CELL_PIVOT,
@@ -38,6 +37,7 @@ import {
   CELL_TO,
   CELL_Z,
   COCKPIT_CLIP_PHOTO,
+  FIRES,
   NEAR_BAR_CLIP_PHOTO,
   PPM,
   WRECK_GAPS,
@@ -49,12 +49,21 @@ import {
   REAR_SPAN,
   REAR_Z,
   WRECK_CAM_SPEC,
+  along,
 } from "./wreck-geometry.ts";
 
 export { HALO_WORLD };
 
-// Camera of shot 3.4: 1 m up at the track edge, long lens, looking square at the barrier 13 m away.
+// Camera of shot 3.4 (wreck-geometry.ts): on the track side, square to the cell's left flank, 3.2 m up. Its picture
+// is flipped left to right on screen (`Flip`), so the cell's nose points right, the way the car ran in 3.2 and 3.3.
 export const WRECK_CAM = pinhole(WRECK_CAM_SPEC);
+
+// The manga flip: the trackside camera's picture mirrored about the vertical line through `cx` (the frame's or the
+// panel's centre). Everything of the wreck's world goes inside it; lettering stays outside.
+export const Flip: React.FC<{ cx?: number; children: React.ReactNode }> = ({
+  cx = 960,
+  children,
+}) => <g transform={`translate(${2 * cx} 0) scale(-1 1)`}>{children}</g>;
 
 // A copy of a camera zoomed by `zoom` about a world point, which lands on `to` on screen.
 export const zoomCam = (
@@ -75,7 +84,7 @@ export const zoomCam = (
 // The hot zone over the wreck for the heat haze (haze.tsx), on screen: from the cell's nose to past the torn-off rear,
 // from the ground in front of the rear piece up to the top of the fire behind the cell.
 export const heatZone = (cam: Camera, intensity = 1): ScreenRect => {
-  const left = cam.project({ x: CELL_FROM - 0.8, y: 0, z: BARRIER_Z }).x;
+  const left = cam.project({ x: CELL_FROM - 0.8, y: 0, z: CELL_Z }).x;
   const right = cam.project({ x: REAR_SPAN.to + 1.0, y: 0, z: REAR_Z }).x;
   const base = cam.project({ x: CELL_FROM + 2.2, y: 0, z: CELL_Z + 0.5 });
   const top =
@@ -175,9 +184,14 @@ export const WreckWorld: React.FC<{
     const ppm = cam.pxPerMetre(z);
     return { x: base.x, y: base.y, w: w * ppm, h: h * ppm };
   };
-  const back = fireAt(CELL_FROM + 2.2, CELL_Z + 0.5, 4.2, 7.5);
-  const front = fireAt(CELL_FROM + 2.4, BARRIER_Z - 0.3, 4.6, 1.6 * frontFire);
-  const gapFire = fireAt(CELL_TO + 1.0, (CELL_Z + REAR_Z) / 2, 2.0, 3.4);
+  const back = fireAt(FIRES.back.x, FIRES.back.z, FIRES.back.w, FIRES.back.h);
+  const front = fireAt(
+    FIRES.front.x,
+    FIRES.front.z,
+    FIRES.front.w,
+    FIRES.front.h * frontFire,
+  );
+  const gapFire = fireAt(FIRES.gap.x, FIRES.gap.z, FIRES.gap.w, FIRES.gap.h);
   const cellAt = cam.anchor({ x: CELL_ANCHOR_X, z: CELL_Z });
   const cellState = {
     split: { front: CELL_POSE, show: "front" as const },
@@ -262,15 +276,15 @@ export const WreckWorld: React.FC<{
           <RailShadeFilter id={railShade} />
         </defs>
       ) : null}
-      {/* the rails' stubs either side of the gap (middle and top rails, and the posts) */}
+      {/* the barrier up the run, behind the cell's tail, to its torn ends at the gap */}
       <g filter={burntOut ? `url(#${railShade})` : undefined}>
         <BentGuardrail
           cam={cam}
           a={RUN.a}
           b={RUN.b}
+          to={along(0)}
           gaps={WRECK_GAPS}
           deflect={WRECK_BEND}
-          rails={[1, 2]}
           tonePrefix={tonePrefix}
         />
       </g>
@@ -289,16 +303,15 @@ export const WreckWorld: React.FC<{
       ) : (
         <MangaCar car={VF20} facing="left" at={cellAt} state={cellState} />
       )}
-      {/* only the bottom rail's stubs, curled toward the track, come in front of the cell */}
+      {/* the barrier on down the run from the gap, toward the camera in front of the nose (the cell went through it) */}
       <g filter={burntOut ? `url(#${railShade})` : undefined}>
         <BentGuardrail
           cam={cam}
           a={RUN.a}
           b={RUN.b}
+          from={along(0)}
           gaps={WRECK_GAPS}
           deflect={WRECK_BEND}
-          rails={[0]}
-          posts={false}
           tonePrefix={tonePrefix}
         />
       </g>
@@ -306,9 +319,9 @@ export const WreckWorld: React.FC<{
       {noGlow ? null : (
         <FireLight
           cx={back.x}
-          cy={cam.screenY(0.6, BARRIER_Z)}
+          cy={cam.screenY(0.6, CELL_Z - 1)}
           rx={back.w * 1.6}
-          ry={cam.pxPerMetre(BARRIER_Z) * 2.2}
+          ry={cam.pxPerMetre(CELL_Z - 1) * 2.2}
           frame={f}
           palette={p}
           amount={intensity}
@@ -375,15 +388,15 @@ export const WreckWorld: React.FC<{
           clip={clip}
         />
       )}
-      {/* the torn-off rear, pushed back (user review 2026-10-04): scorched and in shadow, a muted grey-brown
-          silhouette with a faint rim of firelight on the side facing the fire */}
+      {/* the torn-off rear on the track side, turned end for end (wreck-geometry.ts REAR_REST): scorched and in
+          shadow, a muted grey-brown silhouette with a faint rim of firelight on the side facing the fire */}
       <defs>
         <RearShadowFilter id={rearShade} rim={p.glow ? p.smokeRim : null} />
       </defs>
       <g filter={`url(#${rearShade})`}>
         <MangaCar
           car={VF20}
-          facing="left"
+          facing="right"
           at={rearAt}
           state={{
             split: { rear: REAR_POSE, show: "rear" },
@@ -394,9 +407,9 @@ export const WreckWorld: React.FC<{
       {/* debris on the asphalt: three small, dark, low-contrast scraps lying flat, drawn under the smoke drifting off
           the gap fire so they sink into it — scattered wreckage, not graphic shapes (user review 2026-10-04) */}
       {[
-        [CELL_TO + 1.6, 11.7, 0.2],
-        [CELL_TO + 2.9, 12.2, 0.12],
-        [REAR_ANCHOR_X - 3.3, 9.8, 0.16],
+        [CELL_TO + 0.9, CELL_Z - 1.3, 0.2],
+        [CELL_TO - 0.4, CELL_Z - 0.8, 0.12],
+        [REAR_SPAN.to + 0.6, REAR_Z - 0.6, 0.16],
       ].map(([x, z, s]) => {
         const c = cam.project({ x, y: 0, z });
         const k = cam.pxPerMetre(z) * s;
@@ -475,25 +488,30 @@ export const Vignette: React.FC<{ amount: number }> = ({ amount }) => (
   </>
 );
 
+// Shot 3.4's camera at song frame f: it never rests — a slow dolly from the whole wreck (torn rear in front) in to the
+// cell in the barrier, drifting along the rails, with a small kick on each heartbeat.
+export const wreckShotCam = (f: number) => {
+  const shot = shotById("3.4");
+  const u = ramp(f - shot.from, 0, shot.to - shot.from, (x) => x * x * (3 - 2 * x));
+  // (in the camera's own, unflipped picture: the screen is flipped, so the rear piece starts at the left edge)
+  const start = { x: REAR_ANCHOR_X + 0.9, y: 0.9, z: REAR_Z };
+  const target = {
+    x: HALO_WORLD.x + (start.x - HALO_WORLD.x) * (1 - u),
+    y: start.y * (1 - u) + HALO_WORLD.y * u,
+    z: start.z + (HALO_WORLD.z - start.z) * u,
+  };
+  return zoomCam(WRECK_CAM, target, 0.82 + 0.45 * u + 0.01 * heartbeat(f), {
+    x: 960 + 420 * (1 - u), // the rear piece starts at the edge, half out of frame (user review 2026-10-04)
+    y: 560,
+  });
+};
+
 // Shot 3.4 (bars 62–65): the wreck, the fire rising over the first bar, the frame breathing with the heartbeat.
 export const WreckShot: React.FC<PictureProps> = ({ f, palette }) => {
   const shot = shotById("3.4");
   const t = f - shot.from;
-  const len = shot.to - shot.from;
   const intensity = 0.25 + 0.75 * ramp(t, 0, 112);
-  const hb = heartbeat(f);
-  // the camera never rests: a slow dolly from the whole wreck (torn rear in front) in to the cell in the barrier,
-  // drifting along the rails, with a small kick on each heartbeat
-  const u = ramp(t, 0, len, (x) => x * x * (3 - 2 * x));
-  const target = {
-    x: HALO_WORLD.x + (REAR_ANCHOR_X - 1.5 - HALO_WORLD.x) * (1 - u),
-    y: 0.9 * (1 - u) + HALO_WORLD.y * u,
-    z: REAR_Z + (HALO_WORLD.z - REAR_Z) * u,
-  };
-  const cam = zoomCam(WRECK_CAM, target, 0.82 + 0.45 * u + 0.01 * hb, {
-    x: 960 + 420 * (1 - u), // the rear piece starts at the right edge, half out of frame (user review 2026-10-04)
-    y: 560,
-  });
+  const cam = wreckShotCam(f);
   // once, round 64.1 (halfway in, the rear piece on screen at the right): the smoke over the torn-off rear parts for
   // a moment, so it reads that the car is in two (review 1, #20); the rear stays the dark, muted silhouette (ART-23)
   const veilOpen =
@@ -504,17 +522,19 @@ export const WreckShot: React.FC<PictureProps> = ({ f, palette }) => {
       <defs>
         <ToneDefs prefix="b34" />
       </defs>
-      <Haze frame={f} zone={heatZone(cam, intensity)}>
-        <WreckWorld
-          cam={cam}
-          f={f}
-          palette={palette}
-          intensity={intensity}
-          tonePrefix="b34"
-          veilOpen={veilOpen}
-        />
-      </Haze>
-      <Vignette amount={0.5 + 0.35 * hb} />
+      <Flip>
+        <Haze frame={f} zone={heatZone(cam, intensity)}>
+          <WreckWorld
+            cam={cam}
+            f={f}
+            palette={palette}
+            intensity={intensity}
+            tonePrefix="b34"
+            veilOpen={veilOpen}
+          />
+        </Haze>
+      </Flip>
+      <Vignette amount={0.5 + 0.35 * heartbeat(f)} />
     </svg>
   );
 };

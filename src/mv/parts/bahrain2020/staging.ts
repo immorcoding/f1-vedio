@@ -35,9 +35,11 @@ const S32 = shot("3.2");
 const TOUCH = cue("bahrain2020.contact");
 // real time, with a slow-motion stretch round the touch (crash-geometry.ts)
 export const CLOCK_32 = crashClock(S32.to - S32.from, TOUCH - S32.from);
+// (the corner reaches the rails on the cut: the shot's length in real-time frames)
 export const PLAN_32 = planCrash(
   CLOCK_32.simFrames,
   Math.round(CLOCK_32.simContact),
+  CLOCK_32.sim(S32.to - S32.from),
 );
 // the touch as the picture shows it: the rubbing lasts ~0.25 s of real time, stretched by the slow motion
 const RUB = {
