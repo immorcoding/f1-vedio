@@ -373,7 +373,8 @@ export const STR3: CarSpec = {
     y: 517,
     size: 46,
     color: "#e3242b",
-    angle: -4,
+    // painted to be read from the car's other side: seen from this side it is upside down
+    angle: 176,
     squash: 0.6,
   },
   tyreGrooves: 4,
