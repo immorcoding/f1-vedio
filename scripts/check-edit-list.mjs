@@ -6,8 +6,10 @@
 //   produced by the one rounding rule in src/mv/timing.ts
 // - cues sit inside their shot (the cut itself allowed); ids are unique
 // - every music hit owned by a cut part has a cue with its id at its position (stub parts skip this)
+// - every SFX cue (src/mv/sfx.ts) sits on beats inside the shot it names, and that shot has cars on screen
 import * as T from "../src/mv/timing.ts";
 import { PARTS } from "../src/mv/edit-list.ts";
+import { SFX } from "../src/mv/sfx.ts";
 
 const problems = [];
 const problem = (where, msg) => problems.push(`${where}: ${msg}`);
@@ -107,6 +109,30 @@ for (const [id, at] of Object.entries(T.HITS)) {
     );
 }
 
+// SFX cues (src/mv/sfx.ts): on the grid, inside the shot they name, and that shot shows cars (not a title card or
+// black); ids unique. An engine must never play over a shot without cars.
+const sfxIds = new Set();
+for (const c of SFX) {
+  const where = `sfx ${c.id}`;
+  if (sfxIds.has(c.id)) problem(where, "duplicate id");
+  sfxIds.add(c.id);
+  if (!T.isOnGrid(c.from) || !T.isOnGrid(c.to))
+    problem(where, `${L(c.from)}–${L(c.to)} is not on beats`);
+  if (B(c.to) <= B(c.from)) problem(where, "ends before it starts");
+  const shot = PARTS.flatMap((p) => p.edit.shots).find((s) => s.id === c.shot);
+  if (!shot) {
+    problem(where, `names no shot ${c.shot}`);
+    continue;
+  }
+  if (B(c.from) < B(shot.from) || B(c.to) > B(shot.to))
+    problem(
+      where,
+      `${L(c.from)}–${L(c.to)} runs outside shot ${shot.id} (${L(shot.from)}–${L(shot.to)})`,
+    );
+  if (shot.view === "title" || shot.view === "black")
+    problem(where, `shot ${shot.id} is a ${shot.view} view, no cars on screen`);
+}
+
 // report
 for (const part of PARTS) {
   const frames = `${T.frameAt(part.from)}–${T.frameAt(part.to)}`;
@@ -124,6 +150,10 @@ for (const part of PARTS) {
       );
   }
 }
+for (const c of SFX)
+  console.log(
+    `sfx   ${c.id.padEnd(22)} ${L(c.from).padStart(5)}–${L(c.to).padEnd(5)} frames ${T.frameAt(c.from)}–${T.frameAt(c.to)}  shot ${c.shot}  ${c.end}  ${c.cars.map((x) => `${x.who} ${x.era}`).join(", ")}`,
+  );
 const total = T.frameAt(PARTS.at(-1).to) - T.frameAt(PARTS[0].from);
 console.log(
   `Picture: ${T.BARS} bars, ${total} frames (${(total / T.FPS).toFixed(3)} s); ${shotIds.size} shots, ${cueIds.size} cues`,

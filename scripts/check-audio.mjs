@@ -3,7 +3,9 @@
 // - peak: nothing above −1 dBFS, sample or true (inter-sample) peak; loudness: integrated −14 LUFS ± 1 (ffmpeg loudnorm, BS.1770)
 // - beat map: public/music/beat-map.json equals the one rebuilt from src/mv/timing.ts
 // - hits: every hit in the beat map is an audible attack in the audio, on its sample
-// - determinism: two fresh builds are byte-identical, and identical to public/music/mv.wav
+// - determinism: two fresh builds are byte-identical, and identical to public/music/mv.wav; so are their SFX stems
+// - SFX (src/mv/sfx.ts): in every bar with engines they sit ≥ 6 dB (RMS) under the music; "cut" cues are silent
+//   from their end beat (Bahrain's 61.1)
 import { execFileSync, spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -26,6 +28,7 @@ const FFMPEG = path.join(
 const PEAK_MAX_DB = -1;
 const LUFS_RANGE = [-15, -13];
 const HIT_RISE_DB = 6; // the 25 ms after a hit must be this much louder than the 60 ms before it
+const SFX_UNDER_DB = 6; // engines at least this far under the music, per bar (RMS), wherever they play
 const quick = process.argv.includes("--quick");
 
 let failures = 0;
@@ -172,6 +175,9 @@ for (const s of map.sections)
 if (!quick) {
   const hash = (file) =>
     crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+  // both builds also write the SFX stem and its report (make-music --stems)
+  let sfxReport = null;
+  let sfxStem = null;
   const builds = [1, 2].map((k) => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), `mv-music-${k}-`));
     execFileSync(
@@ -180,21 +186,80 @@ if (!quick) {
         "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
         path.join(ROOT, "scripts", "make-music.mjs"),
         dir,
+        "--stems",
       ],
       { stdio: "ignore" },
     );
     const h = hash(path.join(dir, "mv.wav"));
+    const hs = hash(path.join(dir, "sfx.wav"));
+    if (k === 1) {
+      sfxReport = JSON.parse(
+        fs.readFileSync(path.join(dir, "sfx-report.json"), "utf8"),
+      );
+      sfxStem = readWav(path.join(dir, "sfx.wav"));
+    }
     fs.rmSync(dir, { recursive: true, force: true });
-    return h;
+    return { h, hs };
   });
   const current = hash(WAV);
   report(
-    builds[0] === builds[1] && builds[0] === current,
+    builds[0].h === builds[1].h && builds[0].h === current,
     "deterministic",
-    `build 1 ${builds[0].slice(0, 12)}, build 2 ${builds[1].slice(0, 12)}, public ${current.slice(0, 12)}`,
+    `build 1 ${builds[0].h.slice(0, 12)}, build 2 ${builds[1].h.slice(0, 12)}, public ${current.slice(0, 12)}`,
+  );
+  report(
+    builds[0].hs === builds[1].hs,
+    "SFX deterministic",
+    `engine stem build 1 ${builds[0].hs.slice(0, 12)}, build 2 ${builds[1].hs.slice(0, 12)}`,
+  );
+
+  // the engines sit under the music in every bar they play (AUD: the music is the skeleton)
+  const loud = sfxReport.bars.filter(
+    (b) => b.sfx !== null && b.music - b.sfx < SFX_UNDER_DB,
+  );
+  const played = sfxReport.bars.filter((b) => b.sfx !== null);
+  const margin = Math.min(...played.map((b) => b.music - b.sfx));
+  report(
+    !loud.length,
+    "engines under the music",
+    loud.length
+      ? loud
+          .map(
+            (b) => `bar ${b.bar} only ${(b.music - b.sfx).toFixed(1)} dB under`,
+          )
+          .join("; ")
+      : `${sfxReport.cues.length} cues over ${played.length} bars, every bar ≥ ${SFX_UNDER_DB} dB under the music (closest ${margin.toFixed(1)} dB)`,
+  );
+
+  // engines that stop on a cut are silent from that beat (Bahrain's 61.1 goes with the music's stop)
+  const [sl, sr] = sfxStem.samples;
+  const leaks = [];
+  const silent = [];
+  for (const c of sfxReport.cues.filter((x) => x.end === "cut")) {
+    const n0 = Math.round(c.to.seconds * wav.sampleRate);
+    // half a second of silence, or up to the next cue; a cue that hands straight over to the next one (1.2 → 1.3)
+    // has nothing to check
+    const next = Math.min(
+      ...sfxReport.cues
+        .map((x) => Math.round(x.from.seconds * wav.sampleRate))
+        .filter((n) => n >= n0),
+      n0 + wav.sampleRate * 0.5,
+    );
+    if (next === n0) continue;
+    let pk = 0;
+    for (let i = n0; i < Math.min(sl.length, next); i++)
+      pk = Math.max(pk, Math.abs(sl[i]), Math.abs(sr[i]));
+    if (pk > 0)
+      leaks.push(`${c.id} still ${db(pk).toFixed(1)} dBFS after ${c.to.pos}`);
+    else silent.push(`${c.id} silent from ${c.to.pos}`);
+  }
+  report(
+    !leaks.length,
+    "engine cuts",
+    leaks.length ? leaks.join("; ") : silent.join(", "),
   );
 } else {
-  console.log("skip  deterministic (--quick)");
+  console.log("skip  deterministic and SFX checks (--quick)");
 }
 
 console.log(
