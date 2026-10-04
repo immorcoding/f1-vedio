@@ -1,3 +1,4 @@
+import React from "react";
 import { Composition, Folder, Still } from "remotion";
 import { LibraryFolder } from "./library/LibraryFolder";
 import { MV, PartPreview, partPreviewFrames } from "./mv/MV";
@@ -9,6 +10,7 @@ import { StyleB } from "./prototype/styles/StyleB";
 import { StyleC } from "./prototype/styles/StyleC";
 import { TraceCheck } from "./prototype/styles/TraceCheck";
 import { CarSheet2021 } from "./prototype/styles/CarSheet2021";
+import { SHOT_FRAMES, TypeCompare, TypeContext, TypeSheet, type Shot } from "./prototype/TypeSystems";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -32,6 +34,18 @@ export const RemotionRoot: React.FC = () => {
         <Still id="Trace-RB16B" component={TraceCheck} defaultProps={{ car: "RB16B" }} width={1920} height={1080} />
         <Still id="Art-W12" component={TraceCheck} defaultProps={{ car: "W12", mode: "art" as const }} width={1920} height={1080} />
         <Still id="Art-RB16B" component={TraceCheck} defaultProps={{ car: "RB16B", mode: "art" as const }} width={1920} height={1080} />
+        {/* PROTOTYPE — English type systems A–D: contact sheets, in-context frames, comparison. */}
+        {(["A", "B", "C", "D"] as const).map((sys) => (
+          <React.Fragment key={sys}>
+            <Still id={`Type-Sheet-${sys}`} component={TypeSheet} defaultProps={{ sys }} width={1920} height={1080} />
+            {(Object.keys(SHOT_FRAMES) as Shot[]).map((shot) => (
+              <Composition key={shot} id={`Type-${sys}-${shot}`} component={TypeContext} defaultProps={{ sys, shot }} durationInFrames={TOTAL_FRAMES} fps={FPS} width={1920} height={1080} />
+            ))}
+          </React.Fragment>
+        ))}
+        {(Object.keys(SHOT_FRAMES) as Shot[]).map((shot) => (
+          <Composition key={shot} id={`Type-Compare-${shot}`} component={TypeCompare} defaultProps={{ shot }} durationInFrames={TOTAL_FRAMES} fps={FPS} width={1920} height={1080} />
+        ))}
       </Folder>
     </>
   );

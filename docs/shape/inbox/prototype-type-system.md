@@ -1,0 +1,3 @@
+# Shape inbox: prototype/type-system
+
+- 2026-10-04 · STO-5 (provisional) and ART-6 (exploring) · broken by user direction: all on-screen text becomes English (racing culture is European), no Chinese; the brush-calligraphy (Ma Shan Zheng) and ZCOOL KuaiLe faces are to be replaced by motorsport-fitting Google Fonts. Throwaway prototype `src/prototype/TypeSystems.tsx` compares four type systems (A broadcast, B vintage poster, C manga comic, D hybrid). Proposed: once the user picks a system, rewrite STO-5 ("画面文字只用少量英文…") and ART-6 (font per role: title / label / SFX / stamp) through `shape-your-project` on main, and swap `src/kit/lettering.tsx` fonts plus every part's `text` strings (see the translation table in the prototype report).
