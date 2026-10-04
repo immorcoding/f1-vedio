@@ -1,0 +1,7 @@
+# Shape inbox: feat/mv-outro-calm
+
+## Signals
+
+- 2026-10-04 · motion-and-timing · user correction via the lead: the outro "rushed the beat" (抢节奏). The score winds down from outro bar 5 (the kick stops after bar 4, the layers leave, the intro pad returns) while the previous pass made the picture more energetic there: 3-frame whips, the flag barging in over the 33→1 panel, a full-frame flag churning with a pump on every beat. The rule this suggests (proposal for MOT): the picture's energy follows the score's arrangement, so when the music thins out the cuts get softer and the motion slows; accents stay only on sounds that are actually there (here the two pings).
+- 2026-10-04 · motion-and-timing · what changed: panel 1 keeps its slam onto 5.8 (the music is still full); 2008 is a hard cut, 2020 and 2021 a 5-frame paper dissolve; push-ins and beat-3 accents kept. The 33→1 panel holds its whole bar. The flag enters on 5.1 in one eased sweep (sine in-out) and fills the frame on 6.1, with no beat pump and no speed lines. Its waves start at 55 % of the old flap speed and 75 % of the old height and keep easing down to the end; the sway eases with them. The one accent is the snap on the 5.3 ping. Title (7.1, glint and strip on 7.3) and the eased fade (8.1 to black on the last frame) are unchanged.
+- 2026-10-04 · art-direction · the Bahrain halo finale moved, so the 2020 panel's beat-3 glint had drifted into the cockpit; `HALO_GLINT` is now `{ x: 0.46, y: 0.30 }`, on the halo's front (checked with a still at the glint's peak).

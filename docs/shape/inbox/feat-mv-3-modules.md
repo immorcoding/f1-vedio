@@ -1,0 +1,5 @@
+# Shape inbox: feat/mv-3-modules (#3)
+
+- 2026-10-03 · art-direction · ART-10 decided the check stills: production Trace/Art stills are now `Check-Trace-<car>` / `Check-Art-<car>` in the Studio folder `Library/Checks` (from `src/library/CarCheck.tsx`). ART-10's _Check_ still points at the Prototype folder; update it when the prototype is retired.
+- 2026-10-03 · art-direction · ART-7/ART-9 decided the acceptance test: the production `Cars-2021-Sheet` and `Scene-AbuDhabi2021-T5` stills render pixel-identical (max channel diff 0) to `cars-2021-sheet.png` and `style-b-manga-v2.png`. A pixel diff against the settled references is a cheap regression check for any later change to `src/kit` or `src/cars`.
+- 2026-10-03 · art-direction · Friction: the Trace/Art stills render on a transparent background because the reference photos live in the git-ignored `references/`, which the Remotion bundle cannot serve; laying them over the photo is a separate compositing step. Proposed: decide whether a git-ignored `public/references` junction is acceptable so the stills can show the photo in Studio.
