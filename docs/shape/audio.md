@@ -2,7 +2,7 @@
 
 听到什么：配乐和音效的来源与风格。
 
-Next id: AUD-7
+Next id: AUD-8
 
 ## Pillars
 
@@ -11,7 +11,7 @@ Next id: AUD-7
 
 ## Open questions
 
-- 引擎声、刹车声等音效要不要叠在音乐上，用什么方法合成。
+- 9.1 灭灯切进铃鹿标题卡时，要不要例外放一声整排车起步的引擎轰鸣（标题卡上没有车，AUD-7 现在不放）。
 
 ## score
 
@@ -26,7 +26,16 @@ Next id: AUD-7
 
 ### Rejected
 
+- 阿布扎比重编曲（89 break、90.1 最大冲击、102–103 抽鼓）加乐器化的引擎贝斯：用户 2026-10-04 听后说"音频有点混乱了，干净一些更好，只在原版的基础上加引擎声音就行"，编曲回到 v1。
 - 第 73 小节经 A 大三和弦（D 小调属和弦）转调再进 riser（C#6 ping、贝斯 F1 → A1）：用户 2026-10-04 嫌"太突兀"，被 AUD-6 取代。
+
+## sfx
+
+叠在音乐下面的音效。
+
+### Rules
+
+- **AUD-7** · provisional · 音效（年代引擎声）用代码合成（`scripts/lib/engine.mjs`，每个年代自己的预设：1989/90 Honda V10、1990 Ferrari V12、2008 V8、2020/21 V6 涡轮混动），作为独立的音效轨混在音乐下面、母带之前；挂点写成小节/拍（`src/mv/sfx.ts`），只放在画面上有车的镜头里，比赛停下的那一拍（撞车、骤停）同拍切断；每个有引擎的小节里，引擎至少比音乐低 14 dB（RMS），2.2 雨中闷声低 17 dB。_Why:_ v2 工单 #15；用户 2026-10-04 嫌第一版引擎太响、盖过音乐，整条音效轨降 6 dB。_Check:_ `npm run check:audio`（确定性、至少低 12 dB、切断后为零）、`npm run check:edit`（挂点在有车的镜头里）。
 
 ## master
 
@@ -34,8 +43,8 @@ Next id: AUD-7
 
 ### Rules
 
-- **AUD-4** · provisional · 母带标准：整体响度 −14 LUFS ±1，真峰值不超过 −1 dBTP，由音频检查脚本验证。_Why:_ #4 的 agent 提议，用户 2026-10-03 采纳。_Check:_ `npm run check:audio`。
-- **AUD-5** · provisional · 生成的 WAV（约 40 MB）不进 git，签出后用 `npm run music` 重新生成；节拍表 `beat-map.json` 进 git，固定为 LF 换行。_Why:_ 生成结果可复现，没必要存大文件；#4 的 agent 提议，用户 2026-10-03 采纳。_Check:_ `.gitignore` 与 `.gitattributes`。
+- **AUD-4** · settled · 母带标准：整体响度 −14 LUFS ±1，真峰值不超过 −1 dBTP，由音频检查脚本验证。_Why:_ #4 的 agent 提议，用户 2026-10-03 采纳。_Check:_ `npm run check:audio`。
+- **AUD-5** · settled · 生成的 WAV（约 40 MB）不进 git，签出后用 `npm run music` 重新生成；节拍表 `beat-map.json` 进 git，固定为 LF 换行。_Why:_ 生成结果可复现，没必要存大文件；#4 的 agent 提议，用户 2026-10-03 采纳。_Check:_ `.gitignore` 与 `.gitattributes`。
 
 ### Signals
 

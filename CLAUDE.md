@@ -18,7 +18,7 @@ Area files change only on `main` (the writer branch); on any other branch, write
 - [Story & facts](docs/shape/story-and-facts.md): 3–3.5 分钟手绘 MV，4 个名场面，事实必须核实
 - [Art direction](docs/shape/art-direction.md)（索引，规则在 `art-direction.<title>.md`）: 代码绘制的漫画风，环境黑白、赛车真实涂装
 - [Motion & timing](docs/shape/motion-and-timing.md): 1080p60，俯视加特写的混合视角
-- [Audio](docs/shape/audio.md): 代码合成的电子风 BGM 是 MV 的骨架
+- [Audio](docs/shape/audio.md): 代码合成的电子风 BGM 加年代引擎音效
 
 ## Agent skills
 
