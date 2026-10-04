@@ -113,6 +113,8 @@ export type CarSpec = {
   accents: Accent[];
   haloAccent?: Accent;
   nearWheels: [Wheel, Wheel]; // front, rear
+  // Far-side wheels as traced on the photo (front, rear). The trace photos are shot from above, so the far wheels sit
+  // high there; the renderer draws them lower (drawnFarWheels).
   farWheels: [Wheel, Wheel];
   rimR: number;
   rim: "spoked" | "dark";
@@ -199,6 +201,18 @@ export const CAR_UNITS_PER_METRE = 250;
 // Photo pixels per metre of this car's trace.
 export const photoPxPerMetre = (car: CarSpec) =>
   CAR_UNITS_PER_METRE / car.frame.k;
+
+// Where the far-side wheels are drawn. The reference photos look down on the car, which lifts the far wheels well above
+// the near ones; on the MV's low side-on camera they only peek out just above and behind the near wheels (user review
+// 2026-10-04). So each far wheel keeps its traced x and size, and its height above its near wheel is FAR_WHEEL_LIFT of
+// the traced height, the same proportion on every car. Where a car's nose or body is taller than that, it hides the
+// far wheel, as on a real side-on view.
+export const FAR_WHEEL_LIFT = 0.5;
+export const drawnFarWheels = (car: CarSpec): [Wheel, Wheel] =>
+  car.farWheels.map((w, i) => {
+    const near = car.nearWheels[i];
+    return { ...w, cy: near.cy - (near.cy - w.cy) * FAR_WHEEL_LIFT };
+  }) as [Wheel, Wheel];
 
 // Named points on the car, in metres from the car's origin (rear end, on the ground): x forward, y up.
 export type CarLandmark =
