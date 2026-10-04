@@ -10,7 +10,7 @@ import { INK, PAPER } from "../../../kit/colors";
 import { Pass } from "../brazil2008/Pass";
 import { EDIT as BRAZIL } from "../brazil2008/shots.ts";
 import { PASS_P5_AT } from "../brazil2008/staging.ts";
-import { FPS, at, frameAt } from "../../timing.ts";
+import { FPS, SECONDS_PER_BEAT, at, frameAt } from "../../timing.ts";
 
 /** The flash runs from 89.4 to the frame before the lock-up (90.1). */
 export const MIRROR_FROM = frameAt(at(89, 4));
@@ -21,10 +21,11 @@ export const mirrorShowsNow = (f: number) => {
   const k = f - MIRROR_FROM;
   return k === MIRROR_FRAMES - 3 || k === MIRROR_FRAMES - 2;
 };
-// The memory's own clock (Brazil 2.5's shot seconds): it starts just before HAM's nose draws level with GLO and runs
-// at half speed through the pass.
-const MEMORY_FROM = PASS_P5_AT - 0.25;
-const MEMORY_RATE = 0.5;
+// The memory's own clock (Brazil 2.5's shot seconds): it starts on 2.5's hit (47.1, noses level), two beats before
+// the tags flip (47.3, PASS_P5_AT), and reaches just past the flip at the end of the hold, so HAM visibly draws past
+// GLO and his place tag turns to 5 (2.5 is in 0.3× slow motion, so this plays the pass at about 0.8× race speed).
+const MEMORY_FROM = PASS_P5_AT - 2 * SECONDS_PER_BEAT;
+const MEMORY_RATE = (2 * SECONDS_PER_BEAT + 0.12) / ((MIRROR_FRAMES - 4) / FPS);
 
 const SHOT_25 = BRAZIL.shots.find((s) => s.id === "2.5")!;
 
