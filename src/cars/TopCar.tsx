@@ -8,7 +8,13 @@ import { INK, PAPER } from "../kit/colors";
 import { TonePattern } from "../kit/tone";
 import type { CarState, Tread } from "./MangaCar";
 import { planOf, roundedBox } from "./plan";
-import { carPoint, type CarPlan, type CarSpec } from "./spec";
+import {
+  carPoint,
+  isTopOnly,
+  type CarPlan,
+  type CarSpec,
+  type TopOnlyCar,
+} from "./spec";
 
 const svgId = (raw: string) => `top${raw.replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
@@ -18,7 +24,7 @@ const SUSPENSION_ARM = 0.04;
 // `at` is the middle of the car's rear end on screen; the nose points along state.heading (degrees clockwise from
 // screen right). state.steer turns the front wheels, state.compound sets the tyre band.
 export const TopCar: React.FC<{
-  car: CarSpec;
+  car: CarSpec | TopOnlyCar;
   at: ScreenAnchor;
   state?: CarState;
 }> = ({ car, at, state = {} }) => {
@@ -29,6 +35,7 @@ export const TopCar: React.FC<{
   const band = state.compound ?? car.compound;
   const steer = state.steer ?? 0;
   const { base, stripe } = car.driver.helmet;
+  const flapColor = isTopOnly(car) ? car.flap : car.frontWing.flap.color;
   const h = plan.helmet;
   // ink widths stay constant on screen
   const w = (px: number) => px / ppm;
@@ -134,7 +141,7 @@ export const TopCar: React.FC<{
         strokeLinejoin="round"
       />
       {plan.frontWing.flap ? (
-        <path d={plan.frontWing.flap} fill={car.frontWing.flap.color} />
+        <path d={plan.frontWing.flap} fill={flapColor} />
       ) : null}
       {plan.frontWing.endplates ? (
         <PlanEndplates
@@ -190,6 +197,14 @@ export const TopCar: React.FC<{
         />
       ) : null}
       {plan.airbox ? <path d={plan.airbox} fill={INK} /> : null}
+      {plan.tcam ? (
+        <path
+          d={plan.tcam.d}
+          fill={plan.tcam.color}
+          stroke={INK}
+          strokeWidth={w(1.4)}
+        />
+      ) : null}
       {/* cockpit: opening, helmet from above (shell in the base colour, a stripe, the visor peak) */}
       <path d={plan.cockpit} fill={INK} />
       <circle
@@ -331,17 +346,21 @@ const helmetStripe = (x: number, r: number) => {
 // The `at` that puts the middle of the wheelbase on screen point `centre` for a car heading `heading` degrees: for
 // placing a top-view car by its centre (on a racing line, say) instead of by its rear end.
 export const topAnchorAt = (
-  car: CarSpec,
+  car: CarSpec | TopOnlyCar,
   centre: ScreenAnchor,
   heading: number,
 ): ScreenAnchor => {
-  const mid =
-    ((carPoint(car, "rearAxle").x + carPoint(car, "frontAxle").x) / 2) *
-    centre.pxPerMetre;
+  const mid = wheelbaseMiddle(car) * centre.pxPerMetre;
   const a = (heading * Math.PI) / 180;
   return {
     x: centre.x - Math.cos(a) * mid,
     y: centre.y - Math.sin(a) * mid,
     pxPerMetre: centre.pxPerMetre,
   };
+};
+
+// The middle of the wheelbase, m from the rear end: from the side trace, or the measured lengths of a top-only car.
+export const wheelbaseMiddle = (car: CarSpec | TopOnlyCar) => {
+  if (isTopOnly(car)) return (car.lengths.rearAxle + car.lengths.frontAxle) / 2;
+  return (carPoint(car, "rearAxle").x + carPoint(car, "frontAxle").x) / 2;
 };

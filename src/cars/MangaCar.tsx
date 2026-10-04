@@ -10,11 +10,13 @@ import {
   CAR_UNITS_PER_METRE,
   drawnFarWheels,
   endplateCopyTransform,
+  isTopOnly,
   photoPxPerMetre,
   type Accent,
   type CarSpec,
   type Driver,
   type EndplateCopy,
+  type TopOnlyCar,
   type Wheel,
 } from "./spec";
 import { TopCar } from "./TopCar";
@@ -841,14 +843,15 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
 // car's other side, nose to −x (a car seen from the other side of the track).
 // With view "top", `at` is the middle of the car's rear end on a top-down map (TopCar; topAnchorAt places it by the
 // middle of the wheelbase instead), the nose points along state.heading and state.steer turns the front wheels.
+// A TopOnlyCar has no side trace and is always drawn from above.
 export const MangaCar: React.FC<{
-  car: CarSpec;
+  car: CarSpec | TopOnlyCar;
   at: ScreenAnchor;
   view?: CarView;
   facing?: "right" | "left";
   state?: CarState;
 }> = ({ car, at, view = "side", facing = "right", state = {} }) => {
-  if (view === "top") {
+  if (view === "top" || isTopOnly(car)) {
     return <TopCar car={car} at={at} state={state} />;
   }
   const scale = at.pxPerMetre / CAR_UNITS_PER_METRE;
