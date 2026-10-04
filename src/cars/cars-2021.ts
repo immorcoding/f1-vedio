@@ -106,14 +106,13 @@ export const W12: CarSpec = {
     flap: { d: "M 262 641 L 305 640 L 330 758 L 282 757 Z", color: "#00a19b" },
   },
   rearWing: {
-    // near endplate as in the photo: a rounded front top corner, the flat top, one clean step down to the rear tip
-    // (the photo's two small notches at 1820–1838 drawn as one step; user review 2026-10-04: the notches read as a
-    // tracing artefact)
-    near:
-      "M 1687 545 C 1687 532 1694 525 1706 525 L 1812 525 C 1816 525 1818 527 1820 530 L 1830 547 C 1832 550 1834 552 1838 552 " +
-      "L 1871 552 C 1876 552 1878 555 1875 559 L 1847 600 L 1845 673 L 1690 677 Z",
-    // far endplate: the near one's copy, nearly all behind it; a sliver shows along the top and rear edges (ART-17)
-    farFrom: { dx: 12, dy: -5, scale: 0.95 },
+    // near endplate as in the photo, with the stepped cut-outs along its rear edge (the real shape; user review
+    // 2026-10-04). Its front edge is straight, leaving the top front corner at ~70° (measured on the photo's
+    // light panel edge, 1690 540 → 1668 600); the near rear wheel covers its lower end.
+    near: "M 1695 525 L 1820 526 L 1821 540 L 1838 540 L 1838 552 L 1877 552 L 1847 600 L 1845 673 L 1640 678 Z",
+    // far endplate: the near one's copy, nearly all behind it; a sliver shows along the top and rear edges (ART-17).
+    // dx keeps it where it was before the front edge was sloped (the copy scales about the path's top-left).
+    farFrom: { dx: 14, dy: -5, scale: 0.95 },
     // the wing elements (mainplane and flap) between the endplates, seen from above as a curved band
     top: "M 1687 525 L 1662 500 C 1652 480 1652 458 1658 446 C 1690 438 1735 437 1762 440 L 1785 450 L 1790 525 Z",
     elements: ["M 1664 490 C 1700 486 1750 488 1789 494"],
