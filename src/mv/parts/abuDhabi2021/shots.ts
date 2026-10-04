@@ -1,4 +1,4 @@
-// Edit list for 阿布扎比 2021 (bars 81–104), treatment shots 5.1–5.7. The drop at 81.1 is cued by the buildup part
+// Edit list for 阿布扎比 2021 (bars 81–104), treatment shots 5.1–5.8. The drop at 81.1 is cued by the buildup part
 // (it is the cut between the two).
 import { hitCue, type PartEdit } from "../../shot.ts";
 import { at } from "../../timing.ts";
@@ -55,11 +55,19 @@ export const EDIT: PartEdit = {
     {
       id: "5.7",
       from: at(101),
-      to: at(105),
+      to: at(103),
       view: "title",
       content: "积分翻牌定格",
       text: ["395.5 · 387.5"],
       cues: [hitCue("abuDhabi2021.points")],
+    },
+    {
+      id: "5.8",
+      from: at(103),
+      to: at(105),
+      view: "title",
+      content: "夺冠照片卡（ART-19）：VER 领奖台彩色照片铺满，车队无线电原话逐拍砸入（STO-8）",
+      text: ["MAX VERSTAPPEN, YOU ARE THE WORLD CHAMPION!"],
     },
   ],
 };

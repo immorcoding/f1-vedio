@@ -15,3 +15,6 @@ out/
 # Generated score (npm run music, deterministic); the beat map next to it is committed.
 /public/music/*.wav
 /public/references
+
+# The one real photo (ART-19): local only until it is licensed (see the asset reference register).
+/public/photos/
