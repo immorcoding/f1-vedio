@@ -1,20 +1,28 @@
-// Shot 6.1 (outro bars 1–2): a chequered flag, drawn as a manga flag in black and white, waves across the whole frame
-// and sweeps the champion photo of 5.8 away to white paper. The pole leads from the left; the cloth trails behind it,
-// rolling in travelling waves (dot tone in the folds, paper highlights on the crests). Fast in, a wave held across the
-// whole frame, fast out: the paper is clear by `outro.paper`.
-import { random } from "remotion";
+// Shots 6.2 and 6.3 (outro bars 5–8): the chequered flag, the race's real end signal, closes the film. A manga flag in
+// black and white: the cloth rolls in travelling waves (dot tone in the folds, paper highlights on the crests) and
+// pumps on the low pulse every beat.
+//   6.2 (bars 5–6)  the flag waves in from the left over the last flashback panel, pole leading, small at first and
+//                   growing until the cloth fills the frame by the end of bar 6; the ping on bar 5 beat 3 gives it a
+//                   snap and a flash on the crests.
+//   6.3 (bars 7–8)  the waves slow and settle to near-still; on bar 7 beat 1 a paper banner slams across the flag with
+//                   the title F1 · 1989–2021 in ink; the ping on beat 3 glints on it and the chequered strip wipes in;
+//                   from bar 8 beat 3 the flag sinks and the frame fades to black by the end of the song.
+// One clock for both shots: seconds since `outro.flag`, so the waves run on unbroken across the cut.
+import { Easing, random } from "remotion";
 import { INK, PAPER } from "../../../kit/colors";
+import { CircuitTag, TitleText, titleWidth } from "../../../kit/lettering";
+import { useLettering } from "../../../kit/lettering";
 import { speedLines } from "../../../kit/lines";
 import { TonePattern } from "../../../kit/tone";
 import { FPS, SECONDS_PER_BEAT, frameAt } from "../../timing";
-import { ChampionCard } from "../abuDhabi2021/ChampionCard";
-import { EDIT as ABU_EDIT } from "../abuDhabi2021/shots.ts";
 import {
   cueAt,
-  secondsInShot,
+  hit,
+  shotAt,
   smooth,
   type ShotTime,
 } from "../abuDhabi2021/shotClock";
+import { Flashbacks } from "./Flashbacks";
 import { EDIT } from "./shots.ts";
 
 const CELL = 150; // one check, px
@@ -24,35 +32,94 @@ const W = CELL * COLS; // 2700
 const H = CELL * ROWS; // 1500
 const TOP = (1080 - H) / 2;
 const SUB = 4; // points per cell edge
-const WAVE_HZ = 2.1; // waves running down the cloth per second
+const WAVE_HZ = 2.1; // waves running down the cloth per second, at full flap
 const WAVE_L = 820; // wavelength along the cloth, px
 
-// 5.8 on screen before the flag reaches it: its last frame, still running (confetti keeps falling).
-const shot58 = ABU_EDIT.shots.find((s) => s.id === "5.8");
+/** Seconds from `outro.flag` to a cue. */
+const cueS = (id: string) =>
+  (frameAt(cueAt(EDIT, id)) - frameAt(cueAt(EDIT, "outro.flag"))) / FPS;
 
-// Pole position (px from the left of the frame) at t seconds into the shot: in fast, a slow drift while the cloth fills
-// the frame, out fast so the trailing edge has left by `out`.
-const T_IN = 0.62;
-const poleX = (t: number, out: number) => {
-  const tIn = T_IN;
-  const tHold = out - 1.0;
-  if (t < tIn) return -60 + (1980 - -60) * (1 - (1 - t / tIn) ** 2);
-  if (t < tHold) return 1980 + 200 * ((t - tIn) / (tHold - tIn));
-  const u = Math.min(1, (t - tHold) / (out - tHold));
-  return 2180 + (W + 420) * smooth(u) * (0.6 + 0.4 * u);
+// ── the flag's state over time ─────────────────────────────────────────────────────────────────────────────────────
+type FlagState = {
+  /** Scale of the whole flag about the frame centre. */
+  s: number;
+  /** Pole x and a vertical offset, in the flag's own (unscaled) space. */
+  px: number;
+  dy: number;
+  /** Pole speed in the flag's space, px/s (streaks and flecks). */
+  vel: number;
+  /** Wave clock (seconds at full flap) and wave height factor. */
+  wt: number;
+  amp: number;
+  /** 0 → 1 once the flag is up and flying free (sway and pump on). */
+  free: number;
+  /** Sway and pump strength (the waves settling takes them down too). */
+  live: number;
+  /** The snap on the ping: 1 on the beat, decaying. */
+  snap: number;
 };
 
-export const FlagShot: React.FC<{ st: ShotTime }> = ({ st }) => {
-  const { t } = st;
-  const out = secondsInShot(st, cueAt(EDIT, "outro.paper"));
-  const px = poleX(t, out);
-  const vel = (poleX(t + 1 / FPS, out) - px) * FPS; // px/s, for the motion streaks
+const T_IN = 0.7; // the pole's dash in from the left edge
+const SETTLE_RATE = 0.07; // the waves' speed at rest, as a share of full flap
+const SETTLE_TAU = 0.8; // s
+
+// screen x of the pole and the flag's scale, at tf seconds since `outro.flag`
+const poleScreen = (tf: number, tFull: number) => {
+  if (tf < T_IN) return -40 + (1150 - -40) * (1 - (1 - tf / T_IN) ** 2);
+  return 1150 + (2010 - 1150) * smooth((tf - T_IN) / (tFull - T_IN));
+};
+const scaleAt = (tf: number, tFull: number) =>
+  0.36 +
+  (1.06 - 0.36) *
+    Easing.inOut(Easing.cubic)(
+      Math.min(1, Math.max(0, (tf - 0.35) / (tFull - 0.35))),
+    );
+
+export const flagState = (tf: number): FlagState => {
+  const tFull = cueS("outro.flagFull");
+  const tTitle = cueS("outro.title");
+  const tSnap = cueS("outro.flagSnap");
+  const tSink = cueS("outro.fade");
+  const tEnd = cueS("outro.black");
+  const place = (t: number) => {
+    const s = scaleAt(t, tFull);
+    return { s, px: 960 + (poleScreen(t, tFull) - 960) / s };
+  };
+  const { s, px } = place(tf);
+  const vel = (place(tf + 1 / FPS).px - px) * FPS;
+  // the waves: full flap (and a little bigger) while it flies in, then slowing to near-still after the title lands
+  const d = Math.max(0, tf - tTitle);
+  const slow = Math.exp(-d / SETTLE_TAU);
+  const wt =
+    Math.min(tf, tTitle) +
+    SETTLE_RATE * d +
+    (1 - SETTLE_RATE) * SETTLE_TAU * (1 - slow);
+  const amp = tf < tTitle ? 1.3 : 0.25 + 1.05 * slow;
+  // it rises a little as it comes in, and sinks away at the end
+  const sink = smooth((tf - tSink) / (tEnd - tSink));
+  const dy = 140 * (1 - smooth(tf / 1.4)) + 160 * sink * sink;
+  return {
+    s,
+    px,
+    dy,
+    vel,
+    wt,
+    amp,
+    free: smooth((tf - T_IN) / 0.4),
+    live: 0.15 + 0.85 * slow,
+    snap: hit(tf, tSnap, 0.22),
+  };
+};
+
+// ── the cloth ──────────────────────────────────────────────────────────────────────────────────────────────────────
+const ChequeredFlag: React.FC<{ tf: number; fs: FlagState }> = ({ tf, fs }) => {
+  const { px, wt, amp: ampK, vel, snap } = fs;
 
   // the cloth: u from the pole (0) back to the trailing edge (W), v down from the top
   const wave = (u: number, v: number) => {
-    const amp = 18 + 125 * (u / W) ** 0.8;
+    const amp = ampK * (18 + 125 * (u / W) ** 0.8);
     const ph =
-      (2 * Math.PI * u) / WAVE_L - 2 * Math.PI * WAVE_HZ * t + (v / H) * 1.3;
+      (2 * Math.PI * u) / WAVE_L - 2 * Math.PI * WAVE_HZ * wt + (v / H) * 1.3;
     return {
       x: px - u - amp * 0.45 * Math.cos(ph),
       y: TOP + v + amp * Math.sin(ph) + 0.015 * u,
@@ -108,7 +175,7 @@ export const FlagShot: React.FC<{ st: ShotTime }> = ({ st }) => {
   const ridge = (offset: number) => {
     const lines: string[] = [];
     const u0 = (v: number) =>
-      ((offset + 2 * Math.PI * WAVE_HZ * t - (v / H) * 1.3) * WAVE_L) /
+      ((offset + 2 * Math.PI * WAVE_HZ * wt - (v / H) * 1.3) * WAVE_L) /
       (2 * Math.PI);
     const k0 = -Math.ceil(u0(0) / WAVE_L) - 1;
     for (let k = k0; k < k0 + W / WAVE_L + 4; k++) {
@@ -123,171 +190,283 @@ export const FlagShot: React.FC<{ st: ShotTime }> = ({ st }) => {
     }
     return lines.join(" ");
   };
-
-  const t58 = shot58
-    ? {
-        shot: shot58,
-        f: st.f,
-        frame: frameAt(shot58.to) - frameAt(shot58.from) + st.frame,
-        t: (frameAt(shot58.to) - frameAt(shot58.from)) / FPS + t,
-        dur: (frameAt(shot58.to) - frameAt(shot58.from)) / FPS,
-      }
-    : null;
-
-  // once the pole is off the frame the whole cloth sways and pumps on the kick (every beat of the shot); before that
-  // it stays square, so the photo's clip at the pole lines up
-  const hold = smooth((t - T_IN) / 0.4);
-  const sinceBeat = t % SECONDS_PER_BEAT;
-  const pump = 1 + 0.018 * Math.max(0, 1 - sinceBeat / 0.2) ** 2;
-  const sway = `translate(960 540) rotate(${hold * 3 * Math.sin(t * 2.6)}) scale(${(1 + 0.07 * hold) * (hold > 0 ? pump : 1)}) translate(-960 -540)`;
-
-  // paper behind the cloth; the photo ahead of the pole (clipped at the pole)
   const poleTop = wave(0, 0);
+  // the crests flare on the snap
+  const shineK = Math.min(1, 0.75 + 0.6 * snap);
+
+  return (
+    <g>
+      <defs>
+        <TonePattern id="o6f-fold" r={3.4} gap={10} />
+        <pattern
+          id="o6f-shine"
+          width={10}
+          height={10}
+          patternUnits="userSpaceOnUse"
+          patternTransform="rotate(45)"
+        >
+          <circle cx={5} cy={5} r={2.6} fill={PAPER} />
+        </pattern>
+      </defs>
+      {/* streaks behind the trailing edge while the flag dashes in */}
+      {vel > 2500 ? (
+        <path
+          d={speedLines({
+            x: px - W - 900,
+            y: 60,
+            w: 900,
+            h: 960,
+            angle: 0,
+            n: 26,
+            seed: "o61",
+            thickness: 7,
+            length: [0.3, 0.9],
+          })}
+          fill={INK}
+          opacity={Math.min(0.8, (vel - 2500) / 3000)}
+        />
+      ) : null}
+      <path d={whites.join(" ")} fill={PAPER} />
+      <path d={blacks.join(" ")} fill={INK} />
+      {shines.map((f, k) => (
+        <path
+          key={`s${k}`}
+          d={f.d}
+          fill="url(#o6f-shine)"
+          opacity={(shineK * (f.o - 0.3)) / 0.7}
+        />
+      ))}
+      {folds.map((f, k) => (
+        <path key={k} d={f.d} fill="url(#o6f-fold)" opacity={0.85 * f.o} />
+      ))}
+      <path
+        d={ridge(Math.PI)}
+        fill="none"
+        stroke={PAPER}
+        strokeWidth={16 + 14 * snap}
+        strokeLinecap="round"
+        opacity={0.32 + 0.4 * snap}
+      />
+      <path
+        d={ridge(Math.PI)}
+        fill="none"
+        stroke={PAPER}
+        strokeWidth={5}
+        strokeLinecap="round"
+        opacity={0.55}
+      />
+      <path
+        d={ridge(0)}
+        fill="none"
+        stroke={INK}
+        strokeWidth={4}
+        strokeLinecap="round"
+        opacity={0.7}
+      />
+      <path
+        d={outline}
+        fill="none"
+        stroke={INK}
+        strokeWidth={10}
+        strokeLinejoin="round"
+      />
+      {/* the pole, leading: from a knob just above the cloth down out of the frame */}
+      <g>
+        <rect
+          x={poleTop.x - 24}
+          y={TOP - 70}
+          width={48}
+          height={3000}
+          fill={PAPER}
+        />
+        <rect
+          x={poleTop.x - 17}
+          y={TOP - 64}
+          width={34}
+          height={3000}
+          fill={INK}
+        />
+        <rect
+          x={poleTop.x - 6}
+          y={TOP - 50}
+          width={5}
+          height={3000}
+          fill={PAPER}
+          opacity={0.7}
+        />
+        <circle
+          cx={poleTop.x}
+          cy={TOP - 78}
+          r={30}
+          fill={INK}
+          stroke={PAPER}
+          strokeWidth={7}
+        />
+      </g>
+      {/* a few flecks thrown off the trailing edge while it whips */}
+      {Array.from({ length: 10 }, (_, k) => {
+        const age = (tf * 1.3 + random(`o61f${k}`)) % 1;
+        const e = wave(W, H * random(`o61v${k}`));
+        return (
+          <path
+            key={k}
+            d={`M ${e.x - 30 - 140 * age} ${e.y} l ${-50 - 40 * random(`o61l${k}`)} ${8 - 16 * random(`o61d${k}`)}`}
+            stroke={INK}
+            strokeWidth={4}
+            strokeLinecap="round"
+            opacity={vel > 400 || snap > 0.2 ? 0.8 * (1 - age) : 0}
+          />
+        );
+      })}
+    </g>
+  );
+};
+
+// The flag placed in the frame: flying in, swaying, pumping on the beat.
+const FlagLayer: React.FC<{ tf: number }> = ({ tf }) => {
+  const fs = flagState(tf);
+  const sinceBeat =
+    ((tf % SECONDS_PER_BEAT) + SECONDS_PER_BEAT) % SECONDS_PER_BEAT;
+  const pump =
+    1 +
+    fs.free * fs.live * 0.018 * Math.max(0, 1 - sinceBeat / 0.2) ** 2 +
+    0.035 * fs.snap;
+  const k = fs.s * (1 + 0.04 * fs.free) * pump;
+  const rot = fs.free * fs.live * 3 * Math.sin(fs.wt * 2.6);
+  return (
+    <g
+      transform={`translate(960 ${540 + fs.dy}) rotate(${rot}) scale(${k}) translate(-960 -540)`}
+    >
+      <ChequeredFlag tf={tf} fs={fs} />
+    </g>
+  );
+};
+
+// 6.2: the flag waves in over the last flashback panel (that panel keeps running underneath).
+export const FlagIn: React.FC<{ st: ShotTime }> = ({ st }) => {
+  const panels = shotAt(
+    { ...EDIT, shots: EDIT.shots.filter((s) => s.id === "6.1") },
+    st.f,
+  );
+  return (
+    <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+      <Flashbacks st={panels} />
+      <svg width={1920} height={1080} style={{ position: "absolute" }}>
+        <FlagLayer tf={st.t} />
+      </svg>
+    </div>
+  );
+};
+
+// 6.3: the title on the settling flag, then the fade to black.
+const TITLE = "F1 · 1989–2021";
+const TITLE_SIZE = 150;
+const BANNER_H = 270;
+const BANNER_TILT = -3;
+const STRIP = 34;
+
+export const FlagTitle: React.FC<{ st: ShotTime }> = ({ st }) => {
+  useLettering();
+  const t0 = cueS("outro.title");
+  const tf = t0 + st.t;
+  const since = tf - t0;
+  const glintAt = cueS("outro.titleGlint") - t0;
+  const fadeAt = cueS("outro.fade") - t0;
+  const endAt = cueS("outro.black") - t0;
+  // the banner and title slam on together: from oversize, with a shake
+  const slam = Math.min(1, since / 0.12);
+  const bs = 1.25 - 0.25 * Easing.out(Easing.back(2))(slam);
+  const punch = Math.max(0, 1 - since / 0.3) ** 2;
+  const shakeX = punch * 12 * Math.sin(st.t * 97);
+  const shakeY = punch * 9 * Math.cos(st.t * 83);
+  const tw = titleWidth(TITLE, TITLE_SIZE);
+  const ty = 540 + TITLE_SIZE * 0.26; // baseline: the caps centred on the banner, a little above for the strip
+  const sq = Math.round(STRIP * 0.42);
+  const checks = Math.round(tw / sq);
+  const strip = Math.max(0, Math.min(1, (since - glintAt) / 0.3));
+  const g = hit(since, glintAt, 0.3);
+  const gs = 40 + 70 * g;
+  const fade = Math.max(
+    0,
+    Math.min(1, (st.t - fadeAt) / (endAt - fadeAt - 3 / FPS)),
+  );
+  const fs = flagState(tf);
+  const sinkY = fs.dy; // the banner rides down with the flag
   return (
     <div
       style={{
         position: "absolute",
         inset: 0,
-        backgroundColor: PAPER,
         overflow: "hidden",
+        backgroundColor: INK,
       }}
     >
-      {t58 && px < 2100 ? (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            clipPath: `inset(0 0 0 ${Math.max(0, poleTop.x - 30)}px)`,
-          }}
-        >
-          <ChampionCard st={t58} />
-        </div>
-      ) : null}
       <svg width={1920} height={1080} style={{ position: "absolute" }}>
-        <defs>
-          <TonePattern id="o61-fold" r={3.4} gap={10} />
-          <pattern
-            id="o61-shine"
-            width={10}
-            height={10}
-            patternUnits="userSpaceOnUse"
-            patternTransform="rotate(45)"
+        <g transform={`translate(${shakeX} ${shakeY})`}>
+          <FlagLayer tf={tf} />
+          <g
+            transform={`translate(960 ${540 + sinkY}) rotate(${BANNER_TILT}) scale(${bs}) translate(-960 -540)`}
+            opacity={Math.min(1, since * 30)}
           >
-            <circle cx={5} cy={5} r={2.6} fill={PAPER} />
-          </pattern>
-        </defs>
-        {/* streaks on the paper the trailing edge has just uncovered */}
-        {vel > 2500 ? (
-          <path
-            d={speedLines({
-              x: px - W - 900,
-              y: 60,
-              w: 900,
-              h: 960,
-              angle: 0,
-              n: 26,
-              seed: "o61",
-              thickness: 7,
-              length: [0.3, 0.9],
-            })}
-            fill={INK}
-            opacity={Math.min(0.8, (vel - 2500) / 3000)}
-          />
-        ) : null}
-        <g transform={sway}>
-          <g>
-            <path d={whites.join(" ")} fill={PAPER} />
-            <path d={blacks.join(" ")} fill={INK} />
-            {shines.map((f, k) => (
-              <path
-                key={`s${k}`}
-                d={f.d}
-                fill="url(#o61-shine)"
-                opacity={(0.75 * (f.o - 0.3)) / 0.7}
-              />
-            ))}
-            {folds.map((f, k) => (
-              <path
-                key={k}
-                d={f.d}
-                fill="url(#o61-fold)"
-                opacity={0.85 * f.o}
-              />
-            ))}
-            <path
-              d={ridge(Math.PI)}
-              fill="none"
-              stroke={PAPER}
-              strokeWidth={16}
-              strokeLinecap="round"
-              opacity={0.32}
-            />
-            <path
-              d={ridge(Math.PI)}
-              fill="none"
-              stroke={PAPER}
-              strokeWidth={5}
-              strokeLinecap="round"
-              opacity={0.55}
-            />
-            <path
-              d={ridge(0)}
-              fill="none"
-              stroke={INK}
-              strokeWidth={4}
-              strokeLinecap="round"
-              opacity={0.7}
-            />
-            <path
-              d={outline}
-              fill="none"
-              stroke={INK}
-              strokeWidth={10}
-              strokeLinejoin="round"
-            />
-          </g>
-          {/* the pole, leading */}
-          <g>
-            {/* a paper rim so the ink pole reads against the dark photo */}
+            {/* a paper banner across the flag: hard ink shadow, ink rules top and bottom */}
             <rect
-              x={poleTop.x - 24}
-              y={-100}
-              width={48}
-              height={1300}
-              fill={PAPER}
-            />
-            <rect
-              x={poleTop.x - 17}
-              y={-100}
-              width={34}
-              height={1300}
+              x={-200}
+              y={540 - BANNER_H / 2 + 18}
+              width={2320}
+              height={BANNER_H}
               fill={INK}
             />
             <rect
-              x={poleTop.x - 6}
-              y={-100}
-              width={5}
-              height={1300}
+              x={-200}
+              y={540 - BANNER_H / 2}
+              width={2320}
+              height={BANNER_H}
               fill={PAPER}
-              opacity={0.7}
             />
+            <path
+              d={`M -200 ${540 - BANNER_H / 2 + 14} H 2120 M -200 ${540 + BANNER_H / 2 - 14} H 2120`}
+              stroke={INK}
+              strokeWidth={4}
+            />
+            <path
+              d={`M -200 ${540 - BANNER_H / 2} H 2120 M -200 ${540 + BANNER_H / 2} H 2120`}
+              stroke={INK}
+              strokeWidth={10}
+            />
+            <TitleText
+              x={960 - tw / 2 + 8}
+              y={ty}
+              size={TITLE_SIZE}
+              text={TITLE}
+              colour={INK}
+            />
+            <CircuitTag
+              x={960 - (checks * sq) / 2}
+              y={ty + 26}
+              text=""
+              strip={strip}
+              name={0}
+              size={STRIP}
+              checks={checks}
+              colour={INK}
+            />
+            {/* the ping: a glint on the title's top right */}
+            {g > 0.01 ? (
+              <g
+                transform={`translate(${960 + tw / 2 - 10} ${ty - TITLE_SIZE * 0.8}) rotate(${20 * g})`}
+                opacity={Math.min(1, g * 1.6)}
+              >
+                <path
+                  d={`M 0 ${-gs} Q ${gs * 0.1} ${-gs * 0.1} ${gs} 0 Q ${gs * 0.1} ${gs * 0.1} 0 ${gs} Q ${-gs * 0.1} ${gs * 0.1} ${-gs} 0 Q ${-gs * 0.1} ${-gs * 0.1} 0 ${-gs} Z`}
+                  fill={PAPER}
+                  stroke={INK}
+                  strokeWidth={4}
+                />
+              </g>
+            ) : null}
           </g>
-          {/* a few flecks thrown off the trailing edge while it whips */}
-          {Array.from({ length: 10 }, (_, k) => {
-            const age = (t * 1.3 + random(`o61f${k}`)) % 1;
-            const e = wave(W, H * random(`o61v${k}`));
-            return (
-              <path
-                key={k}
-                d={`M ${e.x - 30 - 140 * age} ${e.y} l ${-50 - 40 * random(`o61l${k}`)} ${8 - 16 * random(`o61d${k}`)}`}
-                stroke={INK}
-                strokeWidth={4}
-                strokeLinecap="round"
-                opacity={vel > 400 ? 0.8 * (1 - age) : 0}
-              />
-            );
-          })}
         </g>
+        <rect width={1920} height={1080} fill={INK} opacity={fade} />
       </svg>
     </div>
   );

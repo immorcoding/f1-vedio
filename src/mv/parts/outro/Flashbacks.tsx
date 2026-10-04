@@ -1,8 +1,9 @@
-// Shot 6.2 (outro bars 3–6): four flashback panels, one a bar, each switched on beat 1 — slammed onto the page (1989/90,
-// 2020) or turned over like a page (2008, 2021). Each panel reuses its part's art:
+// Shot 6.1 (outro bars 1–4): four flashback panels, one a bar, each switched on beat 1 — slammed onto the page (1989/90,
+// 2020) or turned over like a page (2008, 2021). The first slams straight onto 5.8's champion photo. Each panel reuses
+// its part's art:
 //   1989/90  PRO's and SEN's helmets (their real designs, the same as on the cars) clashing in an impact star
 //   2008     the 98 · 97 score box of 2.7, its gold under-stroke landing on beat 2
-//   2020     the burnt but whole halo of 3.6 (HaloFinale), a glint on the music's ping (beat 3)
+//   2020     the burnt but whole halo of 3.6 (HaloFinale), a glint on beat 3
 //   2021     VER's RB16B: on beat 3 its number turns over from 33 to 1 and the year from 2021 to 2022 (he raced as the
 //            champion's number 1 the next season: facts.md)
 import { Easing, random } from "remotion";
@@ -21,7 +22,10 @@ import { ToneDefs, tone } from "../../../kit/tone";
 import { HaloFinale } from "../bahrain2020/HaloFinale";
 import { FIRE_PALETTE, cueFrame as bahrainCue } from "../bahrain2020/common";
 import { SCORE_H, SCORE_W, ScoreBox } from "../brazil2008/Champion";
+import { ChampionCard } from "../abuDhabi2021/ChampionCard";
+import { EDIT as ABU_EDIT } from "../abuDhabi2021/shots.ts";
 import { cueAt, secondsInShot, type ShotTime } from "../abuDhabi2021/shotClock";
+import { FPS, frameAt } from "../../timing";
 import { EDIT } from "./shots.ts";
 
 // the panel on the page
@@ -294,6 +298,8 @@ const PANELS: {
   },
 ];
 
+const shot58 = ABU_EDIT.shots.find((s) => s.id === "5.8");
+
 /** How long a page takes to turn over, s. */
 export const FLIP_S = 0.26;
 
@@ -374,43 +380,59 @@ export const Flashbacks: React.FC<{ st: ShotTime }> = ({ st }) => {
       yearFlip={i === 3 ? yearFlip : 0}
     />
   );
+  // the first panel slams onto 5.8's last frame (still running: the confetti keeps falling)
+  const t58 =
+    cur === 0 && slam < 1 && shot58
+      ? {
+          shot: shot58,
+          f: st.f,
+          frame: frameAt(shot58.to) - frameAt(shot58.from) + st.frame,
+          t: (frameAt(shot58.to) - frameAt(shot58.from)) / FPS + st.t,
+          dur: (frameAt(shot58.to) - frameAt(shot58.from)) / FPS,
+        }
+      : null;
   return (
-    <svg width={1920} height={1080} style={{ position: "absolute" }}>
-      <defs>
-        <ToneDefs prefix="o62" />
-      </defs>
-      <g transform={`translate(${shakeX} ${shakeY})`}>
-        {/* during a slam the previous page stays under the new one */}
-        {p.enter === "slam" && cur > 0 && slam < 1 ? page(cur - 1) : null}
-        {p.enter === "slam" && cur === 0 ? (
-          <rect width={1920} height={1080} fill={PAPER} />
-        ) : null}
-        <g
-          transform={`translate(960 540) scale(${slamS}) translate(-960 -540)`}
-          opacity={p.enter === "slam" ? Math.min(1, since * 30) : 1}
-        >
-          {page(cur)}
-        </g>
-        {turning ? (
-          <g>
-            {/* the old page turning over: squeezed towards the left edge, its back shaded as it comes round */}
-            <g
-              transform={`scale(${Math.cos((fu * Math.PI) / 2)} 1) skewY(${-10 * Math.sin(fu * Math.PI)})`}
-            >
-              {page(cur - 1)}
-              <rect width={1920} height={1080} fill={INK} opacity={0.5 * fu} />
-            </g>
-            <rect
-              x={1920 * Math.cos((fu * Math.PI) / 2) - 6}
-              y={0}
-              width={60 * (1 - fu)}
-              height={1080}
-              fill={INK}
-              opacity={0.35}
-            />
+    <>
+      {t58 ? <ChampionCard st={t58} /> : null}
+      <svg width={1920} height={1080} style={{ position: "absolute" }}>
+        <defs>
+          <ToneDefs prefix="o62" />
+        </defs>
+        <g transform={`translate(${shakeX} ${shakeY})`}>
+          {/* during a slam the previous page (or 5.8's photo) stays under the new one */}
+          {p.enter === "slam" && cur > 0 && slam < 1 ? page(cur - 1) : null}
+          <g
+            transform={`translate(960 540) scale(${slamS}) translate(-960 -540)`}
+            opacity={p.enter === "slam" ? Math.min(1, since * 30) : 1}
+          >
+            {page(cur)}
           </g>
-        ) : null}
-      </g>
-    </svg>
+          {turning ? (
+            <g>
+              {/* the old page turning over: squeezed towards the left edge, its back shaded as it comes round */}
+              <g
+                transform={`scale(${Math.cos((fu * Math.PI) / 2)} 1) skewY(${-10 * Math.sin(fu * Math.PI)})`}
+              >
+                {page(cur - 1)}
+                <rect
+                  width={1920}
+                  height={1080}
+                  fill={INK}
+                  opacity={0.5 * fu}
+                />
+              </g>
+              <rect
+                x={1920 * Math.cos((fu * Math.PI) / 2) - 6}
+                y={0}
+                width={60 * (1 - fu)}
+                height={1080}
+                fill={INK}
+                opacity={0.35}
+              />
+            </g>
+          ) : null}
+        </g>
+      </svg>
+    </>
   );
 };
