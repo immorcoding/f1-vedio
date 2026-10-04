@@ -29,7 +29,7 @@ export const EDIT: PartEdit = {
       to: at(62),
       view: "closeup",
       content:
-        "第 61 小节第一拍撞上三层护栏、音乐骤停；慢动作：火花四溅，上下两层护栏被压弯、中间一层被撕开，座舱穿过去，车在发动机舱壁处断成两截（动力单元和车尾留在赛道一侧），油箱爆出火球，碎片飞散；最后定格成白底黑线的撞击星，火球保留彩色",
+        "第 61 小节第一拍撞上三层护栏（轨迹与护栏成 29°，车身再偏航 22°）、音乐骤停、镜头一震；慢动作：火花沿护栏刮擦四溅，上下两层护栏被压弯、中间一层被撕开，座舱穿过去，车在发动机舱壁处断成两截（动力单元和车尾留在赛道一侧），油箱爆出火球，碎片飞散；最后定格成白底黑线的撞击星，火球保留彩色；定格前一瞬白闪",
       text: ["67G"],
       cues: [hitCue("bahrain2020.impact")],
     },
@@ -47,8 +47,8 @@ export const EDIT: PartEdit = {
       to: at(70),
       view: "panel",
       content:
-        "“28 秒”四格时间线，每小节第一拍加一格：0 秒 halo 顶开护栏、座舱卡在护栏里；11 秒医疗车停下、医生冲向火场；工作人员用干粉灭火器对着座舱喷（时间未核实，不标秒数）；28 秒戴手套的手从火里伸出抓住护栏",
-      text: ["0 秒", "11 秒", "28 秒"],
+        "“27 秒”四格时间线，每小节第一拍加一格：0 秒 halo 顶开护栏、座舱卡在护栏里；11 秒医疗车停下、医生冲向火场；工作人员用干粉灭火器对着座舱喷（时间未核实，不标秒数）；27 秒火光里 GRO 的身影从座舱站起、双手抓住护栏往上爬（头盔、手套可辨）",
+      text: ["0 秒", "11 秒", "27 秒"],
       cues: [
         { id: "bahrain2020.panel1", at: at(66) },
         { id: "bahrain2020.panel2", at: at(67) },
@@ -62,8 +62,8 @@ export const EDIT: PartEdit = {
       to: at(73),
       view: "closeup",
       content:
-        "GRO 从火里走出来；第 72 小节第一拍切到烧黑但完好的 halo 特写（彩蛋），最后一拍切黑",
-      text: ["28 秒"],
+        "GRO 从火里走出来；第 72 小节第一拍切到烧黑但完好的座舱侧面特写（照伦敦展出的残骸描：halo 中柱加环形主梁，彩蛋），烟丝上飘、缓慢推近，最后一拍切黑",
+      text: ["27 秒"],
       cues: [
         { id: "bahrain2020.time", at: at(71) },
         { id: "bahrain2020.halo", at: at(72) },
@@ -76,6 +76,6 @@ export const EDIT: PartEdit = {
 // On-screen facts, checked against docs/production/facts.md by scripts/check-bahrain2020.mjs.
 export const FACTS = {
   impactG: 67, // "冲击约 67 G"
-  escapeSeconds: 28, // "约 28 秒后 Grosjean 自己从火中脱身"
+  escapeSeconds: 27, // FIA summary: "out of car after 27 seconds" (Wikipedia: about 28)
   medicalCarSeconds: 11, // "医疗车 11 秒内到场"
 } as const;

@@ -1,6 +1,6 @@
 // Shot 3.6 (bars 70–72): GRO climbs out over the rails beside the burning cell; the FIA doctor (Ian Roberts, from the
 // medical car) reaches over the rail and takes his arm, then walks him away, a hand at his back, while a marshal turns
-// a dry-powder extinguisher on the cockpit (facts.md, easter egg). 28 秒 comes up on bar 71; the last beat of bar 72
+// a dry-powder extinguisher on the cockpit (facts.md, easter egg). 27 秒 comes up on bar 71; the last beat of bar 72
 // is black. People from the shared people module (src/kit/figure.tsx, ART-16), no faces; staging in
 // escape-staging.ts.
 import { GRO_2020 } from "../../../cars";
@@ -31,7 +31,7 @@ import {
   marshalPose,
   stage36,
 } from "./escape-staging.ts";
-import { PowderBillow } from "./powder";
+import { PowderBillow, PowderJet } from "./powder";
 import { WRECK_CAM, WreckWorld, heartbeat, zoomCam } from "./Wreck";
 
 // Race suit of 2020 (Haas: black with a grey side band), GRO's helmet; the FIA doctor and the marshal from the cast.
@@ -75,14 +75,6 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   const aim = cam.project(AIM);
   const hb = heartbeat(f);
   const text = ramp(f, timeCue, timeCue + 8);
-  // the powder jet: a cone from the nozzle to the cockpit, billowing where it lands, redrawn on threes
-  const jx = aim.x - nozzle.x;
-  const jy = aim.y - nozzle.y;
-  const jl = Math.hypot(jx, jy);
-  const nx = -jy / jl;
-  const ny = jx / jl;
-  const spread = 0.35 * mppm;
-  const jet = `M ${nozzle.x + nx * 4} ${nozzle.y + ny * 4} L ${aim.x + nx * spread} ${aim.y + ny * spread} L ${aim.x - nx * spread} ${aim.y - ny * spread} L ${nozzle.x - nx * 4} ${nozzle.y - ny * 4} Z`;
   const figure = (
     key: string,
     at: { x: number; z: number },
@@ -105,11 +97,16 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
     />
   );
   // GRO in two passes while he is on the rails: the parts still behind the guardrail, and the rest in front of it
-  const groFront = (["farLeg", "body", "nearLeg", "nearArm"] as BodyPart[]).filter(
-    (p) => !groBehind.includes(p),
-  );
+  const groFront = (
+    ["farLeg", "body", "nearLeg", "nearArm"] as BodyPart[]
+  ).filter((p) => !groBehind.includes(p));
   const people = [
-    { z: groAt.z, node: groFront.length ? figure("gro", groAt, groPose, GRO_KIT, groFront) : null },
+    {
+      z: groAt.z,
+      node: groFront.length
+        ? figure("gro", groAt, groPose, GRO_KIT, groFront)
+        : null,
+    },
     { z: docAt.z, node: figure("doc", docAt, docPose, DOCTOR) },
     {
       z: MARSHAL_AT.z,
@@ -131,20 +128,15 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
         intensity={1}
         tonePrefix="b36"
         behindRails={
-          groBehind.length ? figure("gro-behind", groAt, groPose, GRO_KIT, groBehind) : null
+          groBehind.length
+            ? figure("gro-behind", groAt, groPose, GRO_KIT, groBehind)
+            : null
         }
         driver={false}
       />
       {/* deepest first: the doctor at the rail / a step deeper than GRO, GRO, the marshal at the cockpit */}
       {people.map((p) => p.node)}
-      <path
-        d={jet}
-        fill={PAPER}
-        stroke={INK}
-        strokeWidth={2.5}
-        strokeLinejoin="round"
-        opacity={0.9}
-      />
+      <PowderJet from={nozzle} to={aim} ppm={mppm} frame={f} />
       <PowderBillow x={aim.x} y={aim.y} ppm={mppm} frame={f} />
       <rect width={1920} height={1080} fill={INK} opacity={0.12 * hb} />
       {text > 0 ? (
