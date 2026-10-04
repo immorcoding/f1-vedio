@@ -175,3 +175,8 @@ export const modernPlanFrom = (
 // The plan a car is drawn with from above.
 export const planOf = (car: CarSpec | TopOnlyCar): CarPlan =>
   isTopOnly(car) ? car.plan : (car.top?.plan ?? modernPlan(car, car.top?.marks));
+
+// The wheel angle (CarState.wheelAngle, degrees) of a car that has rolled `metres`: the distance over the tyre's
+// circumference, the same for the side and the top view.
+export const wheelAngleAt = (car: CarSpec | TopOnlyCar, metres: number) =>
+  (metres / (Math.PI * planOf(car).wheels[0].length)) * 360;

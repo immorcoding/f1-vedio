@@ -16,8 +16,9 @@
 
 export type Wheel = { cx: number; cy: number; r: number };
 
-// The far endplate of a wing as the copy of the near one seen further away (ART-17): scaled by `scale` about the near
-// endplate's bounding-box corner (min x, min y), then moved by (dx, dy) photo px.
+// The far endplate of a wing as the trace photo shows it (ART-17): the near one scaled by `scale` about its bounding-box
+// corner (min x, min y), then moved by (dx, dy) photo px. Its presence means the wing has a far endplate to draw; the
+// renderer draws it as the near one's perspective copy for the scene's camera (far-side.ts), not at these values.
 export type EndplateCopy = { dx: number; dy: number; scale: number };
 export type Accent = { d: string; color: string };
 
@@ -114,8 +115,8 @@ export type CarSpec = {
   accents: Accent[];
   haloAccent?: Accent;
   nearWheels: [Wheel, Wheel]; // front, rear
-  // Far-side wheels as traced on the photo (front, rear). The trace photos are shot from above, so the far wheels sit
-  // high there; the renderer draws them lower (drawnFarWheels).
+  // Far-side wheels as traced on the photo (front, rear), for the Trace check and for working out the photo's camera.
+  // The renderer draws each far wheel from its near one for the scene's camera instead (far-side.ts, ART-26).
   farWheels: [Wheel, Wheel];
   rimR: number;
   rim: "spoked" | "dark";
@@ -140,7 +141,7 @@ export type CarSpec = {
   // Simplified front wing (ART-12): far and near endplates, and one wing surface between them drawn behind the
   // nose, with an accent-coloured flap running the whole trailing edge between the endplates (no diagonal stripes).
   // The two endplates of a wing are one shape with the same colours (ART-17): the renderer draws the far endplate as
-  // the perspective copy (`farFrom`) of the near one, colour blocks (`livery`) included. The same holds for the rear
+  // the near one's perspective copy for the scene's camera (far-side.ts), colour blocks (`livery`) included. The same holds for the rear
   // wing.
   frontWing: {
     near: string;
@@ -225,7 +226,13 @@ export type PlanLengths = {
 // a CarSpec.
 export type TopOnlyCar = Pick<
   CarSpec,
-  "name" | "reference" | "driver" | "paint" | "compound" | "tyreGrooves" | "shade"
+  | "name"
+  | "reference"
+  | "driver"
+  | "paint"
+  | "compound"
+  | "tyreGrooves"
+  | "shade"
 > & {
   lengths: PlanLengths;
   plan: CarPlan;
@@ -240,18 +247,6 @@ export const CAR_UNITS_PER_METRE = 250;
 // Photo pixels per metre of this car's trace.
 export const photoPxPerMetre = (car: CarSpec) =>
   CAR_UNITS_PER_METRE / car.frame.k;
-
-// Where the far-side wheels are drawn. The reference photos look down on the car, which lifts the far wheels well above
-// the near ones; on the MV's low side-on camera they only peek out just above and behind the near wheels (user review
-// 2026-10-04). So each far wheel keeps its traced x and size, and its height above its near wheel is FAR_WHEEL_LIFT of
-// the traced height, the same proportion on every car. Where a car's nose or body is taller than that, it hides the
-// far wheel, as on a real side-on view.
-export const FAR_WHEEL_LIFT = 0.5;
-export const drawnFarWheels = (car: CarSpec): [Wheel, Wheel] =>
-  car.farWheels.map((w, i) => {
-    const near = car.nearWheels[i];
-    return { ...w, cy: near.cy - (near.cy - w.cy) * FAR_WHEEL_LIFT };
-  }) as [Wheel, Wheel];
 
 // Named points on the car, in metres from the car's origin (rear end, on the ground): x forward, y up.
 export type CarLandmark =
@@ -305,12 +300,6 @@ export const pathMin = (d: string) => {
     x: Math.min(...nums.filter((_, i) => i % 2 === 0)),
     y: Math.min(...nums.filter((_, i) => i % 2 === 1)),
   };
-};
-
-// The far endplate's transform (EndplateCopy) as an SVG transform, for paths in the near endplate's coordinates.
-export const endplateCopyTransform = (near: string, c: EndplateCopy) => {
-  const o = pathMin(near);
-  return `translate(${o.x + c.dx} ${o.y + c.dy}) scale(${c.scale}) translate(${-o.x} ${-o.y})`;
 };
 
 // x coordinates of an absolute-coordinate SVG path (M/L/C/Z only, as traced).

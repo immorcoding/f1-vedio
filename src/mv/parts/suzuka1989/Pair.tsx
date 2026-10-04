@@ -6,7 +6,13 @@
 // and the road and the kerb rush past just under the lens (MOT-5). PRO's lead slams in under his helmet in the points
 // box on 13.2, its gold stroke on 13.3.
 import { Easing } from "remotion";
-import { MangaCar, MP4_5_PRO, MP4_5_SEN, type CarSpec } from "../../../cars";
+import {
+  carCamera,
+  MangaCar,
+  MP4_5_PRO,
+  MP4_5_SEN,
+  type CarSpec,
+} from "../../../cars";
 import {
   type Box,
   CARD_PRO,
@@ -126,6 +132,10 @@ const Track: React.FC<{
   const senA0 = cam.anchor({ x: senX - camX, z: zSen });
   const proA = { ...proA0, y: proA0.y + bPro.dy };
   const senA = { ...senA0, y: senA0.y + bSen.dy };
+  // the low kerb camera sees the far wheels and endplates from its own height (ART-26); the tower camera keeps the
+  // default low view: its true 14–18° would lift the far wheels 0.4–0.5 m (docs/shape/inbox/feat-v2-far-side.md)
+  const camPro = low ? carCamera(MP4_5_PRO, cam, zPro) : {};
+  const camSen = low ? carCamera(MP4_5_SEN, cam, zSen) : {};
   const spin = f * 37; // blur arcs creep round at a readable rate (the true rate aliases)
   // streaks from `back` metres behind the rear end, `w` metres long; line weight grows with the car's size
   const streaks = (
@@ -175,14 +185,14 @@ const Track: React.FC<{
       <MangaCar
         car={MP4_5_SEN}
         at={senA}
-        state={{ wheelAngle: wheel, tilt: bSen.tilt }}
+        state={{ ...camSen, wheelAngle: wheel, tilt: bSen.tilt }}
       />
       <WheelBlur car={MP4_5_SEN} at={senA} spin={spin} />
       {streaks(proA, "pro", 14, 4.38, 4.06, 5)}
       <MangaCar
         car={MP4_5_PRO}
         at={proA}
-        state={{ wheelAngle: wheel, tilt: bPro.tilt }}
+        state={{ ...camPro, wheelAngle: wheel, tilt: bPro.tilt }}
       />
       <WheelBlur car={MP4_5_PRO} at={proA} spin={spin + 60} />
     </g>
