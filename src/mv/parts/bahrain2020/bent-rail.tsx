@@ -15,9 +15,8 @@ export type Deflection = (s: number, rail: number) => Offset;
 
 const NONE: Deflection = () => ({ dx: 0, dy: 0, dz: 0 });
 
-// A smooth bump: 1 at s = c, falling off over `width` metres either side.
-export const bump = (s: number, c: number, width: number) =>
-  Math.exp(-(((s - c) / width) ** 2));
+// A smooth bump: 1 at s = c, falling off over `width` metres either side (pure, in wreck-geometry.ts).
+export { bump } from "./wreck-geometry.ts";
 
 export const BentGuardrail: React.FC<{
   cam: Camera;

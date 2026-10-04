@@ -6,24 +6,25 @@
 //   27 秒  a gloved hand comes out of the fire and grabs the top rail.
 // People from the shared people module (src/kit/figure, ART-16), no faces (ART-5). Each panel has a small time label in
 // a corner the subject is not in (ART-14).
-import { GRO_2020 } from "../../../cars";
-import type { Camera } from "../../../kit/camera";
+import { GRO_2020, VF20 } from "../../../cars";
+import { pinhole, type Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import {
   DOCTOR,
   Figure,
   MARSHAL,
   driverOutfit,
+  flatFoot,
   gaitDistance,
   nozzleOf,
-  reachTo,
+  solve,
   spray,
   v,
   walk,
   type Outfit,
+  type Pose,
 } from "../../../kit/figure";
 import {
-  Fire,
   FIRE_PALETTES,
   type FirePaletteName,
 } from "../../../kit/fire";
@@ -33,6 +34,7 @@ import { ToneDefs } from "../../../kit/tone";
 import { bump, type Deflection } from "./bent-rail";
 import { cueFrame, ramp, type PictureProps } from "./common";
 import { MedicalCar } from "./MedicalCar";
+import { RAILS } from "./night";
 import { PowderBillow } from "./powder";
 import { FACTS } from "./shots.ts";
 import {
@@ -44,7 +46,7 @@ import {
   heartbeat,
   zoomCam,
 } from "./Wreck";
-import { BARRIER_Z, HALO_WORLD } from "./wreck-geometry.ts";
+import { BARRIER_Z, CELL_Z, HALO_WORLD } from "./wreck-geometry.ts";
 
 type Rect = { x: number; y: number; w: number; h: number };
 
@@ -409,43 +411,128 @@ const PanelExtinguisher: React.FC<PanelProps> = ({ r, f, age, palette }) => {
   );
 };
 
-// 27 秒: out of the fire, a gloved hand grabs the top rail — GRO hauling himself up. His body stays behind the rails
-// and the flames in front of them; only the arm and glove come out over the rail.
+// 27 秒: GRO's gloved hand comes up out of the cockpit and takes hold of the top rail. The geometry of the moment
+// (facts.md, FIA summary): the cell went through the barrier and is wedged between the rails, the top rail riding over
+// the halo, which pushed it up. So, from a marshal's eye height: the cell with its halo behind the barrier; the top
+// rail bent up and back so it lies over the halo's hoop, in front of it (drawn after the cell, its lower edge resting
+// on the hoop's top); GRO's left arm rising out of the cockpit opening, in front of the halo's near bar (he comes out
+// over the side), behind the top rail, the glove closing over its top edge with the fingers curled over the near face.
 const GRO_KIT: Outfit = driverOutfit(GRO_2020.helmet, "#1f1f23", {
   band: "#8d9099",
   gloves: "#4a4a52",
   boots: "#141416",
 });
-const GRO_AT = { x: HALO_WORLD.x + 0.4, z: BARRIER_Z + 0.45 };
+// the halo hoop's top (the far bar's highest point on the trace, photo y 490, 0.1 m ahead of HALO_WORLD's point; the
+// same 0.12 m drop as HALO_WORLD for the pitched cell)
+const PPM_PHOTO = 250 / VF20.frame.k;
+const HALO_TOP = {
+  x: HALO_WORLD.x - (880 - 852) / PPM_PHOTO,
+  y: (VF20.frame.ground - 490) / PPM_PHOTO - 0.12,
+  z: CELL_Z,
+};
+const RAIL_HALO_Z = BARRIER_Z + 0.55; // the top rail pushed back onto the cell over the cockpit
+const ARM_Z = BARRIER_Z + 0.8; // GRO's left side, just outside the cell's near bar, behind the rail
+const SHOULDER = { x: HALO_WORLD.x + 0.36, y: 1.06, z: ARM_Z }; // half up out of the seat, under the hoop
+const COCKPIT_RIM = 0.82; // the cockpit opening's edge (height, at the cell)
+// a body only for its near arm: standing, so the shoulder (figure frame) does not depend on where the hand goes
+const armPose = (hand: { x: number; y: number }): Pose => ({
+  hip: v(0, 0.92),
+  pelvis: 6,
+  chest: 6,
+  feet: { near: flatFoot(0.1), far: flatFoot(-0.1) },
+  arms: {
+    near: { hand, grip: "hold", wrist: -50, elbowOut: -1 },
+    far: { shoulder: 10, elbow: 20 },
+  },
+});
+const SHOULDER_FIG = solve(armPose(v(0.3, 1.2))).shoulder;
 const PanelHand: React.FC<PanelProps> = ({ r, f, age, palette }) => {
-  const cam = fitCam(
-    { x: GRO_AT.x - 0.35, y: 1.35, z: BARRIER_Z },
-    1.35,
-    r,
-    0.42,
-    0.55,
-  );
-  const fire = FIRE_PALETTES[palette];
-  // he is up on the seat, rising out of the cockpit: his shoulder above the rail behind it, the arm reaching forward
-  // and down to its top edge
-  const base = cam.project({ x: GRO_AT.x, y: 0.12, z: GRO_AT.z });
-  const ppm = cam.pxPerMetre(GRO_AT.z);
-  const railTop = cam.screenY(1.31, BARRIER_Z);
-  const grab = ramp(age, 0, 14);
-  const handY = (base.y - railTop) / ppm + 0.03 + (1 - grab) * 0.2;
-  const handX = 0.48 - 0.08 * (1 - grab);
-  const pose = reachTo(v(handX, handY), {
-    grip: grab > 0.8 ? "hold" : "open",
+  // a standing marshal's eye, 1.6 m up, framing ~2.4 m of the barrier round the cockpit
+  const z0 = ARM_Z;
+  const fpx = (r.w / 2.4) * z0;
+  const aimAt = { x: HALO_WORLD.x + 0.2, y: 1.22 };
+  const cam = pinhole({
+    f: fpx,
+    height: 1.6,
+    cx: r.x + r.w * 0.5 - (fpx * aimAt.x) / z0,
+    horizon: r.y + r.h * 0.5 - (fpx * (1.6 - aimAt.y)) / z0,
   });
-  // a wall of flame just behind the rails, in front of his shoulder, so the arm comes out of the fire
-  const wall = {
-    p: cam.project({ x: GRO_AT.x + 0.12, y: 0, z: BARRIER_Z + 0.2 }),
-    k: cam.pxPerMetre(BARRIER_Z + 0.2),
+  const fire = FIRE_PALETTES[palette];
+  // the top rail over the halo: pushed back to RAIL_HALO_Z and lifted so its lower edge lands on the hoop's top
+  // (overlapping it by 1 cm, so the rail reads as lying on it, in front)
+  const hoopY = cam.screenY(HALO_TOP.y, HALO_TOP.z);
+  const railBottomY = hoopY - 0.01 * cam.pxPerMetre(RAIL_HALO_Z);
+  const lift =
+    cam.height -
+    ((railBottomY - cam.horizon) * RAIL_HALO_Z) / cam.f -
+    RAILS[2][0];
+  const sHalo = HALO_TOP.x + 0.25 - RUN.a.x;
+  const bend: Deflection = (s, rail) => {
+    if (rail === 2) {
+      const k = bump(s, sHalo, 1.5);
+      return { dx: 0, dy: lift * k, dz: (RAIL_HALO_Z - BARRIER_Z) * k };
+    }
+    return WRECK_BEND(s, rail);
   };
+  // where the glove holds: the rail's top edge above the cockpit, a little behind the hoop's top
+  const gripX = HALO_TOP.x + 0.08;
+  const sGrip = gripX - RUN.a.x;
+  const railTop = cam.project({
+    x: gripX,
+    y: RAILS[2][1] + bend(sGrip, 2).dy,
+    z: BARRIER_Z + bend(sGrip, 2).dz,
+  });
+  // GRO's figure frame at the arm's depth (facing left: forward is screen left)
+  const ppm = cam.pxPerMetre(ARM_Z);
+  const sh = cam.project(SHOULDER);
+  const base = { x: sh.x + SHOULDER_FIG.x * ppm, y: sh.y + SHOULDER_FIG.y * ppm };
+  const fig = (p: { x: number; y: number }) => v((base.x - p.x) / ppm, (base.y - p.y) / ppm);
+  // the hand comes up out of the cockpit over the first frames and closes on the rail: the wrist just behind and
+  // above the top edge, so the back of the glove shows over it
+  const grab = ramp(age, 0, 16, (x) => 1 - (1 - x) * (1 - x));
+  const holdAt = { x: railTop.x + 0.04 * ppm, y: railTop.y - 0.04 * ppm };
+  const startAt = { x: sh.x - 0.12 * ppm, y: sh.y - 0.05 * ppm };
+  const hand = fig({
+    x: startAt.x + (holdAt.x - startAt.x) * grab,
+    y: startAt.y + (holdAt.y - startAt.y) * grab,
+  });
+  const pose = armPose(hand);
+  const gripped = grab > 0.92;
+  if (!gripped) pose.arms.near.grip = "open";
+  const rimY = cam.screenY(COCKPIT_RIM, CELL_Z);
+  const rim = fire.glow ? "#ffb347" : PAPER;
+  // the fingers over the rail's near face, curled down from its top edge (drawn in front of the rail)
+  const fingerW = 0.021 * ppm;
+  // (placed from the solved wrist, so they stay on the glove: the knuckles ahead of it, over the edge)
+  const wrist = solve(pose).arms.near.wrist;
+  const wristX = base.x - wrist.x * ppm;
+  const fingers = gripped
+    ? [0, 1, 2, 3].map((i) => {
+        const x = wristX - 0.115 * ppm + i * (fingerW * 1.05);
+        const len = (0.034 + (i === 1 || i === 2 ? 0.006 : 0)) * ppm;
+        return (
+          <rect
+            key={i}
+            x={x}
+            y={railTop.y - 0.012 * ppm}
+            width={fingerW}
+            height={len}
+            rx={fingerW / 2}
+            fill={GRO_KIT.gloves}
+            stroke={INK}
+            strokeWidth={Math.max(2, ppm * 0.006)}
+          />
+        );
+      })
+    : null;
   return (
     <g>
-      {/* the arm and the flames over his shoulder go behind the rails: the glove comes over the top rail and holds
-          its top edge */}
+      <defs>
+        {/* the arm shows only above the cockpit opening (the rest of him is still inside the cell) */}
+        <clipPath id="b35-arm">
+          <rect x={r.x} y={r.y} width={r.w} height={Math.max(0, rimY - r.y)} />
+        </clipPath>
+      </defs>
       <WreckWorld
         cam={cam}
         f={f}
@@ -455,8 +542,10 @@ const PanelHand: React.FC<PanelProps> = ({ r, f, age, palette }) => {
         noGlow
         fireDetail={3}
         driver={false}
+        bend={bend}
+        frontFire={0.45}
         behindRails={
-          <>
+          <g clipPath="url(#b35-arm)">
             <Figure
               at={base}
               pxPerMetre={ppm}
@@ -465,45 +554,14 @@ const PanelHand: React.FC<PanelProps> = ({ r, f, age, palette }) => {
               facing="left"
               parts={["nearArm"]}
               shadow={false}
-              rim={fire.glow ? "#ffb347" : PAPER}
+              rim={rim}
+              rimSide="right"
             />
-            <Fire
-              x={wall.p.x}
-              y={wall.p.y}
-              w={0.8 * wall.k}
-              h={1.75 * wall.k}
-              frame={f + 5}
-              seed="t28-wall"
-              palette={{ ...fire, glow: null }}
-              detail={2.5}
-              smoke={false}
-            />
-          </>
+          </g>
         }
         tonePrefix="b35"
       />
-      {/* the forearm and glove again over the flames, in a window round the hand above the rail's top edge: the hand
-          out of the fire, holding on (the shoulder stays in the flames) */}
-      <clipPath id="b35-hand">
-        <rect
-          x={base.x - (handX + 0.2) * ppm}
-          y={r.y}
-          width={0.55 * ppm}
-          height={railTop + 4 - r.y}
-        />
-      </clipPath>
-      <g clipPath="url(#b35-hand)">
-        <Figure
-          at={base}
-          pxPerMetre={ppm}
-          pose={pose}
-          outfit={GRO_KIT}
-          facing="left"
-          parts={["nearArm"]}
-          shadow={false}
-          rim={fire.glow ? "#ffb347" : PAPER}
-        />
-      </g>
+      {fingers}
       <TimeLabel r={r} corner="tl">
         {`${FACTS.escapeSeconds} 秒`}
       </TimeLabel>

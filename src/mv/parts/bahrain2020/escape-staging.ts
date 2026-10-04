@@ -9,14 +9,16 @@ import {
   type BodyPart,
 } from "../../../kit/people/motion.ts";
 import { v, type Pose } from "../../../kit/people/skeleton.ts";
-import { BARRIER_Z, HALO_WORLD } from "./wreck-geometry.ts";
-
-const RAIL_TOP = 1.29; // the top rail's upper edge (night.tsx RAILS)
+import { HALO_WORLD, topRailAt } from "./wreck-geometry.ts";
 
 export const CLIMB_X = HALO_WORLD.x - 0.2;
-const CLIMB_S = 1.6; // seconds over the rail
+// the top rail where he climbs, as the wreck left it (slightly lifted and pushed back by the bend over the nose): his
+// hands hold its real top edge and he sits on it
+const RAIL = topRailAt(CLIMB_X);
+export const RAIL_TOP = RAIL.y;
+const CLIMB_S = 2.0; // seconds over the rail (with a breath sitting astride it)
 const DELAY_S = 0.1; // the shot opens with him already reaching for the top rail
-export const OVER = Math.round((DELAY_S + CLIMB_S * 0.5) * 60); // frames until he is astride the top rail
+export const OVER = Math.round((DELAY_S + CLIMB_S * 0.36) * 60); // frames until he is astride the top rail
 export const CLIMB_END = Math.round((DELAY_S + CLIMB_S) * 60); // frames until he is down on the track side and walks
 const BEHIND_Z = 13.3; // GRO behind the rails, on the cell's side
 export const WALK_Z = 12.55; // GRO walks along the rails, 0.45 m in front of them
@@ -42,8 +44,8 @@ export const stage36 = (t: number) => {
   const c = e.gro.cross;
   const groZ =
     c < 0.5
-      ? BEHIND_Z + (BARRIER_Z - BEHIND_Z) * (c / 0.5)
-      : BARRIER_Z + (WALK_Z - BARRIER_Z) * ((c - 0.5) / 0.5);
+      ? BEHIND_Z + (RAIL.z - BEHIND_Z) * (c / 0.5)
+      : RAIL.z + (WALK_Z - RAIL.z) * ((c - 0.5) / 0.5);
   const groAt = { x: worldX(e.gro.x), z: groZ };
   const docAt = {
     x: worldX(e.doc.x),
