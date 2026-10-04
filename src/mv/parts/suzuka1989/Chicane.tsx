@@ -12,6 +12,7 @@ import {
   MP4_5_PRO,
   MP4_5_SEN,
   topAnchorAt,
+  wheelAngleAt,
   type CarSpec,
 } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
@@ -441,7 +442,7 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
               }),
             )
           : null}
-        {CARS.map(({ car, tag, at }) => {
+        {CARS.map(({ car, tag, at, brake }) => {
           const c = at(t);
           const h = view.heading(c.heading);
           const q = view.project(c);
@@ -469,7 +470,17 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
                 car={car}
                 view="top"
                 at={topAnchorAt(car, { x: q.x, y: q.y, pxPerMetre: cppm }, h)}
-                state={{ heading: h, steer: c.steer }}
+                state={{
+                  heading: h,
+                  steer: c.steer,
+                  // the tread rolls with the distance driven and stops while the fronts are locked (MOT-5)
+                  wheelAngle: wheelAngleAt(car, c.s),
+                  lockFront:
+                    t >= brake && t < brake + LOCK_TIME
+                      ? wheelAngleAt(car, at(brake).s)
+                      : undefined,
+                  speed: c.v * rate(tau),
+                }}
               />
             </g>
           );
