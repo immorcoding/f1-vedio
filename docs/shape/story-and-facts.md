@@ -21,7 +21,7 @@ Next id: STO-12
 
 - **STO-4** · provisional · 成片是 3–3.5 分钟的 MV，复刻 4 个名场面，按时间顺序：1989/1990 铃鹿 → 2008 巴西 → 2020 巴林 → 2021 阿布扎比（高潮）；每个名场面占一个音乐段落。v1 为 3 分 32 秒（113 小节，AUD-6）：用户为巴林结尾加的一小节过渡让它略超 3.5 分钟。_Why:_ 用户 2026-10-03 定位为"5 分钟以内的短片，类似 MV，不是故事片"，并选了这个篇幅和顺序。
 - **STO-10** · provisional · 片子结束在方格旗上：方格旗是比赛真正的结束信号；起跑灯熄灭（lights out）在 F1 里代表发车，只用来开场。_Why:_ 用户 2026-10-04 觉得用起跑灯首尾呼应的结尾很牵强，改成方格旗。
-- **STO-11** · exploring · 跨两年的段落（铃鹿 1989/1990）用同一套版式讲反复出现的主体：同一组头盔卡放在同样的位置、一种印章样式、镜像的撞击画面，靠重复的元素而不是文字把两年连成一个故事。_Why:_ 用户 2026-10-03 批准了铃鹿"队友变对手、两次相撞、各得一冠"的连贯叙事；用户 2026-10-04 采纳。
+- **STO-11** · provisional · 跨两年的段落（铃鹿 1989/1990）用同一套版式讲反复出现的主体：同一组头盔卡放在同样的位置、一种印章样式、镜像的撞击画面，靠重复的元素而不是文字把两年连成一个故事。_Why:_ 用户 2026-10-03 批准了铃鹿"队友变对手、两次相撞、各得一冠"的连贯叙事；用户 2026-10-04 采纳。
 
 ### Signals
 
@@ -38,13 +38,13 @@ Next id: STO-12
 
 ### Rules
 
-- **STO-5** · provisional · 没有旁白。画面文字全部用英文、尽量少：每个名场面一张标题卡（地点 + 年份，如"SUZUKA 1989"），英文拟声字，以及极短的关键信息（如"LAP 58""PRO +16 PTS"）；车手用三字母缩写（VER、HAM），夺冠卡写车手全名。不用中文。_Why:_ 用户 2026-10-03 选了"只留少量漫画文字"；2026-10-04 要求全部改英文，"赛车文化起源于欧洲"。
+- **STO-5** · settled · 没有旁白。画面文字全部用英文、尽量少：每个名场面一张标题卡（地点 + 年份，如"SUZUKA 1989"），英文拟声字，以及极短的关键信息（如"LAP 58""PRO +16 PTS"）；车手用三字母缩写（VER、HAM），夺冠卡写车手全名。不用中文。_Why:_ 用户 2026-10-03 选了"只留少量漫画文字"；2026-10-04 要求全部改英文，"赛车文化起源于欧洲"。_Check:_ 资产评审，画面文字对照翻译表和分镜表。
 
 ### Signals
 
 - 2026-10-04 · cite · STO-5 · 所有画面文字按翻译表 `out/prototype/type-system/translations.md` 的英文列加主管的选择定稿；5.3 的说明定为"LAP 58 · TURN 5"；Library 评审表的中文标签也一并翻译。
 - 2026-10-04 · cite · STO-5 · 2.7 的夺冠字（"LEWIS HAMILTON / 2008 / WORLD / CHAMPION"）是事实不是引语，5.8 的车队无线电仍是全片唯一的原话（STO-8）。
-- 2026-10-04 · cite · STO-5 · 巴林标语 `F1 SPEED ISN'T ONLY IN THE CARS.` 是标语不是引语，不受 STO-7/STO-8 的"不放原话"约束；已记在分镜表里。
+- 2026-10-04 · cite · STO-5 · 巴林标语 `NOT ALL OF F1'S SPEED IS IN THE CARS.` 是标语不是引语，不受 STO-7/STO-8 的"不放原话"约束；已记在分镜表里。
 - 2026-10-04 · cite · STO-5 · 片尾的新文字：年份（1989 · 1990、2008、2020、2021 → 2022）、复用的 2.7 比分框（98 · 97，HAM / MAS）和片尾标题 `F1 · 1989–2021`，全部英文，都在 D 版的角色里。
 
 ### Rejected
@@ -58,9 +58,9 @@ Next id: STO-12
 
 ### Rules
 
-- **STO-3** · provisional · 画面上出现的每个事实（圈数、弯道、轮胎、积分、结果）都要先对照可靠来源核实，并按名场面记下来源。_Why:_ 原型里的事实是凭记忆写的，还没核实过。
+- **STO-3** · settled · 画面上出现的每个事实（圈数、弯道、轮胎、积分、结果）都要先对照可靠来源核实，并按名场面记下来源。_Why:_ 原型里的事实是凭记忆写的，还没核实过；v2 又按评审核实了 HAM NEEDS P5、HALO 2018、CASIO TRIANGLE、撞击几何和 DRS。_Check:_ `npm run check:points`、`scripts/check-bahrain2020.mjs`；其余事实对照 `docs/production/facts.md`。
 - **STO-7** · provisional · 可以加入让车迷会心一笑的彩蛋，但每个彩蛋都必须是核实过的真实细节（登记在 `docs/production/facts.md`），不放人物原话（唯一例外见 STO-8）。当前彩蛋清单见 `docs/production/mv-treatment.md`。_Why:_ 用户 2026-10-03 要求"适当增加让车迷惊喜的细节"，并选定了五组彩蛋。
-- **STO-8** · provisional · 阿布扎比 5.8 的夺冠照片卡（ART-19）引用红牛车队无线电原话"Max Verstappen, you are the world champion"，画面上不加出处小字；这是全片唯一一句人物原话，措辞和说话人都以登记在 `facts.md` 的来源为准（v1 时这条还没登记，已有跟进项）。_Why:_ 用户 2026-10-03 要求在夺冠卡上放这句话，并去掉了出处小字（"没有必要"）。_Source:_ [formula1.com：Say what, Abu Dhabi 2021 team radio](https://www.formula1.com/en/latest/article/say-what-enjoy-the-best-team-radio-from-the-abu-dhabi-season-finale.1pUHfdFT1FyhoP7J07jLy9)
+- **STO-8** · provisional · 阿布扎比 5.8 的夺冠照片卡（ART-19）引用红牛领队 Christian Horner 的车队无线电原话"Max Verstappen, you are the world champion"，画面上不加出处小字；这是全片唯一一句人物原话，措辞和说话人以登记在 `facts.md` 的来源为准（不要和 GP Lambiase 冲线时的"Oh my lord, Max!"混淆）。_Why:_ 用户 2026-10-03 要求在夺冠卡上放这句话，并去掉了出处小字（"没有必要"）。_Source:_ [formula1.com：Say what, Abu Dhabi 2021 team radio](https://www.formula1.com/en/latest/article/say-what-enjoy-the-best-team-radio-from-the-abu-dhabi-season-finale.1pUHfdFT1FyhoP7J07jLy9)
 - **STO-9** · provisional · 车手脱险按真实的程序画：手抓 halo 和座舱边，从车侧爬出，绝不翻越护栏。_Why:_ 用户 2026-10-04 纠正巴林段：车手是抓着 halo 出来的，不是翻护栏。
 
 ### Signals
@@ -71,6 +71,8 @@ Next id: STO-12
 - 2026-10-03 · cite · STO-7 · 巴林 3.5 是"27s"时间线的四个不同时刻（0 秒、11 秒医疗车、救援人员拿灭火器、27 秒）；灭火器的时刻查不到，那一格不标秒数。
 - 2026-10-03 · correction · new · 铃鹿 1.4 推车重新发动的彩蛋小格显得僵硬，被删掉，彩蛋改成结果本身（两枚印章）：核实过的事实，画不好也可以不用。
 - 2026-10-04 · cite · STO-7 · 片尾彩蛋 VER 的车号 33 翻成 1，使用前核实并登记在 facts.md（#1 用于 2022–2025，#33 用于 2015–2021）；因为画的是 2021 年的车，年份同一拍从 2021 翻成 2022，画面不会声称他 2021 年就用 1 号。
+- 2026-10-04 · cite · STO-3 · DRS 在第 58 圈不可用：2021 体育规则 21.5 b) 规定安全车离场后两圈才能启用，所以片中所有镜头 DRS 关闭（ART-17）。
+- 2026-10-04 · cite · STO-11 · HAM 的镜像：90.1 之前一整拍闪回巴西 2.5 的超车（导入，不复制），靠重复画面而不是文字把 2008 和 2021 连起来。
 
 ## workflow
 
