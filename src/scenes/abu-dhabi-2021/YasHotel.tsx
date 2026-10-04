@@ -1,125 +1,182 @@
-// The Yas hotel (W Abu Dhabi – Yas Island, formerly Yas Viceroy) at night, seen from the circuit: the big west block
-// on the left, the smaller east block on the right, the white link bridge between them over the track, and both blocks
-// draped in the flowing gridshell canopy of diamond glass panels.
+// The Yas hotel (W Abu Dhabi – Yas Island, formerly Yas Viceroy) at night, built in world metres and projected through
+// the panel's pinhole camera (ART-9): the big west block on one side of the track, the smaller east block on the other,
+// the white link bridge spanning the track between them, and each block under its own gridshell of diamond glass
+// panels, the west shell sweeping on over the bridge. Black and white only (ART-8): a lit panel is paper.
 //
-// Traced in photo pixel space (ART-10) from Aleš Jungmann's 2011 photograph
-// (references/yas-marina/yas-hotel-2011.jpg, 552 × 285, CC BY-SA 3.0): the shell outlines, the curled lip of the west
-// shell, the rim line under it, the floor slabs, the raking struts and the bridge. The night look (lit floors, glowing
-// lattice, floodlights in front) follows Willo2173's 2015 race-night photograph
-// (references/yas-marina/yas-hotel-fireworks-2015.jpg, CC BY 2.0). Black and white only (ART-8): a lit panel is paper.
+// Real dimensions (docs/assets/reference-register.md, docs/production/facts.md):
+// - gridshell 217 m long, 44 m wide, 35 m high at most (sbp, the shell's structural engineers); panels 2.5–3.5 m
+//   (Front Inc., the facade engineers);
+// - two 12-storey blocks (Wikipedia) — under a 35 m shell that is ≈ 2.7 m a storey, so the blocks top out at ≈ 32 m and
+//   step down where the shell sinks toward the bridge, as in the 2011 photograph;
+// - plan from the OpenStreetMap footprint (references/yas-marina/osm-yas-hotel.json): the west block ≈ 180 m long,
+//   lying across the track; the east block ≈ 25 m wide, lying along it; the track passes between them under the bridge;
+// - the bridge's height is not published: its underside at 5.5 m and its body 6 m deep are estimated from the 2011
+//   photograph (references/yas-marina/yas-hotel-2011.jpg) against the floor slabs.
+// Composite liberty for the title card (like the compressed lap): the west block is turned 25° from square-on to the
+// track, so it recedes from the camera instead of facing it flat.
+//
+// Hotel frame: metres, origin on the ground under the bridge on the track's centre line; x across the track (right +),
+// y up, z along the track away from the camera. The caller places that origin in its camera's world.
 import { INK, PAPER } from "../../kit/colors";
+import type { Camera } from "../../kit/camera";
 
-type P = readonly [number, number]; // photo px: x right, y down; the ground in the photo is y = 170
+type V2 = readonly [number, number]; // plan point (x, z)
+type V3 = readonly [number, number, number]; // (x, y, z)
+type Pt = { x: number; y: number };
 
-// West shell: outer (top) edge, measured column by column against the sky, tip to tail.
-const WEST_TOP: P[] = [
-  [21, 74],
-  [22, 71],
-  [28, 62],
-  [34, 58],
-  [40, 56],
-  [52, 52],
-  [64, 51],
-  [82, 51],
-  [100, 53],
-  [118, 54],
-  [136, 58],
-  [154, 62],
-  [172, 67],
-  [190, 73],
-  [208, 79],
-  [226, 85],
-  [244, 92],
-  [256, 98],
-  [268, 107],
-  [280, 117],
-  [288, 121.5],
-];
-// West shell: the rim (its lower front edge, the bright line running down over the tower), tip to tail.
-const WEST_RIM: P[] = [
-  [21, 74],
-  [30, 78],
-  [41, 80],
-  [66, 86],
-  [85, 95],
-  [110, 106],
-  [135, 116],
-  [160, 126],
-  [180, 131.5],
-  [200, 132],
-  [225, 127.5],
-  [250, 123.5],
-  [270, 122],
-  [288, 121.5],
-];
-// The curled lip under the west tip: the shell's inner face, seen through the rim.
-const WEST_LIP: P[] = [
-  [21, 74],
-  [24, 81],
-  [29, 87.5],
-  [35, 94],
-  [40, 98.5],
-  [50, 95],
-  [62, 89],
-  [41, 80],
-  [30, 78],
-];
-// East shell, top edge then bottom edge back to its west end (behind the west shell's tail).
-const EAST_TOP: P[] = [
-  [286, 122],
-  [300, 121],
-  [325, 120.5],
-  [350, 120],
-  [362, 120.5],
-  [372, 123],
-  [377, 128],
-  [379, 134],
-];
-const EAST_BOT: P[] = [
-  [286, 122],
-  [291, 132],
-  [300, 143],
-  [312, 148.5],
-  [337, 151],
-  [356, 150],
-  [370, 144],
-  [376, 140],
-  [379, 134],
-];
+const STOREY = 2.7;
+const THETA = 0.64 * Math.PI; // a shell section runs from rim to rim through ±THETA, so its rims tuck back under it
 
-// Floor slabs of the west tower (photo y), its rounded west end at x = 40.6.
-const WEST_SLABS = [89.4, 101, 112.5, 124, 135];
-const PODIUM_TOP = 142;
-// The track runs under the bridge: the podium is open between these photo x.
-const GAP: P = [272, 305];
-
-// Piecewise-linear y(x) along a polyline sorted by x.
-const yAt = (pts: P[], x: number) => {
-  if (x <= pts[0][0]) return pts[0][1];
-  for (let i = 1; i < pts.length; i++)
-    if (x <= pts[i][0]) {
-      const [x0, y0] = pts[i - 1];
-      const [x1, y1] = pts[i];
-      return y0 + ((y1 - y0) * (x - x0)) / (x1 - x0);
-    }
-  return pts[pts.length - 1][1];
+// West block: its axis runs from the end face at the bridge (centre C_W) out to the far west tip, along D_W.
+const ANG = (65 * Math.PI) / 180;
+const D_W: V2 = [-Math.sin(ANG), Math.cos(ANG)];
+const C_W: V2 = [-19.4, 3];
+const WEST = { len: 158, hw: 12, podHw: 18 };
+const WEST_TIP = 185; // the shell's tip, m from the block's end face along D_W
+// East block: along the track, its track-side face at x = 17.
+const AX_E = 29;
+const EAST = { z0: -11, z1: 81, hw: 12, podHw: 14 };
+// The bridge: front face at z = -4.5, deck 9 m deep, underside 5.5 m, body to 11.5 m.
+export const BRIDGE = { x0: -20.5, x1: 17, z0: -4.5, z1: 4.5, y0: 5.5, y1: 11.5 };
+// Where each podium's corner nearest the camera stands (hotel frame), so the scene can end its pit building there.
+export const HOTEL_NEAR = {
+  west: [C_W[0] + WEST.podHw * -Math.cos(ANG), C_W[1] + WEST.podHw * -Math.sin(ANG)] as V2,
+  eastZ: EAST.z0 - 2,
 };
 
-// Smooth path through points (Catmull-Rom → cubic Bézier).
-const smooth = (q: P[], close: boolean) => {
-  const n = q.length;
-  const at = (i: number) =>
-    close ? q[(i + n) % n] : q[Math.max(0, Math.min(n - 1, i))];
-  let d = `M ${q[0][0]} ${q[0][1]}`;
-  const last = close ? n : n - 1;
-  for (let i = 0; i < last; i++) {
-    const p0 = at(i - 1);
-    const p1 = at(i);
-    const p2 = at(i + 1);
-    const p3 = at(i + 2);
-    d += ` C ${p1[0] + (p2[0] - p0[0]) / 6} ${p1[1] + (p2[1] - p0[1]) / 6} ${p2[0] - (p3[0] - p1[0]) / 6} ${p2[1] - (p3[1] - p1[1]) / 6} ${p2[0]} ${p2[1]}`;
+// Piecewise values along a shell (u 0..1), eased between keys.
+type Keys = readonly (readonly [number, number])[];
+const ease = (k: Keys, u: number) => {
+  if (u <= k[0][0]) return k[0][1];
+  for (let i = 1; i < k.length; i++)
+    if (u <= k[i][0]) {
+      const s = (u - k[i - 1][0]) / (k[i][0] - k[i - 1][0]);
+      const e = s * s * (3 - 2 * s);
+      return k[i - 1][1] + (k[i][1] - k[i - 1][1]) * e;
+    }
+  return k[k.length - 1][1];
+};
+
+// A spine in plan, sampled by arc length.
+type Spine = { len: number; at: (u: number) => { p: V2; t: V2 } };
+const spineOf = (pts: V2[]): Spine => {
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++)
+    cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const len = cum[cum.length - 1];
+  return {
+    len,
+    at: (u) => {
+      const s = Math.min(len, Math.max(0, u * len));
+      let i = 1;
+      while (i < pts.length - 1 && cum[i] < s) i++;
+      const f = (s - cum[i - 1]) / (cum[i] - cum[i - 1] || 1);
+      const a = pts[i - 1];
+      const b = pts[i];
+      const l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+      return { p: [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f], t: [(b[0] - a[0]) / l, (b[1] - a[1]) / l] };
+    },
+  };
+};
+
+// West shell spine: from the tip, straight along the block to its end face, then a quadratic sweep over the bridge,
+// turning square to the track, to the east block's flank.
+const WEST_SPINE = (() => {
+  const tip: V2 = [C_W[0] + WEST_TIP * D_W[0], C_W[1] + WEST_TIP * D_W[1]];
+  const pts: V2[] = [];
+  for (let i = 0; i <= 60; i++) {
+    const f = i / 60;
+    pts.push([tip[0] + (C_W[0] - tip[0]) * f, tip[1] + (C_W[1] - tip[1]) * f]);
   }
-  return close ? `${d} Z` : d;
+  const k: V2 = [-10.8, -1];
+  const e: V2 = [15, -1];
+  for (let i = 1; i <= 16; i++) {
+    const s = i / 16;
+    const a = (1 - s) * (1 - s);
+    const b = 2 * s * (1 - s);
+    const c = s * s;
+    pts.push([a * C_W[0] + b * k[0] + c * e[0], a * C_W[1] + b * k[1] + c * e[1]]);
+  }
+  return spineOf(pts);
+})();
+const EAST_SPINE = spineOf([
+  [AX_E, EAST.z0 - 16],
+  [AX_E, EAST.z1 + 12],
+]);
+
+type Shell = {
+  spine: Spine;
+  w: Keys; // half-width, m
+  top: Keys; // height of the crown, m
+  rim: Keys; // height of the rims, m
+  du: number; // lattice step along the spine, m
+  nb: number; // lattice steps around the section
+  k0: number; // lighting wave: where this shell starts and ends (0..1 over the whole hotel)
+  k1: number;
+};
+// The west shell (u = 0 at its tip, ≈ 0.82 at the block's end face, 1 over the east block's flank): pointed at the
+// tip, highest over the west part of the block, sinking toward the bridge, narrowing to a neck over the track.
+const WEST_SHELL: Shell = {
+  spine: WEST_SPINE,
+  w: [
+    [0, 2],
+    [0.07, 15],
+    [0.2, 22],
+    [0.62, 21],
+    [0.82, 17],
+    [0.92, 11],
+    [1, 9],
+  ],
+  top: [
+    [0, 25],
+    [0.1, 32],
+    [0.25, 35],
+    [0.55, 31],
+    [0.8, 24],
+    [1, 16.5],
+  ],
+  rim: [
+    [0, 24],
+    [0.1, 17],
+    [0.35, 10],
+    [0.62, 9],
+    [0.82, 11],
+    [1, 12.5],
+  ],
+  du: 2.4,
+  nb: 30,
+  k0: 0,
+  k1: 0.7,
+};
+// The east shell: a rounded pod over the east block.
+const EAST_SHELL: Shell = {
+  spine: EAST_SPINE,
+  w: [
+    [0, 1.5],
+    [0.1, 14],
+    [0.3, 16],
+    [0.75, 15.5],
+    [0.9, 13.5],
+    [1, 1.5],
+  ],
+  top: [
+    [0, 10],
+    [0.15, 26],
+    [0.45, 28],
+    [0.85, 25],
+    [1, 10],
+  ],
+  rim: [
+    [0, 8],
+    [0.12, 7.5],
+    [0.5, 8.5],
+    [0.88, 7.5],
+    [1, 8],
+  ],
+  du: 2.4,
+  nb: 24,
+  k0: 0.66,
+  k1: 1,
 };
 
 const hash = (a: number, b: number) => {
@@ -128,377 +185,369 @@ const hash = (a: number, b: number) => {
 };
 
 type Cell = {
-  d: string; // lattice diamond
+  d: string; // lattice diamond on screen
   panel: string; // the glass panel inside it
-  k: number; // 0..1 west → east, for the lighting wave
+  z: number; // world depth, for stroke widths and sorting
+  front: boolean; // outer face toward the camera (false: the underside, seen from below or through an open end)
+  facing: number; // 0 at grazing view, 1 square on
+  k: number; // 0..1 along the whole hotel, for the lighting wave
   r: number; // noise
-  edge: number; // 0 at the shell's edges (surface turning away), 1 mid-surface
+};
+type Built = {
+  cells: Cell[];
+  rim: string; // the rim nearer the camera
+  crown: string; // the top silhouette
 };
 
-// The gridshell lattice of one shell: diamond cells whose two families of lines run diagonally along the shell between
-// its top edge and its lower edge, bunching where the surface turns away (cosine spacing) and converging at the ends.
-const lattice = (
-  top: P[],
-  bot: P[],
-  x0: number,
-  x1: number,
-  du: number,
-  nv: number,
-  map: (p: P) => P,
-  kOf: (x: number) => number,
-): Cell[] => {
-  const na = Math.ceil((x1 - x0) / du);
-  const pt = (a: number, b: number): P => {
-    const x = Math.min(x1, Math.max(x0, x0 + a * du));
-    const s = Math.min(1, Math.max(0, b / nv));
-    const v = (1 - Math.cos(Math.PI * s)) / 2;
-    const yt = yAt(top, x);
-    const yb = yAt(bot, x);
-    return map([x, yt + (yb - yt) * v]);
-  };
-  const out: Cell[] = [];
-  for (let b = 0; b <= nv; b++)
-    for (let a = -1; a <= na + 1; a++) {
-      if ((a + b) % 2 !== 0) continue;
-      const q = [pt(a - 1, b), pt(a, b - 1), pt(a + 1, b), pt(a, b + 1)];
-      const c = pt(a, b);
-      const area = Math.abs(
-        (q[2][0] - q[0][0]) * (q[3][1] - q[1][1]) -
-          (q[3][0] - q[1][0]) * (q[2][1] - q[0][1]),
-      );
-      if (area < 4) continue;
-      const ins = (p: P, f: number): P => [
-        c[0] + (p[0] - c[0]) * f,
-        c[1] + (p[1] - c[1]) * f,
-      ];
-      const pq = q.map((p) => ins(p, 0.7));
-      const poly = (r: P[]) =>
-        `M ${r[0][0]} ${r[0][1]} L ${r[1][0]} ${r[1][1]} L ${r[2][0]} ${r[2][1]} L ${r[3][0]} ${r[3][1]} Z`;
-      const x = x0 + a * du;
-      out.push({
-        d: poly(q),
-        panel: poly(pq),
-        k: kOf(x),
-        r: hash(a + x0, b),
-        edge: Math.sin(Math.PI * Math.min(1, Math.max(0, b / nv))),
-      });
+/** Everything the hotel draws, projected once per camera and placement. */
+const build = (cam: Camera, ox: number, oz: number) => {
+  const P = (p: V3): Pt => cam.project({ x: ox + p[0], y: p[1], z: oz + p[2] });
+  const eye: V3 = [-ox, cam.height, -oz];
+  const poly = (q: Pt[]) => `M ${q.map((p) => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" L ")} Z`;
+  const polyline = (q: Pt[]) => `M ${q.map((p) => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" L ")}`;
+
+  const shell = (sh: Shell): Built => {
+    const na = Math.max(2, Math.round(sh.spine.len / sh.du));
+    const G: V3[][] = [];
+    const axis: V3[] = [];
+    for (let a = 0; a <= na; a++) {
+      const u = a / na;
+      const { p, t } = sh.spine.at(u);
+      const side: V2 = [-t[1], t[0]];
+      const w = ease(sh.w, u);
+      const T = ease(sh.top, u);
+      const R = ease(sh.rim, u);
+      const A = (T - R) / (1 - Math.cos(THETA));
+      const Cy = T - A;
+      axis.push([p[0], Cy, p[1]]);
+      const row: V3[] = [];
+      for (let b = 0; b <= sh.nb; b++) {
+        const th = -THETA + (2 * THETA * b) / sh.nb;
+        const v = w * Math.sin(th);
+        row.push([p[0] + side[0] * v, Cy + A * Math.cos(th), p[1] + side[1] * v]);
+      }
+      G.push(row);
     }
-  return out;
+    const S = G.map((row) => row.map(P));
+    const g = (a: number, b: number) => G[Math.max(0, Math.min(na, a))][Math.max(0, Math.min(sh.nb, b))];
+    const s = (a: number, b: number) => S[Math.max(0, Math.min(na, a))][Math.max(0, Math.min(sh.nb, b))];
+    const cells: Cell[] = [];
+    for (let a = -1; a <= na + 1; a++)
+      for (let b = 0; b <= sh.nb; b++) {
+        if ((a + b) % 2 !== 0) continue;
+        const q = [s(a - 1, b), s(a, b - 1), s(a + 1, b), s(a, b + 1)];
+        const area = Math.abs((q[2].x - q[0].x) * (q[3].y - q[1].y) - (q[3].x - q[1].x) * (q[2].y - q[0].y));
+        if (area < 3) continue;
+        const c3 = g(a, b);
+        const e1 = g(a + 1, b).map((v, i) => v - g(a - 1, b)[i]);
+        const e2 = g(a, b + 1).map((v, i) => v - g(a, b - 1)[i]);
+        let n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+        const ax = axis[Math.max(0, Math.min(na, a))];
+        const out = [c3[0] - ax[0], c3[1] - ax[1], c3[2] - ax[2]];
+        if (n[0] * out[0] + n[1] * out[1] + n[2] * out[2] < 0) n = n.map((v) => -v);
+        const nl = Math.hypot(n[0], n[1], n[2]) || 1;
+        const view = [eye[0] - c3[0], eye[1] - c3[1], eye[2] - c3[2]];
+        const vl = Math.hypot(view[0], view[1], view[2]);
+        const dot = (n[0] * view[0] + n[1] * view[1] + n[2] * view[2]) / (nl * vl);
+        const c = s(a, b);
+        const ins = (p: Pt): Pt => ({ x: c.x + (p.x - c.x) * 0.72, y: c.y + (p.y - c.y) * 0.72 });
+        const u = Math.min(1, Math.max(0, a / na));
+        cells.push({
+          d: poly(q),
+          panel: poly(q.map(ins)),
+          z: oz + c3[2],
+          front: dot > 0,
+          facing: Math.min(1, Math.abs(dot) * 1.6),
+          k: sh.k0 + (sh.k1 - sh.k0) * u,
+          r: hash(a + sh.k0 * 50, b),
+        });
+      }
+    cells.sort((p, q) => q.z - p.z);
+    // the rim nearer the camera, and the crown silhouette (topmost on screen at each station)
+    const near0 = G.reduce((m, row) => m + Math.hypot(row[0][0] - eye[0], row[0][2] - eye[2]), 0);
+    const near1 = G.reduce((m, row) => m + Math.hypot(row[sh.nb][0] - eye[0], row[sh.nb][2] - eye[2]), 0);
+    const nb = near0 < near1 ? 0 : sh.nb;
+    const rim = polyline(S.map((row) => row[nb]));
+    const crown = polyline(S.map((row) => row.reduce((m, p) => (p.y < m.y ? p : m), row[0])));
+    return { cells, rim, crown };
+  };
+
+  // A block: a box along a straight axis from plan point `a` in direction `d`, `len` long, `hw` half-wide, its height
+  // stepping with the shell above it. Returns its visible faces as fills, slabs and windows.
+  type Face = { fill: string; slabs: string; windows: { d: string; o: number }[]; key: string; dist: number };
+  const block = (
+    a: V2,
+    d: V2,
+    len: number,
+    hw: number,
+    floors: (s: number) => number,
+    seed: number,
+  ): Face[] => {
+    const side: V2 = [-d[1], d[0]];
+    const at = (s: number, v: number): V2 => [a[0] + d[0] * s + side[0] * v, a[1] + d[1] * s + side[1] * v];
+    const faces: Face[] = [];
+    // a vertical face from plan point p0 to p1 (outward normal n), split into `segs` stations with their own heights
+    const face = (p0: V2, p1: V2, n: V2, hOf: (f: number) => number, w: number, key: string) => {
+      const mid: V2 = [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2];
+      if (n[0] * (eye[0] - mid[0]) + n[1] * (eye[2] - mid[1]) <= 0) return;
+      const segs = Math.max(1, Math.round(w / 6));
+      const L = (f: number): V2 => [p0[0] + (p1[0] - p0[0]) * f, p0[1] + (p1[1] - p0[1]) * f];
+      const fill: string[] = [];
+      const slabs: string[] = [];
+      const windows: { d: string; o: number }[] = [];
+      for (let i = 0; i < segs; i++) {
+        const f0 = i / segs;
+        const f1 = (i + 1) / segs;
+        const nF = hOf((f0 + f1) / 2);
+        const h = nF * STOREY;
+        const q0 = L(f0);
+        const q1 = L(f1);
+        fill.push(poly([P([q0[0], 0, q0[1]]), P([q1[0], 0, q1[1]]), P([q1[0], h, q1[1]]), P([q0[0], h, q0[1]])]));
+        for (let k = 1; k <= nF; k++) {
+          const y = k * STOREY;
+          slabs.push(
+            poly([P([q0[0], y - 0.22, q0[1]]), P([q1[0], y - 0.22, q1[1]]), P([q1[0], y, q1[1]]), P([q0[0], y, q0[1]])]),
+          );
+        }
+        // windows: bays of 2 m, most rooms lit
+        const bays = Math.max(1, Math.round(w / segs / 2));
+        for (let k = 0; k < nF; k++)
+          for (let j = 0; j < bays; j++) {
+            const r = hash(seed + i * 7.3 + j * 1.7 + key.length, k);
+            if (r < 0.22) continue;
+            const g0 = f0 + ((f1 - f0) * (j + 0.15)) / bays;
+            const g1 = f0 + ((f1 - f0) * (j + 0.85)) / bays;
+            const w0 = L(g0);
+            const w1 = L(g1);
+            const y0 = k * STOREY + 0.55;
+            const y1 = (k + 1) * STOREY - 0.5;
+            windows.push({
+              d: poly([P([w0[0], y0, w0[1]]), P([w1[0], y0, w1[1]]), P([w1[0], y1, w1[1]]), P([w0[0], y1, w0[1]])]),
+              o: r > 0.7 ? 0.8 : 0.4,
+            });
+          }
+      }
+      faces.push({
+        fill: fill.join(" "),
+        slabs: slabs.join(" "),
+        windows,
+        key,
+        dist: Math.hypot(mid[0] - eye[0], mid[1] - eye[2]),
+      });
+    };
+    const flo = (s: number) => floors(Math.min(len, Math.max(0, s)));
+    face(at(0, hw), at(len, hw), side, (f) => flo(f * len), len, "l");
+    face(at(len, -hw), at(0, -hw), [-side[0], -side[1]], (f) => flo((1 - f) * len), len, "r");
+    face(at(0, -hw), at(0, hw), [-d[0], -d[1]], () => flo(0), 2 * hw, "s");
+    face(at(len, hw), at(len, -hw), d, () => flo(len), 2 * hw, "e");
+    return faces.sort((p, q) => q.dist - p.dist);
+  };
+
+  // A podium box: 6 m, lobby glazing glowing along its visible faces.
+  const podium = (a: V2, d: V2, len: number, hw: number) => {
+    const side: V2 = [-d[1], d[0]];
+    const at = (s: number, v: number): V2 => [a[0] + d[0] * s + side[0] * v, a[1] + d[1] * s + side[1] * v];
+    const out: { fill: string; lobby: string; mullions: string; top: string }[] = [];
+    const face = (p0: V2, p1: V2, n: V2) => {
+      const mid: V2 = [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2];
+      if (n[0] * (eye[0] - mid[0]) + n[1] * (eye[2] - mid[1]) <= 0) return;
+      const q = (p: V2, y: number) => P([p[0], y, p[1]]);
+      const w = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+      const mull: string[] = [];
+      for (let m = 3; m < w; m += 6) {
+        const f = m / w;
+        const pm: V2 = [p0[0] + (p1[0] - p0[0]) * f, p0[1] + (p1[1] - p0[1]) * f];
+        mull.push(polyline([q(pm, 1), q(pm, 4.6)]));
+      }
+      out.push({
+        fill: poly([q(p0, 0), q(p1, 0), q(p1, 6), q(p0, 6)]),
+        lobby: poly([q(p0, 1), q(p1, 1), q(p1, 4.6), q(p0, 4.6)]),
+        mullions: mull.join(" "),
+        top: polyline([q(p0, 6), q(p1, 6)]),
+      });
+    };
+    face(at(0, hw), at(len, hw), side);
+    face(at(len, -hw), at(0, -hw), [-side[0], -side[1]]);
+    face(at(0, -hw), at(0, hw), [-d[0], -d[1]]);
+    face(at(len, hw), at(len, -hw), d);
+    return out;
+  };
+
+  const west = shell(WEST_SHELL);
+  const east = shell(EAST_SHELL);
+  // floors under each shell: as many 2.7 m storeys as fit 1.5 m under the shell above the block's edge, at most 12
+  const floorsUnder = (sh: Shell, uOf: (s: number) => number, hw: number) => (s: number) => {
+    const u = uOf(s);
+    const w = ease(sh.w, u);
+    const T = ease(sh.top, u);
+    const R = ease(sh.rim, u);
+    const A = (T - R) / (1 - Math.cos(THETA));
+    const f = Math.min(1, hw / w);
+    const y = T - A + A * Math.cos(Math.asin(f));
+    return Math.max(2, Math.min(12, Math.floor((y - 1.5) / STOREY)));
+  };
+  const wl = WEST_SPINE.len;
+  const westBlock = block(C_W, D_W, WEST.len, WEST.hw, floorsUnder(WEST_SHELL, (s) => (WEST_TIP - s) / wl, WEST.hw), 1);
+  const westPod = podium([C_W[0] - D_W[0] * 0.5, C_W[1] - D_W[1] * 0.5], D_W, WEST.len + 8, WEST.podHw);
+  const el = EAST_SPINE.len;
+  const eastBlock = block(
+    [AX_E, EAST.z0],
+    [0, 1],
+    EAST.z1 - EAST.z0,
+    EAST.hw,
+    floorsUnder(EAST_SHELL, (s) => (s + 16) / el, EAST.hw),
+    5,
+  );
+  const eastPod = podium([AX_E, EAST.z0 - 2], [0, 1], EAST.z1 - EAST.z0 + 4, EAST.podHw);
+
+  // the bridge's front face: a frontal plane, the monocoque's top swelling and its belly sagging a little mid-span
+  const B = BRIDGE;
+  const bx = (f: number) => B.x0 + (B.x1 - B.x0) * f;
+  const bump = (f: number) => Math.sin(Math.PI * f);
+  const N = 24;
+  const fr = Array.from({ length: N + 1 }, (_, i) => i / N);
+  const topE = fr.map((f) => P([bx(f), B.y1 + 1.2 * bump(f), B.z0]));
+  const botE = fr.map((f) => P([bx(f), B.y0 - 0.5 * bump(f), B.z0]));
+  const band = (y0: number, y1: number) =>
+    poly([...fr.map((f) => P([bx(f), y0 + 0.2 * bump(f), B.z0])), ...[...fr].reverse().map((f) => P([bx(f), y1 + 0.3 * bump(f), B.z0]))]);
+  const bridge = {
+    body: poly([...topE, ...[...botE].reverse()]),
+    belly: band(B.y0 - 0.5, B.y0 + 1.1),
+    glass: band(7.5, 9.6),
+    // the glazed ribbon's mullions, every 1.5 m
+    mullions: Array.from({ length: Math.floor((B.x1 - B.x0) / 1.5) }, (_, i) => {
+      const x = B.x0 + 0.75 + i * 1.5;
+      const f = (x - B.x0) / (B.x1 - B.x0);
+      return polyline([P([x, 7.5 + 0.2 * bump(f), B.z0]), P([x, 9.6 + 0.3 * bump(f), B.z0])]);
+    }).join(" "),
+    top: polyline(topE),
+  };
+  return { west, east, westBlock, westPod, eastBlock, eastPod, bridge };
+};
+
+const cache = new Map<string, ReturnType<typeof build>>();
+const built = (cam: Camera, x: number, z: number) => {
+  const key = `${cam.f}/${cam.horizon}/${cam.cx}/${cam.height}/${x}/${z}`;
+  let b = cache.get(key);
+  if (!b) {
+    b = build(cam, x, z);
+    cache.set(key, b);
+  }
+  return b;
 };
 
 /**
- * The hotel with its photo ground line (photo y = 170) on screen y `ground`, photo x = 0 at screen `x`, `scale` screen
- * px per photo px (shot 4.1 draws it at 0.5 m per photo px, so the opening under the bridge spans the straight).
- * `lit` 0..1 switches the gridshell panels on one by one in a wave from west to east (all on at 1); `t` (seconds) drives
- * the twinkle of lit panels and room lights. `id` keeps its clip paths unique.
+ * The hotel through camera `cam`, its frame's origin (on the ground under the bridge, on the track's centre line) at
+ * world (`at.x`, 0, `at.z`). `lit` 0..1 switches the gridshell panels on one by one in a wave from the west tip to the
+ * east pod (all on at 1); `t` (seconds) drives the twinkle of lit panels. `id` keeps its filter unique.
  */
 export const YasHotel: React.FC<{
-  x: number;
-  ground: number;
-  scale: number;
+  cam: Camera;
+  at: { x: number; z: number };
   lit: number;
   t?: number;
   id?: string;
-}> = ({ x, ground, scale, lit, t = 0, id = "yas" }) => {
-  const map = (p: P): P => [x + p[0] * scale, ground + (p[1] - 170) * scale];
-  const M = (pts: P[]) => pts.map(map);
-  const X = (px: number) => x + px * scale;
-  const Y = (py: number) => ground + (py - 170) * scale;
-  const kOf = (px: number) => (px - 21) / (379 - 21);
+}> = ({ cam, at, lit, t = 0, id = "yas" }) => {
+  const H = built(cam, at.x, at.z);
+  const px = (m: number, z: number) => Math.max(0.6, m * cam.pxPerMetre(z));
 
-  const westOutline = smooth(
-    M([...WEST_TOP, ...[...WEST_RIM].reverse().slice(1, -1)]),
-    true,
-  );
-  const eastOutline = smooth(
-    M([...EAST_TOP, ...[...EAST_BOT].reverse().slice(1, -1)]),
-    true,
-  );
-  const lip = smooth(M(WEST_LIP), true);
-  const west = lattice(WEST_TOP, WEST_RIM, 21, 288, 3.1, 13, map, kOf);
-  const east = lattice(EAST_TOP, EAST_BOT, 286, 379, 3.1, 7, map, kOf);
-
-  // A panel switches on when the wave passes it, flashes, then glows with a slow twinkle.
-  const panelLight = (c: Cell) => {
+  // A panel switches on when the wave passes it, flashes, then glows with a slow twinkle; square-on panels read
+  // brightest, panels seen edge-on fade into the lattice.
+  const light = (c: Cell) => {
     const th = 0.06 + c.k * 0.78 + c.r * 0.14;
     const on = (lit - th) / 0.025;
     if (on <= 0) return 0;
     const flash = 0.5 * Math.exp(-on / 2.5);
     const twinkle = 0.86 + 0.14 * Math.sin(t * 5.3 + c.r * 37);
-    return Math.min(1, (0.45 + 0.55 * c.edge) * twinkle + flash);
+    return Math.min(1, (0.4 + 0.6 * c.facing) * twinkle + flash);
+  };
+  const latticeOn = lit > 0.86;
+
+  const cellsOf = (b: Built, front: boolean) => {
+    const cs = b.cells.filter((c) => c.front === front);
+    return (
+      <g>
+        {/* the outer face's glass and frames hide the underside behind it; the block shows faintly through */}
+        {front ? <path d={cs.map((c) => c.d).join(" ")} fill="#0b0b0b" opacity={0.7} /> : null}
+        {cs.map((c, i) => {
+          const a = light(c) * (front ? 1 : 0.55);
+          return (
+            <path
+              key={i}
+              d={c.panel}
+              fill={a > 0 ? PAPER : front ? "#0b0b0b" : "#1c1c1c"}
+              opacity={a > 0 ? a : front ? 0.55 : 0.9}
+            />
+          );
+        })}
+        <path
+          d={cs.map((c) => c.d).join(" ")}
+          fill="none"
+          stroke={latticeOn ? PAPER : front ? "#7a7a7a" : "#5a5a5a"}
+          strokeWidth={px(0.16, 200)}
+          opacity={latticeOn ? (front ? 0.75 : 0.5) : 0.6}
+        />
+      </g>
+    );
   };
 
-  // Room lights: rows of windows between the slabs, most of them lit.
-  const rooms = (
-    x0: number,
-    x1: number,
-    ys: number[],
-    pitch: number,
-    seed: number,
-  ) => {
-    const out: React.ReactNode[] = [];
-    for (let i = 0; i < ys.length - 1; i++) {
-      const y0 = ys[i] + 1.4;
-      const y1 = ys[i + 1] - 1;
-      for (let px = x0; px < x1 - pitch * 0.6; px += pitch) {
-        const r = hash(px * 3 + seed, i);
-        if (r < 0.22) continue;
-        const flick = r > 0.94 ? 0.55 + 0.45 * Math.sin(t * 9 + r * 50) : 1;
-        out.push(
-          <rect
-            key={`${seed}-${i}-${px}`}
-            x={X(px + 0.35)}
-            y={Y(y0)}
-            width={(pitch - 0.7) * scale}
-            height={(y1 - y0) * scale}
-            fill={PAPER}
-            opacity={(r > 0.7 ? 0.95 : 0.6) * flick}
-          />,
-        );
-      }
-    }
-    return out;
-  };
-
-  const westSlabs = [...WEST_SLABS, PODIUM_TOP];
-  const lowSlabs = [124, 130.5, 137, PODIUM_TOP];
-  const eastSlabs = [132, 137.5, PODIUM_TOP + 1];
-  const sw = (w: number) => Math.max(1, w * scale);
+  const blockOf = (faces: ReturnType<typeof build>["westBlock"]) =>
+    faces.map((f) => (
+      <g key={f.key}>
+        <path d={f.fill} fill="#141414" stroke={INK} strokeWidth={1} />
+        {f.windows.map((w, i) => (
+          <path key={i} d={w.d} fill={PAPER} opacity={w.o} />
+        ))}
+        <path d={f.slabs} fill={PAPER} opacity={0.75} />
+      </g>
+    ));
+  const podiumOf = (faces: ReturnType<typeof build>["westPod"]) =>
+    faces.map((f, i) => (
+      <g key={i}>
+        <path d={f.fill} fill="#1b1b1b" stroke={INK} strokeWidth={1} />
+        <path d={f.lobby} fill={PAPER} opacity={0.42} />
+        <path d={f.mullions} stroke={INK} strokeWidth={1} />
+        <path d={f.top} stroke={PAPER} strokeWidth={1.5} />
+      </g>
+    ));
+  const outline = (b: Built) => (
+    <path d={`${b.rim} ${b.crown}`} fill="none" stroke={PAPER} strokeWidth={1.6} strokeLinejoin="round" />
+  );
+  const glowCells = [...H.west.cells, ...H.east.cells].filter((c) => c.front);
 
   return (
     <g>
       <defs>
-        <clipPath id={`${id}-west`}>
-          <path d={westOutline} />
-        </clipPath>
-        <clipPath id={`${id}-east`}>
-          <path d={eastOutline} />
-        </clipPath>
-        <filter id={`${id}-glow`} x="-20%" y="-50%" width="140%" height="200%">
-          <feGaussianBlur stdDeviation={6 * scale} />
+        <filter id={`${id}-glow`} x="-30%" y="-80%" width="160%" height="260%">
+          <feGaussianBlur stdDeviation={14} />
         </filter>
       </defs>
       {/* the canopy's glow on the night air, growing as the panels come on */}
       {lit > 0 ? (
-        <g filter={`url(#${id}-glow)`} opacity={0.22 * lit}>
-          <path d={westOutline} fill={PAPER} />
-          <path d={eastOutline} fill={PAPER} />
-        </g>
+        <path d={glowCells.map((c) => c.d).join(" ")} fill={PAPER} opacity={0.3 * lit} filter={`url(#${id}-glow)`} />
       ) : null}
 
-      {/* east block: glass floors under the east shell */}
-      <rect
-        x={X(296)}
-        y={Y(128)}
-        width={78 * scale}
-        height={(PODIUM_TOP + 1 - 128) * scale}
-        fill="#151515"
-      />
-      {rooms(298, 372, eastSlabs, 2.4, 7)}
-      {eastSlabs.map((y) => (
-        <path
-          key={`e${y}`}
-          d={`M ${X(296)} ${Y(y)} L ${X(374)} ${Y(y)}`}
-          stroke={PAPER}
-          strokeWidth={sw(0.55)}
-          opacity={0.8}
-        />
-      ))}
+      {/* west block: the shell's underside (where the open end and the tucked rims show it), the block, its podium,
+          then the shell's outer face */}
+      {cellsOf(H.west, false)}
+      {blockOf(H.westBlock)}
+      {podiumOf(H.westPod)}
+      {cellsOf(H.west, true)}
+      {outline(H.west)}
 
-      {/* west tower: rounded west end, slabs as pale bands, rooms lit between them */}
-      <path
-        d={`M ${X(46)} ${Y(82)} L ${X(214)} ${Y(82)} ${WEST_TOP.filter(
-          ([px]) => px > 214,
-        )
-          .map(([px, py]) => `L ${X(Math.min(px, 286))} ${Y(py + 1.5)}`)
-          .join(
-            " ",
-          )} L ${X(286)} ${Y(PODIUM_TOP)} L ${X(46)} ${Y(PODIUM_TOP)} Q ${X(40.6)} ${Y(PODIUM_TOP)} ${X(40.6)} ${Y(PODIUM_TOP - 5)} L ${X(40.6)} ${Y(87)} Q ${X(40.6)} ${Y(82)} ${X(46)} ${Y(82)} Z`}
-        fill="#141414"
-      />
-      {rooms(43, 200, [83, ...westSlabs], 2.5, 1)}
-      {rooms(200, 284, lowSlabs, 2.4, 3)}
-      {westSlabs.map((y, i) => (
-        <path
-          key={`w${y}`}
-          d={`M ${X(40.6 + (i === westSlabs.length - 1 ? 0 : 0.6))} ${Y(y)} L ${X(i < 3 ? 200 : 286)} ${Y(y + (i < 3 ? 1.6 : 0))}`}
-          stroke={PAPER}
-          strokeWidth={sw(0.75)}
-          strokeLinecap="round"
-        />
-      ))}
-      {lowSlabs.slice(0, -1).map((y) => (
-        <path
-          key={`l${y}`}
-          d={`M ${X(200)} ${Y(y)} L ${X(284)} ${Y(y)}`}
-          stroke={PAPER}
-          strokeWidth={sw(0.55)}
-          opacity={0.85}
-        />
-      ))}
+      {/* the link bridge over the track */}
+      <path d={H.bridge.body} fill={PAPER} stroke={INK} strokeWidth={1.2} />
+      <path d={H.bridge.belly} fill="#8a8a8a" />
+      <path d={H.bridge.glass} fill="#3a3a3a" />
+      <path d={H.bridge.glass} fill={PAPER} opacity={0.5} />
+      <path d={H.bridge.mullions} stroke="#2a2a2a" strokeWidth={1} />
 
-      {/* podium on both sides of the track, its lobby glowing; open under the bridge */}
-      {[
-        [-4, GAP[0]],
-        [GAP[1], 384],
-      ].map(([a, b]) => (
-        <g key={a}>
-          <rect
-            x={X(a)}
-            y={Y(PODIUM_TOP)}
-            width={(b - a) * scale}
-            height={(170 - PODIUM_TOP) * scale}
-            fill="#1b1b1b"
-          />
-          <rect
-            x={X(a)}
-            y={Y(152)}
-            width={(b - a) * scale}
-            height={13 * scale}
-            fill={PAPER}
-            opacity={0.42}
-          />
-          {Array.from({ length: Math.floor((b - a) / 6) }, (_, i) => (
-            <path
-              key={i}
-              d={`M ${X(a + 3 + i * 6)} ${Y(152)} L ${X(a + 3 + i * 6)} ${Y(165)}`}
-              stroke={INK}
-              strokeWidth={sw(0.5)}
-            />
-          ))}
-          <path
-            d={`M ${X(a)} ${Y(PODIUM_TOP)} L ${X(b)} ${Y(PODIUM_TOP)}`}
-            stroke={PAPER}
-            strokeWidth={sw(0.9)}
-          />
-        </g>
-      ))}
-
-      {/* raking struts under the west shell (a V to one foot) and beside the bridge */}
-      <path
-        d={`M ${X(70)} ${Y(91)} L ${X(116)} ${Y(PODIUM_TOP)} L ${X(160)} ${Y(129)} M ${X(284)} ${Y(124)} L ${X(277)} ${Y(150)} M ${X(289)} ${Y(124)} L ${X(331)} ${Y(167)} M ${X(358)} ${Y(149)} L ${X(338)} ${Y(167)}`}
-        stroke={PAPER}
-        strokeWidth={sw(0.8)}
-        strokeLinecap="round"
-        opacity={0.9}
-        fill="none"
-      />
-
-      {/* deck arms tying the bridge into both blocks (behind the white body) */}
-      <path
-        d={`M ${X(236)} ${Y(149)} L ${X(268)} ${Y(150.5)} L ${X(268)} ${Y(158)} L ${X(236)} ${Y(158)} Z M ${X(309)} ${Y(150.5)} L ${X(342)} ${Y(149)} L ${X(342)} ${Y(158)} L ${X(309)} ${Y(158)} Z`}
-        fill="#262626"
-        stroke={PAPER}
-        strokeWidth={sw(0.55)}
-        opacity={0.95}
-      />
-      {/* the link bridge over the track: a white streamlined body with a dark band, the track passing underneath */}
-      <path
-        d={`M ${X(264)} ${Y(154.5)} C ${X(268)} ${Y(148.5)} ${X(302)} ${Y(147.5)} ${X(313)} ${Y(151)} L ${X(313)} ${Y(157)} C ${X(302)} ${Y(159.5)} ${X(272)} ${Y(159.5)} ${X(264)} ${Y(157.5)} Z`}
-        fill={PAPER}
-        stroke={INK}
-        strokeWidth={sw(0.5)}
-      />
-      <path
-        d={`M ${X(270)} ${Y(153)} C ${X(282)} ${Y(151.6)} ${X(298)} ${Y(151.4)} ${X(308)} ${Y(152.4)} L ${X(308)} ${Y(154.2)} C ${X(298)} ${Y(155)} ${X(282)} ${Y(155.1)} ${X(270)} ${Y(154.8)} Z`}
-        fill="#4a4a4a"
-      />
-      {/* lit window bays along the bridge's glass band, so it reads as a solid body, not a hoop */}
-      {Array.from({ length: 9 }, (_, n) => {
-        const x = 273 + n * 4;
-        return (
-          <path
-            key={`bw${n}`}
-            d={`M ${X(x)} ${Y(152.6)} L ${X(x)} ${Y(154.6)}`}
-            stroke={PAPER}
-            strokeWidth={sw(1.4)}
-            opacity={0.75}
-          />
-        );
-      })}
-      {/* the bridge is carried by the podium blocks: their lit faces either side of the track, and the deck's
-          shadow line running into them, so it reads as built in rather than floating */}
-      {[GAP[0], GAP[1]].map((x) => (
-        <path
-          key={x}
-          d={`M ${X(x)} ${Y(PODIUM_TOP)} L ${X(x)} ${Y(170)}`}
-          stroke={PAPER}
-          strokeWidth={sw(0.9)}
-          opacity={0.85}
-        />
-      ))}
-      <path
-        d={`M ${X(GAP[0] - 14)} ${Y(158.5)} L ${X(264)} ${Y(158)} M ${X(313)} ${Y(158)} L ${X(GAP[1] + 14)} ${Y(158.5)}`}
-        stroke={PAPER}
-        strokeWidth={sw(0.6)}
-        opacity={0.7}
-      />
-      <rect
-        x={X(GAP[0])}
-        y={Y(159)}
-        width={(GAP[1] - GAP[0]) * scale}
-        height={4 * scale}
-        fill={PAPER}
-        opacity={0.12}
-      />
-
-      {/* east shell: dark glass, lattice, panels */}
-      <path d={eastOutline} fill="#101010" />
-      <g clipPath={`url(#${id}-east)`}>
-        {east.map((c, i) => {
-          const a = panelLight(c);
-          return a > 0 ? (
-            <path key={i} d={c.panel} fill={PAPER} opacity={a} />
-          ) : null;
-        })}
-        <path
-          d={east.map((c) => c.d).join(" ")}
-          fill="none"
-          stroke={lit > 0.86 ? PAPER : "#6a6a6a"}
-          strokeWidth={sw(0.32)}
-          opacity={lit > 0.86 ? 0.7 : 0.55}
-        />
-      </g>
-      <path d={eastOutline} fill="none" stroke={PAPER} strokeWidth={sw(0.8)} />
-
-      {/* west shell: its curled lip (inner face, darker) and the outer surface */}
-      <path d={lip} fill="#1e1e1e" stroke={PAPER} strokeWidth={sw(0.6)} />
-      {[0.2, 0.4, 0.6, 0.8].map((f, i) => {
-        const p = map([24 + f * 18, 80 + f * 15]);
-        return (
-          <circle
-            key={i}
-            cx={p[0]}
-            cy={p[1]}
-            r={sw(0.9)}
-            fill={PAPER}
-            opacity={lit > f * 0.2 ? 0.9 : 0.35}
-          />
-        );
-      })}
-      <path d={westOutline} fill="#101010" />
-      <g clipPath={`url(#${id}-west)`}>
-        {west.map((c, i) => {
-          const a = panelLight(c);
-          return a > 0 ? (
-            <path key={i} d={c.panel} fill={PAPER} opacity={a} />
-          ) : null;
-        })}
-        <path
-          d={west.map((c) => c.d).join(" ")}
-          fill="none"
-          stroke={lit > 0.86 ? PAPER : "#6a6a6a"}
-          strokeWidth={sw(0.32)}
-          opacity={lit > 0.86 ? 0.7 : 0.55}
-        />
-      </g>
-      <path
-        d={westOutline}
-        fill="none"
-        stroke={PAPER}
-        strokeWidth={sw(0.9)}
-        strokeLinejoin="round"
-      />
+      {/* east block under its pod */}
+      {cellsOf(H.east, false)}
+      {blockOf(H.eastBlock)}
+      {podiumOf(H.eastPod)}
+      {cellsOf(H.east, true)}
+      {outline(H.east)}
     </g>
   );
 };

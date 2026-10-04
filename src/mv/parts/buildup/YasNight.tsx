@@ -1,5 +1,6 @@
 // Shot 4.1's picture: Yas Marina at night through one pinhole camera (ART-9), standing on the start/finish straight
-// and looking down it. The grid boxes run away to the Yas hotel, whose link bridge spans the far end; the pit wall and
+// and looking down it. The grid boxes run away under the Yas hotel's link bridge, its two blocks standing either side
+// of the track under their lit gridshells; the pit wall and
 // pit building on the left, the main grandstand (cantilevered tensile canopy, packed crowd) on the right, floodlight
 // towers behind the pit building and beyond the stand throwing light cones onto the asphalt. Black and white only
 // (ART-8).
@@ -7,17 +8,17 @@
 // Everything is built in world metres and projected through CAM, so every line that runs along the straight (walls,
 // fence rails, the canopy's lip and back beam, the pit building, the painted lines) meets the same vanishing point,
 // and every object is drawn at its real size for its distance. Walls and fences start in front of the frame's near
-// edge and run without a break to the hotel's podium, which closes the straight.
+// edge; the pit building ends against the hotel's west podium, the walls, fences and the track run on under the bridge.
 //
 // References (docs/assets/reference-register.md): the straight between the pit building and the main grandstand at
 // night, the stand's canopy cantilevered over the seats on arms, its underside lit by lamps along the lip
 // (references/yas-marina/main-straight-night-2009.jpg); floodlight towers behind the debris fence and the lit hotel
 // (yas-hotel-fireworks-2015.jpg, circuit-by-night-2010.jpg). The hotel is drawn by YasHotel. Composite for the title
-// card: the camera compresses the lap so the hotel closes the straight.
+// card: the camera compresses the lap so the hotel stands at the end of the straight.
 import { pinhole } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import { tone } from "../../../kit/tone";
-import { YasHotel } from "../../../scenes/abu-dhabi-2021/YasHotel";
+import { HOTEL_NEAR, YasHotel } from "../../../scenes/abu-dhabi-2021/YasHotel";
 
 export const CAM = pinhole({ f: 1100, horizon: 690, cx: 935, height: 4.5 });
 
@@ -27,10 +28,13 @@ const TRACK = { left: -4, right: 12 };
 const PIT_WALL = -5.5;
 const PIT_FRONT = -22;
 const RUNOFF = 17; // the right-hand wall and debris fence
-// The hotel's facade plane. Its photo is traced at HOTEL_M metres per photo px, so the opening under the link bridge
-// (photo x 272..305) spans the straight (x −4..12.5).
-const HOTEL_Z = 166;
-const HOTEL_M = 0.5;
+// The Yas hotel: the origin of its frame (on the ground under the link bridge, on the track's centre line). The
+// straight, its walls and fences and the run-off run on under the bridge to Z_FAR; the pit building and pit lane end
+// against the west block's podium, the strip behind the right-hand fence against the east block's.
+const HOTEL_AT = { x: 4, z: 183 };
+const PIT_END = HOTEL_AT.z + HOTEL_NEAR.west[1];
+const EAST_END = HOTEL_AT.z + HOTEL_NEAR.eastZ;
+const Z_FAR = 420;
 // The main grandstand: front wall at x = front, seat rows climbing to x = back, from z0 to z1.
 const STAND = { front: 20, back: 40, z0: 16, z1: 102, rows: 23 };
 // Its canopy: a fabric roof on cantilever arms every `bay` m, the lip out over the front rows, rising to the back beam
@@ -104,14 +108,14 @@ const line = (a: Pt, b: Pt) => `M ${a.x} ${a.y} L ${b.x} ${b.y}`;
 // A stroke width of `m` metres at depth z, kept readable far off and not absurd up close.
 const wAt = (m: number, z: number, min = 1) => Math.max(min, Math.min(40, m * CAM.pxPerMetre(z)));
 
-// A concrete wall with its debris fence along the straight at track x, unbroken from Z_NEAR to the hotel: wall face
+// A concrete wall with its debris fence along the straight at track x, unbroken from Z_NEAR on under the hotel's bridge: wall face
 // and cap, chain-link mesh (a fine diamond net up close, a translucent sheet beyond), posts every 3 m, two mid rails
 // and the top rail. Rails and cap are thin faces, so they taper with distance like the wall itself.
 const WALL_H = 1.2;
 const FENCE_H = 4;
 const WallFence: React.FC<{ x: number }> = ({ x }) => {
   const z0 = Z_NEAR;
-  const z1 = HOTEL_Z;
+  const z1 = Z_FAR;
   const mesh: string[] = [];
   const rise = FENCE_H - WALL_H;
   for (let z = z0; z < 70; z += 0.45) {
@@ -333,11 +337,6 @@ export const YasNight: React.FC<{
   flashes: number;
 }> = ({ t, frame, lit, flashes }) => {
   const H = CAM.horizon;
-  const hotelScale = HOTEL_M * CAM.pxPerMetre(HOTEL_Z);
-  // photo x 288 (the bridge's middle) sits over the track's centre at the hotel's distance
-  const bridge = CAM.screenX((TRACK.left + TRACK.right) / 2, HOTEL_Z);
-  const hotelX = bridge - 288 * hotelScale;
-  const hotelGround = CAM.screenY(0, HOTEL_Z);
 
   // grid boxes, staggered, 8 m apart, pole on the right
   const slots: React.ReactNode[] = [];
@@ -353,7 +352,7 @@ export const YasNight: React.FC<{
 
   // pit garage bays along the pit building, up to the hotel
   const bays: React.ReactNode[] = [];
-  for (let z = 4; z + 6.2 < HOTEL_Z; z += 7) {
+  for (let z = 4; z + 6.2 < PIT_END; z += 7) {
     const on = hash(z, 3) > 0.25;
     const z0 = z + 0.6;
     const z1 = z + 6.2;
@@ -374,7 +373,7 @@ export const YasNight: React.FC<{
   }
   // pit lane: the dashed line between the fast lane and the working lane, dashes foreshortened on the ground
   const dashes: string[] = [];
-  for (let z = Z_NEAR; z + 3 < HOTEL_Z; z += 6) dashes.push(strip(-11.1, -10.9, z, z + 3));
+  for (let z = Z_NEAR; z + 3 < PIT_END; z += 6) dashes.push(strip(-11.1, -10.9, z, z + 3));
 
   // camera flashes in the crowd this frame
   const pops: React.ReactNode[] = [];
@@ -419,37 +418,37 @@ export const YasNight: React.FC<{
       <rect x={-200} y={H} width={2320} height={1080 - H + 200} fill="#121212" />
       <path d={strip(TRACK.left, TRACK.right, Z_NEAR, 2000)} fill={nt("dark")} />
 
-      <YasHotel x={hotelX} ground={hotelGround} scale={hotelScale} lit={lit} t={t} id="yas41" />
+      <YasHotel cam={CAM} at={HOTEL_AT} lit={lit} t={t} id="yas41" />
 
       {/* floodlight masts (furthest first); the pit building and the right-hand fence cover their feet */}
       {TOWERS.map((w) => (
         <Mast key={`${w.x}-${w.z}`} w={w} />
       ))}
 
-      {/* left: pit building (garage bays lit), pit lane, pit wall with debris fence — all running to the hotel */}
-      <path d={face(PIT_FRONT, 0, 7, Z_NEAR, HOTEL_Z)} fill={nt("mid")} />
-      <path d={face(PIT_FRONT, 4.4, 6.4, Z_NEAR, HOTEL_Z)} fill={INK} />
+      {/* left: pit building (garage bays lit), pit lane, pit wall with debris fence — all the building ending at the hotel's west podium */}
+      <path d={face(PIT_FRONT, 0, 7, Z_NEAR, PIT_END)} fill={nt("mid")} />
+      <path d={face(PIT_FRONT, 4.4, 6.4, Z_NEAR, PIT_END)} fill={INK} />
       {bays}
       {/* upper level: hospitality glazing, some rooms lit, mullions every 2 m */}
-      <path d={face(PIT_FRONT, 4.7, 6, Z_NEAR, HOTEL_Z)} fill={nt("mid")} />
-      {Array.from({ length: Math.floor((HOTEL_Z - 8) / 7) }, (_, i) => {
+      <path d={face(PIT_FRONT, 4.7, 6, Z_NEAR, PIT_END)} fill={nt("mid")} />
+      {Array.from({ length: Math.floor((PIT_END - 8) / 7) }, (_, i) => {
         const z = 4 + i * 7;
         return hash(i, 4) > 0.45 ? <path key={i} d={face(PIT_FRONT, 4.8, 5.9, z + 0.3, z + 4.3)} fill={PAPER} opacity={0.35} /> : null;
       })}
       <path
-        d={Array.from({ length: Math.floor((HOTEL_Z - Z_NEAR) / 2) }, (_, i) =>
+        d={Array.from({ length: Math.floor((PIT_END - Z_NEAR) / 2) }, (_, i) =>
           line(S(PIT_FRONT, 4.7, Z_NEAR + i * 2), S(PIT_FRONT, 6, Z_NEAR + i * 2)),
         ).join(" ")}
         stroke={INK}
         strokeWidth={1.5}
       />
-      <path d={face(PIT_FRONT, 6.92, 7.08, Z_NEAR, HOTEL_Z)} fill={PAPER} />
-      <path d={strip(PIT_FRONT, PIT_WALL, Z_NEAR, HOTEL_Z)} fill="#161616" />
+      <path d={face(PIT_FRONT, 6.92, 7.08, Z_NEAR, PIT_END)} fill={PAPER} />
+      <path d={strip(PIT_FRONT, PIT_WALL, Z_NEAR, PIT_END)} fill="#161616" />
       <path d={dashes.join(" ")} fill={PAPER} opacity={0.5} />
       <WallFence x={PIT_WALL} />
 
       {/* the straight: asphalt, white edge lines, start line and the grid boxes */}
-      <path d={strip(TRACK.left, TRACK.right, Z_NEAR, HOTEL_Z)} fill={nt("dark")} />
+      <path d={strip(TRACK.left, TRACK.right, Z_NEAR, Z_FAR)} fill={nt("dark")} />
       {/* rubbered-in lines where the grid's two files run */}
       <path d={`${strip(-0.5, 1.3, Z_NEAR, 1500)} ${strip(6.7, 8.5, Z_NEAR, 1500)}`} fill={INK} opacity={0.45} />
       <path d={strip(TRACK.left, TRACK.left + 0.25, Z_NEAR, 1500)} fill={PAPER} />
@@ -457,9 +456,9 @@ export const YasNight: React.FC<{
       <path d={strip(TRACK.left, TRACK.right, 14, 14.5)} fill={PAPER} />
       {slots}
       {/* right: painted run-off up to the wall, the strip of ground behind it */}
-      <path d={strip(TRACK.right, RUNOFF, Z_NEAR, HOTEL_Z)} fill={nt("mid")} />
-      <path d={strip(TRACK.right + 1.2, TRACK.right + 1.5, Z_NEAR, HOTEL_Z)} fill={PAPER} opacity={0.8} />
-      <path d={strip(RUNOFF, STAND.front, Z_NEAR, HOTEL_Z)} fill="#1a1a1a" />
+      <path d={strip(TRACK.right, RUNOFF, Z_NEAR, Z_FAR)} fill={nt("mid")} />
+      <path d={strip(TRACK.right + 1.2, TRACK.right + 1.5, Z_NEAR, Z_FAR)} fill={PAPER} opacity={0.8} />
+      <path d={strip(RUNOFF, STAND.front, Z_NEAR, EAST_END)} fill="#1a1a1a" />
 
       {/* right: the main grandstand — front wall, seat rows packed with fans, the canopy over them */}
       <path d={face(STAND.front, 0, 2.5, STAND.z0, STAND.z1)} fill={nt("light")} stroke={INK} strokeWidth={2} />
