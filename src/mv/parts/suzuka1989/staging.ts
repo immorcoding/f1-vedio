@@ -59,26 +59,46 @@ export const ppm13 = (f: number) => {
   const k = smooth(tau, SLOWMO_AT - 0.5, SLOWMO_AT + 1.5);
   return 26 + 10 * k;
 };
-// Where a driver tag (104 × 46 px box) sits: beside its car on the side away from the other car, square to the car's
-// own heading on screen, far enough out that no part of the box reaches the car whatever its heading (the tags stay
-// through the dive to the touch, while the cars yaw into the corner). `q` and `other` are the two cars' screen
-// points, `heading` the car's screen heading (degrees), `cppm` the drawn px per metre.
+// Where a driver tag (104 × 46 px box) sits: beside its car, square to the car's heading on screen, far enough out
+// that no part of the box reaches the car whatever its heading (the tags stay through the dive to the touch, while the
+// cars yaw into the corner). Each car keeps one side for the whole shot (`side`: 1 = the car's right, −1 its left):
+// SEN pulls out to the right and dives down the inside, so his tag is on his right and PRO's on his left. Choosing
+// the side from where the other car is flipped the tags every frame while the two ran nose to tail. `heading` is the
+// car's screen heading (degrees), smoothed by the caller (headingSmooth13); `cppm` the drawn px per metre.
 export const TAG_HALF = { w: 52, h: 23 };
+export const TAG_SIDE = { SEN: 1, PRO: -1 } as const;
 export const tagAt13 = (
   q: { x: number; y: number },
-  other: { x: number; y: number },
+  side: 1 | -1,
   heading: number,
   cppm: number,
 ) => {
   const a = (heading * Math.PI) / 180;
-  let n = { x: -Math.sin(a), y: Math.cos(a) }; // the car's right side
-  if (n.x * (q.x - other.x) + n.y * (q.y - other.y) < 0) n = { x: -n.x, y: -n.y };
+  const n = { x: -Math.sin(a) * side, y: Math.cos(a) * side };
   const reach =
     (MP45.width / 2) * cppm +
     Math.abs(n.x) * TAG_HALF.w +
     Math.abs(n.y) * TAG_HALF.h +
     16;
   return { x: q.x + n.x * reach, y: q.y + n.y * reach };
+};
+// A heading (degrees) averaged over a window, so a tag does not shake with the car's frame-to-frame yaw: the mean
+// direction of `heading(t + k·step)`, k = −n…n, as unit vectors (no wrap-around at ±180°).
+export const headingSmooth13 = (
+  heading: (t: number) => number,
+  t: number,
+  step = 0.05,
+  n = 4,
+) => {
+  let x = 0;
+  let y = 0;
+  for (let k = -n; k <= n; k++) {
+    const a = (heading(t + k * step) * Math.PI) / 180;
+    const w = n + 1 - Math.abs(k);
+    x += Math.cos(a) * w;
+    y += Math.sin(a) * w;
+  }
+  return (Math.atan2(y, x) * 180) / Math.PI;
 };
 // Cars are never drawn shorter than ~150 px (4.26 m × 36 px/m): larger than life on the wider framing.
 export const CAR_PPM_MIN = 36;

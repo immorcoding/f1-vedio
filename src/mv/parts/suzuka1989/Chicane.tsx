@@ -46,6 +46,8 @@ import {
   cars13,
   CONTACT_13,
   ppm13,
+  headingSmooth13,
+  TAG_SIDE,
   tagAt13,
   smooth as smoothstep,
   tau13,
@@ -511,12 +513,12 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
             });
           }),
         )}
-        {/* driver tags above and below the pair, each on its car's outer side, until the touch */}
+        {/* driver tags above and below the pair, each on a fixed side of its car (SEN right, PRO left), until the touch */}
         {CARS.map(({ tag, at }) => {
           const c = at(t);
           const q = view.project(c);
-          const o = view.project(tag === "SEN" ? pro : sen);
-          const p = tagAt13(q, o, view.heading(c.heading), cppm);
+          const h = headingSmooth13((u) => view.heading(at(u).heading), t);
+          const p = tagAt13(q, TAG_SIDE[tag], h, cppm);
           return (
             <g key={`tag-${tag}`} opacity={tagsOn}>
               <rect
