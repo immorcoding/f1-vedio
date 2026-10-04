@@ -5,7 +5,6 @@
 // (ART-18: the cars touch, never overlap). The run-off is schematic; the facts are in docs/production/facts.md.
 import { AT01, MangaCar, VF20 } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
-import { strokeRibbon } from "../../../kit/fire";
 import { CAPTION_FONT, Caption, Sfx } from "../../../kit/lettering";
 import { focusLines, speedLines } from "../../../kit/lines";
 import { ToneDefs, tone } from "../../../kit/tone";
@@ -280,61 +279,26 @@ export const CrashMap: React.FC<PictureProps> = ({ f }) => {
           />
         );
       })}
-      {/* tyre smoke off GRO's rear wheels while he slides: streaky brush strokes laid on the ground where the wheels
-          were (so they stream back past the tracking camera), spreading and fading as they age — never round puffs */}
+      {/* tyre smoke off GRO's rear wheels while he slides, on threes */}
       {sinceContact > 0
-        ? [-0.8, 0.8].flatMap((side) =>
-            [0, 1, 2].map((j) => {
-              const pts = Array.from({ length: 16 }, (_, k) => {
-                const s = Math.max(tc, t - k * 0.6 - j * 0.7);
-                const back = poseAtFrame(PLAN.gro, s);
-                const h = (back.heading * Math.PI) / 180;
-                const age = (t - s) / 10; // ~0..1
-                // the smoke spreads outward from the wheel and drifts back with the air the car drags
-                const spread = side * (0.15 + 0.9 * age) + (j - 1) * 0.35 * age;
-                const wob = Math.sin(k * 0.9 + j * 2.1 + f * 0.06) * 0.25 * age;
-                const x =
-                  back.x +
-                  0.4 * Math.cos(h) -
-                  (side + spread + wob) * Math.sin(h);
-                const y =
-                  back.y +
-                  0.4 * Math.sin(h) +
-                  (side + spread + wob) * Math.cos(h);
-                return { x: sx(x), y: sy(y) };
-              });
-              const fade = Math.min(1, sinceContact / 10);
-              const d = strokeRibbon(pts, (1.5 + 0.5 * j) * PX, 0.72);
-              return (
-                <g key={`${side}${j}`} opacity={(0.8 - 0.18 * j) * fade}>
-                  <path d={d} fill={PAPER} opacity={0.85} />
-                  <path
-                    d={d}
-                    fill="none"
-                    stroke={INK}
-                    strokeWidth={2}
-                    strokeLinejoin="round"
-                    opacity={0.55}
-                  />
-                  {/* one thin strand along the stroke: the direction it blew */}
-                  <path
-                    d={`M ${pts
-                      .slice(1, 12)
-                      .map(
-                        (p, k) =>
-                          `${(p.x + (k % 2 ? 3 : -3)).toFixed(1)} ${p.y.toFixed(1)}`,
-                      )
-                      .join(" L ")}`}
-                    fill="none"
-                    stroke={INK}
-                    strokeWidth={1.6}
-                    strokeLinecap="round"
-                    opacity={0.35}
-                  />
-                </g>
-              );
-            }),
-          )
+        ? Array.from({ length: 16 }, (_, k) => {
+            const back = PLAN.gro[Math.max(tc, Math.floor(t) - Math.floor(k * 1.5))];
+            if (!back) return null;
+            const h = (back.heading * Math.PI) / 180;
+            const age = k / 16;
+            return [-0.8, 0.8].map((side) => (
+              <circle
+                key={`${k}${side}`}
+                cx={sx(back.x + 0.4 * Math.cos(h) - side * Math.sin(h))}
+                cy={sy(back.y + 0.4 * Math.sin(h) + side * Math.cos(h))}
+                r={(0.55 + 1.3 * age) * PX}
+                fill={PAPER}
+                stroke={INK}
+                strokeWidth={2.5}
+                opacity={0.85 * (1 - age)}
+              />
+            ));
+          })
         : null}
       <MangaCar
         car={AT01}

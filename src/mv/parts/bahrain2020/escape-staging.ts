@@ -18,7 +18,7 @@ const CLIMB_S = 1.6; // seconds over the rail
 const DELAY_S = 0.1; // the shot opens with him already reaching for the top rail
 export const OVER = Math.round((DELAY_S + CLIMB_S * 0.5) * 60); // frames until he is astride the top rail
 export const CLIMB_END = Math.round((DELAY_S + CLIMB_S) * 60); // frames until he is down on the track side and walks
-export const CLIMB_BEHIND_Z = 13.3; // GRO behind the rails, on the cell's side
+const BEHIND_Z = 13.3; // GRO behind the rails, on the cell's side
 export const WALK_Z = 12.55; // GRO walks along the rails, 0.45 m in front of them
 const DOC_RAIL_Z = 12.7; // the doctor at the rail, reaching over
 const DOC_WALK_Z = 12.78; // walking: a step deeper than GRO, a step behind him
@@ -37,15 +37,12 @@ const worldX = (fwd: number) => CLIMB_X - fwd;
 // t = frames into the shot
 export const stage36 = (t: number) => {
   const step = Math.floor(t / 3) * 3; // poses and positions held together on threes
-  const e = assistedEscape(step / 60 - DELAY_S, {
-    climb: CLIMB_S,
-    top: RAIL_TOP,
-  });
+  const e = assistedEscape(step / 60 - DELAY_S, { climb: CLIMB_S, top: RAIL_TOP });
   // GRO: 0 behind the rails → 0.5 astride them → 1 walking in front of them
   const c = e.gro.cross;
   const groZ =
     c < 0.5
-      ? CLIMB_BEHIND_Z + (BARRIER_Z - CLIMB_BEHIND_Z) * (c / 0.5)
+      ? BEHIND_Z + (BARRIER_Z - BEHIND_Z) * (c / 0.5)
       : BARRIER_Z + (WALK_Z - BARRIER_Z) * ((c - 0.5) / 0.5);
   const groAt = { x: worldX(e.gro.x), z: groZ };
   const docAt = {

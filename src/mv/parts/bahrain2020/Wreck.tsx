@@ -274,17 +274,10 @@ export const WreckShot: React.FC<PictureProps> = ({ f, palette }) => {
     y: 0.9 * (1 - u) + HALO_WORLD.y * u,
     z: REAR_Z + (HALO_WORLD.z - REAR_Z) * u,
   };
-  // ... and a slow hand-held breathe over it (about one breath every 1.5 s)
-  const breathe = Math.sin(t / 15);
-  const cam = zoomCam(
-    WRECK_CAM,
-    target,
-    (0.82 + 0.45 * u + 0.025 * hb) * (1 + 0.012 * breathe),
-    {
-      x: 960 + 160 * (1 - u) + 6 * Math.sin(t / 23),
-      y: 560 + 5 * breathe,
-    },
-  );
+  const cam = zoomCam(WRECK_CAM, target, 0.82 + 0.45 * u + 0.01 * hb, {
+    x: 960 + 160 * (1 - u),
+    y: 560,
+  });
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
