@@ -30,6 +30,13 @@ MV 画面上出现的每个事实及其来源（STO-3）。来源核对日期：
 - 全场 71 圈；最后一圈雨势变大，Glock（Toyota）仍用干地胎；Vettel 和 Hamilton 在最后几个弯超过 Glock，Hamilton 拿回第 5 名。
 - Massa 赢下比赛；年度积分 Hamilton 98、Massa 97，Hamilton 以 1 分夺冠。
 - 来源：[2008 Brazilian Grand Prix — Wikipedia](https://en.wikipedia.org/wiki/2008_Brazilian_Grand_Prix)
+- **HAM NEEDS P5（镜头 2.2 说明框第二行，#19）：MAS 赢下比赛时，HAM 必须拿到第 5 名才能夺冠。**（核对 2026-10-04）
+  - 赛前积分：HAM 94 分（5 胜）、MAS 87 分（5 胜），HAM 领先 7 分。来源：[Jolpica-F1（Ergast 数据）2008 第 17 站后车手积分](https://api.jolpi.ca/ergast/f1/2008/17/driverStandings.json)。
+  - 2008 年积分：第 1–8 名 10、8、6、5、4、3、2、1 分。来源：[2008 FIA F1 Sporting Regulations（2008-05-19 版）第 6.4 条](https://argent.fia.com/web/fia-public.nsf/475632e46002bedac125744f004312f4/$file/f1.sporting.regulations.19-05-2008.pdf)；本站成绩里 MAS 10、VET 5、HAM 4、GLO 3 分也与此一致，[Jolpica-F1 2008 第 18 站成绩](https://api.jolpi.ca/ergast/f1/2008/18/results.json)。
+  - 算术：MAS 赢 → 87 + 10 = 97。HAM 第 5 → 94 + 4 = 98，冠军；HAM 第 6 → 94 + 3 = 97，与 MAS 同分。
+  - 同分决胜：同一份规则第 7.2 条，车手同分时排名较高者为"the holder of the greatest number of first places"，再比第 2 名次数，依此类推。MAS 赢下巴西就是 6 胜，HAM 5 胜，所以同分时 MAS 夺冠；因此第 6 不够，第 5 是最低要求。赛后积分 HAM 98（5 胜）、MAS 97（6 胜），与此吻合：[Jolpica-F1 2008 第 18 站后车手积分](https://api.jolpi.ca/ergast/f1/2008/18/driverStandings.json)。
+  - 报道佐证：Wikipedia 赛前段"Hamilton would be champion"只要"fifth place or better"，"In the event of a points tie, Massa would win the championship on a count-back, having more wins"（[2008 Brazilian Grand Prix — Wikipedia](https://en.wikipedia.org/wiki/2008_Brazilian_Grand_Prix)）；GrandPrix.com 赛事笔记"Hamilton only needs to finish fifth, even if Massa wins the race, to secure the World Championship"（[Massa takes Brazilian win – Hamilton wins the championship](https://www.grandprix.com/races/brazilian-gp-2008-race-notes-massa-takes-brazilian-win-hamilton-wins-the-championship.html)）。
+  - 画面用法：说明框写 "HAM NEEDS P5"（比 "P5 = TITLE" 更直白：主语是 HAM，和 2.3 的 "6 HAM" 名次牌直接对上）；2.2 的 HAM 名次牌写第 6，是最后一圈开始时的名次（见下条：第 69、70 圈结束时 HAM 第 6）。
 - **已核实（原"待核实"）：Vettel 超 Hamilton 是在第 69 圈，Hamilton 从第 5 掉到第 6。** 第 69 圈雨势变大，Hamilton 跑宽，Vettel 拿到第 5；第 69、70 圈结束时排名都是 GLO 第 4、VET 第 5、HAM 第 6。Massa 冲线夺冠那一刻 Hamilton 仍是第 6。第 71 圈（最后一圈）VET 和 HAM 先后超过还在用干地胎的 GLO：VET 在前、HAM 在后，HAM 的超车发生在 Junção 弯、冲上通往终点的上坡时。最终 VET 第 4、HAM 第 5、GLO 第 6。
   - 圈位：[Jolpica-F1（Ergast 数据）2008 第 18 站第 66–71 圈逐圈排名](https://api.jolpi.ca/ergast/f1/2008/18/laps/69.json)
   - 第 69 圈跑宽、VET 拿到第 5：[2008 Brazilian Grand Prix — Wikipedia, Race](https://en.wikipedia.org/wiki/2008_Brazilian_Grand_Prix#Race)；BBC 赛报写作"倒数第二圈开始时"被 Vettel 超过（即第 69 圈过线时），[BBC Sport, 2008-11-02](https://news.bbc.co.uk/sport2/hi/motorsport/formula_one/7705230.stm)

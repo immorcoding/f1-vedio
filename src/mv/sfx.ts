@@ -13,7 +13,7 @@
 import { at, secondsAt, type Pos } from "./timing.ts";
 import { proAt, realTime, senAt } from "./parts/suzuka1989/drive13.ts";
 import { launch as launch90 } from "./parts/suzuka1990/staging.ts";
-import { passRaceTime } from "./parts/brazil2008/staging.ts";
+import { passLead, passRaceTime } from "./parts/brazil2008/staging.ts";
 import { CLOCK_32, PLAN_32 } from "./parts/bahrain2020/staging.ts";
 
 /** Engine families (scripts/lib/engine.mjs PRESETS; facts: docs/production/facts.md "引擎声"). */
@@ -214,12 +214,12 @@ export const SFX = [
     id: "brazil2008.pass",
     shot: "2.5",
     from: at(47),
-    to: at(49),
+    to: at(51),
     end: "fade",
     underDb: 14,
     muffle: 2600,
     time: passRaceTime,
-    note: "the pass at Junção in slow motion (0.3×), then real time: HAM's V8 pulls up the hill past GLO's Toyota V8",
+    note: "the pass at Junção in slow motion (0.3×, bars 47–48), then real time from 49.1: HAM's V8 pulls up the hill away from GLO's Toyota V8",
     cars: [
       {
         who: "HAM",
@@ -232,7 +232,7 @@ export const SFX = [
         era: "v8-2008",
         db: -2,
         speed: (t) => 30 + 0.3 * t,
-        pan: (s) => -0.7 * ramp(-0.3 + 5 * passRaceTime(s), 0, 12),
+        pan: (s) => -0.7 * ramp(passLead(s), 0, 12),
       },
     ],
   },
