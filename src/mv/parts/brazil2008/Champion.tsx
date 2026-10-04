@@ -36,7 +36,6 @@ import {
 import { ChampionMoment, MOMENT_CAR, MOMENT_HELMET } from "./ChampionMoment";
 import { Page } from "./common";
 
-
 type Box = { x: number; y: number; w: number; h: number };
 const rect = (b: Box) => ({ x: b.x, y: b.y, width: b.w, height: b.h });
 
@@ -388,6 +387,7 @@ export const Champion: React.FC<{ st: ShotTime }> = ({ st }) => {
           transform={`translate(${bx} ${by}) scale(${k}) translate(${SCORE_W / 2} ${SCORE_H / 2}) rotate(${-2 + 1.5 * scoreJolt * Math.sin(t * 60) + 0.6 * Math.sin(t * 1.3)})`}
         >
           <PointsBox
+            accent="gold"
             columns={scoreColumns("brazil2008")}
             since={t}
             goldSince={sinceGold}

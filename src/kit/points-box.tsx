@@ -7,8 +7,10 @@
 // Animation, keyed to beats by the caller: `since` is the seconds since the box slams in (oversize → settled in 0.12 s
 // with a small overshoot, like 2.7's slam), `goldSince` the seconds since the gold stroke slams onto the leader.
 // The box is drawn centred on (0, 0) of the caller's transform.
+import { createContext, useContext } from "react";
 import { Easing } from "remotion";
 import { INK, PAPER } from "./colors";
+import { TonePattern } from "./tone";
 import {
   CAPTION_FONT,
   TITLE_FONT,
@@ -19,6 +21,14 @@ import {
 
 /** The gold of the champion cards (2.7, 5.8) and of the points box's under-stroke. */
 export const GOLD = "#f2c230";
+
+/**
+ * How the leader is marked. Gold belongs to the champion cards only (ART-8; user 2026-10-04, after the
+ * prototype/gold-accent A/B): every other box marks the leader with a screentone block behind the numeral ("tone",
+ * the default). "gold" = the gold under-stroke (champion cards opt in); "ink" = a solid ink under-stroke.
+ */
+export type PointsAccent = "gold" | "ink" | "tone";
+export const PointsAccentContext = createContext<PointsAccent>("tone");
 
 export type PointsColumn = { value: string; code: string; gold?: boolean };
 
@@ -109,8 +119,19 @@ export const PointsBox: React.FC<{
   since?: number;
   /** Seconds since the gold stroke lands on the gold column(s); omitted = no gold; negative = not yet. */
   goldSince?: number;
-}> = ({ columns, size = POINTS_SIZE, unit, since, goldSince }) => {
+  /** Overrides the context: the champion cards pass "gold". */
+  accent?: PointsAccent;
+}> = ({
+  columns,
+  size = POINTS_SIZE,
+  unit,
+  since,
+  goldSince,
+  accent: accentProp,
+}) => {
   useLettering();
+  const ctxAccent = useContext(PointsAccentContext);
+  const accent = accentProp ?? ctxAccent;
   const box = since === undefined ? { s: 1, o: 1 } : pointsSlam(since);
   if (!box) return null;
   const n = size;
@@ -118,7 +139,13 @@ export const PointsBox: React.FC<{
   const top = -l.h / 2;
   const base = top + BASELINE * n;
   const gold = goldSince === undefined ? null : pointsSlam(goldSince, 1.5);
-  const numeral = (cx: number, value: string, fill: string, d = 0) => (
+  const numeral = (
+    cx: number,
+    value: string,
+    fill: string,
+    d = 0,
+    halo = false,
+  ) => (
     <text
       x={cx + d}
       y={base + d}
@@ -128,8 +155,8 @@ export const PointsBox: React.FC<{
       fontWeight={900}
       fontSize={n}
       fill={fill}
-      stroke={d ? INK : undefined}
-      strokeWidth={d ? n * 0.06 : undefined}
+      stroke={halo ? PAPER : d ? INK : undefined}
+      strokeWidth={halo ? n * 0.05 : d ? n * 0.06 : undefined}
       paintOrder="stroke"
     >
       {value}
@@ -137,6 +164,11 @@ export const PointsBox: React.FC<{
   );
   return (
     <g transform={`scale(${box.s})`} opacity={box.o}>
+      {accent === "tone" ? (
+        <defs>
+          <TonePattern id={`pb-tone-${n}`} r={n * 0.011} gap={n * 0.042} />
+        </defs>
+      ) : null}
       <rect
         x={-l.w / 2 + SHADOW * n}
         y={top + SHADOW * n}
@@ -152,15 +184,38 @@ export const PointsBox: React.FC<{
         const gc = { x: nx, y: base - n * 0.36 };
         return (
           <g key={`${i}-${c.value}`}>
-            {c.gold && gold ? (
+            {c.gold && gold && accent === "tone" ? (
               <g
                 opacity={gold.o}
                 transform={`translate(${gc.x} ${gc.y}) scale(${gold.s}) translate(${-gc.x} ${-gc.y})`}
               >
-                {numeral(nx, c.value, GOLD, GOLD_OFFSET * n)}
+                <rect
+                  x={nx - col.num / 2 - n * 0.06}
+                  y={base - n * 0.78}
+                  width={col.num + n * 0.12}
+                  height={n * 0.86}
+                  transform={lean(nx, base)}
+                  fill={`url(#pb-tone-${n})`}
+                />
               </g>
             ) : null}
-            {numeral(nx, c.value, INK)}
+            {c.gold && gold && accent !== "tone" ? (
+              <g
+                opacity={gold.o}
+                transform={`translate(${gc.x} ${gc.y}) scale(${gold.s}) translate(${-gc.x} ${-gc.y})`}
+              >
+                {accent === "ink"
+                  ? numeral(nx, c.value, INK, GOLD_OFFSET * n * 1.6)
+                  : numeral(nx, c.value, GOLD, GOLD_OFFSET * n)}
+              </g>
+            ) : null}
+            {numeral(
+              nx,
+              c.value,
+              INK,
+              0,
+              Boolean(c.gold && gold && accent !== "gold"),
+            )}
             {unit ? (
               <text
                 x={nx + col.num / 2 + UNIT_GAP * n}
