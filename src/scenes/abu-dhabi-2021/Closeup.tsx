@@ -64,6 +64,8 @@ export const Closeup: React.FC<{
   /** Extra camera shake, px. */
   shake?: { x: number; y: number };
   hotelGlow?: number;
+  /** Drawn on the ground nearer than the outside run-off (z < 6), for low cameras that see it. */
+  under?: React.ReactNode;
   /** Drawn between the cars (screen space, before the nearer car): smoke, sparks. */
   between?: React.ReactNode;
   /** Drawn over the cars inside the tilted camera group (air lines, smoke in front). */
@@ -83,6 +85,7 @@ export const Closeup: React.FC<{
   focus,
   shake,
   hotelGlow,
+  under,
   between,
   over,
   children,
@@ -129,6 +132,7 @@ export const Closeup: React.FC<{
                 opacity={Math.min(1, 0.9 * speed)}
               />
             ) : null}
+            {under}
             <TrackSurface
               cam={cam}
               camX={camX}

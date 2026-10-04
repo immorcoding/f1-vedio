@@ -14,7 +14,7 @@ import { focusLines, speedLines } from "../../kit/lines";
 import { ToneDefs } from "../../kit/tone";
 
 // Screen anchor that puts the car's helmet centre at (hx, hy) at `ppm` px per metre.
-const helmetAnchor = (car: CarSpec, hx: number, hy: number, ppm: number) => {
+export const helmetAnchor = (car: CarSpec, hx: number, hy: number, ppm: number) => {
   const k = (car.frame.k * ppm) / CAR_UNITS_PER_METRE;
   return {
     x: hx - (car.frame.x - car.helmetAt.cx) * k,
