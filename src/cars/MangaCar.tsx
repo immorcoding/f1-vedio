@@ -920,7 +920,8 @@ export const MangaCar: React.FC<{
   const numberPiece = pieceScreenTransform(car, state, k, dir);
   return (
     <g transform={`translate(${at.x} ${at.y})`}>
-      {split ? null : (
+      {/* the flat contact shadow on the near ground line; a look with its own groundShadow (HIGH) draws that instead */}
+      {split || car.farSide?.[state.farSide ?? "low"]?.groundShadow ? null : (
         <ellipse
           cx={(car.frame.x - (front.cx + rear.cx) / 2) * k * dir}
           cy={2}
