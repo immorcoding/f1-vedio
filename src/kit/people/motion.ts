@@ -274,14 +274,17 @@ export const armsFolded = (o: { t?: number; head?: number } = {}): Pose => {
   );
 };
 
-// Watching, one hand on top of the head (the nervous last lap), the other hanging.
+// Watching, one palm resting on the crown of the head (the nervous last lap), the other hanging. The elbow is raised
+// forward and out to the side, so the upper arm points partly at the camera and shows short; the hand lies flat on top
+// of the head, fingers toward the back.
 export const handOnHead = (o: { t?: number; head?: number } = {}): Pose => {
   const s = stand({ t: o.t, lean: -2, head: o.head ?? -4 });
   return withArms(s, {
-    hand: v(s.hip.x + 0.07, s.hip.y + 0.86),
+    hand: v(s.hip.x + 0.1, s.hip.y + 0.77),
     grip: "flat",
-    wrist: 40,
-    elbowOut: 1,
+    wrist: 75,
+    upper: 0.7,
+    elbowOut: -1,
   });
 };
 
