@@ -366,7 +366,7 @@ export const STR3: CarSpec = {
   tcamColor: "#c8e021",
   antenna: "M 743 503 L 743 480",
   rainLight: "M 1678 615 L 1692 615 L 1692 627 L 1678 627 Z",
-  numberAt: { x: 1300, y: 420 }, // same place and style as the other cars' numbers (engine cover)
+  numberAt: { x: 1300, y: 452 }, // same place and style as the other cars' numbers (engine cover)
   tyreGrooves: 4,
 };
 
