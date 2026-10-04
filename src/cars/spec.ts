@@ -51,6 +51,9 @@ export type FarSideLook = {
   // The body as a camera at `body.elevation` sees it, re-projected from the trace photo's higher camera (seenFrom.ts).
   // Leave it out to draw the body as traced.
   body?: BodyView;
+  // A camera looking down sees the ground under the car between the near and the far wheels, in the car's shadow: an
+  // ink band from the near wheels' contact line up to the far wheels' (user review 2026-10-04, HIGH look).
+  groundShadow?: boolean;
 };
 
 // The LOW look (ART-26): the trace photos look down 8–22° on the car, so every part further from the

@@ -62,6 +62,7 @@ export const W12: CarSpec = {
         { cx: 452, cy: 661, r: 95 },
         { cx: 1585, cy: 662, r: 98 },
       ],
+      groundShadow: true,
     },
     low: {
       wheels: [
@@ -209,6 +210,7 @@ export const RB16B: CarSpec = {
         { cx: 450, cy: 655, r: 96 },
         { cx: 1565, cy: 653, r: 98 },
       ],
+      groundShadow: true,
     },
     low: {
       wheels: [

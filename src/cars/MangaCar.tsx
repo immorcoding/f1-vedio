@@ -590,9 +590,14 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
     look.frontEndplate === undefined ? fw.farFrom : look.frontEndplate;
   const deck = look.frontDeck ?? fw.deck;
   const flap = look.frontFlap ?? fw.flap.d;
+  const farWheels = drawnFarWheels(car, camera);
+  const groundShadow = look.groundShadow
+    ? `M ${front.cx} ${front.cy + front.r} L ${rear.cx} ${rear.cy + rear.r} L ${farWheels[1].cx} ${farWheels[1].cy + farWheels[1].r} L ${farWheels[0].cx} ${farWheels[0].cy + farWheels[0].r} Z`
+    : null;
   return (
     <>
-      {drawnFarWheels(car, camera).map((w, i) => (
+      {groundShadow ? <path d={groundShadow} fill={INK} /> : null}
+      {farWheels.map((w, i) => (
         <FarWheel
           key={`f${w.cx}`}
           car={car}
