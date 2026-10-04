@@ -15,7 +15,12 @@ import { proAt, realTime, senAt } from "./parts/suzuka1989/drive13.ts";
 import { launch as launch90 } from "./parts/suzuka1990/staging.ts";
 import { passLead, passRaceTime } from "./parts/brazil2008/staging.ts";
 import { CLOCK_32, PLAN_32 } from "./parts/bahrain2020/staging.ts";
-import { hamSpeed, verSpeed } from "./parts/abuDhabi2021/staging.ts";
+import {
+  hamSpeed,
+  TOW_TIMES,
+  towPlan,
+  verSpeed,
+} from "./parts/abuDhabi2021/staging.ts";
 
 /** Engine families (scripts/lib/engine.mjs PRESETS; facts: docs/production/facts.md "引擎声"). */
 export type EngineEra = "v10-1989" | "v12-1990" | "v8-2008" | "v6h-2021";
@@ -87,18 +92,14 @@ const planSpeed =
     return (Math.hypot(b.x - a.x, b.y - a.y) * 60) / frames;
   };
 const CONTACT_32 = PLAN_32.contact / 60; // race seconds into the shot
-// ── 5.4: screen x of each car, as Tow.tsx places them (m along the track; the camera's centre
-// sits near x = −2.5, so a car 12 m behind is at the left edge) ───────────────────────────────────────────────
+// ── 5.4: screen x of each car, from the plan Tow.tsx draws (staging.ts `towPlan`: m along the track; the camera's
+// centre sits near x = −2.5, so a car 12 m behind is at the left edge) ─────────────────────────────────────────
 const panX = (x: number) => clamp(0.2 + 0.12 * (x + 2.5), -0.8, 0.8);
 const OUT_51 = span(at(82), at(84));
-const PULL_54 = span(at(92), at(93, 3));
-const ALONG_54 = span(at(92), at(94, 3));
-const DUR_54 = span(at(92), at(96));
-const hamX54 = (s: number) =>
-  -1.6 -
-  6.4 +
-  4.6 * ramp(s, PULL_54 + 0.2, ALONG_54) -
-  4.2 * ramp(s, ALONG_54 + 0.5, DUR_54);
+const PULL_54 = TOW_TIMES.pull;
+const ALONG_54 = TOW_TIMES.along;
+const DUR_54 = TOW_TIMES.dur;
+const hamX54 = (s: number) => towPlan(s).ham.x;
 
 export const SFX = [
   {

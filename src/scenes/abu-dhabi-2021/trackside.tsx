@@ -52,7 +52,8 @@ const span = (
   cam: Camera,
 ): [number, number] => {
   if (camX === 0) return [base[0], base[1]];
-  const halfW = ((cam.cx + 400) * z) / cam.f; // half the visible width at depth z, m, with margin
+  // half the visible width at depth z, m, with margin (through pxPerMetre, so a dollied-back camera works too)
+  const halfW = (Math.max(cam.cx, 1920 - cam.cx) + 400) / cam.pxPerMetre(z);
   const lo = Math.floor((camX - halfW - origin) / period);
   const hi = Math.ceil((camX + halfW - origin) / period);
   return [lo, hi];

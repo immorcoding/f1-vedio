@@ -1,13 +1,16 @@
-// Shot 5.6 (bars 100–101): VER takes the flag. On the cut (100.1, `abuDhabi2021.finish`) his front tyre is on the
-// finish line — the panel opens in slow motion with a white flash and focus lines behind him (VER stays fully solid), the chequered flag waves in the
-// inset, then the camera speeds back up to race pace and the line streams away behind him.
+// Shot 5.6 (bars 100–101): VER takes the flag. Bar 100 is the gantry view (FinishGantry.tsx): on the cut (100.1,
+// `abuDhabi2021.finish`) his nose is on the line, the flag lands its downstroke and HAM is small far up the straight,
+// 2.2 s behind. On 101.1 it cuts to the side close-up at race pace, the chequered flag waving in the inset and the
+// line streaming away behind him.
 import { carPoint, PIRELLI_2021, RB16B } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { focusLines } from "../../../kit/lines";
 import { ChequeredFlag } from "../../../scenes/abu-dhabi-2021/ChequeredFlag";
 import { Closeup, trackLayout } from "../../../scenes/abu-dhabi-2021/Closeup";
 import { T5_CAM } from "../../../scenes/abu-dhabi-2021/T5Panel";
-import { hit, smooth, type ShotTime } from "./shotClock";
+import { at } from "../../timing.ts";
+import { FinishGantry } from "./FinishGantry";
+import { hit, secondsInShot, smooth, type ShotTime } from "./shotClock";
 
 const cam = T5_CAM;
 const VER_X = -3.4;
@@ -30,8 +33,17 @@ const camAt = (t: number) => {
   return x;
 };
 
+// The side close-up picks up 1 s into its own clock (back at race pace, the line already behind him) when it takes
+// over from the gantry view on 101.1.
+const SIDE_FROM = 1.0;
+
 export const Finish: React.FC<{ st: ShotTime }> = ({ st }) => {
-  const { t } = st;
+  const gantryTo = secondsInShot(st, at(101));
+  if (st.t < gantryTo) return <FinishGantry t={st.t} />;
+  return <FinishSide t={st.t - gantryTo + SIDE_FROM} />;
+};
+
+const FinishSide: React.FC<{ t: number }> = ({ t }) => {
   const camX = camAt(t);
   const flash = hit(t, 0, 0.12);
   const burst = hit(t, 0, 0.6);

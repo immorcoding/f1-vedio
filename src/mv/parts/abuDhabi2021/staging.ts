@@ -210,3 +210,57 @@ for (const id of ["5.1b", "5.1c"]) {
     },
   });
 }
+
+// ── 5.4 (92–95): out of T5 and down the back straight ─────────────────────────────────────────────────────────────
+// A camera-relative side-on plan: x is the car's rear end along the track from the camera's centre line, m; z the
+// distance from the camera, m. The racing surface spans 8.6–13.65 and the far side is the inside. VER exits T5 on
+// the inside line and stays there. HAM is in his tow (same line, 0.65 m off his gearbox), pulls out to the outside
+// on 93.3, and draws up to half a car behind by 94.3 (his front wheels at VER's cockpit). He holds there for half a
+// second while VER keeps the inside, then drops back into his wake. Side by side the two cars keep 1 m of air
+// between their tyres (3 m centre to centre); the review-1 overlap came from 1.7 m. Tow.tsx draws the shot from two
+// cameras on this one plan, and the engine cue (sfx.ts) and the interpenetration check read it too.
+const TOW_PULL = secondsAt(at(93, 3)) - secondsAt(at(92));
+const TOW_ALONG = secondsAt(at(94, 3)) - secondsAt(at(92));
+const TOW_DUR = secondsAt(at(96)) - secondsAt(at(92));
+export const TOW_TIMES = { pull: TOW_PULL, along: TOW_ALONG, dur: TOW_DUR };
+export const TOW_Z = { inside: 12.6, outside: 9.6 };
+const TOW_VER_X = -1.6;
+const TOW_BEHIND = -(CAR_2021.length + 0.65); // HAM's rear end in the tow
+const TOW_HALF = -2.8; // half a car behind: the cockpits ~half a car length apart
+const TOW_DROPPED = -9.5;
+const between = (t: number, a: number, b: number) => smooth((t - a) / (b - a));
+export const towPlan = (t: number) => {
+  const out = between(t, TOW_PULL, TOW_PULL + 0.7);
+  const gain = between(t, TOW_PULL + 0.35, TOW_ALONG);
+  const fall = between(t, TOW_ALONG + 0.5, TOW_DUR);
+  const hamX =
+    TOW_VER_X +
+    TOW_BEHIND +
+    (TOW_HALF - TOW_BEHIND) * gain +
+    (TOW_DROPPED - TOW_HALF) * fall;
+  const towZ = TOW_Z.inside - 0.2;
+  const hamZ = towZ - (towZ - TOW_Z.outside) * out;
+  return {
+    ver: { x: TOW_VER_X, z: TOW_Z.inside },
+    ham: { x: hamX, z: hamZ },
+    /** 0..1: how far HAM is out of the tow (the slipstream lines fade). */
+    out,
+    /** 0..1: HAM drawing up, then dropping back. */
+    gain,
+    fall,
+  };
+};
+{
+  const s = shot("5.4");
+  SAMPLERS.push({
+    part: "abuDhabi2021",
+    shot: "5.4",
+    from: s.from,
+    to: s.to,
+    // no contact window: the two cars never touch on the back straight
+    poses: (f) => {
+      const c = towPlan((f - s.from) / FPS);
+      return [sideOn("HAM", c.ham.x, c.ham.z), sideOn("VER", c.ver.x, c.ver.z)];
+    },
+  });
+}
