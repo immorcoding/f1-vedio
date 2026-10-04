@@ -44,8 +44,8 @@ const rect = (b: Box) => ({ x: b.x, y: b.y, width: b.w, height: b.h });
 const HELMET_PANEL: Box = { x: 44, y: 44, w: 1016, h: 992 };
 const TEXT_PANEL: Box = { x: 1084, y: 44, w: 792, h: 992 };
 // The score box sits in the panel's bottom-left corner, on the wet track below the car.
-const SCORE_W = 430;
-const SCORE_H = 250;
+export const SCORE_W = 430;
+export const SCORE_H = 250;
 const CORNER = { x: 76, y: 768 };
 const BIG_K = 2.5;
 const BIG = {
@@ -137,7 +137,7 @@ const Sparkles: React.FC<{ box: Box; t: number; n: number; seed: string }> = ({
 
 // The final points in a paper box, laid out in its own SCORE_W × SCORE_H frame. `gold` (0–1) slams the gold
 // under-stroke onto HAM's 98.
-const ScoreBox: React.FC<{ gold: { s: number; o: number } | null }> = ({
+export const ScoreBox: React.FC<{ gold: { s: number; o: number } | null }> = ({
   gold,
 }) => {
   const num = (x: number, t: string, fill: string, dx = 0) => (

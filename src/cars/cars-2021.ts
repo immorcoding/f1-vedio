@@ -217,7 +217,8 @@ export const RB16B: CarSpec = {
   tcam: "M 1040 446 L 1038 412 L 1054 412 L 1056 422 L 1080 422 L 1082 412 L 1098 412 L 1095 446 Z",
   antenna: "M 545 554 L 545 518 M 535 518 L 556 518",
   rainLight: "M 1650 640 L 1666 640 L 1666 654 L 1650 654 Z",
-  numberAt: { x: 1470, y: 530 },
+  // the red "33" on the engine cover below the bull's tail: x 1428–1522, caps 500–553 in the photo
+  numberAt: { x: 1475, y: 553, size: 74, color: "#e5333f" },
   // From above (side and rear reference photos): yellow nose tip and red sidepod flash.
   top: { marks: { noseTip: "#ffcc00", podStripe: "#d72a2e" } },
 };

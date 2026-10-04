@@ -182,8 +182,18 @@ export type CarSpec = {
   tcamColor?: string;
   antenna?: string;
   rainLight?: string;
-  // Race number position (text baseline centre) and its height in photo px (default 46).
-  numberAt: { x: number; y: number; size?: number };
+  // Race number position (text baseline centre) and its font size in photo px (default 46; Arial Black caps are
+  // 0.72 of it). As painted on the real car: `color` (paper with an ink edge when left out), `angle` in degrees in
+  // the photo (positive turns clockwise as the photo faces), and `squash` (vertical scale) for a number painted on a
+  // top surface and seen nearly edge-on from the side.
+  numberAt: {
+    x: number;
+    y: number;
+    size?: number;
+    color?: string;
+    angle?: number;
+    squash?: number;
+  };
   // Where the car tears in two when it breaks up (CarState.split): a jagged polyline from above the car to below it,
   // running down the engine bulkhead between the survival cell (with the fuel cell) and the power unit. Only needed
   // for a car that is shown broken.

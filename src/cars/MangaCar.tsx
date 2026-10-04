@@ -13,6 +13,7 @@ import {
   photoPxPerMetre,
   type Accent,
   type CarSpec,
+  type Driver,
   type EndplateCopy,
   type Wheel,
 } from "./spec";
@@ -246,7 +247,10 @@ const FarWheel: React.FC<{
 // Side-view race helmet facing left (ART-13): shell with chin bar, tinted visor, livery stripes (or the driver's real
 // design), and on a modern shell the top air intake and rear spoiler; shaded with dots. Sized like a real helmet
 // (about 0.29 m long) by the trace.
-const Helmet: React.FC<{ car: CarSpec; id: string }> = ({ car, id }) => {
+const Helmet: React.FC<{
+  car: Pick<CarSpec, "helmetAt" | "driver">;
+  id: string;
+}> = ({ car, id }) => {
   const { cx, cy, r } = car.helmetAt;
   const {
     base,
@@ -345,6 +349,30 @@ const Helmet: React.FC<{ car: CarSpec; id: string }> = ({ car, id }) => {
         strokeWidth={4.5}
         strokeLinejoin="round"
       />
+    </g>
+  );
+};
+
+// A driver's helmet on its own (the outro's line-up of every driver in the film): the same side-view helmet the cars
+// carry, drawn at the 44 px trace radius and scaled to `r`, so line weights match a car shown at that size. (x, y) is
+// the helmet centre; `facing` as for MangaCar.
+export const DriverHelmet: React.FC<{
+  driver: Driver;
+  x: number;
+  y: number;
+  r: number;
+  facing?: "left" | "right";
+}> = ({ driver, x, y, r, facing = "right" }) => {
+  const id = svgId(useId());
+  const s = r / 44;
+  return (
+    <g
+      transform={`translate(${x} ${y}) scale(${facing === "left" ? s : -s} ${s})`}
+    >
+      <defs>
+        <TonePattern id={`${id}-dm`} r={2.3} gap={9} />
+      </defs>
+      <Helmet car={{ helmetAt: { cx: 0, cy: 0, r: 44 }, driver }} id={id} />
     </g>
   );
 };
@@ -861,15 +889,26 @@ export const MangaCar: React.FC<{
             fontFamily="Arial Black, Arial, sans-serif"
             fontWeight={900}
             fontSize={(car.numberAt.size ?? 46) * k}
-            fill={PAPER}
+            fill={car.numberAt.color ?? PAPER}
             stroke={INK}
-            strokeWidth={3 * k}
+            strokeWidth={(car.numberAt.color ? 1.5 : 3) * k}
             paintOrder="stroke"
             fontStyle="italic"
             transform={
-              state.tilt
-                ? `rotate(${-state.tilt * dir} ${pivot.x} ${pivot.y})`
-                : undefined
+              [
+                state.tilt
+                  ? `rotate(${-state.tilt * dir} ${pivot.x} ${pivot.y})`
+                  : "",
+                // the photo faces left: mirrored (facing right) a clockwise turn becomes anticlockwise
+                car.numberAt.angle
+                  ? `rotate(${-dir * car.numberAt.angle} ${num.x} ${num.y})`
+                  : "",
+                car.numberAt.squash
+                  ? `translate(${num.x} ${num.y}) scale(1 ${car.numberAt.squash}) translate(${-num.x} ${-num.y})`
+                  : "",
+              ]
+                .join(" ")
+                .trim() || undefined
             }
           >
             {car.driver.number}
