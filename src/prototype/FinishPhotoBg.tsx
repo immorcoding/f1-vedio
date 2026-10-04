@@ -13,7 +13,7 @@ import { shotAt, type ShotTime } from "../mv/parts/abuDhabi2021/shotClock";
 import { EDIT } from "../mv/parts/abuDhabi2021/shots";
 import { at, frameAt } from "../mv/timing";
 
-export type Variant = "before56" | "before57" | "A" | "B" | "C";
+export type Variant = "before56" | "before57" | "A" | "B" | "C" | "D" | "E";
 
 const CUT = staticFile("proto-finish/cutout-ink.png");
 const CUT_AR = 715 / 1399; // width / height of the cutout PNG
@@ -75,6 +75,46 @@ const Score: React.FC<{ x: number; y: number; code: string; pts: string; big?: b
     </text>
   </g>
 );
+
+
+// D/E (v4): the whole photo (backdrop kept) in a tall panel, the Red Bull team-radio line set huge beside it.
+// D = ink-wash photo, E = muted colour photo. Line verified: formula1.com "Say what" Abu Dhabi 2021 (Horner).
+const PH_AR = 948 / 1506;
+const LINES = ["MAX VERSTAPPEN,", "YOU ARE THE", "WORLD", "CHAMPION!"];
+const SIZES = [84, 84, 180, 150];
+const CardD: React.FC<{ colour?: boolean }> = ({ colour }) => {
+  const ph = { x: 40, y: 40, h: 1000 };
+  const pw = ph.h * PH_AR;
+  return (
+    <AbsoluteFill style={{ backgroundColor: PAPER }}>
+      <svg width={1920} height={1080} style={{ position: "absolute" }}>
+        <Burst cx={1290} cy={540} r0={360} seed={21} opacity={0.35} page />
+      </svg>
+      <div style={{ position: "absolute", left: ph.x, top: ph.y, width: pw, height: ph.h, overflow: "hidden" }}>
+        <Img src={staticFile(colour ? "proto-finish/full-col.png" : "proto-finish/full-ink.png")} style={{ width: pw, height: ph.h }} />
+      </div>
+      <svg width={1920} height={1080} style={{ position: "absolute" }}>
+        <g transform="rotate(-4 1290 540)">
+          {LINES.map((l, i) => {
+            const y = [310, 410, 630, 830][i];
+            return (
+              <text key={l} x={1290} y={y} textAnchor="middle" fontFamily="Arial Black, Arial, sans-serif" fontWeight={900}
+                fontStyle="italic" fontSize={SIZES[i]} fill={i >= 2 ? INK : PAPER} stroke={i >= 2 ? PAPER : INK}
+                strokeWidth={i >= 2 ? 10 : 14} paintOrder="stroke" letterSpacing={i >= 2 ? 6 : 2}>
+                {l}
+              </text>
+            );
+          })}
+        </g>
+        <text x={1290} y={985} textAnchor="middle" fontFamily="sans-serif" fontSize={30} fill={INK}>
+          — 红牛车队无线电 · 2021.12.12 · 阿布扎比
+        </text>
+        <Frame x={ph.x} y={ph.y} w={pw} h={ph.h} />
+        <Frame x={40} y={40} w={1840} h={1000} />
+      </svg>
+    </AbsoluteFill>
+  );
+};
 
 // A: title card. The cutout owns the left; the scores sit on the right and never touch the face or the trophy.
 const CardA: React.FC = () => (
@@ -146,6 +186,8 @@ export const FinishPhotoBg: React.FC<{ variant?: Variant; t?: number }> = ({ var
   const st = shotAt(EDIT, frameAt(at(99)) + Math.round((variant === "B" ? 1.3 : t) * 60));
   if (variant === "before56") return <Finish st={st} />;
   if (variant === "A") return <CardA />;
+  if (variant === "D") return <CardD />;
+  if (variant === "E") return <CardD colour />;
   if (variant === "B") return <BeatB st={st} />;
   return <SplitC st={st} />;
 };
