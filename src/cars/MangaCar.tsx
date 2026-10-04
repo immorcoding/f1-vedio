@@ -16,6 +16,7 @@ import {
   type CarSpec,
   type Driver,
   type EndplateCopy,
+  type FarSideCamera,
   type TopOnlyCar,
   type Wheel,
 } from "./spec";
@@ -61,6 +62,9 @@ export type CarState = {
   driver?: false;
   // false: the far front endplate is gone (torn off or bent away; the scene draws the damage), side view only.
   farFrontEndplate?: false;
+  // Side view: how the far wheels and far front wing are drawn (CarSpec.farSide): "low" (default) for a trackside
+  // camera near the cars' height, "high" for one looking down on the car. Each shot says which; no camera maths.
+  farSide?: FarSideCamera;
 };
 
 export type Tread = "dry" | "wet";
@@ -574,9 +578,15 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
   const [front, rear] = car.nearWheels;
   const pivot = { x: (front.cx + rear.cx) / 2, y: (front.cy + rear.cy) / 2 };
   const shade = car.shade ?? 1;
+  const camera = state.farSide ?? "low";
+  const look = car.farSide?.[camera] ?? {};
+  const farFront =
+    look.frontEndplate === undefined ? fw.farFrom : look.frontEndplate;
+  const deck = look.frontDeck ?? fw.deck;
+  const flap = look.frontFlap ?? fw.flap.d;
   return (
     <>
-      {drawnFarWheels(car).map((w, i) => (
+      {drawnFarWheels(car, camera).map((w, i) => (
         <FarWheel
           key={`f${w.cx}`}
           car={car}
@@ -593,19 +603,19 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
         }
       >
         {/* far side: far front endplate and wing surface, far rear endplate and rear wing top, airbox camera */}
-        {fw.farFrom && state.farFrontEndplate !== false ? (
+        {farFront && state.farFrontEndplate !== false ? (
           <Endplate
             d={fw.near}
             livery={fw.livery}
             fill={p.wing}
             w={4}
-            copy={fw.farFrom}
+            copy={farFront}
           />
         ) : null}
-        <path d={fw.deck} fill={p.frontDeck} />
-        <path d={fw.flap.d} fill={fw.flap.color} />
+        <path d={deck} fill={p.frontDeck} />
+        <path d={flap} fill={fw.flap.color} />
         <path
-          d={fw.deck}
+          d={deck}
           fill="none"
           stroke={INK}
           strokeWidth={4}

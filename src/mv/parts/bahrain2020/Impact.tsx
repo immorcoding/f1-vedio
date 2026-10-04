@@ -355,6 +355,8 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
                 facing="left"
                 at={at}
                 state={{
+                  // the impact camera is 3.2 m up: the VF-20's high far side (ART-26)
+                  farSide: "high",
                   wheelAngle,
                   ...(split > 0
                     ? { split: { front, rear, show: "rear" as const } }
@@ -366,7 +368,11 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
                   car={VF20}
                   facing="left"
                   at={at}
-                  state={{ wheelAngle, split: { front, rear, show: "front" } }}
+                  state={{
+                    farSide: "high",
+                    wheelAngle,
+                    split: { front, rear, show: "front" },
+                  }}
                 />
               ) : null}
               <BentGuardrail

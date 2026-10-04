@@ -71,6 +71,27 @@ export const VF20: CarSpec = {
     { cx: 546, cy: 581, r: 92 },
     { cx: 1588, cy: 573, r: 95 },
   ],
+  // Two looks, chosen per shot (CarState.farSide, ART-26). "high", for the 3.2 m wreck cam (3.3, 3.4, the 3.5 panels,
+  // 3.6, the halo finale): the traced far endplate and wing, the far wheels a little higher than the default half
+  // lift. "low", for a camera near the car's height: as the STR3, the far wing and wheels hidden behind the near ones.
+  farSide: {
+    high: {
+      wheels: [
+        { cx: 546, cy: 643, r: 92 },
+        { cx: 1588, cy: 638, r: 95 },
+      ],
+    },
+    low: {
+      wheels: [
+        { cx: 566, cy: 752, r: 93 },
+        { cx: 1659, cy: 752, r: 93 },
+      ],
+      frontEndplate: false,
+      frontDeck:
+        "M 258 792 L 330 772 L 390 742 L 420 716 L 420 830 L 404 846 L 272 848 L 258 834 Z",
+      frontFlap: "M 360 754 L 420 716 L 420 729 L 364 765 Z",
+    },
+  },
   rimR: 53,
   rim: "dark",
   compound: PIRELLI_2020.hard,
@@ -180,6 +201,21 @@ export const AT01: CarSpec = {
     { cx: 452, cy: 668, r: 92 },
     { cx: 1628, cy: 600, r: 92 },
   ],
+  // From a trackside camera the far side reads as on the STR3 (user, 2026-10-04): the far wheels hidden behind the
+  // near ones, the far front endplate a sliver over the near one, the wing seen side-on, its elements rising from the
+  // endplate to the nose (ART-26).
+  farSide: {
+    low: {
+      wheels: [
+        { cx: 554, cy: 692, r: 93 },
+        { cx: 1688, cy: 692, r: 93 },
+      ],
+      frontEndplate: { dx: 4, dy: -8, scale: 0.95 },
+      frontDeck:
+        "M 246 722 L 330 710 L 418 699 L 418 766 L 404 778 L 256 780 L 244 768 Z",
+      frontFlap: "M 340 709 L 418 698 L 418 707 L 342 717 Z",
+    },
+  },
   rimR: 53,
   rim: "spoked",
   compound: PIRELLI_2020.medium,

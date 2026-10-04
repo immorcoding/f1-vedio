@@ -1,9 +1,9 @@
 // Shot 5.5 (bars 96–99): the rest of the last lap from above, back straight to the flag, compressed into four bars.
-// The map turns with VER so he always drives left to right, as in the close-ups; the lap he has covered is inked in
-// behind him, HAM drops back toward the 2.2 s he finished behind (facts.md), and VER's nose reaches the finish line
-// exactly on the cut (100.1). The user kept this following camera and the small top-view cars over #23's fixed map
-// (2026-10-04), with #23's glows on top: each car in a paper glow ringed in its team colour (VER red, HAM teal) with
-// a comet tail behind it, pulsing on every beat. The tyres roll at the map's speed and each car has its contact shadow.
+// The map turns with VER so he always drives left to right, as in the close-ups; HAM drops back toward the 2.2 s he
+// finished behind (facts.md), and VER's nose reaches the finish line exactly on the cut (100.1). The user kept this
+// following camera and the small top-view cars over #23's fixed map (2026-10-04), with only #23's glows on top: each
+// car in a steady paper glow ringed in its team colour (no comet tail, no inked lap trail, no beat pulse; user
+// 2026-10-04). The tyres roll at the map's speed and each car has its contact shadow.
 import {
   carPoint,
   MangaCar,
@@ -22,16 +22,19 @@ import {
   FinishLine,
   mapView,
   poseAt,
-  samplePath,
   TrackMap,
   YAS_MARINA_2021,
 } from "../../../tracks";
-import { SECONDS_PER_BEAT } from "../../timing.ts";
 import { ramp, smooth, type ShotTime } from "./shotClock";
 import { rollAt, TopShadow } from "./TopShadow";
 
-// The glow colours (#23): the livery's accent (RB red, Petronas teal).
-const RING = { VER: "#d8202b", HAM: "#00a19b" } as const;
+// The glow colours (#23): HAM Petronas teal; VER red or Red Bull blue. The user was unsure which (2026-10-04): red
+// ships, as it stands further from HAM's teal and the RB16B carries red. Flip VER_GLOW to try blue.
+const VER_GLOW: "red" | "blue" = "red";
+const RING = {
+  VER: VER_GLOW === "red" ? "#d8202b" : "#2353d8",
+  HAM: "#00a19b",
+} as const;
 
 const T = YAS_MARINA_2021;
 const LAP = T.lapLength;
@@ -81,16 +84,12 @@ export const ToFinish: React.FC<{ st: ShotTime }> = ({ st }) => {
     screen: { x: 900, y: 560 },
   });
   const ppm = view.pxPerMetre * CAR_X;
-  const trail = view.path(samplePath(T, FROM - 40, sV, 0, 8));
   const fin = {
     a: view.project(poseAt(T, 0, -T.width * 1.4)),
     b: view.project(poseAt(T, 0, T.width * 1.4)),
   };
   const vPos = view.project(poseAt(T, sV));
   const vHead = view.heading(poseAt(T, sV).heading);
-  // the beat pulse (#23): a flare on every beat that decays within it
-  const beat = (t % SECONDS_PER_BEAT) / SECONDS_PER_BEAT;
-  const pulse = Math.exp(-beat * 4);
   // real speed along the lap, m/s (the run is compressed), for the tyres; the cars are CAR_X life size, so their
   // tread turns CAR_X times slower than a life-size tyre over the same ground
   const dt = 1 / 60;
@@ -113,8 +112,6 @@ export const ToFinish: React.FC<{ st: ShotTime }> = ({ st }) => {
           <rect width={1920} height={1080} fill={tone("light")} />
           <path d={focusLines(vPos.x, vPos.y, 260, 120, Math.floor(t * 12))} fill={INK} opacity={0.18} />
           <TrackMap track={T} view={view} theme="paper" road={54} shadow />
-          {/* the lap VER has run, inked solid */}
-          <path d={trail} fill="none" stroke={INK} strokeWidth={20} strokeLinecap="round" strokeLinejoin="round" />
           <FinishLine a={fin.a} b={fin.b} width={34} theme="paper" />
           {/* speed lines streaming off the leader */}
           <g transform={`translate(${vPos.x} ${vPos.y}) rotate(${vHead})`}>
@@ -131,14 +128,11 @@ export const ToFinish: React.FC<{ st: ShotTime }> = ({ st }) => {
             const pose = poseAt(T, s);
             const p = view.project(pose);
             const heading = view.heading(pose.heading);
-            const glow = ppm * (3.4 + 0.9 * pulse);
-            // a comet tail in the team colour along the track behind the car
-            const tail = view.path(samplePath(T, Math.max(FROM - 40, s - 70), s - 2.5 * CAR_X, 0, 6));
+            const glow = ppm * 3.8;
             return (
               <g key={car.name}>
-                <path d={tail} fill="none" stroke={RING[tag]} strokeWidth={ppm * 1.1} strokeLinecap="round" opacity={0.75} />
-                <circle cx={p.x} cy={p.y} r={glow} fill={PAPER} opacity={0.55 + 0.35 * pulse} />
-                <circle cx={p.x} cy={p.y} r={glow * 0.72} fill={PAPER} stroke={RING[tag]} strokeWidth={ppm * (0.45 + 0.25 * pulse)} />
+                <circle cx={p.x} cy={p.y} r={glow} fill={PAPER} opacity={0.75} />
+                <circle cx={p.x} cy={p.y} r={glow * 0.72} fill={PAPER} stroke={RING[tag]} strokeWidth={ppm * 0.6} />
                 <circle cx={p.x} cy={p.y} r={glow * 0.72 + ppm * 0.3} fill="none" stroke={INK} strokeWidth={4} />
                 <TopShadow car={car} at={p} heading={heading} ppm={ppm} roll={rollAt(T, s, v / CAR_X)} />
                 <MangaCar

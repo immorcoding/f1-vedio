@@ -1,7 +1,8 @@
 // Shot 5.1 (bar 82): the drop. A new image on the hit, not a flash back into the build-up's framing: the camera is
 // straight above the straight out of T4, the two cars rush diagonally at the lens (down-right, the way 5.3 travels),
 // VER tucked into HAM's tow. The whole panel slams in tilted and oversized and settles in a tenth of a second; the
-// first three frames are an impact frame (the page inverted, ink for paper); focus lines press in from every edge on
+// first IMPACT_FRAMES frames are an impact frame (the page inverted, ink for paper), held a sixteenth note and two
+// frames so it reads (user 2026-10-04: three frames were too short); focus lines press in from every edge on
 // the two noses, and the camera keeps dropping toward them through the bar (the cars grow: they come at us). The
 // road, kerbs and tyre marks stream past at the cars' true speed (staging.ts).
 import { MangaCar, PIRELLI_2021, RB16B, topAnchorAt, W12, wheelAngleAt } from "../../../cars";
@@ -14,15 +15,18 @@ import { autoKerbs, mapView, poseAt, TrackSection, YAS_MARINA_2021 } from "../..
 import { hit, ramp, type ShotTime } from "./shotClock";
 import { rollAt, TopShadow } from "./TopShadow";
 import { hamSpeed, SLAM_SCALE, slamPlan, verSpeed } from "./staging.ts";
+import { FRAMES_PER_BEAT } from "../../timing.ts";
 
 const T = YAS_MARINA_2021;
 // Screen heading of travel: down and to the right, toward the lens and the way the side-on shots run.
 const SCREEN_HEADING = 38;
 const KERBS = autoKerbs(T, 760, 1100, 1 / 200);
+// The inverted impact frame from the hit on 82.1: a sixteenth note (7 frames) and two more, 9 frames.
+const IMPACT_FRAMES = Math.round(FRAMES_PER_BEAT / 4) + 2;
 
 export const Slam: React.FC<{ st: ShotTime }> = ({ st }) => {
   const { t, dur } = st;
-  const impact = st.frame < 3; // the inverted impact frame
+  const impact = st.frame < IMPACT_FRAMES; // the inverted impact frame
   const slam = 1 - ramp(t, 0, 0.13); // panel settling 1 → 0
   const jolt = hit(t, 0, 0.3);
   const c = slamPlan(t);

@@ -19,6 +19,23 @@ export type Wheel = { cx: number; cy: number; r: number };
 // The far endplate of a wing as the copy of the near one seen further away (ART-17): scaled by `scale` about the near
 // endplate's bounding-box corner (min x, min y), then moved by (dx, dy) photo px.
 export type EndplateCopy = { dx: number; dy: number; scale: number };
+
+// The far side of a car as drawn for one kind of camera (ART-26), simple per-car data rather than a perspective
+// model: the body is drawn flat from the side, so the far parts are placed by eye to sit with it (user review
+// 2026-10-04: perspective-correct far parts on a flat body look wrong). Anything left out is drawn as traced: far
+// wheels at FAR_WHEEL_LIFT, the far endplates from `farFrom`, the wing surface from `deck`/`flap`.
+export type FarSideLook = {
+  // the far wheels (front, rear) as drawn, photo px; one at its near wheel's place, a little smaller, hides behind it
+  wheels?: [Wheel, Wheel];
+  // the far front endplate as the near one's copy; false: hidden behind the near one
+  frontEndplate?: EndplateCopy | false;
+  // the front wing surface and its flap seen side-on, in place of the traced (from above) `deck` and `flap.d`
+  frontDeck?: string;
+  frontFlap?: string;
+};
+// Which look a scene asks for (CarState.farSide): "low" for a trackside camera near the cars' height (the default),
+// "high" for a camera looking down on the car, as the trace photos and Bahrain's 3.2 m wreck cam do.
+export type FarSideCamera = "low" | "high";
 export type Accent = { d: string; color: string };
 
 // Real livery colours, one flat manga fill per form region (ART-8); screentone dots add the shading on top.
@@ -117,6 +134,8 @@ export type CarSpec = {
   // Far-side wheels as traced on the photo (front, rear). The trace photos are shot from above, so the far wheels sit
   // high there; the renderer draws them lower (drawnFarWheels).
   farWheels: [Wheel, Wheel];
+  // The far side per camera look (FarSideLook); a car without one is drawn as traced from any camera.
+  farSide?: Partial<Record<FarSideCamera, FarSideLook>>;
   rimR: number;
   rim: "spoked" | "dark";
   rimAccent?: string;
@@ -247,11 +266,15 @@ export const photoPxPerMetre = (car: CarSpec) =>
 // the traced height, the same proportion on every car. Where a car's nose or body is taller than that, it hides the
 // far wheel, as on a real side-on view.
 export const FAR_WHEEL_LIFT = 0.5;
-export const drawnFarWheels = (car: CarSpec): [Wheel, Wheel] =>
-  car.farWheels.map((w, i) => {
+export const drawnFarWheels = (
+  car: CarSpec,
+  camera: FarSideCamera = "low",
+): [Wheel, Wheel] =>
+  car.farSide?.[camera]?.wheels ??
+  (car.farWheels.map((w, i) => {
     const near = car.nearWheels[i];
     return { ...w, cy: near.cy - (near.cy - w.cy) * FAR_WHEEL_LIFT };
-  }) as [Wheel, Wheel];
+  }) as [Wheel, Wheel]);
 
 // Named points on the car, in metres from the car's origin (rear end, on the ground): x forward, y up.
 export type CarLandmark =

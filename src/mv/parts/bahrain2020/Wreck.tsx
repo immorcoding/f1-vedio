@@ -193,7 +193,9 @@ export const WreckWorld: React.FC<{
   );
   const gapFire = fireAt(FIRES.gap.x, FIRES.gap.z, FIRES.gap.w, FIRES.gap.h);
   const cellAt = cam.anchor({ x: CELL_ANCHOR_X, z: CELL_Z });
+  // the wreck cam is 3.2 m up, looking down on the car: the VF-20's high far side (ART-26)
   const cellState = {
+    farSide: "high" as const,
     split: { front: CELL_POSE, show: "front" as const },
     driver,
   };
@@ -399,6 +401,7 @@ export const WreckWorld: React.FC<{
           facing="right"
           at={rearAt}
           state={{
+            farSide: "high",
             split: { rear: REAR_POSE, show: "rear" },
             compound: VF20.compound,
           }}
