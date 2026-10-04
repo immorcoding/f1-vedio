@@ -21,6 +21,7 @@ import {
   type Wheel,
 } from "./spec";
 import { specSeenFrom } from "./seenFrom";
+import { RearWingPlanesView } from "./RearWingPlanes";
 import { TopCar } from "./TopCar";
 
 // How the car is seen: from the side (the traced view), or from above on a track map (TopCar).
@@ -66,6 +67,9 @@ export type CarState = {
   // Side view: how the far wheels and far front wing are drawn (CarSpec.farSide): "low" (default) for a trackside
   // camera near the cars' height, "high" for one looking down on the car. Each shot says which; no camera maths.
   farSide?: FarSideCamera;
+  // Side view: the rear wing's DRS flap, 0 = closed (the default), 1 = fully open (85 mm slot); in between animates it.
+  // Only cars with traced RearWingPlanes show it.
+  drs?: number;
 };
 
 export type Tread = "dry" | "wet";
@@ -627,7 +631,9 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
         {car.rearWing.farFrom ? (
           <Endplate
             d={car.rearWing.near}
-            livery={car.rearWing.livery}
+            livery={
+              car.rearWing.farLivery === false ? [] : car.rearWing.livery
+            }
             fill={p.wing}
             w={5}
             copy={car.rearWing.farFrom}
@@ -645,7 +651,17 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
             <path d={car.rearWing.top} fill={`url(#${id}-dl)`} opacity={0.6} />
           </>
         ) : null}
-        <path d={car.rearWing.pylon} fill={INK} />
+        {car.rearWing.planes ? (
+          <RearWingPlanesView
+            car={car}
+            drs={state.drs ?? 0}
+            id={id}
+            fill={p.rearTop}
+          />
+        ) : null}
+        {car.rearWing.pylon ? (
+          <path d={car.rearWing.pylon} fill={INK} />
+        ) : null}
         {car.rearWing.elements.map((d) => (
           <Ink key={d} d={d} w={5} />
         ))}

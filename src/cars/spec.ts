@@ -20,6 +20,20 @@ export type Wheel = { cx: number; cy: number; r: number };
 // endplate's bounding-box corner (min x, min y), then moved by (dx, dy) photo px.
 export type EndplateCopy = { dx: number; dy: number; scale: number };
 
+// The rear wing's two elements seen side-on at the near endplate (photo px): the main plane and the DRS flap above and
+// behind it. With DRS open (CarState.drs = 1) the flap turns by `drsOpen` degrees (clockwise on the photo, the leading
+// edge up) about `pivot` at its trailing edge, opening the slot from the closed 10–15 mm to 85 mm (2021 Technical
+// Regulations, Art. 3.6.3). Drawn between the near and the far endplate (HIGH), or as a sliver above the near endplate
+// (LOW).
+export type RearWingPlanes = {
+  main: string;
+  flap: string;
+  pivot: { x: number; y: number };
+  drsOpen: number;
+  // the flap's livery colour where the photo shows one (W12: Petronas teal); else a shade lighter than the main plane
+  flapColor?: string;
+};
+
 // The far side of a car as drawn for one kind of camera (ART-26), simple per-car data rather than a perspective
 // model: the body is drawn flat from the side, so the far parts are placed by eye to sit with it (user review
 // 2026-10-04: perspective-correct far parts on a flat body look wrong). Anything left out is drawn as traced: far
@@ -193,11 +207,18 @@ export type CarSpec = {
     // the far rear endplate (the near one's perspective copy), drawn behind the wing surface (`top`)
     farFrom?: EndplateCopy;
     livery?: Accent[];
+    // false: the far rear endplate is drawn plain, in the wing colour, without the near one's colour blocks
+    farLivery?: false;
     // the wing elements between the endplates as the camera sees them from above; leave it out where the reference
     // photo sees the wing edge-on
     top?: string;
     elements: string[];
-    pylon: string;
+    // the main plane and DRS flap side-on (RearWingPlanes), where the car has them traced
+    planes?: RearWingPlanes;
+    // set by specSeenFrom for the LOW look: how far the planes show above the near endplate (photo px)
+    planesLift?: number;
+    // the pylon under the wing, where the photo shows one
+    pylon?: string;
     beam?: string; // lower (beam) wing, where the car has one
   };
   // A few ink lines only (ART-11).
