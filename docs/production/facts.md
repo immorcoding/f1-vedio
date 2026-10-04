@@ -6,17 +6,18 @@ MV 画面上出现的每个事实及其来源（STO-3）。来源核对日期：
 
 - 全场 53 圈；第 47 圈，Senna 在 130R 之后的减速弯（Casio 三角）内线超车未完全并排，Prost 转向入弯时两车相撞，双双停在减速弯入口。
 - Senna 被推车重新发动后从减速弯缓冲区直接驶出（未通过减速弯）、换鼻锥后追上并第一个冲线，但因"未通过减速弯"被取消成绩，Nannini 获胜；Prost 因此锁定 1989 年车手冠军。
-- 两人同为 McLaren-Honda 车手。
+- 两人同为 McLaren-Honda 车手：Senna 1988 年加盟 McLaren 与 Prost 做队友，1988、1989 两季同队，关系由队友变成宿敌（镜头 1.1 标题下的字："队友 · 宿敌"）。来源：[Prost–Senna rivalry — Wikipedia](https://en.wikipedia.org/wiki/Prost%E2%80%93Senna_rivalry)（核对 2026-10-03）
 - 赛前积分：Prost 76 分、Senna 60 分，Prost 领先 16 分；Senna 必须赢下本场和最后一站澳大利亚才有机会卫冕（镜头 1.2 头盔小格下的字："PRO 领先 16 分" / "SEN 必须赢"）。（核对 2026-10-03）
 - 第 47 圈 Senna 在 Spoon 弯后紧跟 Prost 进入尾流，过 130R 时只落后约两个车身；他从减速弯内线切入时始终没能完全超前，前轮一直在 Prost 的前轮之后（镜头 1.3 的走位依据）。（核对 2026-10-03）
-- 彩蛋（镜头 1.4 小格）：两车停在部分封闭的减速弯缓冲道入口；Prost 下车，Senna 示意工作人员把他沿缓冲道往前推，借推力重新发动引擎后直接从缓冲道驶出，在缓冲道上摆放的临时路标之间穿行。（核对 2026-10-03）
+- 彩蛋（镜头 1.4 第 20 小节结果页）：Senna 冲线第一却被取消成绩，Prost 成为 1989 年冠军——两格头盔分别盖红章"取消成绩"和"1989 冠军"（依据上面第 2 条）。背景（画面不再出现，2026-10-03 起删去推车小格）：两车停在部分封闭的减速弯缓冲道入口；Prost 下车，Senna 示意工作人员把他沿缓冲道往前推，借推力重新发动引擎后直接从缓冲道驶出，在缓冲道上摆放的临时路标之间穿行。（核对 2026-10-03）
 - 来源：[1989 Japanese Grand Prix — Wikipedia](https://en.wikipedia.org/wiki/1989_Japanese_Grand_Prix)
 
 ## 1990 日本大奖赛（铃鹿）
 
 - 第 1 圈第 1 个弯，Senna（McLaren-Honda）撞上 Prost（Ferrari），两人当场退赛，Senna 锁定 1990 年冠军。
-- Senna 在 1991 年夺冠后承认那次碰撞是故意的，是对 1989 年的报复。
+- Senna 在 1991 年夺冠后承认那次碰撞是故意的，是对 1989 年的报复（镜头 1.8 的小字"SEN 后来承认是故意的"，转述，不引原话，STO-7）。
 - 车与车号：Senna 开 McLaren-Honda MP4/5B（#27），Prost 开 Ferrari 641（#1，1989 年冠军的车号随他去了法拉利）。
+- Prost 1989 赛季结束后离开 McLaren，1990 年转投法拉利（镜头 1.5 头盔格翻面："PRO 转投法拉利"）；他在法拉利继续戴自己的头盔（见 `src/cars/cars-1990.ts` 的头盔照片来源）。来源：[Prost–Senna rivalry — Wikipedia](https://en.wikipedia.org/wiki/Prost%E2%80%93Senna_rivalry)、[1990 Japanese Grand Prix — Wikipedia](https://en.wikipedia.org/wiki/1990_Japanese_Grand_Prix)（参赛表：Prost #1 Ferrari）（核对 2026-10-03）
 - 赛前积分（镜头 1.5）：Senna 78 分、Prost 69 分，还剩两站（本站与澳大利亚）；两人都在这里退赛，Senna 就锁定冠军（见上条 Wikipedia）。来源：[Jolpica-F1（Ergast 数据）1990 第 14 站后车手积分](https://api.jolpi.ca/ergast/f1/1990/14/driverStandings.json)
 - 发车前两排：1 Senna（#27 McLaren）、2 Prost（#1 Ferrari）、3 Mansell（#2 Ferrari）、4 Berger（#28 McLaren）；Senna 与 Prost 都是 0 圈退赛（碰撞）。来源：[Jolpica-F1（Ergast 数据）1990 第 15 站成绩](https://api.jolpi.ca/ergast/f1/1990/15/results.json)
 - 彩蛋（镜头 1.6）：Senna 排位第一、Prost 第二。杆位所在的发车格在直道右侧，不在行车线上、路面较脏；Senna 和 Berger 赛前请求把杆位换到较干净的左侧，赛会起初同意，随后被 FISA 主席 Balestre 否决，杆位留在较脏的右侧；FIA 还警告起步时不得越过右侧维修区出口的黄线去抢 1 号弯的位置。起步时左侧的 Prost 领先，Senna 在 1 号弯从内线切入，两车相撞冲出赛道。（核对 2026-10-03）

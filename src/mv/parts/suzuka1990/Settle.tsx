@@ -62,7 +62,7 @@ export const Settle: React.FC<PictureProps> = ({ f }) => {
           fill={tone("light")}
           opacity={RESULT_DIM * dim}
         />
-        <g transform={`translate(960 400) scale(${push}) translate(-960 -400)`}>
+        <g transform={`translate(960 150) scale(${push}) translate(-960 -150)`}>
           {left > 0 ? (
             <StampedCard
               car={F641_PRO}

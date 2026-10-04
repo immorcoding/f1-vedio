@@ -143,7 +143,7 @@ export const Title: React.FC<PictureProps> = ({ f }) => {
             y={716}
             opacity={sub}
             fontFamily={BRUSH_FONT}
-            fontSize={62}
+            fontSize={72}
             fill={INK}
           >
             {/* the story line (STO-5: a few characters; facts.md: McLaren team-mates in 1988–1989) */}
