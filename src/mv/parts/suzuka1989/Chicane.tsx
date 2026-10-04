@@ -6,6 +6,7 @@
 // turns in across him and their front wheels touch — the cut to the side-on impact on 19.1.
 //
 // Every car pose comes from drive13.ts through staging.ts, which the interpenetration check tests frame by frame.
+import { random } from "remotion";
 import {
   MangaCar,
   MP4_5_PRO,
@@ -22,6 +23,7 @@ import {
   mapView,
   poseAt,
   polylinePoints,
+  samplePath,
   SUZUKA_1989,
   TrackSection,
   widen,
@@ -68,37 +70,55 @@ const escapeAt = (k: number, across: number): MapPoint => {
 const BOLLARDS: [number, number][] = [
   [0.1, -2.3],
   [0.1, 0.6],
+  [0.16, 1.9],
+  [0.22, -1.9],
   [0.3, 1.8],
   [0.45, -1.8],
   [0.6, 1.8],
   [0.75, -1.8],
 ];
 
+// Near the escape road (for the gaps in the tyre wall and the grass).
+const onEscape = (p: MapPoint, clear: number) =>
+  ESCAPE.some((e) => Math.hypot(e.x - p.x, e.y - p.y) < clear);
+
 const EscapeRoad: React.FC<{ view: MapView }> = ({ view }) => {
   const ppm = view.pxPerMetre;
-  const r = Math.max(10, 0.45 * ppm);
+  const r = Math.max(12, 0.55 * ppm);
+  const road = view.path(widen(ESCAPE, ESCAPE_W), true);
   return (
     <g>
+      {/* opaque under the tone, so the barrier line behind it is cut by the road */}
+      <path d={road} fill={PAPER} />
       <path
-        d={view.path(widen(ESCAPE, ESCAPE_W), true)}
+        d={road}
         fill={tone("light")}
         stroke={INK}
         strokeWidth={Math.max(1.5, 0.15 * ppm)}
         strokeDasharray={`${Math.max(6, ppm)} ${Math.max(4, 0.6 * ppm)}`}
       />
+      {/* temporary bollards seen from above: striped posts as ink-and-paper rings */}
       {BOLLARDS.map(([k, a]) => {
         const p = view.project(escapeAt(k, a));
         return (
           <g key={`${k}-${a}`}>
             <circle
+              cx={p.x + r * 0.35}
+              cy={p.y + r * 0.35}
+              r={r}
+              fill={INK}
+              opacity={0.3}
+            />
+            <circle
               cx={p.x}
               cy={p.y}
               r={r}
-              fill={PAPER}
+              fill={INK}
               stroke={INK}
-              strokeWidth={Math.max(2, r * 0.3)}
+              strokeWidth={2}
             />
-            <circle cx={p.x} cy={p.y} r={r * 0.4} fill={INK} />
+            <circle cx={p.x} cy={p.y} r={r * 0.68} fill={PAPER} />
+            <circle cx={p.x} cy={p.y} r={r * 0.36} fill={INK} />
           </g>
         );
       })}
@@ -163,7 +183,12 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
     centre,
     rotation: -hSum / 5,
     pxPerMetre: ppm,
-    screen: { x: 960, y: 560 },
+    // in the slow motion the pair drifts left and down in the frame, so the chicane ahead — the right-hander, the
+    // escape road running straight on, its bollards — opens up in the frame before the touch
+    screen: {
+      x: 960 - 250 * smoothstep(tau, SLOWMO_AT, SLOWMO_AT + 2.2),
+      y: 560 + 120 * smoothstep(tau, SLOWMO_AT, SLOWMO_AT + 2.2),
+    },
   });
   const sFrom = sMid - 1100 / ppm - 40;
   const sTo = sMid + 1500 / ppm + 40;
@@ -176,12 +201,49 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
       `M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${b.x.toFixed(1)} ${b.y.toFixed(1)}`,
     );
   }
-  // tyre wall on the outside (left) of the chicane, beyond the run-off
+  // tyre wall on the outside (left) of the chicane, beyond the run-off, open where the escape road runs through
   const tyres: MapPoint[] = [];
-  for (let s = C - 70; s < C + 30; s += 0.7)
-    tyres.push(poseAt(T, s, -(T.width / 2 + 6.5)));
-  // chicane label once it is in sight
-  const apex = view.project(poseAt(T, C + 8, 0));
+  for (let s = C - 70; s < C + 30; s += 0.7) {
+    const p = poseAt(T, s, -(T.width / 2 + 6.5));
+    if (!onEscape(p, ESCAPE_W / 2 + 1.5)) tyres.push(p);
+  }
+  // grass: ink tufts fixed to the ground (a 1.6 m grid along the lap), so the verges stream past with the road;
+  // none on the escape road
+  const tufts: string[] = [];
+  const half = T.width / 2;
+  for (let i = Math.ceil(sFrom / 1.6); i < sTo / 1.6; i++) {
+    for (const side of [-1, 1]) {
+      const r = (k: string) => random(`s13-tuft-${i}-${side}-${k}`);
+      const lat = side * (half + 6.5 + r("o") * 38);
+      const p = poseAt(T, i * 1.6 + r("s") * 1.6, lat);
+      if (Math.abs(i * 1.6 - C) < 160 && onEscape(p, 6)) continue;
+      const q = view.project(p);
+      const l = (0.35 + 0.35 * r("l")) * ppm;
+      tufts.push(
+        `M ${q.x.toFixed(1)} ${q.y.toFixed(1)} l ${(-l * 0.4).toFixed(1)} ${(-l).toFixed(1)} M ${(q.x + l * 0.3).toFixed(1)} ${q.y.toFixed(1)} l ${(l * 0.2).toFixed(1)} ${(-l * 1.1).toFixed(1)}`,
+      );
+    }
+  }
+  // rubber laid down on the racing line, fixed to the road (every 30 m, two lines a car's track apart)
+  const rubber: string[] = [];
+  for (let i = Math.ceil(sFrom / 30); i < sTo / 30; i++) {
+    const lat = -3 + 6 * random(`s13-rub-${i}`);
+    for (const d of [-0.8, 0.8])
+      rubber.push(view.path(samplePath(T, i * 30, i * 30 + 16, lat + d, 2)));
+  }
+  // the outside kerb at the entry of the right-hander (red and white in 1989; ink and paper here, ART-8)
+  const outerKerb = Array.from({ length: 20 }, (_, i) => {
+    const s0 = C - 36 + i * 1.6;
+    return {
+      d: view.band(
+        samplePath(T, s0, s0 + 1.6, -(half - 0.2), 0.4),
+        samplePath(T, s0, s0 + 1.6, -(half + 1.3), 0.4),
+      ),
+      dark: i % 2 === 0,
+    };
+  });
+  // the chicane's name, once, while its first apex is in the frame
+  const apex = view.project(poseAt(T, C + 8, T.width / 2 - 1));
   const label = smoothstep(tau, 2.2, 2.7);
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
@@ -212,9 +274,14 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
           to={sTo}
           runoff={5}
           barrier
-          grass={{ x: 0, y: 0, w: 1920, h: 1080 }}
           escapeRoads={false}
-          tyreMarks
+        />
+        <path
+          d={tufts.join(" ")}
+          stroke={INK}
+          strokeWidth={Math.max(2, 0.07 * ppm)}
+          strokeLinecap="round"
+          opacity={0.6}
         />
         <EscapeRoad view={view} />
         <TrackSection
@@ -225,6 +292,23 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
           runoff={0}
           escapeRoads={false}
         />
+        <path
+          d={rubber.join(" ")}
+          fill="none"
+          stroke={INK}
+          strokeWidth={0.3 * ppm}
+          strokeLinecap="round"
+          opacity={0.18}
+        />
+        {outerKerb.map((k) => (
+          <path
+            key={k.d}
+            d={k.d}
+            fill={k.dark ? INK : PAPER}
+            stroke={INK}
+            strokeWidth={1.5}
+          />
+        ))}
         <path
           d={seams.join(" ")}
           stroke={INK}
@@ -444,35 +528,6 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
             </g>
           );
         })}
-        {/* the chicane's name, once, pointing at its first apex */}
-        {label > 0 && apex.x < 1900 ? (
-          <g opacity={label * (1 - smoothstep(tau, 5.6, 6.0))}>
-            <path
-              d={`M ${apex.x} ${apex.y} L ${apex.x + 90} ${apex.y + 120}`}
-              stroke={INK}
-              strokeWidth={4}
-            />
-            <rect
-              x={apex.x + 60}
-              y={apex.y + 118}
-              width={220}
-              height={60}
-              fill={PAPER}
-              stroke={INK}
-              strokeWidth={4}
-            />
-            <text
-              x={apex.x + 170}
-              y={apex.y + 160}
-              textAnchor="middle"
-              fontFamily={CAPTION_FONT}
-              fontSize={36}
-              fill={INK}
-            >
-              减速弯
-            </text>
-          </g>
-        ) : null}
         {/* the slow-motion beat: a white flash at its start, then the edges of the frame fall into tone */}
         {slow > 0 ? (
           <g>
@@ -495,7 +550,50 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
             />
           </g>
         ) : null}
-        <g transform="translate(1460 80)">
+        {/* the chicane's name, once, pointing at its first apex (over the slow-motion tone, so it reads) */}
+        {label > 0 && apex.x < 1880 && apex.y > 40 && apex.y < 1040
+          ? (() => {
+              // the box sits right of and below the apex, kept inside the frame; a leader line points at the apex
+              const bx = Math.min(1620, Math.max(420, apex.x + 110));
+              const by = Math.min(930, Math.max(120, apex.y + 70));
+              return (
+                <g
+                  opacity={
+                    label *
+                    (1 - smoothstep(apex.x, 1700, 1880)) *
+                    (1 - smoothstep(tau, 6.9, 7.15))
+                  }
+                >
+                  <path
+                    d={`M ${apex.x} ${apex.y} L ${bx + 20} ${by + 6}`}
+                    stroke={INK}
+                    strokeWidth={4}
+                  />
+                  <circle cx={apex.x} cy={apex.y} r={7} fill={INK} />
+                  <rect
+                    x={bx}
+                    y={by}
+                    width={240}
+                    height={72}
+                    fill={PAPER}
+                    stroke={INK}
+                    strokeWidth={5}
+                  />
+                  <text
+                    x={bx + 120}
+                    y={by + 52}
+                    textAnchor="middle"
+                    fontFamily={CAPTION_FONT}
+                    fontSize={46}
+                    fill={INK}
+                  >
+                    减速弯
+                  </text>
+                </g>
+              );
+            })()
+          : null}
+        <g transform="translate(90 70)">
           <Caption
             x={0}
             y={0}

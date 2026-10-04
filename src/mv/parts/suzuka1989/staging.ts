@@ -57,7 +57,7 @@ export const CONTACT_13 = Math.ceil(SHOT_13.from + 60 * (SHOT_SECONDS - 0.12));
 export const ppm13 = (f: number) => {
   const tau = tau13(f);
   const k = smooth(tau, SLOWMO_AT - 0.5, SLOWMO_AT + 1.5);
-  return 26 + 14 * k;
+  return 26 + 10 * k;
 };
 // Cars are never drawn shorter than ~150 px (4.26 m × 36 px/m): larger than life on the wider framing.
 export const CAR_PPM_MIN = 36;
