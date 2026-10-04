@@ -2,14 +2,21 @@
 // survival cell, halo up, wedged through the triple guardrail, and the rear (power unit, gearbox, rear wing) torn off on
 // the track side — and the fire. Shot 3.4 shows it whole; shot 3.5 pushes in on the halo panel by panel through zoomed
 // copies of the same camera; shot 3.6 reuses it behind GRO. No driver injury is ever shown: helmet and halo only.
+import { useId } from "react";
 import { MangaCar, VF20 } from "../../../cars";
 import { pinhole, type Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
-import { Fire, FIRE_PALETTES, type FirePaletteName } from "../../../kit/fire";
+import {
+  Fire,
+  FIRE_PALETTES,
+  HeatShimmer,
+  type FirePaletteName,
+} from "../../../kit/fire";
 import { ToneDefs, TonePattern } from "../../../kit/tone";
 import { beatsAtFrame, FRAMES_PER_BEAT } from "../../timing.ts";
-import { cueFrame, ramp, shotById, type PictureProps } from "./common";
-import { Guardrail, NightBackdrop } from "./night";
+import { ramp, shotById, type PictureProps } from "./common";
+import { BentGuardrail, bump, type Deflection } from "./bent-rail";
+import { NightBackdrop } from "./night";
 import {
   BARRIER_Z,
   CELL_ANCHOR_X,
@@ -48,16 +55,31 @@ export const zoomCam = (
   });
 };
 
-// The barrier runs along x at BARRIER_Z; the cell tore the middle and top rails over this stretch (fractions of the run).
-const RUN = { a: { x: -30, z: BARRIER_Z }, b: { x: 30, z: BARRIER_Z } };
+// The barrier runs along x at BARRIER_Z. The cell broke the middle rail over this stretch (fractions of the run) and
+// went through it; the top rail is prised up and back, the bottom one pressed down (FIA summary: the
+// middle rail failed, the upper and lower rails deformed heavily).
+export const RUN = { a: { x: -30, z: BARRIER_Z }, b: { x: 30, z: BARRIER_Z } };
 const along = (x: number) => (x - RUN.a.x) / (RUN.b.x - RUN.a.x);
-const CELL_FROM = CELL_ANCHOR_X - L - CELL_POSE.dx; // nose
+export const CELL_FROM = CELL_ANCHOR_X - L - CELL_POSE.dx; // nose
 const CELL_TO = CELL_ANCHOR_X - 2.4 - CELL_POSE.dx; // torn edge
 const GAPS: [number, number][][] = [
   [],
   [[along(CELL_FROM + 0.9), along(CELL_TO + 0.5)]],
-  [[along(CELL_FROM + 1.6), along(CELL_TO + 0.2)]],
+  [],
 ];
+// The top rail is bent up over the nose, ahead of the cockpit, so GRO's climb in 3.6 still meets it at its own height.
+const S_NOSE = CELL_FROM + 1.0 - RUN.a.x;
+const S_CELL = (CELL_FROM + CELL_TO) / 2 - RUN.a.x;
+export const WRECK_BEND: Deflection = (s, rail) => {
+  if (rail === 2) {
+    const k = bump(s, S_NOSE, 0.9);
+    return { dx: 0, dy: 0.26 * k, dz: 0.45 * k };
+  }
+  const k = bump(s, S_CELL, 2.2);
+  return rail === 0
+    ? { dx: 0, dy: -0.12 * k, dz: 0.4 * k }
+    : { dx: 0, dy: 0, dz: 0.3 * k };
+};
 
 export const WreckWorld: React.FC<{
   cam: Camera;
@@ -76,6 +98,8 @@ export const WreckWorld: React.FC<{
   fireDetail?: number;
   // false once GRO is out: the cockpit is empty
   driver?: false;
+  // how the rails are bent (default: as they were left after the impact)
+  bend?: Deflection;
 }> = ({
   cam,
   f,
@@ -85,8 +109,9 @@ export const WreckWorld: React.FC<{
   behindRails,
   noGlow = false,
   fireSeed = "",
-  fireDetail = 1,
+  fireDetail = 1.7,
   driver,
+  bend = WRECK_BEND,
 }) => {
   const p = noGlow
     ? { ...FIRE_PALETTES[palette], glow: null }
@@ -105,7 +130,17 @@ export const WreckWorld: React.FC<{
   const rearAt = cam.anchor({ x: REAR_ANCHOR_X, z: REAR_Z });
   return (
     <g>
-      <NightBackdrop cam={cam} tonePrefix={tonePrefix} />
+      {/* the night behind the fire, warped by the hot air rising over it */}
+      <HeatShimmer
+        frame={f}
+        cx={back.x}
+        cy={back.y - back.h * intensity * 1.05}
+        rx={back.w * 0.95}
+        ry={back.h * 0.75}
+        scale={Math.max(8, cam.pxPerMetre(CELL_Z) * 0.09)}
+      >
+        <NightBackdrop cam={cam} tonePrefix={tonePrefix} />
+      </HeatShimmer>
       {/* the fire's light on the asphalt */}
       <ellipse
         cx={back.x}
@@ -133,11 +168,12 @@ export const WreckWorld: React.FC<{
         state={{ split: { front: CELL_POSE, show: "front" }, driver }}
       />
       {behindRails}
-      <Guardrail
+      <BentGuardrail
         cam={cam}
         a={RUN.a}
         b={RUN.b}
         gaps={GAPS}
+        deflect={bend}
         tonePrefix={tonePrefix}
       />
       {/* the low fire along the rails: three smaller fires, so close-ups keep fine tongues */}
@@ -211,7 +247,7 @@ export const heartbeat = (f: number) => {
   );
 };
 
-const Vignette: React.FC<{ amount: number }> = ({ amount }) => (
+export const Vignette: React.FC<{ amount: number }> = ({ amount }) => (
   <>
     <defs>
       <radialGradient id="b3-vig" cx="50%" cy="50%" r="75%">
@@ -242,16 +278,6 @@ export const WreckShot: React.FC<PictureProps> = ({ f, palette }) => {
     x: 960 + 160 * (1 - u),
     y: 560,
   });
-  // smoke rolling off to the left across the top of the frame, on threes
-  const step = Math.floor(f / 3);
-  const smoke = Array.from({ length: 10 }, (_, i) => {
-    const life = ((step * 0.6 + i * 9) % 90) / 90;
-    return {
-      x: 1250 - life * 1500 + Math.sin(i * 2.1) * 60,
-      y: 330 - life * 330 + Math.cos(i * 1.3) * 40,
-      r: 60 + life * 150,
-    };
-  });
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
@@ -264,27 +290,6 @@ export const WreckShot: React.FC<PictureProps> = ({ f, palette }) => {
         intensity={intensity}
         tonePrefix="b34"
       />
-      <g opacity={ramp(t, 30, 140)}>
-        {smoke.map((p, i) => (
-          <g key={i}>
-            <circle
-              cx={p.x}
-              cy={p.y}
-              r={p.r}
-              fill="#262626"
-              stroke={INK}
-              strokeWidth={3}
-            />
-            <circle
-              cx={p.x - p.r * 0.2}
-              cy={p.y - p.r * 0.2}
-              r={p.r * 0.7}
-              fill="url(#b34-dark)"
-              opacity={0.5}
-            />
-          </g>
-        ))}
-      </g>
       <Vignette amount={0.5 + 0.35 * hb} />
     </svg>
   );
@@ -293,7 +298,11 @@ export const WreckShot: React.FC<PictureProps> = ({ f, palette }) => {
 // The halo, scorched black but whole (facts.md: the burnt front of the car, halo intact, is on show in London):
 // drawn over the cell's own halo in the last panel — charred tube, soot, embers, and the one clean highlight left on it.
 // Uses the cell's own transform (MangaCar facing left, split pose of the front piece) to land on the traced halo.
-const HaloScorch: React.FC<{ cam: Camera; f: number }> = ({ cam, f }) => {
+export const HaloScorch: React.FC<{ cam: Camera; f: number }> = ({
+  cam,
+  f,
+}) => {
+  const soot = `soot${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const at = cam.anchor({ x: CELL_ANCHOR_X, z: CELL_Z });
   const k = (VF20.frame.k * at.pxPerMetre) / 250;
   const ppmPhoto = 250 / VF20.frame.k;
@@ -320,6 +329,9 @@ const HaloScorch: React.FC<{ cam: Camera; f: number }> = ({ cam, f }) => {
     <g
       transform={`translate(${at.x} ${at.y}) scale(${k} ${k}) translate(${-VF20.frame.x} ${-VF20.frame.ground}) translate(${-CELL_POSE.dx * ppmPhoto} 0) rotate(${CELL_POSE.rotate} ${pivot.x} ${pivot.y})`}
     >
+      <defs>
+        <TonePattern id={soot} r={2.4 / k} gap={6 / k} />
+      </defs>
       {[haloFar, halo].map((d, i) => (
         <g key={i}>
           <path
@@ -342,7 +354,7 @@ const HaloScorch: React.FC<{ cam: Camera; f: number }> = ({ cam, f }) => {
           <path
             d={d}
             fill="none"
-            stroke="url(#b35-soot)"
+            stroke={`url(#${soot})`}
             strokeWidth={i ? 12 : 9}
             strokeLinecap="round"
             opacity={0.7}
@@ -370,139 +382,5 @@ const HaloScorch: React.FC<{ cam: Camera; f: number }> = ({ cam, f }) => {
         />
       ))}
     </g>
-  );
-};
-
-// Panel layout of shot 3.5: four panels, one more on each bar, each one closer on the halo.
-const PANELS = [
-  { x: 40, y: 40, w: 1100, h: 480, zoom: 1.15 },
-  { x: 1164, y: 40, w: 716, h: 480, zoom: 2.0 },
-  { x: 40, y: 544, w: 716, h: 496, zoom: 2.7 },
-  { x: 780, y: 544, w: 1100, h: 496, zoom: 3.6 },
-];
-
-type Rect = { x: number; y: number; w: number; h: number };
-// The page with 1, 2, 3 and 4 panels on it: every layout fills the frame; the last one is PANELS.
-const LAYOUTS: Rect[][] = [
-  [{ x: 0, y: 0, w: 1920, h: 1080 }],
-  [
-    { x: 40, y: 40, w: 1100, h: 1000 },
-    { x: 1164, y: 40, w: 716, h: 1000 },
-  ],
-  [
-    { x: 40, y: 40, w: 1100, h: 480 },
-    { x: 1164, y: 40, w: 716, h: 1000 },
-    { x: 40, y: 544, w: 1100, h: 496 },
-  ],
-  PANELS,
-];
-const lerpRect = (a: Rect, b: Rect, u: number): Rect => ({
-  x: a.x + (b.x - a.x) * u,
-  y: a.y + (b.y - a.y) * u,
-  w: a.w + (b.w - a.w) * u,
-  h: a.h + (b.h - a.h) * u,
-});
-// Panel i's rectangle at frame f. On each cue the new panel lands in its place in the next layout (drawn on top) and
-// the panels already on the page slide into that layout over 10 frames, so the frame never has a hole.
-const panelRect = (i: number, f: number, cues: number[]): Rect => {
-  const k = cues.filter((c) => f >= c).length; // panels on the page
-  const target = LAYOUTS[k - 1][i];
-  if (k < 2 || i === k - 1) return target;
-  return lerpRect(
-    LAYOUTS[k - 2][i],
-    target,
-    ramp(f, cues[k - 1], cues[k - 1] + 10),
-  );
-};
-
-export const HaloPanels: React.FC<PictureProps> = ({ f, palette }) => {
-  const cues = [1, 2, 3, 4].map((n) => cueFrame(`bahrain2020.panel${n}`));
-  const hb = heartbeat(f);
-  return (
-    <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
-      <defs>
-        <ToneDefs prefix="b35" />
-        <TonePattern id="b35-soot" r={2.4} gap={6} />
-      </defs>
-      <rect width={1920} height={1080} fill={INK} />
-      {PANELS.map((p, i) => {
-        if (f < cues[i]) return null;
-        const age = f - cues[i];
-        const pop = ramp(age, 0, 8);
-        // each panel keeps creeping in while it is on screen
-        const zoom = p.zoom * (1 + 0.004 * age);
-        // each panel looks at a different part of the cockpit, so the fire in front changes too:
-        // the whole cell, the helmet, the front of the halo, then the halo itself
-        const look = [
-          { dx: 0.4, dy: 0.1 },
-          { dx: -0.45, dy: 0.05 },
-          { dx: 0.55, dy: -0.12 },
-          { dx: 0, dy: 0 },
-        ][i];
-        const target = {
-          x: HALO_WORLD.x + look.dx,
-          y: HALO_WORLD.y + look.dy,
-          z: HALO_WORLD.z,
-        };
-        // the page re-lays itself as each panel lands, so the frame is always full
-        const r = panelRect(i, f, cues);
-        const cam = zoomCam(WRECK_CAM, target, zoom * Math.sqrt(r.w / p.w), {
-          x: r.x + r.w * (i % 2 ? 0.45 : 0.55),
-          y: r.y + r.h * 0.52,
-        });
-        return (
-          <g
-            key={i}
-            opacity={pop}
-            transform={`translate(${r.x + r.w / 2} ${r.y + r.h / 2}) scale(${0.94 + 0.06 * pop}) translate(${-r.x - r.w / 2} ${-r.y - r.h / 2})`}
-          >
-            <clipPath id={`b35-p${i}`}>
-              <rect x={r.x} y={r.y} width={r.w} height={r.h} />
-            </clipPath>
-            <g clipPath={`url(#b35-p${i})`}>
-              <WreckWorld
-                cam={cam}
-                f={f + i * 11}
-                fireSeed={`p${i}`}
-                palette={palette}
-                intensity={[0.8, 0.8, 0.9, 0.5][i]}
-                noGlow
-                fireDetail={zoom}
-                tonePrefix="b35"
-              />
-              {i === 3 ? <HaloScorch cam={cam} f={f} /> : null}
-              {/* newest panel flashes white as it lands */}
-              <rect
-                x={r.x}
-                y={r.y}
-                width={r.w}
-                height={r.h}
-                fill={PAPER}
-                opacity={0.8 * (1 - ramp(age, 0, 5))}
-              />
-            </g>
-            <rect
-              x={r.x}
-              y={r.y}
-              width={r.w}
-              height={r.h}
-              fill="none"
-              stroke={PAPER}
-              strokeWidth={10}
-            />
-            <rect
-              x={r.x}
-              y={r.y}
-              width={r.w}
-              height={r.h}
-              fill="none"
-              stroke={INK}
-              strokeWidth={4}
-            />
-          </g>
-        );
-      })}
-      <Vignette amount={0.25 + 0.3 * hb} />
-    </svg>
   );
 };
