@@ -2,11 +2,14 @@
 // driver's cockpit — the settled car art drawn ~700 px/m, so the helmet, halo and HANS are the real traced ones
 // (ART-13) — VER's RB16B facing right on the left, HAM's W12 facing left on the right, looking at each other across
 // the gutter. Below them, on the gutter, the points in the shared points box (src/kit/points-box.tsx, #17).
+// `zoom` pushes both panels in on the helmets (4.2 steps in every bar, from the whole cockpit to the visor, #21) and
+// `boxFlash` flashes the points box once (an inverted frame and a punch); 5.7 leaves both at their defaults.
 import { MangaCar, RB16B, W12, type CarSpec } from "../../cars";
 import { CAR_UNITS_PER_METRE } from "../../cars/spec";
 import { INK, PAPER } from "../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../kit/ink";
-import { PointsBox, type PointsColumn } from "../../kit/points-box";
+import { useLettering } from "../../kit/lettering";
+import { PointsBox, pointsBoxSize, type PointsColumn } from "../../kit/points-box";
 import { focusLines, speedLines } from "../../kit/lines";
 import { ToneDefs } from "../../kit/tone";
 
@@ -52,7 +55,9 @@ const Panel: React.FC<{
   speed: number;
   dim: number;
   wheel: number;
-}> = ({ id, poly, car, mirror, helmet, ppm, t, speed, dim, wheel }) => {
+  /** Radius around the helmet the focus lines keep clear. */
+  clear: number;
+}> = ({ id, poly, car, mirror, helmet, ppm, t, speed, dim, wheel, clear }) => {
   const a = helmetAnchor(car, helmet.x, helmet.y, ppm);
   const flip = mirror
     ? `translate(${helmet.x} 0) scale(-1 1) translate(${-helmet.x} 0)`
@@ -84,7 +89,7 @@ const Panel: React.FC<{
             opacity={0.35 + 0.4 * speed}
           />
           <path
-            d={focusLines(helmet.x, helmet.y, 330, 120, Math.floor(t * 8) + (mirror ? 50 : 0))}
+            d={focusLines(helmet.x, helmet.y, clear, 120, Math.floor(t * 8) + (mirror ? 50 : 0))}
             fill={PAPER}
             opacity={0.1 + 0.25 * speed}
           />
@@ -117,7 +122,12 @@ export const Faceoff: React.FC<{
   ham: FaceoffSide;
   points: FaceoffPoints;
   flash?: number;
-}> = ({ t, open, speed, shake = 0, ver, ham, points, flash = 0 }) => {
+  /** Push-in on the helmets: 1 = the whole cockpit (default), ~3 = the visor fills the panel. */
+  zoom?: number;
+  /** 0..1: the points box flashes (inverts) and punches. */
+  boxFlash?: number;
+}> = ({ t, open, speed, shake = 0, ver, ham, points, flash = 0, zoom = 1, boxFlash = 0 }) => {
+  useLettering();
   const vw = ver.weight ?? 1;
   const hw = ham.weight ?? 1;
   // The gutter: a slanted line through the middle, shifted toward the panel that recedes.
@@ -130,10 +140,15 @@ export const Faceoff: React.FC<{
   const sy = Math.cos(t * 37) * shake;
   const left = `M ${20 + slideL} 20 L ${top - GUTTER / 2 + slideL} 20 L ${bot - GUTTER / 2 + slideL} 1060 L ${20 + slideL} 1060 Z`;
   const right = `M ${top + GUTTER / 2 + slideR} 20 L ${1900 + slideR} 20 L ${1900 + slideR} 1060 L ${bot + GUTTER / 2 + slideR} 1060 Z`;
-  const ppm = 640;
-  // helmets sit a third of the way in from the gutter, eye to eye
-  const vh = { x: mid - 330 + slideL, y: 470 };
-  const hh = { x: mid + 330 + slideR, y: 470 };
+  const ppm = 640 * zoom;
+  // helmets sit a third of the way in from the gutter, eye to eye; pushed in, they back off from the gutter so the
+  // visors are what meet across it
+  const gap = 330 + 60 * (zoom - 1);
+  const hy = 470 - 20 * (zoom - 1);
+  const vh = { x: mid - gap + slideL, y: hy };
+  const hh = { x: mid + gap + slideR, y: hy };
+  const clear = 330 * Math.min(zoom, 1.6);
+  const box = pointsBoxSize(points.columns, BOX_SIZE);
   return (
     <svg width={1920} height={1080}>
       <defs>
@@ -153,6 +168,7 @@ export const Faceoff: React.FC<{
           speed={speed}
           dim={Math.max(0, 1 - vw) * 1.2}
           wheel={t * 400}
+          clear={clear}
         />
         <Panel
           id="fo-ham"
@@ -165,14 +181,44 @@ export const Faceoff: React.FC<{
           speed={speed}
           dim={Math.max(0, 1 - hw) * 1.2}
           wheel={t * 400}
+          clear={clear}
         />
-        <g transform={`translate(${mid} ${BOX_Y}) rotate(-2)`}>
+        <g transform={`translate(${mid} ${BOX_Y}) rotate(-2) scale(${1 + 0.14 * boxFlash})`}>
           <PointsBox
             columns={points.columns}
             size={BOX_SIZE}
             since={points.since}
             goldSince={points.goldSince}
           />
+          {boxFlash > 0.02 ? (
+            <>
+              {/* the flash: the box inverts (ink page, paper numerals) and throws a ring of ticks */}
+              <rect
+                x={-box.w / 2}
+                y={-box.h / 2}
+                width={box.w}
+                height={box.h}
+                fill="#ffffff"
+                style={{ mixBlendMode: "difference" }}
+                opacity={Math.min(1, boxFlash * 1.6)}
+              />
+              <path
+                d={Array.from({ length: 16 }, (_, i) => {
+                  const a = (i / 16) * Math.PI * 2 + 0.2;
+                  const c = Math.cos(a);
+                  const sn = Math.sin(a);
+                  const rx = box.w / 2 + 30;
+                  const ry = box.h / 2 + 30;
+                  const l = 40 + 60 * boxFlash;
+                  return `M ${c * rx} ${sn * ry} L ${c * (rx + l)} ${sn * (ry + l)}`;
+                }).join(" ")}
+                stroke={PAPER}
+                strokeWidth={7}
+                strokeLinecap="round"
+                opacity={boxFlash}
+              />
+            </>
+          ) : null}
         </g>
       </g>
       {flash > 0 ? <rect width={1920} height={1080} fill={PAPER} opacity={flash} /> : null}
