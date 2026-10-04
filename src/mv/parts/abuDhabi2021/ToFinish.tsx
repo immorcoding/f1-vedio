@@ -1,10 +1,11 @@
 // Shot 5.5 (bars 96–99): the rest of the last lap from above, back straight to the flag, compressed into four bars.
 // The map turns with VER so he always drives left to right, as in the close-ups; HAM drops back toward the 2.2 s he
 // finished behind (facts.md), and VER's nose reaches the finish line exactly on the cut (100.1). The user kept this
-// following camera and the small top-view cars over #23's fixed map (2026-10-04), with #23's track effects: the lap
-// VER has covered inked in his colour, a comet tail behind each car, and each car in a paper glow ringed in its team
-// colour that pulses on every beat. The effects stay underneath: the cars and their glow rings are the top layer and
-// nothing covers them (user 2026-10-04). The tyres roll at the map's speed and each car has its contact shadow.
+// following camera and the small top-view cars over #23's fixed map (2026-10-04), with #23's glow rings: each car in a
+// paper glow ringed in its team colour that pulses on every beat, with a short comet tail in that colour right behind
+// the ring (about 1.25 ring diameters, fading out). The lap already covered inks in black behind the cars, as in the
+// first cut (user 2026-10-04: the long blue fill was wrong). The effects stay underneath: the cars and their glow rings
+// are the top layer and nothing covers them. The tyres roll at the map's speed and each car has its contact shadow.
 import {
   carPoint,
   MangaCar,
@@ -31,7 +32,7 @@ import { SECONDS_PER_BEAT } from "../../timing.ts";
 import { ramp, smooth, type ShotTime } from "./shotClock";
 import { rollAt, TopShadow } from "./TopShadow";
 
-// The glow colours (#23), for the rings, the comet tails and VER's lap trail: HAM Petronas teal; VER Red Bull blue
+// The glow colours (#23), for the rings and the comet tails: HAM Petronas teal; VER Red Bull blue
 // (user 2026-10-04: navy/blue is Red Bull's main colour), a saturated royal blue well away from HAM's teal in hue.
 const VER_GLOW = "blue" as "red" | "blue";
 const RING = {
@@ -44,6 +45,11 @@ const LAP = T.lapLength;
 const FROM = T.corners.t5Exit + 120;
 const CAR_X = 8; // cars drawn 8× life size on the overview map
 const verS = (u: number) => FROM + (LAP - FROM) * (0.94 * u + 0.06 * smooth(u));
+// The glow ring's radius (base, without the beat pulse) in track metres, and the comet tail behind it: it starts at
+// the ring's edge and runs about 1.25 ring diameters back.
+const RING_R = 3.4 * 0.72 * CAR_X;
+const TAIL_FROM = RING_R;
+const TAIL_LEN = 1.25 * 2 * RING_R;
 // Nose ahead of the car's centre (mid-wheelbase), m.
 const NOSE_AHEAD =
   carPoint(RB16B, "nose").x -
@@ -119,9 +125,8 @@ export const ToFinish: React.FC<{ st: ShotTime }> = ({ st }) => {
           <rect width={1920} height={1080} fill={tone("light")} />
           <path d={focusLines(vPos.x, vPos.y, 260, 120, Math.floor(t * 12))} fill={INK} opacity={0.18} />
           <TrackMap track={T} view={view} theme="paper" road={54} shadow />
-          {/* the lap VER has run, inked in his colour */}
-          <path d={trail} fill="none" stroke={INK} strokeWidth={26} strokeLinecap="round" strokeLinejoin="round" />
-          <path d={trail} fill="none" stroke={RING.VER} strokeWidth={16} strokeLinecap="round" strokeLinejoin="round" />
+          {/* the lap the cars have run, inked in solid black behind them (v1) */}
+          <path d={trail} fill="none" stroke={INK} strokeWidth={20} strokeLinecap="round" strokeLinejoin="round" />
           <FinishLine a={fin.a} b={fin.b} width={34} theme="paper" />
           {/* speed lines streaming off the leader */}
           <g transform={`translate(${vPos.x} ${vPos.y}) rotate(${vHead})`}>
@@ -142,18 +147,30 @@ export const ToFinish: React.FC<{ st: ShotTime }> = ({ st }) => {
             const glow = ppm * (3.4 + 0.9 * pulse);
             return (
               <>
-                {/* underneath: a comet tail in the team colour along the track behind each car */}
-                {cars.map(({ car, s, tag }) => (
-                  <path
-                    key={`tail-${car.name}`}
-                    d={view.path(samplePath(T, Math.max(FROM - 40, s - 70), s - 2.5 * CAR_X, 0, 6))}
-                    fill="none"
-                    stroke={RING[tag]}
-                    strokeWidth={ppm * 1.1}
-                    strokeLinecap="round"
-                    opacity={0.8}
-                  />
-                ))}
+                {/* underneath: a short comet tail in the team colour right behind each ring, fading to nothing */}
+                {cars.map(({ car, s, tag }) => {
+                  const a = s - TAIL_FROM;
+                  const b = s - TAIL_FROM - TAIL_LEN;
+                  const pa = view.project(poseAt(T, a));
+                  const pb = view.project(poseAt(T, b));
+                  const id = `tofin-tail-${tag}`;
+                  return (
+                    <g key={`tail-${car.name}`}>
+                      <linearGradient id={id} gradientUnits="userSpaceOnUse" x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y}>
+                        <stop offset={0} stopColor={RING[tag]} stopOpacity={1} />
+                        <stop offset={0.45} stopColor={RING[tag]} stopOpacity={0.7} />
+                        <stop offset={1} stopColor={RING[tag]} stopOpacity={0} />
+                      </linearGradient>
+                      <path
+                        d={view.path(samplePath(T, b, s - 2.5 * CAR_X, 0, 3))}
+                        fill="none"
+                        stroke={`url(#${id})`}
+                        strokeWidth={ppm * 1.1}
+                        strokeLinecap="butt"
+                      />
+                    </g>
+                  );
+                })}
                 {/* the top layer: the glow rings, pulsing on the beat, then the cars over them */}
                 {cars.map(({ car, p, tag }) => (
                   <g key={`glow-${car.name}`}>
