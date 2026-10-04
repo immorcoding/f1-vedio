@@ -1,12 +1,7 @@
 // Asset sheet: traced cars drawn large on paper, for review against the reference photos and the settled sheet
 // (ART-7, docs/shape/references/cars-2021-sheet.png). One sheet per car year (SHEETS), registered as Cars-<year>-Sheet.
 import { AbsoluteFill } from "remotion";
-import {
-  photoCameraState,
-  CARS,
-  MangaCar,
-  type CarId,
-} from "../cars";
+import { CARS, MangaCar, type CarId } from "../cars";
 import { PAPER } from "../kit/colors";
 
 // Each row: a car with its rear end at screen x and its ground line at screen y.
@@ -31,8 +26,6 @@ export const CarSheet: React.FC<CarSheetProps> = ({
           key={r.car}
           car={CARS[r.car]}
           at={{ x: r.x, y: r.ground, pxPerMetre }}
-          // from its reference photo's camera, so the sheet matches the photo (far-side.ts photoCamera)
-          state={photoCameraState(CARS[r.car])}
         />
       ))}
       {tops.map((t) => (

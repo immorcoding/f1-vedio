@@ -4,14 +4,7 @@
 // the gutter. Below them, on the gutter, the points in the shared points box (src/kit/points-box.tsx, #17).
 // `zoom` pushes both panels in on the helmets (4.2 steps in every bar, from the whole cockpit to the visor, #21) and
 // `boxFlash` flashes the points box once (an inverted frame and a punch); 5.7 leaves both at their defaults.
-import {
-  HELMET_LENS,
-  cameraAt,
-  MangaCar,
-  RB16B,
-  W12,
-  type CarSpec,
-} from "../../cars";
+import { MangaCar, RB16B, W12, type CarSpec } from "../../cars";
 import { CAR_UNITS_PER_METRE } from "../../cars/spec";
 import { INK, PAPER } from "../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../kit/ink";
@@ -103,11 +96,7 @@ const Panel: React.FC<{
           <MangaCar
             car={car}
             at={a}
-            state={{
-              ...cameraAt(car, HELMET_LENS.height, HELMET_LENS.distance),
-              wheelAngle: wheel,
-              compound: car.compound,
-            }}
+            state={{ wheelAngle: wheel, compound: car.compound }}
           />
         </g>
         {dim > 0 ? (

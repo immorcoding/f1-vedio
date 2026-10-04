@@ -6,14 +6,7 @@
 // and the first frame of shot 5.3); after that the camera tracks the braking cars along the wall, VER slides past on
 // the inside trailing smoke, HAM's wheels turn, and the focus lines and lettering shiver.
 import { AbsoluteFill, random } from "remotion";
-import {
-  carCamera,
-  MangaCar,
-  PIRELLI_2021,
-  RB16B,
-  W12,
-  carPoint,
-} from "../../cars";
+import { MangaCar, PIRELLI_2021, RB16B, W12, carPoint } from "../../cars";
 import { offsetFrom, pinhole } from "../../kit/camera";
 import { INK, PAPER } from "../../kit/colors";
 import { Ink, InkFilterDef, inkFilter } from "../../kit/ink";
@@ -400,21 +393,13 @@ export const T5Panel: React.FC<{ t?: number }> = ({ t = 0 }) => {
               <MangaCar
                 car={RB16B}
                 at={VER}
-                state={{
-                  // T5_CAM, 2.9 m up: the far wheels and endplates show over the near ones (ART-26)
-                  ...carCamera(RB16B, cam, 12.5, { x: m.verX }),
-                  wheelAngle: 18 + m.wheel,
-                  lockFront: 18,
-                }}
+                state={{ wheelAngle: 18 + m.wheel, lockFront: 18 }}
               />
               <LockupSmoke x={VER_LOCKUP.x} y={VER_LOCKUP.y} t={t} />
               <MangaCar
                 car={W12}
                 at={HAM}
-                state={{
-                  ...carCamera(W12, cam, 10, { x: m.hamX }),
-                  wheelAngle: 40 + m.wheel,
-                }}
+                state={{ wheelAngle: 40 + m.wheel }}
               />
             </g>
             <g transform={shake}>

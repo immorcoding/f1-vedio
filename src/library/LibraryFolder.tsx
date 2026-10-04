@@ -27,12 +27,16 @@ import { TRACK_SHEETS, TrackSheet } from "./TrackSheet";
 
 const SIZE = { width: 1920, height: 1080 };
 
-// The 2021 cars' front corners against the STR3's, each from its photo camera and from a low trackside one.
+// The 2021 cars' and the VF-20's front corners against the STR3's (the approved low look), and the VF-20's high look.
 const FAR_SIDE_ROWS: FarSideCheckProps = {
-  rows: (["STR3", "W12", "RB16B", "AT01"] as const).map((car) => ({
-    car,
-    camera: { elevation: 1, distance: 10 },
-  })),
+  rows: [
+    { car: "STR3" },
+    { car: "W12" },
+    { car: "RB16B" },
+    { car: "AT01" },
+    { car: "VF20" },
+    { car: "VF20", farSide: "high" },
+  ],
 };
 
 const YEARS = Object.keys(SHEETS).map(Number) as (keyof typeof SHEETS)[];

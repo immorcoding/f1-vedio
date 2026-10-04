@@ -21,14 +21,6 @@ export {
   type Tread,
 } from "./MangaCar";
 export { TopCar, topAnchorAt, wheelbaseMiddle } from "./TopCar";
-export {
-  cameraAt,
-  carCamera,
-  DEFAULT_CAR_CAMERA,
-  HELMET_LENS,
-  photoCameraState,
-  type CarCamera,
-} from "./far-side";
 export { modernPlan, modernPlanFrom, planOf, wheelAngleAt } from "./plan";
 export {
   carLength,

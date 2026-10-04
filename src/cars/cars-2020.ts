@@ -71,6 +71,27 @@ export const VF20: CarSpec = {
     { cx: 546, cy: 581, r: 92 },
     { cx: 1588, cy: 573, r: 95 },
   ],
+  // Two looks, chosen per shot (CarState.farSide, ART-26). "high", for the 3.2 m wreck cam (3.3, 3.4, the 3.5 panels,
+  // 3.6, the halo finale): the traced far endplate and wing, the far wheels a little higher than the default half
+  // lift. "low", for a camera near the car's height: as the STR3, the far wing and wheels hidden behind the near ones.
+  farSide: {
+    high: {
+      wheels: [
+        { cx: 546, cy: 643, r: 92 },
+        { cx: 1588, cy: 638, r: 95 },
+      ],
+    },
+    low: {
+      wheels: [
+        { cx: 566, cy: 752, r: 93 },
+        { cx: 1659, cy: 752, r: 93 },
+      ],
+      frontEndplate: false,
+      frontDeck:
+        "M 258 792 L 330 772 L 390 742 L 420 716 L 420 830 L 404 846 L 272 848 L 258 834 Z",
+      frontFlap: "M 360 754 L 420 716 L 420 729 L 364 765 Z",
+    },
+  },
   rimR: 53,
   rim: "dark",
   compound: PIRELLI_2020.hard,
@@ -97,11 +118,6 @@ export const VF20: CarSpec = {
   floor: "M 690 784 L 1585 784 L 1580 796 L 700 798 Z",
   frontWing: {
     near: "M 260 764 L 416 760 L 418 830 L 404 846 L 272 848 L 258 834 Z",
-    // the wing seen dead level, within the endplate's length: the elements below the endplate top, the flap rising
-    // to just above it at the trailing edge (as on the STR3); swept across the span for the camera (far-side.ts)
-    deckSide:
-      "M 258 826 L 380 818 L 384 752 L 416 752 L 418 830 L 404 846 L 272 848 L 258 834 Z",
-    flapSide: "M 384 752 L 416 752 L 416 762 L 382 762 Z",
     // far endplate: the near one seen further away (ART-17)
     farFrom: { dx: 12, dy: -188, scale: 0.8625 },
     deck: "M 272 618 L 404 616 L 416 762 L 416 820 L 272 848 C 238 826 214 762 218 718 C 222 690 248 646 272 618 Z",
@@ -185,6 +201,21 @@ export const AT01: CarSpec = {
     { cx: 452, cy: 668, r: 92 },
     { cx: 1628, cy: 600, r: 92 },
   ],
+  // From a trackside camera the far side reads as on the STR3 (user, 2026-10-04): the far wheels hidden behind the
+  // near ones, the far front endplate a sliver over the near one, the wing seen side-on, its elements rising from the
+  // endplate to the nose (ART-26).
+  farSide: {
+    low: {
+      wheels: [
+        { cx: 554, cy: 692, r: 93 },
+        { cx: 1688, cy: 692, r: 93 },
+      ],
+      frontEndplate: { dx: 4, dy: -8, scale: 0.95 },
+      frontDeck:
+        "M 246 722 L 330 710 L 418 699 L 418 766 L 404 778 L 256 780 L 244 768 Z",
+      frontFlap: "M 340 709 L 418 698 L 418 707 L 342 717 Z",
+    },
+  },
   rimR: 53,
   rim: "spoked",
   compound: PIRELLI_2020.medium,
@@ -209,11 +240,6 @@ export const AT01: CarSpec = {
   floor: "M 640 772 L 1600 764 L 1596 776 L 646 784 Z",
   frontWing: {
     near: "M 246 708 L 414 704 L 416 766 L 404 778 L 256 780 L 244 768 Z",
-    // the wing seen dead level, within the endplate's length: the elements below the endplate top, the flap rising
-    // to just above it at the trailing edge (as on the STR3); swept across the span for the camera (far-side.ts)
-    deckSide:
-      "M 244 760 L 370 752 L 374 696 L 414 696 L 416 766 L 404 778 L 256 780 L 244 768 Z",
-    flapSide: "M 374 696 L 414 696 L 414 706 L 372 706 Z",
     // far endplate: the near one seen further away (ART-17)
     farFrom: { dx: -79, dy: -49, scale: 0.878 },
     deck: "M 176 695 L 314 692 L 414 706 L 414 760 L 256 780 C 200 770 158 752 155 728 C 156 712 166 700 176 695 Z",

@@ -2,12 +2,7 @@
 // cars along the outside wall (ART-9), the trackside background scrolling with true parallax, speed lines for pace.
 // The T5 panel is this same set-up frozen at its settled frame; the other close-ups of the 2021 part reuse it.
 import { useId } from "react";
-import {
-  carCamera,
-  MangaCar,
-  type CarSpec,
-  type CarState,
-} from "../../cars";
+import { MangaCar, type CarSpec, type CarState } from "../../cars";
 import type { Camera } from "../../kit/camera";
 import { INK, PAPER } from "../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../kit/ink";
@@ -169,11 +164,7 @@ export const Closeup: React.FC<{
                 <MangaCar
                   car={c.car}
                   at={cam.anchor({ x: c.x, z: c.z })}
-                  // the far side as this camera sees it (ART-26); a shot's own state comes on top
-                  state={{
-                    ...carCamera(c.car, cam, c.z, { x: c.x }),
-                    ...c.state,
-                  }}
+                  state={c.state}
                 />
               </g>
             ))}

@@ -4,7 +4,7 @@
 // panel through zoomed copies of the same camera; shot 3.6 reuses it behind GRO; the halo finale closes on it. Every
 // one shows the same torn gap (wreck-geometry.ts). No driver injury is ever shown: helmet and halo only.
 import { useId } from "react";
-import { carCamera, MangaCar, VF20 } from "../../../cars";
+import { MangaCar, VF20 } from "../../../cars";
 import { pinhole, type Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import {
@@ -193,10 +193,9 @@ export const WreckWorld: React.FC<{
   );
   const gapFire = fireAt(FIRES.gap.x, FIRES.gap.z, FIRES.gap.w, FIRES.gap.h);
   const cellAt = cam.anchor({ x: CELL_ANCHOR_X, z: CELL_Z });
-  // the cell's and the rear piece's far sides as this camera sees them (ART-26): the wreck cam 3.2 m up looks down
-  // ~21° on the cell, so its far wheels and endplate show above the near ones, as on the traced photo
+  // the wreck cam is 3.2 m up, looking down on the car: the VF-20's high far side (ART-26)
   const cellState = {
-    ...carCamera(VF20, cam, CELL_Z, { x: CELL_ANCHOR_X, facing: "left" }),
+    farSide: "high" as const,
     split: { front: CELL_POSE, show: "front" as const },
     driver,
   };
@@ -402,7 +401,7 @@ export const WreckWorld: React.FC<{
           facing="right"
           at={rearAt}
           state={{
-            ...carCamera(VF20, cam, REAR_Z, { x: REAR_ANCHOR_X }),
+            farSide: "high",
             split: { rear: REAR_POSE, show: "rear" },
             compound: VF20.compound,
           }}

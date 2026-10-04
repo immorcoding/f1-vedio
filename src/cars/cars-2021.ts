@@ -47,14 +47,29 @@ export const W12: CarSpec = {
     { cx: 452, cy: 592, r: 95 },
     { cx: 1585, cy: 590, r: 98 },
   ],
+  // From a trackside camera the far side reads as on the STR3 (user, 2026-10-04): the far wheels hidden behind the
+  // near ones, the far front endplate a sliver over the near one, the wing seen side-on, its elements rising from the
+  // endplate to the nose (ART-26).
+  farSide: {
+    low: {
+      wheels: [
+        { cx: 469, cy: 732, r: 101 },
+        { cx: 1636, cy: 735, r: 102 },
+      ],
+      frontEndplate: { dx: 4, dy: -8, scale: 0.95 },
+      frontDeck:
+        "M 148 772 L 230 750 L 300 730 L 336 716 L 336 806 L 317 825 L 162 825 L 147 810 Z",
+      frontFlap: "M 262 738 L 336 716 L 336 727 L 266 748 Z",
+    },
+  },
   rimR: 56,
   rim: "dark",
   rimAccent: "#00a19b",
   compound: PIRELLI_2021.hard,
   body:
-    "M 128 700 C 200 680 300 652 420 614 C 500 590 560 566 610 556 L 705 552 L 730 566 L 930 566 L 1000 548 L 1030 530 L 1034 468 " +
+    "M 127 697 C 200 675 300 645 420 612 C 500 590 560 566 610 556 L 705 552 L 730 566 L 930 566 L 1000 548 L 1030 530 L 1034 468 " +
     "C 1060 458 1100 458 1140 460 L 1340 461 C 1420 470 1520 492 1600 520 L 1640 560 L 1690 610 L 1712 640 L 1700 690 L 1560 760 L 1540 800 " +
-    "L 620 800 L 600 790 L 598 700 C 520 690 440 676 360 682 C 260 690 180 712 132 716 Z",
+    "L 620 800 L 600 790 L 598 700 C 520 704 440 709 360 711 C 260 713 180 716 132 717 Z",
   regions: {
     cover:
       "M 1034 468 C 1060 458 1100 458 1140 460 L 1340 461 C 1420 470 1520 492 1600 520 L 1640 560 L 1600 650 C 1560 630 1500 615 1420 600 C 1300 575 1150 545 1030 530 Z",
@@ -77,11 +92,6 @@ export const W12: CarSpec = {
     // Both endplates black, as the near one's outer face in the photo (ART-17); the far one is its copy, its top
     // edge where the photo shows it.
     near: "M 152 756 L 330 756 L 330 813 L 317 825 L 162 825 L 147 810 Z",
-    // the wing seen dead level, within the endplate's length: the elements below the endplate top, the flap rising
-    // to just above it at the trailing edge (as on the STR3); swept across the span for the camera (far-side.ts)
-    deckSide:
-      "M 150 796 L 282 790 L 286 748 L 330 748 L 330 800 L 317 825 L 162 825 L 147 810 Z",
-    flapSide: "M 286 748 L 330 748 L 330 758 L 284 758 Z",
     farFrom: { dx: -11, dy: -158, scale: 0.93 },
     deck: "M 140 642 L 305 640 L 330 758 L 330 800 L 162 825 C 128 804 102 744 104 712 C 106 698 124 668 140 642 Z",
     flap: { d: "M 262 641 L 305 640 L 330 758 L 282 757 Z", color: "#00a19b" },
@@ -158,6 +168,21 @@ export const RB16B: CarSpec = {
     { cx: 450, cy: 590, r: 96 },
     { cx: 1565, cy: 590, r: 98 },
   ],
+  // From a trackside camera the far side reads as on the STR3 (user, 2026-10-04): the far wheels hidden behind the
+  // near ones, the far front endplate a sliver over the near one, the wing seen side-on, its elements rising from the
+  // endplate to the nose (ART-26).
+  farSide: {
+    low: {
+      wheels: [
+        { cx: 452, cy: 720, r: 101 },
+        { cx: 1588, cy: 717, r: 102 },
+      ],
+      frontEndplate: { dx: 4, dy: -8, scale: 0.95 },
+      frontDeck:
+        "M 132 768 L 210 748 L 280 732 L 324 722 L 324 800 L 305 822 L 145 822 L 130 807 Z",
+      frontFlap: "M 250 739 L 324 722 L 324 733 L 254 749 Z",
+    },
+  },
   rimR: 56,
   rim: "spoked",
   compound: PIRELLI_2021.soft,
@@ -183,11 +208,6 @@ export const RB16B: CarSpec = {
   frontWing: {
     // far endplate: the near one's copy, its top edge where the photo shows it (ART-17)
     near: "M 136 752 L 318 752 L 318 809 L 305 822 L 145 822 L 130 807 Z",
-    // the wing seen dead level, within the endplate's length: the elements below the endplate top, the flap rising
-    // to just above it at the trailing edge (as on the STR3); swept across the span for the camera (far-side.ts)
-    deckSide:
-      "M 132 794 L 272 786 L 276 744 L 318 744 L 318 800 L 305 822 L 145 822 L 130 807 Z",
-    flapSide: "M 276 744 L 318 744 L 318 754 L 274 754 Z",
     farFrom: { dx: 2, dy: -152, scale: 0.925 },
     deck: "M 135 640 L 305 638 L 318 752 L 318 800 L 145 822 C 118 800 100 744 104 714 C 108 700 122 668 135 640 Z",
     flap: { d: "M 262 639 L 305 638 L 318 752 L 272 752 Z", color: "#d72a2e" },

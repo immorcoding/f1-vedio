@@ -4,12 +4,7 @@
 //   over the photo and check the alignment;
 // - "art": the finished manga car at the photo's scale, to set next to (or blend with) the photo.
 // Render with `npm run still -- Check-Trace-<car> out.png` and composite over the file in `CarSpec.reference`.
-import {
-  photoCameraState,
-  CARS,
-  CarInPhotoSpace,
-  type CarId,
-} from "../cars";
+import { CARS, CarInPhotoSpace, type CarId } from "../cars";
 
 export type CarCheckProps = { car: CarId; mode: "trace" | "art" };
 
@@ -18,7 +13,7 @@ export const CarCheck: React.FC<CarCheckProps> = ({ car: carId, mode }) => {
   if (mode === "art") {
     return (
       <svg width={1920} height={1080}>
-        <CarInPhotoSpace car={c} state={photoCameraState(c)} />
+        <CarInPhotoSpace car={c} />
       </svg>
     );
   }
