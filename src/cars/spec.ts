@@ -30,6 +30,8 @@ export type RearWingPlanes = {
   flap: string;
   pivot: { x: number; y: number };
   drsOpen: number;
+  // the flap's livery colour where the photo shows one (W12: Petronas teal); else a shade lighter than the main plane
+  flapColor?: string;
 };
 
 // The far side of a car as drawn for one kind of camera (ART-26), simple per-car data rather than a perspective
