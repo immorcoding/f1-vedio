@@ -35,13 +35,18 @@ const WEST = { len: 158, hw: 12, podHw: 18 };
 const WEST_TIP = 185; // the shell's tip, m from the block's end face along D_W
 // East block: along the track, its track-side face at x = 17.
 const AX_E = 29;
-const EAST = { z0: -11, z1: 81, hw: 12, podHw: 14 };
+// It starts at the bridge (in reality it runs ≈ 30 m nearer the camera than the bridge; cut back so the hotel can
+// stand right behind the main grandstand's far end), its pod's nose EAST_LEAD m ahead of it.
+const EAST = { z0: -5, z1: 81, hw: 12, podHw: 14 };
+const EAST_LEAD = 8;
 // The bridge: front face at z = -4.5, deck 9 m deep, underside 5.5 m, body to 11.5 m.
 export const BRIDGE = { x0: -20.5, x1: 17, z0: -4.5, z1: 4.5, y0: 5.5, y1: 11.5 };
 // Where each podium's corner nearest the camera stands (hotel frame), so the scene can end its pit building there.
 export const HOTEL_NEAR = {
   west: [C_W[0] + WEST.podHw * -Math.cos(ANG), C_W[1] + WEST.podHw * -Math.sin(ANG)] as V2,
   eastZ: EAST.z0 - 2,
+  // the nearest point of the east block, its podium and its pod (the scene keeps its grandstand in front of it)
+  east: EAST.z0 - EAST_LEAD,
 };
 
 // Piecewise values along a shell (u 0..1), eased between keys.
@@ -100,7 +105,7 @@ const WEST_SPINE = (() => {
   return spineOf(pts);
 })();
 const EAST_SPINE = spineOf([
-  [AX_E, EAST.z0 - 16],
+  [AX_E, EAST.z0 - EAST_LEAD],
   [AX_E, EAST.z1 + 12],
 ]);
 
@@ -153,7 +158,7 @@ const EAST_SHELL: Shell = {
   spine: EAST_SPINE,
   w: [
     [0, 1.5],
-    [0.1, 14],
+    [0.08, 13.5],
     [0.3, 16],
     [0.75, 15.5],
     [0.9, 13.5],
@@ -395,7 +400,7 @@ const build = (cam: Camera, ox: number, oz: number) => {
     [0, 1],
     EAST.z1 - EAST.z0,
     EAST.hw,
-    floorsUnder(EAST_SHELL, (s) => (s + 16) / el, EAST.hw),
+    floorsUnder(EAST_SHELL, (s) => (s + EAST_LEAD) / el, EAST.hw),
     5,
   );
   const eastPod = podium([AX_E, EAST.z0 - 2], [0, 1], EAST.z1 - EAST.z0 + 4, EAST.podHw);

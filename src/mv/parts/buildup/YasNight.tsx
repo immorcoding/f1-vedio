@@ -31,7 +31,8 @@ const RUNOFF = 17; // the right-hand wall and debris fence
 // The Yas hotel: the origin of its frame (on the ground under the link bridge, on the track's centre line). The
 // straight, its walls and fences and the run-off run on under the bridge to Z_FAR; the pit building and pit lane end
 // against the west block's podium, the strip behind the right-hand fence against the east block's.
-const HOTEL_AT = { x: 4, z: 183 };
+// Composite distance: the hotel stands just beyond the main grandstand's far end (its nearest point 1 m past it).
+const HOTEL_AT = { x: 4, z: 103 - HOTEL_NEAR.east };
 const PIT_END = HOTEL_AT.z + HOTEL_NEAR.west[1];
 const EAST_END = HOTEL_AT.z + HOTEL_NEAR.eastZ;
 const Z_FAR = 420;
@@ -177,13 +178,14 @@ const FANS: Fan[] = (() => {
 })();
 
 // Floodlight towers: track x, depth, height. On the left they stand in the paddock behind the pit building (which
-// hides their feet); on the right just behind the debris fence, beyond the grandstand's end (so they don't pierce its
-// canopy).
+// hides their feet), in front of the hotel's west podium and low enough in frame to stay clear of the title; on the
+// right just behind the debris fence, one in the gap between the grandstand's far end and the hotel, one beyond the
+// east block (so none pierces the canopy, the east block or its podium).
 const TOWERS = [
   { x: -30, z: 80, h: 32, aim: 0 },
-  { x: -30, z: 124, h: 32, aim: 1 },
-  { x: 19, z: 118, h: 30, aim: 9 },
-  { x: 19, z: 156, h: 30, aim: 8 },
+  { x: -30, z: 100, h: 32, aim: 1 },
+  { x: 19, z: 104, h: 30, aim: 9 },
+  { x: 19, z: 216, h: 30, aim: 8 },
 ];
 type Tower = (typeof TOWERS)[number];
 
