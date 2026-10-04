@@ -427,8 +427,8 @@ export const jump = (u: number, height = 0.22): Pose => {
       far: footFrom(v(-0.06, lift + tuck), BONES.ball, toe + 18 * air),
     },
     arms: {
-      near: { shoulder: -30 + 152 * armsUpK, elbow: 24, grip: "fist", wrist: 6 },
-      far: { shoulder: -40 + 232 * armsUpK, elbow: 18, grip: "fist", wrist: -6 },
+      near: { shoulder: -16 + 138 * armsUpK, elbow: 24, grip: "fist", wrist: 6 },
+      far: { shoulder: -22 + 214 * armsUpK, elbow: 18, grip: "fist", wrist: -6 },
     },
   };
 };

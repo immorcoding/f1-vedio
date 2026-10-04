@@ -53,8 +53,8 @@ type Person = {
 const PAIR_A = 840;
 const PAIR_B = 1100;
 const PEOPLE: Person[] = [
-  { x: 560, scale: 0.93, outfit: FERRARI_MECHANIC, watch: "left", idle: (t) => armsFolded({ t, head: -10 }), react: (b) => fistPump(b) },
-  { x: 300, scale: 0.96, outfit: FAMILY_RED, watch: "left", idle: (t) => handOnHead({ t: t + 2, head: -10 }), react: (b) => jump((b / 2) % 1) },
+  { x: 600, scale: 0.93, outfit: FERRARI_MECHANIC, watch: "left", idle: (t) => armsFolded({ t, head: -10 }), react: (b) => fistPump(b) },
+  { x: 335, scale: 0.96, outfit: FAMILY_RED, watch: "left", idle: (t) => handOnHead({ t: t + 2, head: -10 }), react: (b) => jump((b / 2) % 1) },
   { x: 1380, scale: 0.97, outfit: FAMILY_LIGHT, watch: "right", idle: (t) => handOnHead({ t: t + 1, head: -10 }), react: (_b, t) => headBack(t) },
   { x: 1640, scale: 0.94, outfit: FERRARI_MECHANIC, watch: "right", idle: (t) => armsFolded({ t: t + 3, head: -10 }), react: (b) => armsUp(b) },
 ];
