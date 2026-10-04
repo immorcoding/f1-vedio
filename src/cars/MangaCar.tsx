@@ -608,14 +608,14 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
   return (
     <>
       {groundShadow ? (
-        // soft edge like the top views' shadows (28 % ink), a solid core under the floor
+        // a half-tone edge (55 % ink) round a solid core under the floor
         <g>
-          <ellipse {...groundShadow} fill={INK} opacity={0.28} />
+          <ellipse {...groundShadow} fill={INK} opacity={0.55} />
           <ellipse
             cx={groundShadow.cx}
             cy={groundShadow.cy}
-            rx={groundShadow.rx * 0.8}
-            ry={groundShadow.ry * 0.6}
+            rx={groundShadow.rx * 0.9}
+            ry={groundShadow.ry * 0.75}
             fill={INK}
           />
         </g>
