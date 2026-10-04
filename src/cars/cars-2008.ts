@@ -366,18 +366,7 @@ export const STR3: CarSpec = {
   tcamColor: "#c8e021",
   antenna: "M 743 503 L 743 480",
   rainLight: "M 1678 615 L 1692 615 L 1692 627 L 1678 627 Z",
-  // VET's red "15" is painted on top of the nose, about 0.46 tyre diameters behind the front axle (2008 Singapore
-  // photo, Shiny Things): seen from the side it is a thin, foreshortened strip along the nose's top line
-  numberAt: {
-    x: 714,
-    y: 525,
-    size: 46,
-    color: "#e3242b",
-    // turned a quarter anticlockwise on screen, then drawn long along the nose (x) and flat (y)
-    angle: 86,
-    squash: 0.45,
-    stretch: 3.2,
-  },
+  numberAt: { x: 1300, y: 420 }, // same place and style as the other cars' numbers (engine cover)
   tyreGrooves: 4,
 };
 
