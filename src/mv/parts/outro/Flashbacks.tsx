@@ -1,8 +1,9 @@
-// Shot 6.1 (outro bars 1–4): four flashback panels, one a bar, each switched on beat 1 — slammed onto the page (1989/90,
-// 2020) or turned over like a page (2008, 2021). The first slams straight onto 5.8's champion photo. Each panel reuses
-// its part's art:
+// Shot 6.1 (outro bars 1–4): four flashback panels, one a bar, each switched on beat 1. The first slams straight onto
+// 5.8's champion photo; the cuts into the other three are a 3-frame whip (the old page flung off left under speed
+// lines and a paper flash). Every panel pushes in slowly (5 % a bar), and each one's key event lands on beat 3. Each
+// panel reuses its part's art:
 //   1989/90  PRO's and SEN's helmets (their real designs, the same as on the cars) clashing in an impact star
-//   2008     the 98 · 97 score box of 2.7, its gold under-stroke landing on beat 2
+//   2008     the 98 · 97 score box of 2.7, its gold under-stroke landing on beat 3
 //   2020     the burnt but whole halo of 3.6 (HaloFinale), a glint on beat 3
 //   2021     VER's RB16B: on beat 3 its number turns over from 33 to 1 and the year from 2021 to 2022 (he raced as the
 //            champion's number 1 the next season: facts.md)
@@ -17,7 +18,7 @@ import {
 import { INK, PAPER } from "../../../kit/colors";
 import { ImpactStar } from "../../../kit/impact";
 import { Caption, captionSize, useLettering } from "../../../kit/lettering";
-import { focusLines } from "../../../kit/lines";
+import { focusLines, speedLines } from "../../../kit/lines";
 import { ToneDefs, tone } from "../../../kit/tone";
 import { HaloFinale } from "../bahrain2020/HaloFinale";
 import { FIRE_PALETTE, cueFrame as bahrainCue } from "../bahrain2020/common";
@@ -25,7 +26,7 @@ import { SCORE_H, SCORE_W, ScoreBox } from "../brazil2008/Champion";
 import { ChampionCard } from "../abuDhabi2021/ChampionCard";
 import { EDIT as ABU_EDIT } from "../abuDhabi2021/shots.ts";
 import { cueAt, secondsInShot, type ShotTime } from "../abuDhabi2021/shotClock";
-import { FPS, frameAt } from "../../timing";
+import { FPS, SECONDS_PER_BEAT, frameAt } from "../../timing";
 import { EDIT } from "./shots.ts";
 
 // the panel on the page
@@ -37,7 +38,8 @@ const PY = 86;
 const decay = (since: number, len: number) =>
   since < 0 ? 0 : Math.max(0, 1 - since / len) ** 2;
 
-type PanelProps = { t: number; beat: number };
+/** `t`: seconds since the panel came on; `keyT`: seconds from then to its key event (beat 3). */
+type PanelProps = { t: number; keyT: number };
 
 // 1989/90: the two helmets meet on the downbeat and spring apart, the star bursting between them
 const Clash: React.FC<PanelProps> = ({ t }) => {
@@ -83,9 +85,9 @@ const Clash: React.FC<PanelProps> = ({ t }) => {
   );
 };
 
-// 2008: the final points, rain falling over the page; the gold 98 lands on beat 2
-const Score: React.FC<PanelProps> = ({ t, beat }) => {
-  const sinceGold = t - beat;
+// 2008: the final points, rain falling over the page; the gold 98 lands on beat 3
+const Score: React.FC<PanelProps> = ({ t, keyT }) => {
+  const sinceGold = t - keyT;
   const gold =
     sinceGold < 0
       ? null
@@ -140,9 +142,9 @@ const Score: React.FC<PanelProps> = ({ t, beat }) => {
 
 // 2020: the scorched halo, slowly pushing in (3.6's last shot, held on its first second)
 const HALO_GLINT = { x: 0.52, y: 0.38 }; // the halo's top in the panel, as a share of its size
-const Halo: React.FC<PanelProps> = ({ t, beat }) => {
+const Halo: React.FC<PanelProps> = ({ t, keyT }) => {
   const f = bahrainCue("bahrain2020.halo") + 6 + Math.round(t * 60 * 0.5);
-  const g = t < beat * 2 ? 0 : decay(t - beat * 2, 0.55);
+  const g = t < keyT ? 0 : decay(t - keyT, 0.55);
   const s = 34 + 60 * g;
   return (
     <g>
@@ -186,11 +188,11 @@ const flip = (since: number, len = 0.16) =>
 const flipScale = (u: number) =>
   u <= 0 ? 1 : u < 0.5 ? 1 - 2 * u : Easing.out(Easing.back(2.5))(2 * u - 1);
 
-const Number1: React.FC<PanelProps> = ({ t, beat }) => {
-  const u = flip(t - beat * 2);
+const Number1: React.FC<PanelProps> = ({ t, keyT }) => {
+  const u = flip(t - keyT);
   const label = u < 0.5 ? "33" : "1";
   const sy = flipScale(u);
-  const burst = decay(t - beat * 2, 0.5);
+  const burst = decay(t - keyT, 0.5);
   const ppm = (CAR_K * 250) / RB16B.frame.k;
   // the background streams past to the left: streaks, each wrapping round at its own speed
   const streaks = Array.from({ length: 34 }, (_, i) => {
@@ -263,36 +265,31 @@ const Number1: React.FC<PanelProps> = ({ t, beat }) => {
 
 const PANELS: {
   cue: string;
+  /** The panel's key event on beat 3 (none for the clash, which is its own downbeat). */
+  key?: string;
   year: string;
-  enter: "slam" | "flip";
   tilt: number;
   Art: React.FC<PanelProps>;
 }[] = [
-  {
-    cue: "outro.flash1989",
-    year: "1989 · 1990",
-    enter: "slam",
-    tilt: -1.2,
-    Art: Clash,
-  },
+  { cue: "outro.flash1989", year: "1989 · 1990", tilt: -1.2, Art: Clash },
   {
     cue: "outro.flash2008",
+    key: "outro.gold98",
     year: "2008",
-    enter: "flip",
     tilt: 1.0,
     Art: Score,
   },
   {
     cue: "outro.flash2020",
+    key: "outro.haloGlint",
     year: "2020",
-    enter: "slam",
     tilt: -0.8,
     Art: Halo,
   },
   {
     cue: "outro.flash2021",
+    key: "outro.number1",
     year: "2021",
-    enter: "flip",
     tilt: 1.2,
     Art: Number1,
   },
@@ -300,16 +297,19 @@ const PANELS: {
 
 const shot58 = ABU_EDIT.shots.find((s) => s.id === "5.8");
 
-/** How long a page takes to turn over, s. */
-export const FLIP_S = 0.26;
+/** The whip between panels, s (3 frames). */
+const WHIP = 3 / FPS;
+/** Slow push-in on every panel: this much bigger per bar. */
+const PUSH = 0.05;
+const BAR_S = 4 * SECONDS_PER_BEAT;
 
 // One page: the light-toned page, the panel with its ink shadow and frame, the year in a caption box on its edge.
 const Page: React.FC<{
   i: number;
   t: number;
-  beat: number;
+  keyAt: number;
   yearFlip?: number;
-}> = ({ i, t, beat, yearFlip = 0 }) => {
+}> = ({ i, t, keyAt, yearFlip = 0 }) => {
   const p = PANELS[i];
   const Art = p.Art;
   const cx = PX + PW / 2;
@@ -319,17 +319,20 @@ const Page: React.FC<{
   const cap = captionSize([year], 54);
   const capX = PX + 70;
   const capY = PY + PH - cap.h / 2;
+  const push = 1 + PUSH * Math.min(1.6, Math.max(0, t) / BAR_S);
   return (
     <g>
       <rect width={1920} height={1080} fill={tone("light", "o62")} />
-      <g transform={`rotate(${p.tilt} ${cx} ${cy})`}>
+      <g
+        transform={`translate(${cx} ${cy}) scale(${push}) rotate(${p.tilt}) translate(${-cx} ${-cy})`}
+      >
         <rect x={PX + 16} y={PY + 16} width={PW} height={PH} fill={INK} />
         <clipPath id={id}>
           <rect x={PX} y={PY} width={PW} height={PH} />
         </clipPath>
         <g clipPath={`url(#${id})`}>
           <g transform={`translate(${PX} ${PY})`}>
-            <Art t={t} beat={beat} />
+            <Art t={t} keyT={keyAt} />
           </g>
         </g>
         <rect
@@ -354,29 +357,30 @@ const Page: React.FC<{
 export const Flashbacks: React.FC<{ st: ShotTime }> = ({ st }) => {
   useLettering();
   const starts = PANELS.map((p) => secondsInShot(st, cueAt(EDIT, p.cue)));
-  const beat = secondsInShot(st, cueAt(EDIT, "outro.gold98")) - starts[1];
+  const keys = PANELS.map((p, i) =>
+    p.key ? secondsInShot(st, cueAt(EDIT, p.key)) - starts[i] : 0,
+  );
   const turn = secondsInShot(st, cueAt(EDIT, "outro.number1"));
   let cur = 0;
   for (let i = 0; i < PANELS.length; i++) if (st.t >= starts[i]) cur = i;
   const since = st.t - starts[cur];
-  const p = PANELS[cur];
-  // a slam: the page drops in from oversize and shakes the frame
-  const slam = p.enter === "slam" ? Math.min(1, since / 0.12) : 1;
+  // panel 1 slams in from oversize over 5.8's photo and shakes the frame
+  const slam = cur === 0 ? Math.min(1, since / 0.12) : 1;
   const slamS =
-    p.enter === "slam" ? 1.22 - 0.22 * Easing.out(Easing.back(1.8))(slam) : 1;
-  const punch = decay(since, p.enter === "slam" ? 0.3 : 0.18);
-  const shakeX = punch * 12 * Math.sin(st.t * 97);
-  const shakeY = punch * 9 * Math.cos(st.t * 83);
-  // a flip: the page under it is already the new one; the old page turns over about the left edge
-  const turning = p.enter === "flip" && since < FLIP_S && cur > 0;
-  const fu = since / FLIP_S;
+    cur === 0 ? 1.22 - 0.22 * Easing.out(Easing.back(1.8))(slam) : 1;
+  const punch = decay(since, cur === 0 ? 0.3 : 0.16);
+  const shakeX = punch * (cur === 0 ? 12 : 8) * Math.sin(st.t * 97);
+  const shakeY = punch * (cur === 0 ? 9 : 6) * Math.cos(st.t * 83);
+  // panels 2–4: a 3-frame whip — the new page sweeps in from the right as the old one is flung off left
+  const whipping = cur > 0 && since < WHIP;
+  const e = Math.min(1, (Math.round(since * FPS) + 1) / 3);
   const yearFlip =
     cur === 3 ? Math.max(0, Math.min(1, (st.t - turn) / 0.16)) : 0;
   const page = (i: number) => (
     <Page
       i={i}
       t={st.t - starts[i]}
-      beat={beat}
+      keyAt={keys[i]}
       yearFlip={i === 3 ? yearFlip : 0}
     />
   );
@@ -399,38 +403,40 @@ export const Flashbacks: React.FC<{ st: ShotTime }> = ({ st }) => {
           <ToneDefs prefix="o62" />
         </defs>
         <g transform={`translate(${shakeX} ${shakeY})`}>
-          {/* during a slam the previous page (or 5.8's photo) stays under the new one */}
-          {p.enter === "slam" && cur > 0 && slam < 1 ? page(cur - 1) : null}
-          <g
-            transform={`translate(960 540) scale(${slamS}) translate(-960 -540)`}
-            opacity={p.enter === "slam" ? Math.min(1, since * 30) : 1}
-          >
-            {page(cur)}
-          </g>
-          {turning ? (
+          {whipping ? (
             <g>
-              {/* the old page turning over: squeezed towards the left edge, its back shaded as it comes round */}
-              <g
-                transform={`scale(${Math.cos((fu * Math.PI) / 2)} 1) skewY(${-10 * Math.sin(fu * Math.PI)})`}
-              >
-                {page(cur - 1)}
-                <rect
-                  width={1920}
-                  height={1080}
-                  fill={INK}
-                  opacity={0.5 * fu}
-                />
-              </g>
-              <rect
-                x={1920 * Math.cos((fu * Math.PI) / 2) - 6}
-                y={0}
-                width={60 * (1 - fu)}
-                height={1080}
+              <g transform={`translate(${-1920 * e} 0)`}>{page(cur - 1)}</g>
+              <g transform={`translate(${1920 * (1 - e)} 0)`}>{page(cur)}</g>
+              <path
+                d={speedLines({
+                  x: -100,
+                  y: 0,
+                  w: 2120,
+                  h: 1080,
+                  angle: 0,
+                  n: 40,
+                  seed: `o62w${cur}`,
+                  thickness: 9,
+                  length: [0.3, 0.8],
+                })}
                 fill={INK}
-                opacity={0.35}
+                opacity={0.75}
+              />
+              <rect
+                width={1920}
+                height={1080}
+                fill={PAPER}
+                opacity={0.55 * (1 - e) + 0.15}
               />
             </g>
-          ) : null}
+          ) : (
+            <g
+              transform={`translate(960 540) scale(${slamS}) translate(-960 -540)`}
+              opacity={cur === 0 ? Math.min(1, since * 30) : 1}
+            >
+              {page(cur)}
+            </g>
+          )}
         </g>
       </svg>
     </>

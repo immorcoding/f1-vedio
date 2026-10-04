@@ -1,12 +1,14 @@
-// Shots 6.2 and 6.3 (outro bars 5–8): the chequered flag, the race's real end signal, closes the film. A manga flag in
+// Shots 6.2 and 6.3 (outro bar 4 beat 3 to the end): the chequered flag, the race's real end signal, closes the film. A manga flag in
 // black and white: the cloth rolls in travelling waves (dot tone in the folds, paper highlights on the crests) and
 // pumps on the low pulse every beat.
-//   6.2 (bars 5–6)  the flag waves in from the left over the last flashback panel, pole leading, small at first and
-//                   growing until the cloth fills the frame by the end of bar 6; the ping on bar 5 beat 3 gives it a
-//                   snap and a flash on the crests.
+//   6.2 (4.3–6.4)   the flag waves in from the left over the last flashback panel on the beat its number turns over,
+//                   pole leading, small at first and growing until the cloth fills the frame on bar 6 beat 1 (a full
+//                   bar of the big flag before the title); the ping on bar 5 beat 3 gives it a snap and a flash on
+//                   the crests.
 //   6.3 (bars 7–8)  the waves slow and settle to near-still; on bar 7 beat 1 a paper banner slams across the flag with
 //                   the title F1 · 1989–2021 in ink; the ping on beat 3 glints on it and the chequered strip wipes in;
-//                   from bar 8 beat 3 the flag sinks and the frame fades to black by the end of the song.
+//                   the title holds through bar 7; from bar 8 beat 1 the flag sinks and the frame fades slowly to
+//                   black with the score's last decay (the pad is near silent on the song's last frame).
 // One clock for both shots: seconds since `outro.flag`, so the waves run on unbroken across the cut.
 import { Easing, random } from "remotion";
 import { INK, PAPER } from "../../../kit/colors";
@@ -59,13 +61,20 @@ type FlagState = {
   snap: number;
 };
 
-const T_IN = 0.7; // the pole's dash in from the left edge
+// It comes in on the beat the 2021 number turns over, but only peeks in at the lower left for that beat, so the new
+// "1" reads before the cloth dashes over it.
+const T_PEEK = SECONDS_PER_BEAT;
+const T_IN = T_PEEK + 0.55; // the end of the pole's dash in
 const SETTLE_RATE = 0.07; // the waves' speed at rest, as a share of full flap
 const SETTLE_TAU = 0.8; // s
 
 // screen x of the pole and the flag's scale, at tf seconds since `outro.flag`
 const poleScreen = (tf: number, tFull: number) => {
-  if (tf < T_IN) return -40 + (1150 - -40) * (1 - (1 - tf / T_IN) ** 2);
+  if (tf < T_PEEK) return -40 + (300 - -40) * smooth(tf / T_PEEK);
+  if (tf < T_IN)
+    return (
+      300 + (1150 - 300) * (1 - (1 - (tf - T_PEEK) / (T_IN - T_PEEK)) ** 2)
+    );
   return 1150 + (2010 - 1150) * smooth((tf - T_IN) / (tFull - T_IN));
 };
 const scaleAt = (tf: number, tFull: number) =>
@@ -97,7 +106,7 @@ export const flagState = (tf: number): FlagState => {
   const amp = tf < tTitle ? 1.3 : 0.25 + 1.05 * slow;
   // it rises a little as it comes in, and sinks away at the end
   const sink = smooth((tf - tSink) / (tEnd - tSink));
-  const dy = 140 * (1 - smooth(tf / 1.4)) + 160 * sink * sink;
+  const dy = 260 * (1 - smooth(tf / T_IN)) + 160 * sink * sink;
   return {
     s,
     px,
@@ -388,7 +397,7 @@ export const FlagTitle: React.FC<{ st: ShotTime }> = ({ st }) => {
   const gs = 40 + 70 * g;
   const fade = Math.max(
     0,
-    Math.min(1, (st.t - fadeAt) / (endAt - fadeAt - 3 / FPS)),
+    Math.min(1, smooth((st.t - fadeAt) / (endAt - fadeAt - 1 / FPS))),
   );
   const fs = flagState(tf);
   const sinkY = fs.dy; // the banner rides down with the flag
