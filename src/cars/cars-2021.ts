@@ -110,12 +110,11 @@ export const W12: CarSpec = {
     // 2026-10-04). Its front edge is straight, leaving the top front corner at ~70° (measured on the photo's
     // light panel edge, 1690 540 → 1668 600); the near rear wheel covers its lower end.
     near: "M 1695 525 L 1820 526 L 1821 540 L 1838 540 L 1838 552 L 1877 552 L 1847 600 L 1845 673 L 1640 678 Z",
-    // far endplate (HIGH; LOW hides it): the near one's copy, lifted where the photo shows it. The tall dark piece above
-    // the near endplate, with the curved top and the same steps at the rear, is the far endplate's upper part (user
-    // review 2026-10-04): top front corner 1695 525 → ~1667 441, rear tip 1877 552 → ~1835 465; scaled 0.89 (user:
-    // 0.95 read too big). Its lower part is behind the near endplate and the engine cover. No separate wing-top block:
-    // from this camera the wing planes between the endplates are hidden behind the far endplate's inner face.
-    farFrom: { dx: -16, dy: -84, scale: 0.89 },
+    // far endplate (HIGH; LOW hides it): the near one's copy (uniform scale), lifted above it, its bounding-box centre x on
+    // the near one's (no sideways perspective offset; user review 2026-10-04).
+    // Centre x 1758.5; dx = (1 - 0.84) * 237 / 2; lifted 69 px.
+    // No separate wing-top block; the wing planes between the endplates come later.
+    farFrom: { dx: 19, dy: -69, scale: 0.84 },
     elements: [],
     pylon: "M 1640 500 L 1682 500 L 1690 612 L 1650 616 Z",
     beam: "M 1690 600 L 1840 600",
@@ -245,11 +244,11 @@ export const RB16B: CarSpec = {
         color: "#d72a2e",
       },
     ],
-    // far endplate (HIGH; LOW hides it): the near one's copy, red panel included, lifted where the photo shows it: the
-    // tall dark piece above the near endplate is its upper part (user review 2026-10-04). Top front corner 1630 493 →
-    // ~1627 414, rear tip 1827 520 → ~1802 438. No separate wing-top block; the wing planes between the endplates come
-    // later.
-    farFrom: { dx: 0, dy: -79, scale: 0.89 },
+    // far endplate (HIGH; LOW hides it): the near one's copy (uniform scale), lifted above it, its bounding-box centre x on
+    // the near one's (no sideways perspective offset; user review 2026-10-04).
+    // Red panel included. Centre x 1715; dx = (1 - 0.84) * 224 / 2; lifted 65 px.
+    // No separate wing-top block; the wing planes between the endplates come later.
+    farFrom: { dx: 18, dy: -65, scale: 0.84 },
     elements: [],
     pylon: "M 1595 455 L 1640 455 L 1645 610 L 1600 612 Z",
     beam: "M 1612 615 L 1788 615",
