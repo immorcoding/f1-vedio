@@ -17,7 +17,10 @@
 //                   bar 73 is the bridge: the pad settles on Dm and decays under a last soft lub on 73.1,
 //                   then a reverse swell rises from 73.3 into the riser
 //   buildup  74-81  riser, snare roll, half-time then quarter kick, one-eighth gap before the drop
-//   abuDhabi 82-105 strongest: heavy kick + sub, 16th bass, supersaw lead, stabs, open hats, snare
+//   abuDhabi 82-105 strongest: heavy kick, the engine bass (#16: a saw/engine voice on an rpm curve, one gear a bar),
+//                   supersaw lead, stabs, open hats, snare; inside it (#16): break on 89 (no kick, filtered sweep, a
+//                   sixteenth of silence), the biggest impact on 90.1, hats doubling 96-99, a gap and crash + impact on
+//                   100.1, drums out 102-103 (pad and bass), a snare on every beat of 104; 1.5 dB under v1's level
 //   outro    106-113 layers leave in order: arp/drums, bass, kick; ends on the intro pad and pings
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -47,6 +50,11 @@ const DR = new Float64Array(N);
 const GATES = [
   [S(61), S(61, 3)],
   [S(81, 4.5), S(82)],
+  // #16: a sixteenth of silence in front of the lock-up (90.1) and the finish (100.1), so both land as attacks
+  ...["abuDhabi2021.lockup", "abuDhabi2021.finish"].map((id) => {
+    const { bar } = T.HITS[id];
+    return [S(bar - 1, 4.75), S(bar)];
+  }),
 ];
 
 // -- helpers ------------------------------------------------------------------------------
@@ -156,6 +164,14 @@ const chordAt = (bar) => {
 const barOf = (n) => Math.floor(n / (BEAT * T.BEATS_PER_BAR)) + 1;
 const DROP = [82, 105];
 const padChord = (n) => CHORDS[chordAt(barOf(n))];
+// The drop's inner shape (ticket #16): it is no longer one 24-bar wall. Bar lines from timing.ts's Abu Dhabi hits.
+const LOCKUP = T.HITS["abuDhabi2021.lockup"].bar; // 90
+const FINISH = T.HITS["abuDhabi2021.finish"].bar; // 100
+const POINTS = T.HITS["abuDhabi2021.points"].bar; // 102
+const BREAK = LOCKUP - 1; // 89: no kick, a filtered riser sweep, a sixteenth of silence before the lock-up
+const CHASE = [FINISH - 4, FINISH - 1]; // 96-99: the hats double and build to the line
+const BARE = [POINTS, POINTS + 1]; // 102-103: no drums; pad and the engine bass alone
+const SLAM = POINTS + 2; // 104: a snare on every beat under the radio line
 
 // -- kick pattern (also drives the sidechain duck) ----------------------------------------
 const kickGain = (bar) => {
@@ -169,13 +185,18 @@ const kickGain = (bar) => {
 const kicks = [];
 for (let bar = 1; bar <= T.BARS; bar++) {
   for (let beat = 1; beat <= 4; beat++) {
+    // the drop's kick rests in the break (89) and the bare bars (102-103)
     const four = inBars(bar, [
       [9, 60],
       [78, 79],
-      [82, 109],
+      [82, BREAK - 1],
+      [LOCKUP, BARE[0] - 1],
+      [SLAM, 109],
     ]);
     const half = inBars(bar, [[74, 77]]) && (beat === 1 || beat === 3);
-    if (four || half)
+    // the lock-up's impact owns 90.1 alone, so the limiter spends its headroom on it and not on a kick under it
+    const lockup = bar === LOCKUP && beat === 1;
+    if ((four || half) && !lockup)
       kicks.push({
         n: S(bar, beat),
         gain: kickGain(bar),
@@ -209,6 +230,13 @@ for (const k of kicks) {
     [at(BRIDGE), 0.95], // the bridge: the Dm pad sustains and decays into the buildup's level
     [at(74), 0.5],
     [at(82), 0.6],
+    [at(BREAK), 0.56], // the break: the pad swells with the sweep
+    [at(BREAK, 4.75), 0.85],
+    [at(LOCKUP), 0.56],
+    [at(BARE[0]), 0.52],
+    [at(BARE[0], 2), 0.8], // drums out: the pad carries 102-103 with the bass
+    [at(SLAM), 0.75],
+    [at(SLAM + 1), 0.48],
     [at(106), 0.45],
     [at(110), 0.8],
     [at(112), 0.8],
@@ -227,6 +255,13 @@ for (const k of kicks) {
     [at(73, 3), 520], // the bridge holds closed, then opens with the swell into the buildup
     [at(74), 1100],
     [at(82), 3200],
+    [at(BREAK), 3000],
+    [at(BREAK, 1.25), 450], // the break's filtered sweep: closes, then opens wide into the lock-up
+    [at(BREAK, 4.75), 6000],
+    [at(LOCKUP), 3000],
+    [at(BARE[0]), 2600],
+    [at(BARE[1], 4), 1500], // 102-103 darken; the slam opens it again
+    [at(SLAM), 2600],
     [at(106), 2000],
     [at(110), 700],
     [at(114), 300],
@@ -336,16 +371,16 @@ for (const k of kicks) {
   });
 }
 
-// -- bass: saw bass, plus a sine sub under the drop ---------------------------------------
+// -- bass: saw bass outside the drop (the drop has the engine bass) -----------------------------------
 {
   const rng = mulberry32(101);
   for (let bar = 9; bar <= 107; bar++) {
     if (bar >= 61 && bar <= BRIDGE) continue;
+    if (inBars(bar, [DROP])) continue; // the drop has the engine bass (below)
     const root = ROOTS[chordAt(bar)];
-    const drop = inBars(bar, [DROP]);
     const suz = bar <= 32;
     const buildup = bar >= 74 && bar <= 81;
-    // Suzuka: dry and staccato (bars 9-16 only two notes a bar); Brazil and the drop roll in 16ths.
+    // Suzuka: dry and staccato (bars 9-16 only two notes a bar); Brazil rolls in 16ths.
     const steps = suz
       ? bar <= 16
         ? 8
@@ -365,8 +400,7 @@ for (const k of kicks) {
       if (sparse && s !== 3 && s !== 7) continue;
       if (suz && steps === 16 && s % 2 === 0) continue; // fill: off-sixteenths only
       const n = S(bar) + (s * BEAT * 4) / steps;
-      const octave =
-        (drop && s % 4 === 3) || (suz && bar > 16 && s % 4 === 3) ? 12 : 0;
+      const octave = suz && bar > 16 && s % 4 === 3 ? 12 : 0;
       const f = midi(root + octave);
       const len = Math.round(((BEAT * 4) / steps) * (suz ? 0.6 : 0.9));
       const lp = lowpass(suz ? 2.2 : 1.4);
@@ -374,12 +408,10 @@ for (const k of kicks) {
         ? 500 + 250 * clamp01((bar - 9) / 20)
         : buildup
           ? 300 + 1800 * ((bar - 74) / 8)
-          : drop
-            ? 1700
-            : ramp(bar, 33, 60, 800, 1700);
+          : ramp(bar, 33, 60, 800, 1700);
       let ph = rng();
       const g =
-        (drop ? 0.2 : suz ? 0.15 : ramp(bar, 33, 60, 0.15, 0.2)) *
+        (suz ? 0.15 : ramp(bar, 33, 60, 0.15, 0.2)) *
         (buildup ? 0.7 + 0.3 * ((bar - 74) / 8) : 1) *
         (bar >= 106 ? ramp(bar, 106, 107, 0.7, 0.5) : 1);
       addEvent(n, len, (i) => {
@@ -396,23 +428,132 @@ for (const k of kicks) {
       });
     }
   }
-  // Sub layer: a long sine under the drop gives it the weight Brazil does not have.
-  for (let bar = DROP[0]; bar <= DROP[1]; bar++) {
-    const f = midi(ROOTS[chordAt(bar)]);
-    const a = S(bar);
-    const len = S(bar + 1) - a;
-    let ph = 0;
-    addEvent(a, len, (i) => {
-      ph += f / SR;
-      const s = Math.sin(2 * Math.PI * ph) + 0.15 * Math.sin(4 * Math.PI * ph);
-      return (
-        s *
-        0.2 *
-        Math.min(1, i / 200) *
-        Math.min(1, (len - i) / 200) *
-        duck[a + i]
-      );
-    });
+}
+
+// -- the drop's engine bass (#16): a saw and an engine in one voice, its pitch on an rpm curve ---------------------
+// Each bar is a gear. The revs pull up through the bar and the gear change drops them on the next bar line; every
+// landing is the chord's root and every top a chord tone (the fifth or the octave), so the glide stays in D minor:
+//   Dm D2 -> A2 | Bb Bb1 -> Bb2 | F F2 -> C3 | C C2 -> G2, each shift a drop of a fourth to an octave.
+// The break (89) revs C2 -> C3 like a riser and the shift lands the lock-up (90.1) on D2; the chase (96-99) pulls
+// harder; after the finish the driver lifts (102.1: exhaust pops) and the bass cruises on the roots through 102-103.
+// The sound: a polyBLEP saw whose filter opens with the revs, a sine sub on the same pitch, and engine.mjs's synth fed
+// this rpm curve (the firing frequency is the note, the other cycle orders and the per-cycle jitter are the rasp).
+// Under the 5.1 and 5.4 SFX engines (82-85, 92-95) the voice is darker, so the cars' V6s sit above it.
+{
+  const GEARS = [
+    [38, 45], // Dm
+    [34, 46], // Bb
+    [41, 48], // F
+    [36, 43], // C
+  ];
+  const plan = (bar) => {
+    const [from, to] = GEARS[chordAt(bar)];
+    if (bar === BREAK) return { from: 36, to: 48, shape: "rev" }; // C2 -> C3, the riser
+    if (inBars(bar, [BARE])) return { from, to: from, shape: "coast" };
+    return { from, to, shape: inBars(bar, [CHASE]) ? "chase" : "pull" };
+  };
+  const ease = (shape, u) =>
+    shape === "rev"
+      ? Math.pow(Math.min(1, u / 0.94), 1.8) // tops out on 89.4.75, where the gap starts
+      : shape === "coast"
+        ? 0
+        : (1 - Math.exp(-u / (shape === "chase" ? 0.2 : 0.35))) /
+          (1 - Math.exp(-1 / (shape === "chase" ? 0.2 : 0.35)));
+  const a = S(DROP[0]);
+  const top = S(DROP[1] + 1); // the last shift lands on 106.1 (D2, where the outro bass takes over) and fades in a beat
+  const b = top + BEAT;
+  const len = b - a;
+  const semi = new Float64Array(len);
+  const CYL = 6;
+  const rpm = new Float64Array(len);
+  const load = new Float64Array(len);
+  const pop = new Float64Array(len);
+  const rate = new Float64Array(len).fill(1);
+  const SHIFT = Math.round(SR * 0.025); // the power cut before each change
+  let cur = 38;
+  for (let i = 0; i < len; i++) {
+    const n = a + i;
+    const bar = Math.min(barOf(n), DROP[1] + 1);
+    let target;
+    let ld = 1;
+    if (bar > DROP[1]) target = 38;
+    else {
+      const p = plan(bar);
+      const u = (n - S(bar)) / (S(bar + 1) - S(bar));
+      target = p.from + (p.to - p.from) * ease(p.shape, u);
+      if (p.shape === "coast") ld = 0.4;
+      else if (S(bar + 1) - n < SHIFT) ld = 0.55;
+    }
+    // crank inertia, as in engine.mjs's driveline: quick to drop in a shift, a little slower to climb
+    const tau = target < cur ? 0.012 : 0.03;
+    cur += (target - cur) * (1 - Math.exp(-1 / (SR * tau)));
+    semi[i] = cur;
+    rpm[i] = (midi(cur) * 120) / CYL; // firing frequency = the note
+    load[i] = ld;
+    // the lift after the finish: pops and crackle on 102.1
+    const since = (n - S(POINTS)) / SR;
+    pop[i] = since >= 0 && since < 2.5 ? 0.9 * Math.exp(-since / 0.8) : 0;
+  }
+  const BASS_ENGINE = {
+    name: "drop engine bass",
+    cylinders: CYL,
+    idle: 0,
+    redline: 1,
+    shiftAt: 1,
+    shiftMs: 12,
+    gearTop: [1],
+    bright: 900,
+    slope: 1.6,
+    rough: 0.16,
+    formant: [320, 160, 0.6],
+    noise: 0.09,
+    noiseLp: 1800,
+    pops: 0.7,
+    turbo: 0,
+    ers: 0,
+  };
+  const body = synthEngine(
+    { rpm, load, rate, pop, preset: BASS_ENGINE },
+    SR,
+    1601,
+  );
+  const lp = lowpass(1.5);
+  const sixteenth = BEAT / 4;
+  let ph = 0;
+  let phs = 0;
+  for (let i = 0; i < len; i++) {
+    const n = a + i;
+    const bar = barOf(n);
+    const f = midi(semi[i]);
+    const dt = f / SR;
+    ph += dt;
+    if (ph >= 1) ph -= 1;
+    phs += dt;
+    if (phs >= 1) phs -= 1;
+    const saw = 2 * ph - 1 - polyblep(ph, dt);
+    const dim = inBars(bar, [
+      [82, 85],
+      [92, 95],
+    ])
+      ? 0.6
+      : 1;
+    const rev = clamp01((semi[i] - 33) / 16);
+    const fc = (180 + 1500 * rev * load[i]) * dim;
+    // a throttle pulse on the sixteenths keeps the drop's drive (not in the bare bars)
+    const k = (n - a) % sixteenth;
+    const pulse = inBars(bar, [BARE])
+      ? 1
+      : 0.82 + 0.18 * Math.exp(-k / (SR * 0.035));
+    const sub = Math.sin(2 * Math.PI * phs);
+    const s =
+      0.55 * lp(saw, fc) * (0.6 + 0.4 * load[i]) +
+      1.1 * body[i] * dim +
+      0.55 * sub;
+    const fade =
+      i < 400 ? i / 400 : n >= top ? Math.max(0, 1 - (n - top) / BEAT) : 1;
+    const y = Math.tanh(1.4 * s) * 0.2 * pulse * fade * duck[n];
+    L[n] += y;
+    R[n] += y;
   }
 }
 
@@ -464,10 +605,8 @@ for (const k of kicks) {
       return Math.sin(ph) * Math.exp(-t / 0.12) * gain;
     });
   };
-  for (let bar = 9; bar <= 105; bar++) {
-    if (bar >= 61 && bar <= 81) continue;
+  for (let bar = 9; bar <= 60; bar++) {
     const suz = bar <= 32;
-    const drop = bar >= DROP[0];
     if (bar >= 17) {
       for (let s = 0; s < 16; s++) {
         const n = S(bar) + (s * BEAT) / 4;
@@ -475,10 +614,6 @@ for (const k of kicks) {
           // thin and closed: offbeat ticks, sixteenths only in the second half
           if (s % 4 === 2) hat(n, 0.05, 0.015, 0.15, 9000);
           else if (bar >= 25 && s % 2 === 1) hat(n, 0.018, 0.008, -0.2, 9000);
-        } else if (drop) {
-          if (s % 4 === 2) hat(n, 0.13, 0.075, 0.2);
-          else if (s % 2 === 1) hat(n, 0.05, 0.012, -0.25);
-          else if (s % 4 === 0) hat(n, 0.035, 0.01, 0);
         } else {
           const up = ramp(bar, 33, 56, 0.8, 1.35);
           if (s % 4 === 2) hat(n, 0.085 * up, 0.045, 0.2);
@@ -490,35 +625,20 @@ for (const k of kicks) {
     // backbeat
     if (suz) {
       if (bar >= 25) clap(S(bar, 4), 0.14); // only beat 4: the verse limps
-    } else if (drop) {
-      for (const beat of [2, 4]) {
-        clap(S(bar, beat), 0.28);
-        snare(S(bar, beat), 0.2);
-      }
     } else {
       for (const beat of [2, 4]) {
         clap(S(bar, beat), ramp(bar, 33, 56, 0.17, 0.26));
         if (bar >= 41) snare(S(bar, beat), ramp(bar, 41, 60, 0.05, 0.16));
       }
     }
-    // fills: a tom run into 33, snare sixteenths into 57 and into the next phrase of the drop
+    // fills: a tom run into 33, snare sixteenths into 49 and 57
     if (bar === 32) {
       [0, 1, 2, 3].forEach((k) =>
         tom(S(bar, 4) + (k * BEAT) / 4, [210, 170, 140, 110][k], 0.32),
       );
-    } else if (
-      bar === 48 ||
-      bar === 56 ||
-      bar === 89 ||
-      bar === 97 ||
-      bar === 105
-    ) {
+    } else if (bar === 48 || bar === 56) {
       for (let k = 0; k < 4; k++)
-        snare(
-          S(bar, 4) + (k * BEAT) / 4,
-          drop ? 0.2 + 0.05 * k : 0.1 + 0.04 * k,
-          0.09,
-        );
+        snare(S(bar, 4) + (k * BEAT) / 4, 0.1 + 0.04 * k, 0.09);
     }
   }
   // buildup: offbeat hats come in at 76, then the snare roll (bars 78-81): eighths, sixteenths,
@@ -533,6 +653,56 @@ for (const k of kicks) {
       const grow = (T.beatsAt(at(bar)) + s / div - T.beatsAt(at(78))) / 16;
       snare(Math.round(n), 0.06 + 0.3 * grow, 0.07);
       if (bar >= 80) hat(Math.round(n), 0.03 + 0.05 * grow, 0.01, 0);
+    }
+  }
+  // the drop (#16): full groove, then the break (89), the chase (96-99, the hats double), the bare bars (102-103: no
+  // drums) and the slam (104: a snare and clap on every beat under the radio line); fills into 98 and 106
+  for (let bar = DROP[0]; bar <= DROP[1]; bar++) {
+    if (inBars(bar, [BARE])) continue;
+    if (bar === BREAK) {
+      // offbeat open hats only, and a snare roll that grows from eighths to sixteenths up to the gap on 89.4.75
+      for (const beat of [1, 2, 3, 4])
+        hat(S(bar, beat) + BEAT / 2, 0.08, 0.06, 0.2);
+      for (let s = 0; s < 15; s++) {
+        const pos = s < 4 ? s * 2 : 8 + (s - 4); // eighths over beats 1-2, then sixteenths
+        if (pos >= 15) break;
+        snare(S(bar) + (pos * BEAT) / 4, 0.05 + 0.25 * (pos / 14) ** 1.5, 0.07);
+      }
+      continue;
+    }
+    if (bar === SLAM) {
+      for (const beat of [1, 2, 3, 4]) {
+        snare(S(bar, beat), 0.32, 0.16);
+        clap(S(bar, beat), 0.3);
+      }
+      continue;
+    }
+    const chase = inBars(bar, [CHASE]);
+    const grow = chase ? (bar - CHASE[0]) / 3 : 0;
+    const div = chase && bar >= CHASE[0] + 2 ? 32 : 16; // 96-97 sixteenths, 98-99 thirty-seconds
+    for (let s = 0; s < div; s++) {
+      const n = Math.round(S(bar) + (s * BEAT * 4) / div);
+      const q = (s * 16) / div; // position in sixteenths
+      if (q % 4 === 2) hat(n, 0.13, 0.075, 0.2);
+      else if (chase) {
+        // every other step, each bar louder, and a crescendo inside the bar
+        const inBar = s / div;
+        hat(
+          n,
+          (0.045 + 0.05 * grow) * (0.75 + 0.5 * inBar),
+          0.012,
+          s % 2 ? -0.25 : 0.25,
+        );
+      } else if (q % 2 === 1) hat(n, 0.05, 0.012, -0.25);
+      else if (q % 4 === 0) hat(n, 0.035, 0.01, 0);
+    }
+    for (const beat of [2, 4]) {
+      clap(S(bar, beat), 0.28);
+      snare(S(bar, beat), 0.2);
+    }
+    if (bar === CHASE[0] + 1 || bar === DROP[1]) {
+      for (let k = 0; k < 4; k++)
+        snare(S(bar, 4) + (k * BEAT) / 4, 0.2 + 0.05 * k, 0.09);
     }
   }
 }
@@ -648,6 +818,7 @@ for (const k of kicks) {
   };
   for (let bar = 17; bar <= 105; bar++) {
     if (bar >= 57 && bar <= 81) continue;
+    if (inBars(bar, [[BARE[0], SLAM]])) continue; // 102-104: pad, bass (and the slam's snares) only
     const chord = CHORDS[chordAt(bar)];
     if (bar <= 32) {
       // Suzuka: dry 3+3+2 pluck, low and tight, nothing like the later arpeggios
@@ -673,16 +844,19 @@ for (const k of kicks) {
     const cut = drop ? 4500 : ramp(bar, 33, 56, 1500, 4200);
     const high = bar >= 98; // last phrase of the drop: arpeggio an octave higher
     for (let s = 0; s < 16; s++) {
+      // the break (89) sweeps the arpeggio's filter shut and then wide open into the lock-up
+      const sweep =
+        bar === BREAK ? (s < 2 ? 0.12 : 0.12 + 1.3 * ((s - 2) / 13) ** 2) : 1;
       pluck(
         S(bar) + (s * BEAT) / 4,
         tones[s % 4] + (high && s % 8 >= 4 ? 12 : 0),
         Math.round(BEAT / 4),
         gain,
-        cut,
+        cut * sweep,
         s % 2 ? 0.3 : -0.3,
       );
     }
-    if (drop) {
+    if (drop && bar !== BREAK) {
       // off-beat chord stabs
       for (const beat of [1, 2, 3, 4]) {
         for (const note of chord)
@@ -749,6 +923,7 @@ for (const k of kicks) {
     );
   };
   for (let bar = DROP[0]; bar <= DROP[1]; bar++) {
+    if (inBars(bar, [[BARE[0], SLAM]])) continue;
     const phrase = hook[(bar - DROP[0]) % 4];
     const gain = bar < 90 ? 0.016 : bar < 98 ? 0.022 : 0.026;
     for (const [off, note, beats] of phrase) {
@@ -850,7 +1025,9 @@ for (const k of kicks) {
 
 // -- the bridge's reverse swell: 73.3 -> 74.1, then it hands over to the riser -------------
 // Filtered noise whose cutoff climbs, plus a backwards Dm pad (D4 F4 A4 sines), both on a curve that grows
-// exponentially to 74.1 and then releases over two beats while the riser comes up.
+// exponentially to 74.1 and then releases over two beats while the riser comes up. #16: 2.5 dB stronger than v1, so
+// the breath before the buildup shows in the waveform.
+const SWELL = Math.pow(10, 7 / 20);
 {
   const rng = mulberry32(707);
   const lp = lowpass(1.2);
@@ -867,7 +1044,7 @@ for (const k of kicks) {
     let pad = 0;
     for (const f of notes) pad += Math.sin(2 * Math.PI * f * t);
     const noise = lp(rng() * 2 - 1, fc);
-    const s = (noise * 0.05 + pad * 0.012) * env;
+    const s = (noise * 0.05 + pad * 0.012) * env * SWELL;
     L[n] += s;
     R[n] += s;
     DL[n] += s * 0.3;
@@ -904,6 +1081,21 @@ for (const k of kicks) {
   }
 }
 
+// -- the break's riser (#16): bar 89, a noise sweep whose band climbs to the gap on 89.4.75 ------------------------
+{
+  const rng = mulberry32(808);
+  const lp = lowpass(3);
+  const hp = highpass1(250);
+  const a = S(BREAK);
+  const b = S(BREAK, 4.75);
+  for (let n = a; n < b; n++) {
+    const x = (n - a) / (b - a);
+    const s = hp(lp(rng() * 2 - 1, 300 + 9000 * x * x)) * 0.11 * x * x;
+    L[n] += s;
+    R[n] += s;
+  }
+}
+
 // Outro: no layer of its own; everything leaves by the rules above (arp and drums at 106, bass at 108,
 // kick fades through 109) and the pad, pulse and pings of the intro stay.
 
@@ -911,6 +1103,7 @@ for (const k of kicks) {
 // The layers above decide the character of each section; this decides how loud it is relative
 // to its neighbours: soft Suzuka, Brazil climbing to its peak, a quiet Bahrain, a rising
 // buildup, and the drop at full level.
+const DROP_TRIM = -1.5;
 {
   const trimDb = curve([
     [at(1), 0],
@@ -926,7 +1119,10 @@ for (const k of kicks) {
     [at(BRIDGE), -3.5],
     [at(BRIDGE + 1), -3],
     [at(81), 0.5],
-    [at(82), 0],
+    [at(81, 4.5), 0.5],
+    // #16: the drop's layers sit lower, so its named hits (added after this trim) have headroom over them
+    [at(82), DROP_TRIM],
+    [at(105, 4), DROP_TRIM],
     [at(106), 0],
   ]);
   for (let n = 0; n < N; n++) {
@@ -1025,9 +1221,25 @@ for (const [a, b] of GATES)
       boom(n, 0.8, 1.4, 180, 30);
       crash(n, 0.3, 1.5);
       thud(n, 0.65);
+    } else if (id === "abuDhabi2021.lockup") {
+      // the biggest impact of the song (#16): out of the break's gap, a longer, lower boom than the drop's, the
+      // widest crash, the full stab and a double thud
+      boom(n, 1.5, 1.8, 190, 28);
+      crash(n, 0.7, 2.6);
+      stab(n, 0.12, BEAT * 4);
+      thud(n, 0.8);
+      thud(n + Math.round(BEAT / 4), 0.4);
+      boom(n + Math.round(BEAT / 2), 0.6, 0.9, 120, 30); // a second, lower blow: the tyres locking
+    } else if (id === "abuDhabi2021.finish") {
+      // the line: crash and impact out of the chase's gap
+      boom(n, 1.05, 0.9, 165, 32);
+      crash(n, 0.48, 2.2);
+      stab(n, 0.05, BEAT * 3);
+      thud(n, 0.45);
     } else if (/^abuDhabi2021\./.test(id)) {
-      boom(n, 1.1, 0.7, 150, 34);
-      crash(n, 0.4, 1.4);
+      // the points (102.1): the drums stop here, the crash rings over pad and bass
+      boom(n, 0.45, 0.7, 150, 34);
+      crash(n, 0.24, 2.4);
     } else {
       boom(n, 0.5, 0.6);
       crash(n, 0.18, 1.2);

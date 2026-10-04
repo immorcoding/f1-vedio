@@ -109,7 +109,7 @@ export const SFX = [
     from: at(11),
     to: at(15),
     end: "cut",
-    underDb: 8,
+    underDb: 14,
     note: "two McLaren-Honda V10s flat out, PRO ahead; they sweep in from the left, one upshift into top",
     cars: [
       {
@@ -133,7 +133,7 @@ export const SFX = [
     from: at(15),
     to: at(19),
     end: "cut",
-    underDb: 8,
+    underDb: 14,
     time: realTime,
     note: "300 km/h out of 130R, braking and five downshifts into the chicane in half-speed slow motion; dead on the crash (19.1)",
     cars: [
@@ -157,7 +157,7 @@ export const SFX = [
     from: at(24),
     to: at(28),
     end: "cut",
-    underDb: 8,
+    underDb: 14,
     note: "the front of the grid revving, lights out on 24.3, launch and upshifts to Turn 1; dead on the crash (28.1). McLaren-Honda V10s, Ferrari V12s",
     cars: [
       {
@@ -198,7 +198,7 @@ export const SFX = [
     from: at(35),
     to: at(39),
     end: "fade",
-    underDb: 11,
+    underDb: 17,
     muffle: 1100,
     note: "HAM's Mercedes V8 alone in the rain, muffled; 62 m/s down the wet back straight (Chase.tsx), entering from the left",
     cars: [
@@ -216,7 +216,7 @@ export const SFX = [
     from: at(47),
     to: at(49),
     end: "fade",
-    underDb: 8,
+    underDb: 14,
     muffle: 2600,
     time: passRaceTime,
     note: "the pass at Junção in slow motion (0.3×), then real time: HAM's V8 pulls up the hill past GLO's Toyota V8",
@@ -242,7 +242,7 @@ export const SFX = [
     from: at(59),
     to: at(61),
     end: "cut",
-    underDb: 8,
+    underDb: 14,
     time: (s) => CLOCK_32.sim(s * 60) / 60,
     note: "lap 1 after Turn 3: GRO's Ferrari V6 and KVY's Honda V6 at 241 km/h, the touch on 60.1 in slow motion, KVY brakes, GRO lifts; cut dead with the music on 61.1",
     cars: [
@@ -270,7 +270,7 @@ export const SFX = [
     from: at(82),
     to: at(86),
     end: "fade",
-    underDb: 8,
+    underDb: 14,
     note: "VER in HAM's tow up the straight to T5 (Charge.tsx), pulling out on 84.1: Honda V6 left, Mercedes V6 right",
     cars: [
       {
@@ -294,7 +294,7 @@ export const SFX = [
     from: at(92),
     to: at(96),
     end: "fade",
-    underDb: 8,
+    underDb: 14,
     note: "out of T5 down the back straight (Tow.tsx): upshifts; HAM pulls out on 93.3, alongside on 94.3, falls back. VER right, HAM left",
     cars: [
       {

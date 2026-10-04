@@ -4,7 +4,7 @@
 // - beat map: public/music/beat-map.json equals the one rebuilt from src/mv/timing.ts
 // - hits: every hit in the beat map is an audible attack in the audio, on its sample
 // - determinism: two fresh builds are byte-identical, and identical to public/music/mv.wav; so are their SFX stems
-// - SFX (src/mv/sfx.ts): in every bar with engines they sit ≥ 6 dB (RMS) under the music; "cut" cues are silent
+// - SFX (src/mv/sfx.ts): in every bar with engines they sit ≥ 12 dB (RMS) under the music; "cut" cues are silent
 //   from their end beat (Bahrain's 61.1)
 import { execFileSync, spawnSync } from "node:child_process";
 import crypto from "node:crypto";
@@ -28,7 +28,7 @@ const FFMPEG = path.join(
 const PEAK_MAX_DB = -1;
 const LUFS_RANGE = [-15, -13];
 const HIT_RISE_DB = 6; // the 25 ms after a hit must be this much louder than the 60 ms before it
-const SFX_UNDER_DB = 6; // engines at least this far under the music, per bar (RMS), wherever they play
+const SFX_UNDER_DB = 12; // engines at least this far under the music, per bar (RMS), wherever they play (user, after #15: they covered the music)
 const quick = process.argv.includes("--quick");
 
 let failures = 0;
