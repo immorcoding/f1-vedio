@@ -1,7 +1,7 @@
 // Outfits as data (ART-16): what a person wears, as colour blocks. The cast of the film — race drivers in team
 // colours with their own helmet, the FIA medical crew, marshals (grey, the user's decision), team mechanics and the
 // crowd — is a set of these. Reference photos for each role: docs/assets/reference-register.md (people).
-import type { Driver } from "../../cars/spec";
+import type { Driver } from "../../cars/spec.ts";
 
 export type Head =
   // a full-face race helmet in the driver's design (same data as the helmet in the car, ART-13)
@@ -14,7 +14,9 @@ export type Head =
   | { kind: "hair"; hair: string };
 
 export type Outfit = {
-  fit: "race" | "overall"; // a snug race suit, or loose work overalls
+  // a race suit (loose fireproof overalls: stand-up collar, front zip, shoulder epaulettes), work overalls, or street
+  // clothes (shirt and trousers, bare hands)
+  fit: "race" | "overall" | "casual";
   suit: string;
   shade?: string; // far limbs; default: the suit colour darkened
   band?: string; // a colour band down the side of the suit and leg
@@ -23,10 +25,14 @@ export type Outfit = {
   cuffs?: string; // sleeve-end and hem colour
   armband?: string; // a band round the upper arm (medical crew)
   vest?: string; // a tabard over the overalls (marshals)
-  gloves: string;
+  gloves: string; // glove colour, or SKIN for bare hands
   boots: string;
   head: Head;
+  trousers?: string; // casual: trouser colour (the suit colour is the shirt)
+  sleeves?: "long" | "short"; // casual: short sleeves show the forearm
+  collar?: string; // race: collar and epaulette colour (default the suit's shade)
 };
+export const SKIN = "#e2c09c";
 
 // ── Cast ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 // A race driver in team colours with his own helmet.
@@ -82,11 +88,24 @@ export const mechanicOutfit = (
 });
 export const FERRARI_MECHANIC = mechanicOutfit("#d4201d", { band: "#f1efe9", cap: "#d4201d" });
 
-// A fan or family member in street clothes, seen from behind or the side.
-export const crowdOutfit = (shirt: string, hair = "#2a2420"): Outfit => ({
-  fit: "overall",
+// A fan or family member in street clothes: shirt, trousers, bare hands; hair, or a cap.
+export const crowdOutfit = (
+  shirt: string,
+  o: {
+    trousers?: string;
+    hair?: string;
+    sleeves?: "long" | "short";
+    cap?: string;
+    shoes?: string;
+  } = {},
+): Outfit => ({
+  fit: "casual",
   suit: shirt,
-  gloves: "#d9b896",
-  boots: "#2a2a2c",
-  head: { kind: "hair", hair },
+  trousers: o.trousers ?? "#3b3d44",
+  sleeves: o.sleeves ?? "short",
+  gloves: SKIN,
+  boots: o.shoes ?? "#2a2a2c",
+  head: o.cap
+    ? { kind: "cap", color: o.cap, hair: o.hair ?? "#2a2420" }
+    : { kind: "hair", hair: o.hair ?? "#2a2420" },
 });

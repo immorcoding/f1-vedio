@@ -2,6 +2,7 @@
 // where the hip is, how the pelvis and ribcage lean, where each foot stands and where each hand goes — and solved into
 // joints with two-bone IK, so feet can be planted on the ground (MOT-5) and hands put on a car, a shoulder or a hose.
 // Units are metres in the figure's own frame: origin on the ground under the hip at rest, x forward, y up.
+// Pure TypeScript with no React, so staging files and node checks (scripts/check-overlap.mjs) can load it.
 
 export type V = { x: number; y: number };
 export const v = (x: number, y: number): V => ({ x, y });
@@ -48,16 +49,21 @@ export const BONES = {
 };
 export const LEG = BONES.thigh + BONES.shin;
 
-export type Grip = "fist" | "flat" | "open" | "point" | "hold";
+// Hand shapes. fist: fingers curled, thumb across them; flat: fingers together and straight, thumb apart (a palm on a
+// car, a hand on a back); open: relaxed, fingers loosely curled; spread: fingers fanned (waving, cheering); point:
+// index out; hold: wrapped round a handle, rail or arm.
+export type Grip = "fist" | "flat" | "open" | "spread" | "point" | "hold";
 
 // A foot: where its ankle is and how far the heel is raised (+) or the toe lifted (−), degrees.
 export type FootPose = { ankle: V; pitch: number };
 // An arm: either a hand target for IK, or angles (shoulder from straight down, + forward; elbow bend, + folds the
-// forearm forward). `wrist` bends the hand off the forearm line, + forward/up.
+// forearm forward). `wrist` bends the hand off the forearm line, + forward/up. `upper` / `fore` (0..1, default 1) are
+// how much of the upper arm / forearm shows in the side view: an arm raised out to the side points partly at the
+// camera and looks shorter (a wave, a cheer).
 export type ArmPose = (
   | { hand: V; elbowOut?: 1 | -1 }
   | { shoulder: number; elbow: number }
-) & { grip?: Grip; wrist?: number };
+) & { grip?: Grip; wrist?: number; upper?: number; fore?: number };
 
 export type Pose = {
   hip: V; // the hip joint
@@ -144,13 +150,15 @@ export const solve = (pose: Pose): Body => {
   const arm = (s: V, a: ArmPose): ArmJ => {
     let elbow: V;
     let wrist: V;
+    const ua = BONES.upperArm * (a.upper ?? 1);
+    const fa = BONES.forearm * (a.fore ?? 1);
     if ("hand" in a) {
-      const r = twoBone(s, a.hand, BONES.upperArm, BONES.forearm, a.elbowOut ?? -1);
+      const r = twoBone(s, a.hand, ua, fa, a.elbowOut ?? -1);
       elbow = r.mid;
       wrist = r.end;
     } else {
-      elbow = add(s, down(a.shoulder, BONES.upperArm));
-      wrist = add(elbow, down(a.shoulder + a.elbow, BONES.forearm));
+      elbow = add(s, down(a.shoulder, ua));
+      wrist = add(elbow, down(a.shoulder + a.elbow, fa));
     }
     const fore = norm(sub(wrist, elbow));
     const handDir = norm(lean(fore, -(a.wrist ?? 0)));
@@ -177,21 +185,46 @@ export const solve = (pose: Pose): Body => {
   };
 };
 
-// Blend two poses (for transitions); both arms must be given the same way (IK or angles) to blend, otherwise the
-// second pose's arm is used past halfway.
+// Blend two poses (for transitions). Arms given the same way blend directly; an IK arm meeting an angle arm is
+// blended as angles.
 export const mixPose = (a: Pose, b: Pose, u: number): Pose => {
   const m = (x: number, y: number) => x + (y - x) * u;
   const foot = (p: FootPose, q: FootPose): FootPose => ({
     ankle: lerpV(p.ankle, q.ankle, u),
     pitch: m(p.pitch, q.pitch),
   });
-  const armM = (p: ArmPose, q: ArmPose): ArmPose => {
+  // an IK arm blended with an angle arm is first turned into angles (from the solved pose), so nothing pops
+  const asAngles = (pose: Pose, side: "near" | "far"): ArmPose => {
+    const arm = pose.arms[side];
+    if (!("hand" in arm)) return arm;
+    const j = solve(pose).arms[side];
+    const sh = angleOf(sub(j.elbow, j.shoulder));
+    let el = angleOf(sub(j.wrist, j.elbow)) - sh;
+    el = ((((el + 180) % 360) + 360) % 360) - 180;
+    return { shoulder: sh, elbow: el, grip: arm.grip, wrist: arm.wrist, upper: arm.upper, fore: arm.fore };
+  };
+  const armM = (side: "near" | "far"): ArmPose => {
+    let p = a.arms[side];
+    let q = b.arms[side];
+    if ("hand" in p !== "hand" in q) {
+      p = asAngles(a, side);
+      q = asAngles(b, side);
+    }
     const grip = u < 0.5 ? p.grip : q.grip;
-    const wrist = m(p.wrist ?? 0, q.wrist ?? 0);
+    const ext = {
+      grip,
+      wrist: m(p.wrist ?? 0, q.wrist ?? 0),
+      upper: m(p.upper ?? 1, q.upper ?? 1),
+      fore: m(p.fore ?? 1, q.fore ?? 1),
+    };
     if ("hand" in p && "hand" in q)
-      return { hand: lerpV(p.hand, q.hand, u), elbowOut: q.elbowOut, grip, wrist };
-    if ("shoulder" in p && "shoulder" in q)
-      return { shoulder: m(p.shoulder, q.shoulder), elbow: m(p.elbow, q.elbow), grip, wrist };
+      return { hand: lerpV(p.hand, q.hand, u), elbowOut: q.elbowOut, ...ext };
+    if ("shoulder" in p && "shoulder" in q) {
+      // the shorter way round
+      let ds = q.shoulder - p.shoulder;
+      ds = ((((ds + 180) % 360) + 360) % 360) - 180;
+      return { shoulder: p.shoulder + ds * u, elbow: m(p.elbow, q.elbow), ...ext };
+    }
     return u < 0.5 ? p : q;
   };
   return {
@@ -200,6 +233,6 @@ export const mixPose = (a: Pose, b: Pose, u: number): Pose => {
     chest: m(a.chest, b.chest),
     head: m(a.head ?? 0, b.head ?? 0),
     feet: { near: foot(a.feet.near, b.feet.near), far: foot(a.feet.far, b.feet.far) },
-    arms: { near: armM(a.arms.near, b.arms.near), far: armM(a.arms.far, b.arms.far) },
+    arms: { near: armM("near"), far: armM("far") },
   };
 };
