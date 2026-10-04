@@ -2,7 +2,7 @@
 // tracking at the cars' true speed (staging.ts) so the road, wall and stands stream past with parallax. VER sits in
 // HAM's gearbox; on 84.1 (`abuDhabi2021.pullOut`) he pulls out to the inside (away from the camera) with a jolt and a
 // burst of focus lines, and draws up until his front wheels are level with HAM's rear wheels by the cut.
-import { PIRELLI_2021, RB16B, W12 } from "../../../cars";
+import { carCamera, PIRELLI_2021, RB16B, W12 } from "../../../cars";
 import { pinhole } from "../../../kit/camera";
 import { INK } from "../../../kit/colors";
 import { focusLines, speedLines } from "../../../kit/lines";
@@ -57,12 +57,12 @@ export const Charge: React.FC<{ st: ShotTime; t0: number }> = ({ st, t0 }) => {
         {
           car: RB16B,
           ...plan.ver,
-          state: { wheelAngle: wheel, compound: PIRELLI_2021.soft },
+          state: { ...carCamera(RB16B, cam, plan.ver.z), wheelAngle: wheel, compound: PIRELLI_2021.soft },
         },
         {
           car: W12,
           ...plan.ham,
-          state: { wheelAngle: wheel + 17, compound: PIRELLI_2021.hard },
+          state: { ...carCamera(W12, cam, plan.ham.z), wheelAngle: wheel + 17, compound: PIRELLI_2021.hard },
         },
       ]}
       between={

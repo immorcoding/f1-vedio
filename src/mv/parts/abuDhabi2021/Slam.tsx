@@ -4,7 +4,7 @@
 // first three frames are an impact frame (the page inverted, ink for paper); focus lines press in from every edge on
 // the two noses, and the camera keeps dropping toward them through the bar (the cars grow: they come at us). The
 // road, kerbs and tyre marks stream past at the cars' true speed (staging.ts).
-import { MangaCar, PIRELLI_2021, RB16B, topAnchorAt, W12 } from "../../../cars";
+import { MangaCar, PIRELLI_2021, RB16B, topAnchorAt, W12, wheelAngleAt } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
 import { focusLines, speedLines } from "../../../kit/lines";
@@ -12,7 +12,7 @@ import { ToneDefs, tone } from "../../../kit/tone";
 import { T5_SECTION } from "../../../scenes/abu-dhabi-2021/t5-map";
 import { autoKerbs, mapView, poseAt, TrackSection, YAS_MARINA_2021 } from "../../../tracks";
 import { hit, ramp, type ShotTime } from "./shotClock";
-import { SLAM_SCALE, slamPlan } from "./staging.ts";
+import { hamSpeed, SLAM_SCALE, slamPlan, verSpeed } from "./staging.ts";
 
 const T = YAS_MARINA_2021;
 // Screen heading of travel: down and to the right, toward the lens and the way the side-on shots run.
@@ -102,7 +102,7 @@ export const Slam: React.FC<{ st: ShotTime }> = ({ st }) => {
                     car={car}
                     view="top"
                     at={topAnchorAt(car, { x: p.x, y: p.y, pxPerMetre: ppm * SLAM_SCALE }, heading)}
-                    state={{ heading, compound }}
+                    state={{ heading, compound, wheelAngle: wheelAngleAt(car, s), speed: car === RB16B ? verSpeed(t) : hamSpeed(t) }}
                   />
                 );
               })}

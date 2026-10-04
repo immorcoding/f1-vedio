@@ -7,7 +7,7 @@
 // perspective camera, in slow motion (0.15× at the hit, 0.45× by the cut).
 // The cars are drawn with the settled top-view art foreshortened onto the ground (the camera sees them from ~25°
 // above). HAM, 150 m off, is too small for detail: a front silhouette at his true size, ~19 px wide.
-import { MangaCar, PIRELLI_2021, RB16B, topAnchorAt } from "../../../cars";
+import { MangaCar, PIRELLI_2021, RB16B, topAnchorAt, wheelAngleAt } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
 import { CAPTION_FONT, useLettering } from "../../../kit/lettering";
@@ -191,7 +191,12 @@ export const FinishGantry: React.FC<{ t: number }> = ({ t }) => {
             {/* VER on the line */}
             <path d={ground(verNose - 0.2, verNose + 5.8, VER_V - 1.1, VER_V + 1.1)} fill={INK} opacity={0.4} />
             <g transform={`translate(0 ${mid.y}) scale(1 ${squash}) translate(0 ${-mid.y})`}>
-              <MangaCar car={RB16B} view="top" at={verAt} state={{ heading: 90, compound: PIRELLI_2021.soft }} />
+              <MangaCar car={RB16B} view="top" at={verAt} state={{
+                  heading: 90,
+                  compound: PIRELLI_2021.soft,
+                  wheelAngle: wheelAngleAt(RB16B, travel),
+                  speed: SPEED * (0.15 + 0.3 * smooth(t / 1.875)),
+                }} />
             </g>
           </g>
           {/* the marshal's flag, foreground top left, landing its downstroke on the hit */}
