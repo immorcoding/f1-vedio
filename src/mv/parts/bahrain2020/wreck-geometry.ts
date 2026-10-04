@@ -14,7 +14,7 @@ export const BARRIER_Z = 13;
 export const WRECK_CAM_SPEC = { f: 2300, horizon: 420, cx: 960, height: 1.0 };
 // The survival cell went through the barrier and lodged in the gap it tore: its near side (half the 2.0 m width)
 // just behind the rails' line, so nobody on the track side stands inside it. It is drawn in the gap, in front of the
-// torn rails' stubs, with only the bottom rail passing in front of its lower edge (Wreck.tsx).
+// torn rails' stubs, with only the bottom rail's stubs (curled toward the track) in front of it (Wreck.tsx).
 export const CELL_Z = 14.1;
 export const REAR_Z = 10.4; // the torn-off rear came to rest on the track side
 // World x of the intact car's rear end for each piece, set so the cell's nose lands near screen x 260 and the rear
@@ -120,6 +120,17 @@ const topEdge = (outline: Pt[], x: number) => {
   }
   return top;
 };
+// Photo y of a closed outline's bottom edge at photo x (the lowest crossing).
+const bottomEdge = (outline: Pt[], x: number) => {
+  let bottom = -Infinity;
+  for (let j = 0; j < outline.length; j++) {
+    const a = outline[j];
+    const b = outline[(j + 1) % outline.length];
+    if ((a.x - x) * (b.x - x) > 0 || a.x === b.x) continue;
+    bottom = Math.max(bottom, a.y + ((b.y - a.y) * (x - a.x)) / (b.x - a.x));
+  }
+  return bottom;
+};
 const inside = (outline: Pt[], p: Pt) => {
   let n = false;
   for (let j = 0, k = outline.length - 1; j < outline.length; k = j++) {
@@ -211,6 +222,32 @@ export const cockpitRimAt = (x: number) => {
   return RIM_EDGE[RIM_EDGE.length - 1].y;
 };
 
+// The floor's edge under the near sidepod (the sidepod's lower edge as drawn, where the white bodywork meets the
+// black undercut): the step a driver uses getting out, now that the bottom rail is torn open under the cell too.
+// World x on the cell's plane → height (as the camera sees the sprite).
+const SIDEPOD = flatten(segments(VF20.regions?.sidepod ?? ""));
+const SIDEPOD_X = [
+  Math.min(...SIDEPOD.map((p) => p.x)),
+  Math.max(...SIDEPOD.map((p) => p.x)),
+];
+const FLOOR_EDGE = Array.from(
+  { length: Math.floor(SIDEPOD_X[1] - SIDEPOD_X[0]) - 1 },
+  (_, j) => {
+    const x = SIDEPOD_X[0] + 1 + j;
+    return cellAt({ x, y: bottomEdge(SIDEPOD, x) });
+  },
+).filter((p) => Number.isFinite(p.y));
+export const floorEdgeAt = (x: number) => {
+  if (x <= FLOOR_EDGE[0].x) return FLOOR_EDGE[0].y;
+  for (let j = 1; j < FLOOR_EDGE.length; j++)
+    if (x <= FLOOR_EDGE[j].x) {
+      const a = FLOOR_EDGE[j - 1];
+      const b = FLOOR_EDGE[j];
+      return a.y + ((b.y - a.y) * (x - a.x)) / (b.x - a.x);
+    }
+  return FLOOR_EDGE[FLOOR_EDGE.length - 1].y;
+};
+
 // Where the halo is, for the close-ups: on the near bar's hoop, a fifth of the way back from its front, on the posed
 // cell.
 const HALO_MID = cellAt(onHoop(0.22));
@@ -284,9 +321,10 @@ export const REAR_SPAN = {
 // ── The barrier as the impact left it (3.3's last frames on, 3.4–3.6) ─────────────────────────────────────────────
 // Shared by the pictures (Impact.tsx, Wreck.tsx, Timeline27.tsx) and the staging (escape-staging.ts). The barrier runs
 // along x at BARRIER_Z. The survival cell punched through it and the barrier split (FIA summary: the middle rail
-// failed, the upper and lower rails deformed heavily, the cell pierced the barrier): the middle and top rails are torn
-// open along the cell — their jagged ends curled up and back toward the track either side of it — and the bottom rail
-// is pressed down and back under it. The cell sits in that gap, the cockpit, the halo and the helmet in plain view.
+// failed, the upper and lower rails deformed heavily, the cell pierced the barrier): all three rails are torn open
+// along the cell — their jagged ends curled back toward the track either side of it (user review 2026-10-04: an
+// intact bottom rail under the cell looked odd). The cell sits in that gap, the cockpit, the halo and the helmet in
+// plain view.
 export type RailOffset = { dx: number; dy: number; dz: number };
 // A smooth bump: 1 at s = c, falling off over `width` metres either side.
 export const bump = (s: number, c: number, width: number) =>
@@ -330,28 +368,27 @@ const extentIn = (y0: number, y1: number) => {
   const xs = SILHOUETTE.filter((p) => p.y >= y0 && p.y <= y1).map((p) => p.x);
   return [Math.min(...xs), Math.max(...xs)] as const;
 };
-// The torn stretches, world x at the barrier: each of the middle and top rails is open over the cell's width at its
-// own height, with a hand's breadth to spare either side for the jagged ends.
+// The torn stretches, world x at the barrier, per rail (0 bottom, 1 middle, 2 top): each rail is open over the cell's
+// width at its own height, with a hand's breadth to spare either side for the jagged ends.
 const SPARE = 0.12;
-export const TEARS = [1, 2].map((r) => {
+export const TEARS = [0, 1, 2].map((r) => {
   const [a, b] = extentIn(RAILS[r][0], RAILS[r][1]);
   return [a - SPARE, b + SPARE] as const;
 });
-export const MID_TEAR = TEARS[0];
-export const TOP_TEAR = TEARS[1];
+export const BOTTOM_TEAR = TEARS[0];
+export const MID_TEAR = TEARS[1];
+export const TOP_TEAR = TEARS[2];
 // per rail (0 bottom, 1 middle, 2 top), the torn stretches as fractions of the run (BentGuardrail's `gaps`)
 export const along = (x: number) => (x - RUN.a.x) / RUN_LEN;
-export const WRECK_GAPS: [number, number][][] = [
-  [],
-  [[along(MID_TEAR[0]), along(MID_TEAR[1])]],
-  [[along(TOP_TEAR[0]), along(TOP_TEAR[1])]],
-];
+export const WRECK_GAPS: [number, number][][] = TEARS.map(([a, b]) => [
+  [along(a), along(b)],
+]);
 // A torn end curls: the last CURL metres of rail before the tear bend up (`up`), back toward the track (`out`) and away
 // from the gap (`away`), growing as the square toward the jagged end. Offsets along the rail (away from the gap),
 // up, and toward the track; `amount` 0..1 grows the curl as the rail splits (3.3), 1 once it has.
 export const CURL = 0.9;
 export const CURL_SHAPE = [
-  { up: 0, out: 0 }, // bottom rail: not torn
+  { up: 0.04, out: 0.22 }, // bottom rail: curls back more than up (the cell went over it)
   { up: 0.1, out: 0.25 },
   { up: 0.22, out: 0.32 },
 ];
@@ -371,21 +408,15 @@ export const tornCurl = (
 };
 // World offset of rail r (0 bottom, 1 middle, 2 top) at s metres along the run.
 export const WRECK_BEND = (s: number, rail: number): RailOffset => {
-  if (rail === 0) {
-    const k = bump(s, S_CELL, 2.2);
-    return { dx: 0, dy: -0.08 * k, dz: 0.4 * k };
-  }
-  const [from, to] = TEARS[rail - 1];
+  const [from, to] = TEARS[rail];
   const c = tornCurl(s, from - RUN.a.x, to - RUN.a.x, rail);
-  // the middle rail's stubs pushed back with the cell
-  const k = rail === 1 ? bump(s, S_CELL, 2.2) : 0;
-  return { dx: c.along, dy: c.up, dz: 0.3 * k - c.out };
+  // the lower two rails' stubs pushed back with the cell, the bottom one a little down as well
+  const k = rail < 2 ? bump(s, S_CELL, 2.2) : 0;
+  return {
+    dx: c.along,
+    dy: c.up - (rail === 0 ? 0.06 * k : 0),
+    dz: (rail === 0 ? 0.35 : 0.3) * k - c.out,
+  };
 };
-// The rails' upper edges (m, rails.ts) and the bottom rail's top edge at world x, as the wreck left it: what is
-// left between the cockpit and the track where the top two rails are torn away.
+// The rails' top edge (m, rails.ts).
 export const TOP_RAIL_EDGE = RAILS[2][1];
-export const BOTTOM_RAIL_EDGE = RAILS[0][1];
-export const bottomRailAt = (x: number) => {
-  const o = WRECK_BEND(x - RUN.a.x, 0);
-  return { y: BOTTOM_RAIL_EDGE + o.dy, z: BARRIER_Z + o.dz };
-};

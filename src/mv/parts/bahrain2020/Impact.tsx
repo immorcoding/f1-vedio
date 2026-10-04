@@ -1,7 +1,7 @@
 // Shot 3.3 (bar 61, on the music's stop): the Haas hits the triple guardrail, its path at 29° and the car yawed 22°
 // further (FIA), so the barrier meets the car's side at 51°. The contact lands on the bar's
 // first beat; then an explicit slow motion of the 0.1 s that matter (MOT-5): sparks spray off the rails, the nose bends
-// the rails back, then the middle and top rails split along the survival cell as it goes through — their torn ends
+// the rails back, then all three rails split along the survival cell as it goes through — their torn ends
 // curling up and back, the same torn gap every later shot shows (wreck-geometry.ts tornCurl) — the car breaks at the
 // engine bulkhead — the power unit and rear left behind on the track side — and the fuel cell bursts into a fireball,
 // carbon shards flying. On the last beats the frame freezes into white paper and black line, an impact star round the
@@ -50,13 +50,13 @@ const PIERCE = 4.2; // metres the cell travels into the barrier
 const BREAK_AT = 12; // frame the car starts to tear in two
 const BALL_AT = 15; // frame the fuel cell bursts
 // The torn gap: where the cell's footprint (2.0 m wide) crosses the barrier at 51°, a hand's breadth to spare either
-// side, metres along the run from the near end. The middle rail fails first, then the top rail; each splits from the
-// contact outward and is fully open (ends curled) well before the freeze.
+// side, metres along the run from the near end. The middle rail fails first, then the top rail, then the bottom one as
+// the cell rides over it; each splits from the contact outward and is fully open (ends curled) well before the freeze.
 const TEAR = {
   from: S_CONTACT - (CAR_HALF_WIDTH + BAR_BEHIND) / Math.sin(ANGLE) - 0.12, // the near side crosses here
   to: S_CONTACT + (CAR_HALF_WIDTH - BAR_BEHIND) / Math.sin(ANGLE) + 0.12, // the far side
 };
-const SPLIT_AT = [Infinity, 1.6, 2.0]; // cell travel (m) when each rail starts to split (bottom: never)
+const SPLIT_AT = [2.3, 1.6, 2.0]; // cell travel (m) when each rail starts to split: middle, top, then bottom
 const SPLIT_OPEN = 1.0; // more metres of travel until it is fully open
 const opened = (travel: number, rail: number) =>
   Math.min(1, Math.max(0, (travel - SPLIT_AT[rail]) / SPLIT_OPEN));

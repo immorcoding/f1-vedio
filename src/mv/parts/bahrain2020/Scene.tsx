@@ -1,7 +1,7 @@
-// Picture for 巴林 2020 (bars 57–72), treatment shots 3.1–3.6: title map, the touch on the top-view map, the impact in
+// Picture for 巴林 2020 (bars 57–73), treatment shots 3.1–3.6: title map, the touch on the top-view map, the impact in
 // slow motion (rails tearing, the car breaking in two, the fireball) frozen into an impact star on the music's stop, the
 // wreck and the fire under the heartbeat, the 27 seconds in four panels, GRO walking out of the fire, and the
-// scorched halo as the last beat before black. Shot timing comes from shots.ts; facts on screen from docs/production/facts.md.
+// scorched halo under the tagline, fading to black into the buildup. Shot timing comes from shots.ts; facts on screen from docs/production/facts.md.
 import { AbsoluteFill } from "remotion";
 import type { FirePaletteName } from "../../../kit/fire";
 import { useSongFrame } from "../../clock";
@@ -31,7 +31,7 @@ export const BahrainPicture: React.FC<{
 }> = ({ f, palette }) => {
   const shot =
     SHOTS.find((s) => f >= s.from && f < s.to) ?? SHOTS[SHOTS.length - 1];
-  // the last beat of 3.6, from bar 72 to the cut to black, is the scorched halo
+  // the last two bars of 3.6, from 72.1 to the black on 74.1, are the scorched halo and the tagline
   const finale =
     f >= cueFrame("bahrain2020.halo") && f < cueFrame("bahrain2020.black");
   const Picture = finale ? HaloFinale : shot.Picture;

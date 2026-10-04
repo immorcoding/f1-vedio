@@ -1,6 +1,6 @@
-// Shot 5.1 (bars 81–84): the drop. Full speed up the straight to T5, the camera tracking at ~290 km/h. VER's nose is
-// in HAM's gearbox, riding the slipstream; on 83.1 he pulls out to the inside (farther from the camera) and draws up
-// alongside by the cut. The drop itself (81.1) lands as a white flash, focus lines and a jolt.
+// Shot 5.1 (bars 82–85): the drop. Full speed up the straight to T5, the camera tracking at ~290 km/h. VER's nose is
+// in HAM's gearbox, riding the slipstream; on 84.1 he pulls out to the inside (farther from the camera) and draws up
+// alongside by the cut. The drop itself (82.1) lands as a white flash, focus lines and a jolt.
 import { PIRELLI_2021, RB16B, W12 } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { focusLines } from "../../../kit/lines";
@@ -15,7 +15,7 @@ const LAYOUT = trackLayout(-60, 680, { x0: 250, x1: 330, z: 640, top: 38 });
 
 export const Charge: React.FC<{ st: ShotTime }> = ({ st }) => {
   const { t, dur } = st;
-  const out = secondsInShot(st, at(83)); // VER pulls out of the tow
+  const out = secondsInShot(st, at(84)); // VER pulls out of the tow
   const camX = V * t;
   const pull = ramp(t, out - 0.2, out + 0.9);
   const draw = ramp(t, out + 0.4, dur);

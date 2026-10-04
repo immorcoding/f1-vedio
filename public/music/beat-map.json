@@ -3,19 +3,19 @@
   "beatsPerBar": 4,
   "fps": 60,
   "sampleRate": 48000,
-  "bars": 112,
+  "bars": 113,
   "framesPerBar": 112.5,
-  "durationSeconds": 210,
-  "totalFrames": 12600,
+  "durationSeconds": 211.875,
+  "totalFrames": 12713,
   "frameRounding": "frame = floor(seconds × fps + 0.5): nearest frame, exact halves round up (src/mv/timing.ts toFrame)",
   "sections": [
     {"id":"intro","name":"前奏","from":{"bar":1,"beat":1,"seconds":0,"sample":0,"frame":0},"to":{"bar":9,"beat":1,"seconds":15,"sample":720000,"frame":900}},
     {"id":"suzuka","name":"铃鹿 1989/1990","from":{"bar":9,"beat":1,"seconds":15,"sample":720000,"frame":900},"to":{"bar":33,"beat":1,"seconds":60,"sample":2880000,"frame":3600}},
     {"id":"brazil","name":"巴西 2008","from":{"bar":33,"beat":1,"seconds":60,"sample":2880000,"frame":3600},"to":{"bar":57,"beat":1,"seconds":105,"sample":5040000,"frame":6300}},
-    {"id":"bahrain","name":"巴林 2020","from":{"bar":57,"beat":1,"seconds":105,"sample":5040000,"frame":6300},"to":{"bar":73,"beat":1,"seconds":135,"sample":6480000,"frame":8100}},
-    {"id":"buildup","name":"蓄力","from":{"bar":73,"beat":1,"seconds":135,"sample":6480000,"frame":8100},"to":{"bar":81,"beat":1,"seconds":150,"sample":7200000,"frame":9000}},
-    {"id":"abuDhabi","name":"阿布扎比 2021","from":{"bar":81,"beat":1,"seconds":150,"sample":7200000,"frame":9000},"to":{"bar":105,"beat":1,"seconds":195,"sample":9360000,"frame":11700}},
-    {"id":"outro","name":"尾奏","from":{"bar":105,"beat":1,"seconds":195,"sample":9360000,"frame":11700},"to":{"bar":113,"beat":1,"seconds":210,"sample":10080000,"frame":12600}}
+    {"id":"bahrain","name":"巴林 2020","from":{"bar":57,"beat":1,"seconds":105,"sample":5040000,"frame":6300},"to":{"bar":74,"beat":1,"seconds":136.875,"sample":6570000,"frame":8213}},
+    {"id":"buildup","name":"蓄力","from":{"bar":74,"beat":1,"seconds":136.875,"sample":6570000,"frame":8213},"to":{"bar":82,"beat":1,"seconds":151.875,"sample":7290000,"frame":9113}},
+    {"id":"abuDhabi","name":"阿布扎比 2021","from":{"bar":82,"beat":1,"seconds":151.875,"sample":7290000,"frame":9113},"to":{"bar":106,"beat":1,"seconds":196.875,"sample":9450000,"frame":11813}},
+    {"id":"outro","name":"尾奏","from":{"bar":106,"beat":1,"seconds":196.875,"sample":9450000,"frame":11813},"to":{"bar":114,"beat":1,"seconds":211.875,"sample":10170000,"frame":12713}}
   ],
   "hits": [
     {"id":"intro.light1","bar":5,"beat":1,"seconds":7.5,"sample":360000,"frame":450},
@@ -29,10 +29,10 @@
     {"id":"brazil2008.pass","bar":47,"beat":1,"seconds":86.25,"sample":4140000,"frame":5175},
     {"id":"brazil2008.points","bar":53,"beat":1,"seconds":97.5,"sample":4680000,"frame":5850},
     {"id":"bahrain2020.impact","bar":61,"beat":1,"seconds":112.5,"sample":5400000,"frame":6750},
-    {"id":"buildup.drop","bar":81,"beat":1,"seconds":150,"sample":7200000,"frame":9000},
-    {"id":"abuDhabi2021.lockup","bar":89,"beat":1,"seconds":165,"sample":7920000,"frame":9900},
-    {"id":"abuDhabi2021.finish","bar":99,"beat":1,"seconds":183.75,"sample":8820000,"frame":11025},
-    {"id":"abuDhabi2021.points","bar":101,"beat":1,"seconds":187.5,"sample":9000000,"frame":11250}
+    {"id":"buildup.drop","bar":82,"beat":1,"seconds":151.875,"sample":7290000,"frame":9113},
+    {"id":"abuDhabi2021.lockup","bar":90,"beat":1,"seconds":166.875,"sample":8010000,"frame":10013},
+    {"id":"abuDhabi2021.finish","bar":100,"beat":1,"seconds":185.625,"sample":8910000,"frame":11138},
+    {"id":"abuDhabi2021.points","bar":102,"beat":1,"seconds":189.375,"sample":9090000,"frame":11363}
   ],
   "beats": [
     {"bar":1,"beat":1,"seconds":0,"sample":0,"frame":0},
@@ -483,6 +483,10 @@
     {"bar":112,"beat":2,"seconds":208.59375,"sample":10012500,"frame":12516},
     {"bar":112,"beat":3,"seconds":209.0625,"sample":10035000,"frame":12544},
     {"bar":112,"beat":4,"seconds":209.53125,"sample":10057500,"frame":12572},
-    {"bar":113,"beat":1,"seconds":210,"sample":10080000,"frame":12600}
+    {"bar":113,"beat":1,"seconds":210,"sample":10080000,"frame":12600},
+    {"bar":113,"beat":2,"seconds":210.46875,"sample":10102500,"frame":12628},
+    {"bar":113,"beat":3,"seconds":210.9375,"sample":10125000,"frame":12656},
+    {"bar":113,"beat":4,"seconds":211.40625,"sample":10147500,"frame":12684},
+    {"bar":114,"beat":1,"seconds":211.875,"sample":10170000,"frame":12713}
   ]
 }

@@ -3,7 +3,8 @@
 //   public/music/beat-map.json every section, bar line, beat and hit with its second, sample and frame
 // Run: npm run music  (or: node scripts/make-music.mjs [outDir])
 //
-// Original, code-synthesised electronic track: 128 BPM, 4/4, 112 bars, D minor throughout.
+// Original, code-synthesised electronic track: 128 BPM, 4/4, 113 bars, D minor (Bahrain's tail cadences in F major and
+// turns back to D minor through its dominant, bar 73).
 // Every time comes from src/mv/timing.ts. Deterministic: seeded noise, no clocks, fixed order.
 //
 // Final arrangement (ticket #10). Tempo, bars, sections and hits are untouched (timing.ts);
@@ -11,10 +12,12 @@
 //   intro    1-8    dark pad + low pulse + sparse high pings, five heavy hits (5-8)
 //   suzuka   9-32   tense verse: soft kick, dry staccato bass, tresillo pluck, thin ticks
 //   brazil   33-60  rising: rolling bass, 16th arp that opens up, rain (hiss + drops + pings), fills
-//   bahrain  57-72  bars 57-60 drive on; hard stop on 61.1 (everything gated); heartbeat + long pad
-//   buildup  73-80  riser, snare roll, half-time then quarter kick, one-eighth gap before the drop
-//   abuDhabi 81-104 strongest: heavy kick + sub, 16th bass, supersaw lead, stabs, open hats, snare
-//   outro    105-112 layers leave in order: arp/drums, bass, kick; ends on the intro pad and pings
+//   bahrain  57-73  bars 57-60 drive on; hard stop on 61.1 (everything gated); heartbeat + long pad;
+//                   bar 73 is the bridge: the pad and the heartbeat resolve (Bb -> F, a last lub on 73.1),
+//                   then the pad turns to A major on 73.3, the dominant of D minor, and leads into the riser
+//   buildup  74-81  riser, snare roll, half-time then quarter kick, one-eighth gap before the drop
+//   abuDhabi 82-105 strongest: heavy kick + sub, 16th bass, supersaw lead, stabs, open hats, snare
+//   outro    106-113 layers leave in order: arp/drums, bass, kick; ends on the intro pad and pings
 import fs from "node:fs";
 import path from "node:path";
 import * as T from "../src/mv/timing.ts";
@@ -39,7 +42,7 @@ const DR = new Float64Array(N);
 // the named hits is cut inside them, including the delay tails.
 const GATES = [
   [S(61), S(61, 3)],
-  [S(80, 4.5), S(81)],
+  [S(81, 4.5), S(82)],
 ];
 
 // -- helpers ------------------------------------------------------------------------------
@@ -135,32 +138,40 @@ const CHORDS = [
   [48, 52, 55, 60], // C:  C E G C
 ];
 const ROOTS = [38, 34, 41, 36]; // D2 Bb1 F2 C2
+// The bridge (bar 73): Bahrain's Bb resolves to F (a plagal close), then on beat 3 the pad turns to A major, voiced
+// C# E A C#: the dominant of D minor, every voice a step or less from the buildup's Dm on 74.1 (C# -> D, E -> F).
+const BRIDGE = 73;
+const A_MAJOR = [49, 52, 57, 61];
 const chordAt = (bar) => {
-  if (bar <= 8 || bar >= 109) return 0; // intro and the last bars: a Dm drone
+  if (bar <= 8 || bar >= 110) return 0; // intro and the last bars: a Dm drone
   if (bar >= 61 && bar <= 72) return Math.floor((bar - 61) / 2) % 4; // Bahrain: half-time chords
-  return (bar - 1) % 4;
+  if (bar === BRIDGE) return 2; // the bridge: F (the pad and shimmer turn to A on 73.3, padChord)
+  // the bridge bar sits between Bahrain and the buildup, so from 74 on the four-bar cycle counts from bar 2
+  return bar > BRIDGE ? (bar - 2) % 4 : (bar - 1) % 4;
 };
 const barOf = (n) => Math.floor(n / (BEAT * T.BEATS_PER_BAR)) + 1;
-const DROP = [81, 104];
+const DROP = [82, 105];
+const padChord = (n) =>
+  barOf(n) === BRIDGE && n >= S(BRIDGE, 3) ? A_MAJOR : CHORDS[chordAt(barOf(n))];
 
 // -- kick pattern (also drives the sidechain duck) ----------------------------------------
 const kickGain = (bar) => {
   if (bar <= 16) return 0.7; // Suzuka opening: soft and dry
   if (bar <= 32) return 0.8;
   if (bar <= 60) return ramp(bar, 33, 60, 0.85, 0.95);
-  if (bar <= 78) return ramp(bar, 73, 78, 0.8, 0.95);
-  if (bar <= 104) return 1.15;
-  return ramp(bar, 105, 108, 0.9, 0.45); // outro: the kick fades out last
+  if (bar <= 79) return ramp(bar, 74, 79, 0.8, 0.95);
+  if (bar <= 105) return 1.15;
+  return ramp(bar, 106, 109, 0.9, 0.45); // outro: the kick fades out last
 };
 const kicks = [];
 for (let bar = 1; bar <= T.BARS; bar++) {
   for (let beat = 1; beat <= 4; beat++) {
     const four = inBars(bar, [
       [9, 60],
-      [77, 78],
-      [81, 108],
+      [78, 79],
+      [82, 109],
     ]);
-    const half = inBars(bar, [[73, 76]]) && (beat === 1 || beat === 3);
+    const half = inBars(bar, [[74, 77]]) && (beat === 1 || beat === 3);
     if (four || half)
       kicks.push({
         n: S(bar, beat),
@@ -192,13 +203,13 @@ for (const k of kicks) {
     [at(61), 0], // hard stop
     [at(61, 3), 0.15],
     [at(63), 0.95], // the long pad grows out of the silence
-    [at(72, 4), 0.95],
-    [at(73), 0.5],
-    [at(81), 0.6],
-    [at(105), 0.45],
-    [at(109), 0.8],
-    [at(111), 0.8],
-    [at(113), 0],
+    [at(73, 3), 0.95], // the bridge: held through the resolution and the turn to A
+    [at(74), 0.5],
+    [at(82), 0.6],
+    [at(106), 0.45],
+    [at(110), 0.8],
+    [at(112), 0.8],
+    [at(114), 0],
   ]);
   const cutoff = curve([
     [at(1), 300],
@@ -209,11 +220,13 @@ for (const k of kicks) {
     [at(57), 3200], // Brazil: the filter keeps opening
     [at(61), 600],
     [at(65), 500],
-    [at(73), 1100],
-    [at(81), 3200],
-    [at(105), 2000],
-    [at(109), 700],
-    [at(113), 300],
+    [at(73), 520],
+    [at(73, 3), 700], // the bridge's dominant opens a little toward the buildup
+    [at(74), 1100],
+    [at(82), 3200],
+    [at(106), 2000],
+    [at(110), 700],
+    [at(114), 300],
   ]);
   const phase = new Float64Array(12);
   const freq = new Float64Array(12);
@@ -225,7 +238,7 @@ for (const k of kicks) {
     for (let d = 0; d < 3; d++)
       freq[v * 3 + d] = midi(CHORDS[0][v]) * (1 + det[d]);
   for (let n = 0; n < N; n++) {
-    const chord = CHORDS[chordAt(barOf(n))];
+    const chord = padChord(n);
     let sl = 0;
     let sr = 0;
     for (let v = 0; v < 4; v++) {
@@ -271,15 +284,15 @@ for (const k of kicks) {
     [at(1), 0.25],
     [at(5), 0.5],
     [at(9), 0.55],
-    [at(105), 0.4],
-    [at(109), 0.45],
-    [at(112), 0.3],
-    [at(113), 0],
+    [at(106), 0.4],
+    [at(110), 0.45],
+    [at(113), 0.3],
+    [at(114), 0],
   ]);
   for (let bar = 1; bar <= T.BARS; bar++) {
     for (let e = 0; e < 8; e++) {
       const n = S(bar) + (e * BEAT) / 2;
-      if (bar <= 8 || bar >= 109)
+      if (bar <= 8 || bar >= 110)
         thump(
           n,
           110,
@@ -288,11 +301,14 @@ for (const k of kicks) {
           pulseGain(n) * (e % 2 === 0 ? 0.32 : 0.2),
         );
     }
-    if (bar >= 61 && bar <= 72) {
-      // heart at 64 BPM: lub on beats 1 and 3, dub a sixteenth later
+    if (bar >= 61 && bar <= BRIDGE) {
+      // heart at 64 BPM: lub on beats 1 and 3, dub a sixteenth later; it softens into the bridge and stops after a
+      // last, quieter beat on 73.1 (the resolution)
       for (const beat of [1, 3]) {
         if (bar === 61 && beat === 1) continue; // the impact owns that downbeat
-        const fade = bar === 72 && beat === 3 ? 0.6 : 1;
+        if (bar === BRIDGE && beat === 3) continue;
+        const fade =
+          bar === BRIDGE ? 0.45 : bar === 72 && beat === 3 ? 0.6 : 1;
         thump(S(bar, beat), 90, 48, 0.12, 0.5 * fade);
         thump(S(bar, beat) + BEAT / 4, 80, 45, 0.09, 0.3 * fade);
       }
@@ -321,12 +337,12 @@ for (const k of kicks) {
 // -- bass: saw bass, plus a sine sub under the drop ---------------------------------------
 {
   const rng = mulberry32(101);
-  for (let bar = 9; bar <= 106; bar++) {
-    if (bar >= 61 && bar <= 72) continue;
+  for (let bar = 9; bar <= 107; bar++) {
+    if (bar >= 61 && bar <= BRIDGE) continue;
     const root = ROOTS[chordAt(bar)];
     const drop = inBars(bar, [DROP]);
     const suz = bar <= 32;
-    const buildup = bar >= 73 && bar <= 80;
+    const buildup = bar >= 74 && bar <= 81;
     // Suzuka: dry and staccato (bars 9-16 only two notes a bar); Brazil and the drop roll in 16ths.
     const steps = suz
       ? bar <= 16
@@ -335,10 +351,10 @@ for (const k of kicks) {
           ? 8
           : 16
       : buildup
-        ? bar <= 76
+        ? bar <= 77
           ? 8
           : 16
-        : bar >= 105
+        : bar >= 106
           ? 8
           : 16;
     const sparse = bar <= 16;
@@ -355,15 +371,15 @@ for (const k of kicks) {
       const cut = suz
         ? 500 + 250 * clamp01((bar - 9) / 20)
         : buildup
-          ? 300 + 1800 * ((bar - 73) / 8)
+          ? 300 + 1800 * ((bar - 74) / 8)
           : drop
             ? 1700
             : ramp(bar, 33, 60, 800, 1700);
       let ph = rng();
       const g =
         (drop ? 0.2 : suz ? 0.15 : ramp(bar, 33, 60, 0.15, 0.2)) *
-        (buildup ? 0.7 + 0.3 * ((bar - 73) / 8) : 1) *
-        (bar >= 105 ? ramp(bar, 105, 106, 0.7, 0.5) : 1);
+        (buildup ? 0.7 + 0.3 * ((bar - 74) / 8) : 1) *
+        (bar >= 106 ? ramp(bar, 106, 107, 0.7, 0.5) : 1);
       addEvent(n, len, (i) => {
         const dt = f / SR;
         ph += dt;
@@ -377,6 +393,22 @@ for (const k of kicks) {
         return Math.tanh(y * 1.8) * g * duck[n + i];
       });
     }
+  }
+  // The bridge (bar 73): no saw bass, a soft sine under the pad: F1 for the resolution, then A1 for the turn to A,
+  // which falls a fifth onto the buildup's D.
+  for (const [beat, note, beats] of [
+    [1, 29, 2],
+    [3, 33, 2],
+  ]) {
+    const a = S(BRIDGE, beat);
+    const len = Math.round(beats * BEAT);
+    const f = midi(note);
+    let ph = 0;
+    addEvent(a, len, (i) => {
+      ph += f / SR;
+      const s = Math.sin(2 * Math.PI * ph) + 0.25 * Math.sin(4 * Math.PI * ph);
+      return s * 0.11 * Math.min(1, i / 2400) * Math.min(1, (len - i) / 1200);
+    });
   }
   // Sub layer: a long sine under the drop gives it the weight Brazil does not have.
   for (let bar = DROP[0]; bar <= DROP[1]; bar++) {
@@ -446,8 +478,8 @@ for (const k of kicks) {
       return Math.sin(ph) * Math.exp(-t / 0.12) * gain;
     });
   };
-  for (let bar = 9; bar <= 104; bar++) {
-    if (bar >= 61 && bar <= 80) continue;
+  for (let bar = 9; bar <= 105; bar++) {
+    if (bar >= 61 && bar <= 81) continue;
     const suz = bar <= 32;
     const drop = bar >= DROP[0];
     if (bar >= 17) {
@@ -491,9 +523,9 @@ for (const k of kicks) {
     } else if (
       bar === 48 ||
       bar === 56 ||
-      bar === 88 ||
-      bar === 96 ||
-      bar === 104
+      bar === 89 ||
+      bar === 97 ||
+      bar === 105
     ) {
       for (let k = 0; k < 4; k++)
         snare(
@@ -503,18 +535,18 @@ for (const k of kicks) {
         );
     }
   }
-  // buildup: offbeat hats come in at 75, then the snare roll (bars 77-80): eighths, sixteenths,
-  // thirty-seconds, growing; the last eighth of bar 80 is the gap (GATES)
-  for (let bar = 75; bar <= 76; bar++)
+  // buildup: offbeat hats come in at 76, then the snare roll (bars 78-81): eighths, sixteenths,
+  // thirty-seconds, growing; the last eighth of bar 81 is the gap (GATES)
+  for (let bar = 76; bar <= 77; bar++)
     for (let s = 0; s < 8; s++)
-      hat(S(bar) + (s * BEAT) / 2, 0.03 + 0.012 * (bar - 75), 0.025, 0.2);
-  for (let bar = 77; bar <= 80; bar++) {
-    const div = bar <= 78 ? 2 : bar === 79 ? 4 : 8;
+      hat(S(bar) + (s * BEAT) / 2, 0.03 + 0.012 * (bar - 76), 0.025, 0.2);
+  for (let bar = 78; bar <= 81; bar++) {
+    const div = bar <= 79 ? 2 : bar === 80 ? 4 : 8;
     for (let s = 0; s < 4 * div; s++) {
       const n = S(bar) + (s * BEAT) / div;
-      const grow = (T.beatsAt(at(bar)) + s / div - T.beatsAt(at(77))) / 16;
+      const grow = (T.beatsAt(at(bar)) + s / div - T.beatsAt(at(78))) / 16;
       snare(Math.round(n), 0.06 + 0.3 * grow, 0.07);
-      if (bar >= 79) hat(Math.round(n), 0.03 + 0.05 * grow, 0.01, 0);
+      if (bar >= 80) hat(Math.round(n), 0.03 + 0.05 * grow, 0.01, 0);
     }
   }
 }
@@ -628,8 +660,8 @@ for (const k of kicks) {
       send,
     );
   };
-  for (let bar = 17; bar <= 104; bar++) {
-    if (bar >= 57 && bar <= 80) continue;
+  for (let bar = 17; bar <= 105; bar++) {
+    if (bar >= 57 && bar <= 81) continue;
     const chord = CHORDS[chordAt(bar)];
     if (bar <= 32) {
       // Suzuka: dry 3+3+2 pluck, low and tight, nothing like the later arpeggios
@@ -653,7 +685,7 @@ for (const k of kicks) {
     const drop = bar >= DROP[0];
     const gain = drop ? 0.075 : ramp(bar, 33, 56, 0.035, 0.07);
     const cut = drop ? 4500 : ramp(bar, 33, 56, 1500, 4200);
-    const high = bar >= 97; // last phrase of the drop: arpeggio an octave higher
+    const high = bar >= 98; // last phrase of the drop: arpeggio an octave higher
     for (let s = 0; s < 16; s++) {
       pluck(
         S(bar) + (s * BEAT) / 4,
@@ -679,8 +711,8 @@ for (const k of kicks) {
       }
     }
   }
-  // Supersaw lead on the drop's four-bar hook: 7 detuned saws, a long delay, entering in 81
-  // an octave down and doubled up from 89.
+  // Supersaw lead on the drop's four-bar hook: 7 detuned saws, a long delay, entering in 82
+  // an octave down and doubled up from 90.
   const hook = [
     [
       [0, 74, 1.5],
@@ -732,11 +764,11 @@ for (const k of kicks) {
   };
   for (let bar = DROP[0]; bar <= DROP[1]; bar++) {
     const phrase = hook[(bar - DROP[0]) % 4];
-    const gain = bar < 89 ? 0.016 : bar < 97 ? 0.022 : 0.026;
+    const gain = bar < 90 ? 0.016 : bar < 98 ? 0.022 : 0.026;
     for (const [off, note, beats] of phrase) {
       const n = S(bar) + Math.round(off * BEAT);
-      lead(n, note - (bar < 89 ? 12 : 0), beats, gain);
-      if (bar >= 97) lead(n, note + 12, beats, gain * 0.55);
+      lead(n, note - (bar < 90 ? 12 : 0), beats, gain);
+      if (bar >= 98) lead(n, note + 12, beats, gain * 0.55);
     }
   }
 }
@@ -746,18 +778,20 @@ for (const k of kicks) {
   const rng = mulberry32(606);
   const lp = lowpass(1.6);
   const a = S(61, 3);
-  const b = S(73);
+  const b = S(BRIDGE + 1);
   const wind = curve([
     [at(61, 3), 0],
     [at(64), 0.5],
     [at(72), 1],
+    [at(BRIDGE), 0.8],
+    [at(BRIDGE + 1), 0], // the wind dies away under the bridge; the riser takes over
   ]);
   for (let n = a; n < b; n++) {
     const t = (n - a) / SR;
     const fc =
       260 +
       500 * (0.5 + 0.5 * Math.sin((2 * Math.PI * t) / 6.3)) +
-      400 * clamp01((n - S(64)) / (b - S(64)));
+      400 * clamp01((n - S(64)) / (S(BRIDGE) - S(64)));
     const g = 0.045 * 0.708 * wind(n);
     const s = lp(rng() * 2 - 1, fc) * g;
     const pan = 0.35 * Math.sin((2 * Math.PI * t) / 9.1);
@@ -776,14 +810,16 @@ for (const k of kicks) {
     L[n] += s;
     R[n] += s * 0.8;
   }
-  // shimmer: octave sines of the long pad, breathing in for bars 65-72
+  // shimmer: octave sines of the long pad, breathing in for bars 65-72, then following it through the bridge and fading
   const sh = curve([
     [at(65), 0],
-    [at(73), 1],
+    [at(BRIDGE), 1],
+    [at(BRIDGE, 3), 0.8],
+    [at(BRIDGE + 1), 0],
   ]);
   for (let n = S(65); n < b; n++) {
     const t = n / SR;
-    const chord = CHORDS[chordAt(barOf(n))];
+    const chord = padChord(n);
     let s = 0;
     for (const note of [chord[1] + 24, chord[2] + 24, chord[3] + 24])
       s += Math.sin(2 * Math.PI * midi(note) * t);
@@ -820,21 +856,23 @@ for (const k of kicks) {
   for (const [bar, note] of [
     [1, 81],
     [3, 86],
-    [109, 81],
-    [111, 86],
+    [110, 81],
+    [112, 86],
   ])
     ping(S(bar, 3), note, 0.03);
+  // the bridge's turn to A major: C#6, the leading tone of D, rings over 73.3
+  ping(S(BRIDGE, 3), 85, 0.022);
 }
 
-// -- riser: bars 73-80, noise sweep plus a climbing saw and an upward sine -----------------
+// -- riser: bars 74-81, noise sweep plus a climbing saw and an upward sine -----------------
 {
   const rng = mulberry32(404);
   const lpN = lowpass(2.5);
   const lpS = lowpass(1);
   let ph = 0;
   let ph2 = 0;
-  const a = S(73);
-  const b = S(81);
+  const a = S(74);
+  const b = S(82);
   for (let n = a; n < b; n++) {
     const x = (n - a) / (b - a);
     const f = midi(50) * Math.pow(2, 3 * x * x);
@@ -855,8 +893,8 @@ for (const k of kicks) {
   }
 }
 
-// Outro: no layer of its own; everything leaves by the rules above (arp and drums at 105, bass at 107,
-// kick fades through 108) and the pad, pulse and pings of the intro stay.
+// Outro: no layer of its own; everything leaves by the rules above (arp and drums at 106, bass at 108,
+// kick fades through 109) and the pad, pulse and pings of the intro stay.
 
 // -- energy curve: a slow trim over the whole mix (hits are added after it) ---------------
 // The layers above decide the character of each section; this decides how loud it is relative
@@ -874,10 +912,11 @@ for (const k of kicks) {
     [at(61, 3), -2],
     [at(63), -5],
     [at(72), -3.5],
-    [at(73), -3],
-    [at(80), 0.5],
-    [at(81), 0],
-    [at(105), 0],
+    [at(BRIDGE), -3.5],
+    [at(BRIDGE + 1), -3],
+    [at(81), 0.5],
+    [at(82), 0],
+    [at(106), 0],
   ]);
   for (let n = 0; n < N; n++) {
     const g = Math.pow(10, trimDb(n) / 20);
@@ -984,8 +1023,8 @@ for (const [a, b] of GATES)
     }
   }
   // crashes that open the busy sections
-  for (const bar of [33, 57, 97, 105])
-    crash(S(bar), bar === 97 ? 0.2 : 0.12, 1.4);
+  for (const bar of [33, 57, 98, 106])
+    crash(S(bar), bar === 98 ? 0.2 : 0.12, 1.4);
 }
 
 // -- ping-pong delay (dotted eighth) on the send bus ---------------------------------------
@@ -1029,7 +1068,8 @@ for (let pass = 0; pass < 4; pass++) {
       `master pass ${pass}: ${lufs.toFixed(2)} LUFS, peak ${(20 * Math.log10(pk)).toFixed(2)} dBFS`,
     );
   }
-  if (Math.abs(step) < 0.05) break;
+  // the first pass always limits (the mix can sit on target before the limiter has held its peaks)
+  if (pass > 0 && Math.abs(step) < 0.05) break;
   const g = Math.pow(10, step / 20);
   for (let n = 0; n < N; n++) {
     L[n] *= g;

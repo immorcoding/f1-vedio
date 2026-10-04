@@ -1,6 +1,6 @@
-// Shot 4.1 (bars 73–74): the title card. Yas Marina at night from the start/finish straight (YasNight): grid boxes
+// Shot 4.1 (bars 74–75): the title card. Yas Marina at night from the start/finish straight (YasNight): grid boxes
 // running away to the Yas hotel, whose gridshell lights up panel by panel (all on at the `buildup.hotelLit` cue,
-// 74.1); floodlight cones, drifting haze and camera flashes in the grandstand keep it alive under a slow push-in. The
+// 75.1); floodlight cones, drifting haze and camera flashes in the grandstand keep it alive under a slow push-in. The
 // title is lettered in top left over the sky, a chequered strip and the circuit's name under it; the 2021 lap draws itself on in an inset panel top right, over the
 // grandstand canopy — neither covers the hotel or the straight (ART-14).
 import { CircuitTag, TitleText, circuitAnim } from "../../../kit/lettering";
@@ -28,7 +28,7 @@ const VIEW = fitMap(
 
 export const TitleCard: React.FC<{ st: ShotTime }> = ({ st }) => {
   const { t, dur } = st;
-  const litAt = secondsInShot(st, at(74));
+  const litAt = secondsInShot(st, at(75));
   const lit = ramp(t, 0.15, litAt);
   const push = 1 + 0.06 * (t / dur);
   const draw = ramp(t, 0.3, dur * 0.8);

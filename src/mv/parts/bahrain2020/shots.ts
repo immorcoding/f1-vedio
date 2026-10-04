@@ -1,4 +1,4 @@
-// Edit list for 巴林 2020 (bars 57–72), treatment shots 3.1–3.6. Facts on screen: docs/production/facts.md.
+// Edit list for 巴林 2020 (bars 57–73), treatment shots 3.1–3.6. Facts on screen: docs/production/facts.md.
 import { hitCue, type PartEdit } from "../../shot.ts";
 import { at } from "../../timing.ts";
 
@@ -59,15 +59,16 @@ export const EDIT: PartEdit = {
     {
       id: "3.6",
       from: at(70),
-      to: at(73),
+      to: at(74),
       view: "closeup",
       content:
-        "GRO 抓着 halo 从座舱里撑起、从顶层护栏的撕裂口跨出，踩过底层护栏到赛道一侧，医生扶住他的手臂，从火里走出来；第 72 小节第一拍切到烧黑但完好的 halo 特写（彩蛋），最后一拍切黑",
-      text: ["27s"],
+        "GRO 抓着 halo 从座舱里撑起、从被撕开的护栏缺口跨出，踩着底层护栏卷起的断口到赛道一侧，医生扶住他的手臂，从火里走出来；第 72 小节第一拍切到烧黑但完好的 halo 特写（彩蛋），镜头继续缓慢推近；72.3 起标语淡入，73.1 停稳（音乐解决），留满第 73 小节，73.3 起淡出到黑，74.1 全黑（音乐转调进蓄力）",
+      text: ["27s", "F1 SPEED ISN'T ONLY ON THE TRACK."],
       cues: [
         { id: "bahrain2020.time", at: at(71) },
         { id: "bahrain2020.halo", at: at(72) },
-        { id: "bahrain2020.black", at: at(72, 4) },
+        { id: "bahrain2020.tagline", at: at(73) },
+        { id: "bahrain2020.black", at: at(74) },
       ],
     },
   ],

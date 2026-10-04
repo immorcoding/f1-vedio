@@ -8,7 +8,7 @@ export const BPM = 128;
 export const BEATS_PER_BAR = 4;
 export const FPS = 60;
 /** Bars in the song. The song ends on the downbeat of bar BARS + 1. */
-export const BARS = 112;
+export const BARS = 113;
 /** Audio sample rate of the score. 128 BPM puts every beat on a whole sample (22 500). */
 export const SAMPLE_RATE = 48000;
 
@@ -43,8 +43,8 @@ export const beatsAtFrame = (frame: number) => frame / FRAMES_PER_BEAT;
 
 export const SONG_START: Pos = at(1);
 export const SONG_END: Pos = at(BARS + 1);
-export const TOTAL_FRAMES = frameAt(SONG_END); // 12 600
-export const DURATION_SECONDS = secondsAt(SONG_END); // 210
+export const TOTAL_FRAMES = frameAt(SONG_END); // 12 713
+export const DURATION_SECONDS = secondsAt(SONG_END); // 211.875
 
 /** True when p sits on a beat of the song (a whole bar and beat), from 1.1 up to and including the end. */
 export const isOnGrid = (p: Pos) =>
@@ -73,10 +73,10 @@ export const SECTIONS = [
   { id: "intro", name: "前奏", from: at(1), to: at(9) },
   { id: "suzuka", name: "铃鹿 1989/1990", from: at(9), to: at(33) },
   { id: "brazil", name: "巴西 2008", from: at(33), to: at(57) },
-  { id: "bahrain", name: "巴林 2020", from: at(57), to: at(73) },
-  { id: "buildup", name: "蓄力", from: at(73), to: at(81) },
-  { id: "abuDhabi", name: "阿布扎比 2021", from: at(81), to: at(105) },
-  { id: "outro", name: "尾奏", from: at(105), to: at(113) },
+  { id: "bahrain", name: "巴林 2020", from: at(57), to: at(74) },
+  { id: "buildup", name: "蓄力", from: at(74), to: at(82) },
+  { id: "abuDhabi", name: "阿布扎比 2021", from: at(82), to: at(106) },
+  { id: "outro", name: "尾奏", from: at(106), to: at(114) },
 ] as const satisfies readonly Section[];
 
 export type SectionId = (typeof SECTIONS)[number]["id"];
@@ -97,10 +97,10 @@ export const HITS = {
   "brazil2008.pass": at(47, 1),
   "brazil2008.points": at(53, 1),
   "bahrain2020.impact": at(61, 1),
-  "buildup.drop": at(81, 1),
-  "abuDhabi2021.lockup": at(89, 1),
-  "abuDhabi2021.finish": at(99, 1),
-  "abuDhabi2021.points": at(101, 1),
+  "buildup.drop": at(82, 1),
+  "abuDhabi2021.lockup": at(90, 1),
+  "abuDhabi2021.finish": at(100, 1),
+  "abuDhabi2021.points": at(102, 1),
 } as const satisfies Record<string, Pos>;
 
 export type HitId = keyof typeof HITS;

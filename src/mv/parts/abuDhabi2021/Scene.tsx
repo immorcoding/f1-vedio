@@ -1,5 +1,5 @@
-// Picture for 阿布扎比 2021 (bars 81–104): 5.1 the charge to T5, 5.2 T5 from above, 5.3 the settled T5 panel (lock-up
-// at 89.1), 5.4 the tow down the back straight, 5.5 the map run to the flag, 5.6 the finish (99.1), 5.7 the points (101.1), 5.8 the champion photo card (103.1).
+// Picture for 阿布扎比 2021 (bars 82–105): 5.1 the charge to T5, 5.2 T5 from above, 5.3 the settled T5 panel (lock-up
+// at 90.1), 5.4 the tow down the back straight, 5.5 the map run to the flag, 5.6 the finish (100.1), 5.7 the points (102.1), 5.8 the champion photo card (104.1).
 import { AbsoluteFill } from "remotion";
 import { T5Panel } from "../../../scenes/abu-dhabi-2021/T5Panel";
 import { useSongFrame } from "../../clock";

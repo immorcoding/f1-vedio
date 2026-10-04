@@ -1,6 +1,6 @@
-// Shot 5.2 (bars 85–88): T5 from above (MOT-2). The camera opens on the whole hairpin, then swoops down onto the two
+// Shot 5.2 (bars 86–89): T5 from above (MOT-2). The camera opens on the whole hairpin, then swoops down onto the two
 // cars as they arrive, north to the right. HAM keeps the outside line; VER, on the inside, brakes later and draws
-// level, his line inked on as a dashed arrow. At the cut (89.1, the lock-up) VER is a nose ahead at the turn-in —
+// level, his line inked on as a dashed arrow. At the cut (90.1, the lock-up) VER is a nose ahead at the turn-in —
 // where the T5 panel (shot 5.3) picks them up.
 import { MangaCar, PIRELLI_2021, RB16B, topAnchorAt, W12 } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";

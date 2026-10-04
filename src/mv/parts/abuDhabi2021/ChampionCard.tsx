@@ -1,6 +1,6 @@
-// Shot 5.8 (bars 103–104): the one real photo in the film (ART-19) — VER on the 2021 Abu Dhabi podium, full-bleed in
+// Shot 5.8 (bars 104–105): the one real photo in the film (ART-19) — VER on the 2021 Abu Dhabi podium, full-bleed in
 // muted colour, the right side inked down so the Red Bull team-radio line (STO-8) reads over the LED wall. The lines
-// stamp in on the beats of bar 103 and hold through 104.
+// stamp in on the beats of bar 104 and hold through 105.
 // Effects: a white flash on the cut; every slam punches the frame (shake, a quick brightness pop on the photo, a burst
 // of focus lines behind the lettering); the last slam ("CHAMPION!") hits hardest; glints on the trophy; confetti
 // (gold, red, navy, white) falling through the whole shot, a few big pieces in front.
@@ -110,7 +110,7 @@ const Confetti: React.FC<{ t: number; front?: boolean }> = ({ t, front }) => {
 export const ChampionCard: React.FC<{ st: ShotTime }> = ({ st }) => {
   useLettering();
   const sinceBeat = LINES.map(
-    ({ beat }) => st.t - secondsInShot(st, at(103, beat)),
+    ({ beat }) => st.t - secondsInShot(st, at(104, beat)),
   );
   // the punch of each slam; the fourth hits harder
   const punch = sinceBeat.reduce(

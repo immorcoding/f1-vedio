@@ -1,6 +1,6 @@
 // Shot 3.5 (bars 66–69): the 27 seconds in four panels, one more on each bar's first beat — four different moments,
 // not four looks at the helmet (facts.md, FIA accident investigation summary):
-//   0 秒   the barrier splits: the cell is through it, the middle and top rails torn open along it, their ends curled
+//   0 秒   the barrier splits: the cell is through it, all three rails torn open along it, their ends curled
 //          back and throwing sparks (the torn gap every later shot shows), the fire catching;
 //   11 秒  the FIA medical car brakes in hard and stops, the doctor out and running for the fire;
 //   (no time: not verified) a marshal turns a dry-powder extinguisher on the cockpit;
@@ -26,7 +26,8 @@ import { ToneDefs } from "../../../kit/tone";
 import { cueFrame, ramp, type PictureProps } from "./common";
 import { MedicalCar } from "./MedicalCar";
 import { RAILS } from "./rails.ts";
-import { PowderBillow } from "./powder";
+import { Haze } from "./haze";
+import { PowderJet } from "./powder";
 import { FACTS } from "./shots.ts";
 import {
   RUN,
@@ -35,6 +36,7 @@ import {
   WRECK_CAM,
   WreckWorld,
   heartbeat,
+  heatZone,
   zoomCam,
 } from "./Wreck";
 import { CLIMB_X, PANEL_U, WALK_Z, exitAt } from "./escape-staging.ts";
@@ -116,11 +118,10 @@ const TimeLabel: React.FC<{
   />
 );
 
-// 0 s: the moment the barrier has split (3.3's freeze): the same torn gap as every later shot — the middle and top
-// rails open along the cell, their jagged ends curled up and back — with sparks still flying off the torn ends.
-const LIPS = TEARS.flatMap((tear, i) =>
+// 0 s: the moment the barrier has split (3.3's freeze): the same torn gap as every later shot — all three rails open
+// along the cell, their jagged ends curled back — with sparks still flying off the torn ends.
+const LIPS = TEARS.flatMap((tear, r) =>
   tear.map((x) => {
-    const r = i + 1;
     const o = WRECK_BEND(x - RUN.a.x, r);
     return {
       x: x + o.dx,
@@ -129,7 +130,7 @@ const LIPS = TEARS.flatMap((tear, i) =>
     };
   }),
 );
-const GAP_MID = (TEARS[1][0] + TEARS[1][1]) / 2;
+const GAP_MID = (TEARS[2][0] + TEARS[2][1]) / 2;
 
 type PanelProps = {
   r: Rect;
@@ -138,7 +139,7 @@ type PanelProps = {
   palette: FirePaletteName;
 };
 
-// 0 秒: the cell in the gap it tore, the middle and top rails split along it, their torn ends curled back and
+// 0 秒: the cell in the gap it tore, all three rails split along it, their torn ends curled back and
 // throwing sparks; the fire just catching.
 const PanelPry: React.FC<PanelProps> = ({ r, f, age, palette }) => {
   // framed on the gap, the halo and both torn ends of the top rail in the panel
@@ -165,34 +166,37 @@ const PanelPry: React.FC<PanelProps> = ({ r, f, age, palette }) => {
       return { a: P(Math.max(0, a - 3)), b: P(a), op: 1 - a / 30 };
     });
   });
+  const intensity = 0.4 + 0.3 * ramp(age, 0, 200);
   return (
     <g>
-      <WreckWorld
-        cam={cam}
-        f={f}
-        fireSeed="t0"
-        palette={palette}
-        intensity={0.4 + 0.3 * ramp(age, 0, 200)}
-        noGlow
-        clip={r}
-        tonePrefix="b35"
-      />
-      {sparks.map((s, i) => (
-        <g key={i} opacity={s.op}>
-          <path
-            d={`M ${s.a.x} ${s.a.y} L ${s.b.x} ${s.b.y}`}
-            stroke={INK}
-            strokeWidth={6}
-            strokeLinecap="round"
-          />
-          <path
-            d={`M ${s.a.x} ${s.a.y} L ${s.b.x} ${s.b.y}`}
-            stroke="#fff1b8"
-            strokeWidth={3.5}
-            strokeLinecap="round"
-          />
-        </g>
-      ))}
+      <Haze frame={f} zone={heatZone(cam, intensity)} clip={r}>
+        <WreckWorld
+          cam={cam}
+          f={f}
+          fireSeed="t0"
+          palette={palette}
+          intensity={intensity}
+          noGlow
+          clip={r}
+          tonePrefix="b35"
+        />
+        {sparks.map((s, i) => (
+          <g key={i} opacity={s.op}>
+            <path
+              d={`M ${s.a.x} ${s.a.y} L ${s.b.x} ${s.b.y}`}
+              stroke={INK}
+              strokeWidth={6}
+              strokeLinecap="round"
+            />
+            <path
+              d={`M ${s.a.x} ${s.a.y} L ${s.b.x} ${s.b.y}`}
+              stroke="#fff1b8"
+              strokeWidth={3.5}
+              strokeLinecap="round"
+            />
+          </g>
+        ))}
+      </Haze>
       <TimeLabel r={r} corner="tl">
         0s
       </TimeLabel>
@@ -317,28 +321,48 @@ const PanelMedical: React.FC<PanelProps> = ({ r, f, age, palette }) => {
           }),
         )
       : null;
+  // the heat haze over the wreck; the medical car and the doctor, in front of the fire, get the lighter ripple
+  const calm = [
+    {
+      cx: medAt.x - 2.4 * mppm,
+      cy: medAt.y - 0.75 * mppm,
+      rx: 2.9 * mppm,
+      ry: 1.0 * mppm,
+    },
+    ...(age >= OUT
+      ? [
+          (() => {
+            const b = cam.project({ x: docAt.x, y: 0, z: docAt.z });
+            const s = cam.pxPerMetre(docAt.z);
+            return { cx: b.x, cy: b.y - 0.95 * s, rx: 0.6 * s, ry: 1.0 * s };
+          })(),
+        ]
+      : []),
+  ];
   return (
     <g>
-      <WreckWorld
-        cam={cam}
-        f={f}
-        fireSeed="t11"
-        palette={palette}
-        intensity={1}
-        noGlow
-        clip={r}
-        tonePrefix="b35"
-      />
+      <Haze frame={f} zone={heatZone(cam)} clip={r} calm={calm}>
+        <WreckWorld
+          cam={cam}
+          f={f}
+          fireSeed="t11"
+          palette={palette}
+          intensity={1}
+          noGlow
+          clip={r}
+          tonePrefix="b35"
+        />
+        {smoke}
+        <MedicalCar
+          at={medAt}
+          wheelAngle={wheelAngle}
+          pitch={pitch}
+          tonePrefix="b35"
+        />
+        {doctor}
+      </Haze>
       {streaks}
       {trails}
-      {smoke}
-      <MedicalCar
-        at={medAt}
-        wheelAngle={wheelAngle}
-        pitch={pitch}
-        tonePrefix="b35"
-      />
-      {doctor}
       <TimeLabel r={r} corner="tr">
         {`${FACTS.medicalCarSeconds}s`}
       </TimeLabel>
@@ -363,37 +387,47 @@ const PanelExtinguisher: React.FC<PanelProps> = ({ r, f, age, palette }) => {
   // the nozzle points at the cockpit: figure frame (facing left: forward is -x in the world)
   const tipF = nozzleOf(pose).tip;
   const aim = v(MARSHAL_AT.x - tipF.x - COCKPIT.x, COCKPIT.y - tipF.y);
-  const reach = Math.hypot(aim.x, aim.y);
   const at = cam.project({ x: MARSHAL_AT.x, y: 0, z: MARSHAL_AT.z });
   const ppm = cam.pxPerMetre(MARSHAL_AT.z);
   const cock = cam.project(COCKPIT);
+  // the jet: small bubble-smoke puffs from the nozzle's tip (the kit's jet cone is off) to the cockpit
+  const tip = nozzleOf(pose, aim).tip;
+  const nozzle = { x: at.x - tip.x * ppm, y: at.y - tip.y * ppm }; // facing left
+  const calm = [
+    { cx: at.x, cy: at.y - 0.95 * ppm, rx: 0.6 * ppm, ry: 1.0 * ppm },
+  ];
   return (
     <g>
-      <WreckWorld
-        cam={cam}
-        f={f}
-        fireSeed="tx"
-        palette={palette}
-        intensity={0.9}
-        noGlow
-        clip={r}
-        tonePrefix="b35"
-      />
-      <PowderBillow x={cock.x} y={cock.y} ppm={ppm} frame={f} />
-      <Figure
-        at={at}
-        pxPerMetre={ppm}
-        pose={pose}
-        outfit={MARSHAL}
-        facing="left"
-        held={{
-          kind: "extinguisher",
-          spray: (reach / 1.05) * ramp(age, 0, 6),
-          aim,
-        }}
-        rim={FIRE_PALETTES[palette].glow ? "#ffb347" : PAPER}
-        rimSide="left"
-      />
+      <Haze frame={f} zone={heatZone(cam, 0.9)} clip={r} calm={calm}>
+        <WreckWorld
+          cam={cam}
+          f={f}
+          fireSeed="tx"
+          palette={palette}
+          intensity={0.9}
+          noGlow
+          clip={r}
+          tonePrefix="b35"
+        />
+        <Figure
+          at={at}
+          pxPerMetre={ppm}
+          pose={pose}
+          outfit={MARSHAL}
+          facing="left"
+          held={{ kind: "extinguisher", aim }}
+          rim={FIRE_PALETTES[palette].glow ? "#ffb347" : PAPER}
+          rimSide="left"
+        />
+        <PowderJet
+          from={nozzle}
+          to={cock}
+          ppm={ppm}
+          frame={f}
+          seed="b35-powder"
+          on={ramp(age, 0, 6)}
+        />
+      </Haze>
     </g>
   );
 };
@@ -426,21 +460,33 @@ const PanelClimb: React.FC<PanelProps> = ({ r, f, age, palette }) => {
     holds: e.holds,
     rim: fire.glow ? "#ffb347" : PAPER,
   });
+  // GRO in the cockpit: in the haze with the lighter ripple, so his helmet and shoulders still read
+  const groBase = cam.project({ x: CLIMB_X, y: 0, z: WALK_Z });
+  const calm = [
+    {
+      cx: groBase.x - 0.2 * e.s,
+      cy: groBase.y - 1.3 * e.s,
+      rx: 0.75 * e.s,
+      ry: 0.7 * e.s,
+    },
+  ];
   return (
     <g>
-      <WreckWorld
-        cam={cam}
-        f={f}
-        fireSeed="t28"
-        palette={palette}
-        intensity={1}
-        noGlow
-        clip={r}
-        driver={false}
-        cockpit={gro.cockpit}
-        frontFire={0.45}
-        tonePrefix="b35"
-      />
+      <Haze frame={f} zone={heatZone(cam)} clip={r} calm={calm}>
+        <WreckWorld
+          cam={cam}
+          f={f}
+          fireSeed="t28"
+          palette={palette}
+          intensity={1}
+          noGlow
+          clip={r}
+          driver={false}
+          cockpit={gro.cockpit}
+          frontFire={0.45}
+          tonePrefix="b35"
+        />
+      </Haze>
       <TimeLabel r={r} corner="tl">
         {`${FACTS.escapeSeconds}s`}
       </TimeLabel>
