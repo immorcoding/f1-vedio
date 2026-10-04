@@ -37,13 +37,13 @@ export const Settle: React.FC<PictureProps> = ({ f }) => {
   const dim = ramp(f, helm, helm + 20);
   const proStampAt = cueFrame("suzuka1990.stamp89");
   const senStampAt = cueFrame("suzuka1990.stamp90");
-  const pro = ramp(f, proStampAt, proStampAt + 10, Easing.linear);
-  const sen = ramp(f, senStampAt, senStampAt + 10, Easing.linear);
+  const pro = ramp(f, proStampAt - 10, proStampAt, Easing.linear);
+  const sen = ramp(f, senStampAt - 10, senStampAt, Easing.linear);
   const lineAt = cueFrame("suzuka1990.admitted");
   const line = ramp(f, lineAt, lineAt + 16, Easing.out(Easing.back(1.6)));
-  // each card jolts when its stamp lands
+  // each stamp slams down over the 10 frames before its cue and lands on the beat; the card jolts as it lands
   const jolt = (from: number) => {
-    const k = f - from - 10;
+    const k = f - from;
     return k < 0 ? 0 : 9 * Math.exp(-k / 5) * Math.sin(k * 1.9);
   };
   // a push-in from the cards' entry to the cut that gathers pace instead of settling, the lines boiling like a held

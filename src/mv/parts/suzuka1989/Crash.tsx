@@ -279,11 +279,11 @@ export const Crash: React.FC<PictureProps> = ({ f }) => {
     RESULT + 24,
     Easing.out(Easing.back(1.4)),
   );
-  const stampSen = ramp(f, DSQ, DSQ + 10, Easing.linear);
-  const stampPro = ramp(f, CHAMPION, CHAMPION + 10, Easing.linear);
-  // each card jolts when its stamp lands
+  const stampSen = ramp(f, DSQ - 10, DSQ, Easing.linear);
+  const stampPro = ramp(f, CHAMPION - 10, CHAMPION, Easing.linear);
+  // each stamp slams down over the 10 frames before its cue and lands on the beat; the card jolts as it lands
   const jolt = (from: number) => {
-    const k = f - from - 10;
+    const k = f - from;
     return k < 0 ? 0 : 7 * Math.exp(-k / 5) * Math.sin(k * 1.9);
   };
   const flicker = Math.floor((f - RESULT) / 5);
