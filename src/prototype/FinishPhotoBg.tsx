@@ -13,7 +13,7 @@ import { shotAt, type ShotTime } from "../mv/parts/abuDhabi2021/shotClock";
 import { EDIT } from "../mv/parts/abuDhabi2021/shots";
 import { at, frameAt } from "../mv/timing";
 
-export type Variant = "before56" | "before57" | "A" | "B" | "C" | "D" | "E";
+export type Variant = "before56" | "before57" | "A" | "B" | "C" | "D" | "E" | "F" | "G";
 
 const CUT = staticFile("proto-finish/cutout-ink.png");
 const CUT_AR = 715 / 1399; // width / height of the cutout PNG
@@ -116,6 +116,46 @@ const CardD: React.FC<{ colour?: boolean }> = ({ colour }) => {
   );
 };
 
+
+// F/G (v5): the landscape podium photo full-bleed; the right side inked down so the radio line reads over the LED wall.
+// F = ink-wash photo, G = muted colour photo.
+const WIDE = [
+  { t: "MAX VERSTAPPEN,", y: 560, fs: 60 },
+  { t: "YOU ARE THE", y: 640, fs: 60 },
+  { t: "WORLD", y: 810, fs: 150 },
+  { t: "CHAMPION!", y: 950, fs: 120 },
+];
+const CardF: React.FC<{ colour?: boolean }> = ({ colour }) => (
+  <AbsoluteFill style={{ backgroundColor: INK }}>
+    <Img
+      src={staticFile(colour ? "proto-finish/wide-col.png" : "proto-finish/wide-ink.png")}
+      style={{ position: "absolute", left: -40, top: 0, width: 2057, height: 1080 }}
+    />
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: "linear-gradient(90deg, rgba(14,14,20,0) 52%, rgba(14,14,20,0.82) 66%, rgba(14,14,20,0.9) 100%)",
+      }}
+    />
+    <svg width={1920} height={1080} style={{ position: "absolute" }}>
+      <g transform="rotate(-3 1540 760)">
+        {WIDE.map(({ t, y, fs }, i) => (
+          <text key={t} x={1540} y={y} textAnchor="middle" textLength={660} lengthAdjust="spacingAndGlyphs"
+            fontFamily="Arial Black, Arial, sans-serif" fontWeight={900} fontStyle="italic" fontSize={fs}
+            fill={i >= 2 ? PAPER : PAPER} stroke={INK} strokeWidth={i >= 2 ? 14 : 10} paintOrder="stroke">
+            {t}
+          </text>
+        ))}
+      </g>
+      <text x={1870} y={1040} textAnchor="end" fontFamily="sans-serif" fontSize={28} fill={PAPER} opacity={0.85}>
+        — 红牛车队无线电 · 2021.12.12 · 阿布扎比
+      </text>
+      <Frame x={20} y={20} w={1880} h={1040} sw={12} />
+    </svg>
+  </AbsoluteFill>
+);
+
 // A: title card. The cutout owns the left; the scores sit on the right and never touch the face or the trophy.
 const CardA: React.FC = () => (
   <AbsoluteFill style={{ backgroundColor: PAPER }}>
@@ -188,6 +228,8 @@ export const FinishPhotoBg: React.FC<{ variant?: Variant; t?: number }> = ({ var
   if (variant === "A") return <CardA />;
   if (variant === "D") return <CardD />;
   if (variant === "E") return <CardD colour />;
+  if (variant === "F") return <CardF />;
+  if (variant === "G") return <CardF colour />;
   if (variant === "B") return <BeatB st={st} />;
   return <SplitC st={st} />;
 };
