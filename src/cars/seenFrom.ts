@@ -163,6 +163,51 @@ const sideOnWing = (car: CarSpec, body: string) => {
   };
 };
 
+// The rear wing from the low camera (user review 2026-10-04, ART-17): the near endplate hides the far endplate, the
+// wing planes and the beam wing between them, as the near front endplate hides the front wing. The planes' top line
+// sits about level with the endplate's top but on the centre line, CENTRE − REAR_ENDPLATE_DEPTH further from the camera,
+// so it shows that much·sin(elevation) above the endplate's top edges: a sliver, drawn as the near endplate lifted by
+// that height in the wing's colour (its top edge only). The pylon, on the centre line under the wing, goes behind the
+// endplate too: kept below the endplate's top and, where the trace puts it ahead of the endplate's top front corner
+// (the photo's yaw, as for the nose), moved back behind it; the endplate itself overlaps the body, so nothing floats.
+const REAR_ENDPLATE_DEPTH = 0.3; // m behind the near wheel plane: a 1.0 m wing on a 1.6 m track
+const REAR_TOP_BAND = 0.1; // m: endplate points this close to its top count as its top edge (the stepped cut-outs)
+
+const pairs = (d: string) => {
+  const n = (d.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number);
+  return Array.from({ length: n.length / 2 }, (_, i) => ({
+    x: n[2 * i],
+    y: n[2 * i + 1],
+  }));
+};
+
+const sideOnRearWing = (
+  car: CarSpec,
+  near: string,
+  pylon: string,
+  elevation: number,
+) => {
+  const ppm = photoPxPerMetre(car);
+  const ep = pathPoints(near).flat();
+  const top = Math.min(...ep.map((p) => p.y));
+  const front = Math.min(
+    ...ep.filter((p) => p.y <= top + REAR_TOP_BAND * ppm).map((p) => p.x),
+  );
+  const lift = (CENTRE - REAR_ENDPLATE_DEPTH) * Math.sin(rad(elevation)) * ppm;
+  const [tl, tr, br, bl] = pairs(pylon);
+  const dx = Math.max(0, front - tl.x);
+  const yTop = Math.max(tl.y, top + 0.05 * ppm);
+  const r = (n: number) => Math.round(n * 10) / 10;
+  return {
+    // only the top edge (with its steps) is lifted; the rest stays behind the endplate, so no edge below it peeks out
+    top: warpPath(near, (x, y) => ({
+      x,
+      y: y <= top + REAR_TOP_BAND * ppm ? y - lift : y,
+    })),
+    pylon: `M ${r(tl.x + dx)} ${r(yTop)} L ${r(tr.x + dx)} ${r(yTop)} L ${r(br.x + dx)} ${r(br.y)} L ${r(bl.x + dx)} ${r(bl.y)} Z`,
+  };
+};
+
 const cache = new WeakMap<CarSpec, Partial<Record<FarSideCamera, CarSpec>>>();
 
 // The car as drawn for one camera look: the spec itself, or with `look.body` its body re-projected and the front
@@ -222,8 +267,22 @@ export const specSeenFrom = (car: CarSpec, camera: FarSideCamera): CarSpec => {
     breakLine: opt(car.breakLine),
   };
   const wing = sideOnWing(car, warped.body);
+  const rear = sideOnRearWing(
+    car,
+    warped.rearWing.near,
+    warped.rearWing.pylon,
+    look.body.elevation,
+  );
   const out: CarSpec = {
     ...warped,
+    rearWing: {
+      ...warped.rearWing,
+      farFrom: undefined,
+      top: rear.top,
+      elements: [],
+      pylon: rear.pylon,
+      beam: undefined,
+    },
     farSide: {
       ...car.farSide,
       [camera]: {
