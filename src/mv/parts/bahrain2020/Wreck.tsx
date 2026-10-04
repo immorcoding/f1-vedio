@@ -1,7 +1,8 @@
 // The wreck after the impact, seen from the track at night (ART-9 pinhole camera): the Haas in two pieces — the
-// survival cell, halo up, wedged through the triple guardrail, and the rear (power unit, gearbox, rear wing) torn off on
-// the track side — and the fire. Shot 3.4 shows it whole; shot 3.5 pushes in on the halo panel by panel through zoomed
-// copies of the same camera; shot 3.6 reuses it behind GRO. No driver injury is ever shown: helmet and halo only.
+// survival cell, halo up, lodged in the gap it tore in the triple guardrail, and the rear (power unit, gearbox, rear
+// wing) torn off on the track side — and the fire. Shot 3.4 shows it whole; shot 3.5 pushes in on the halo panel by
+// panel through zoomed copies of the same camera; shot 3.6 reuses it behind GRO; the halo finale closes on it. Every
+// one shows the same torn gap (wreck-geometry.ts). No driver injury is ever shown: helmet and halo only.
 import { useId } from "react";
 import { MangaCar, VF20 } from "../../../cars";
 import { pinhole, type Camera } from "../../../kit/camera";
@@ -17,7 +18,7 @@ import {
 import { ToneDefs, TonePattern } from "../../../kit/tone";
 import { beatsAtFrame, FRAMES_PER_BEAT } from "../../timing.ts";
 import { ramp, shotById, type PictureProps } from "./common";
-import { BentGuardrail, type Deflection } from "./bent-rail";
+import { BentGuardrail } from "./bent-rail";
 import { NightBackdrop } from "./night";
 import {
   BARRIER_Z,
@@ -28,6 +29,7 @@ import {
   CELL_TO,
   CELL_Z,
   COCKPIT_CLIP_PHOTO,
+  NEAR_BAR_CLIP_PHOTO,
   PPM,
   WRECK_GAPS,
   HALO_WORLD,
@@ -60,8 +62,8 @@ export const zoomCam = (
   });
 };
 
-// The barrier as the impact left it (wreck-geometry.ts): the middle rail gone over the cell, the top rail torn open
-// over the cockpit, the bottom rail pressed down and back.
+// The barrier as the impact left it (wreck-geometry.ts): the middle and top rails torn open along the cell, their ends
+// curled, the bottom rail pressed down and back.
 export { RUN, WRECK_BEND, WRECK_GAPS, CELL_FROM };
 
 // The posed survival cell's own transform (MangaCar facing left, the split pose of the front piece): photo space of the
@@ -80,38 +82,22 @@ export const CockpitClip: React.FC<{ id: string; cam: Camera }> = ({
     <path d={COCKPIT_CLIP_PHOTO} transform={cellTransform(cam)} />
   </clipPath>
 );
-// The halo's near side (pillar and near hoop bar), drawn again exactly as MangaCar draws it: over someone inside
-// the cockpit, who is behind it.
-export const NearHalo: React.FC<{ cam: Camera }> = ({ cam }) => {
-  const d = VF20.halo ?? "";
-  return (
-    <g transform={cellTransform(cam)}>
-      <path
-        d={d}
-        fill="none"
-        stroke={INK}
-        strokeWidth={16}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d={d}
-        fill="none"
-        stroke={VF20.paint.chassis}
-        strokeWidth={9}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d={d}
-        fill="none"
-        stroke={PAPER}
-        strokeWidth={3}
-        strokeLinecap="round"
-        transform="translate(0 -3)"
-      />
-    </g>
-  );
+// A clip to the near halo bar's drawn outline (wreck-geometry.ts NEAR_BAR_CLIP_PHOTO): the cell drawn again through it
+// is the near bar alone, in register with the rest of the cell because it is the same drawing.
+const NearBarClip: React.FC<{ id: string; cam: Camera }> = ({ id, cam }) => (
+  <clipPath id={id}>
+    <path d={NEAR_BAR_CLIP_PHOTO.band} transform={cellTransform(cam)} />
+    {NEAR_BAR_CLIP_PHOTO.ends.map((c) => (
+      <circle key={c.cx} {...c} transform={cellTransform(cam)} />
+    ))}
+  </clipPath>
+);
+// Someone in the cockpit, drawn as part of the wreck's front section (WreckWorld `cockpit`): what is behind the near
+// halo bar (the body, the far arm) and what is in front of it (a leg on its way out over the side, a glove closing over
+// the tube). Both show only above the cockpit's rim.
+export type CockpitLayers = {
+  behindHalo: React.ReactNode;
+  overHalo: React.ReactNode;
 };
 
 export const WreckWorld: React.FC<{
@@ -121,8 +107,8 @@ export const WreckWorld: React.FC<{
   // 0–1: the fire growing after the impact
   intensity: number;
   tonePrefix: string;
-  // someone in the cockpit (the caller clips them to it and redraws the halo over them)
-  cockpit?: React.ReactNode;
+  // someone in the cockpit, layered round the near halo bar and cut to the cockpit's rim here
+  cockpit?: CockpitLayers;
   // someone out over the cell's side, behind the bottom rail but clear of it on screen
   behindRails?: React.ReactNode;
   // close-ups: no light pool, the fire throws no glow over the whole panel
@@ -133,11 +119,6 @@ export const WreckWorld: React.FC<{
   clip?: ScreenRect;
   // false once GRO is out: the cockpit is empty
   driver?: false;
-  // how the rails are bent and where they are torn (default: as they were left after the impact)
-  bend?: Deflection;
-  gaps?: [number, number][][];
-  // the torn ends trail hanging strips (not while the rail is still splitting)
-  hanging?: boolean;
   // the low fire along the rails, scaled (a close-up keeps it down so a hand on the rail still reads)
   frontFire?: number;
 }> = ({
@@ -152,9 +133,6 @@ export const WreckWorld: React.FC<{
   fireSeed = "",
   clip,
   driver,
-  bend = WRECK_BEND,
-  gaps = WRECK_GAPS,
-  hanging = true,
   frontFire = 1,
 }) => {
   const p = noGlow
@@ -171,6 +149,11 @@ export const WreckWorld: React.FC<{
   const front = fireAt(CELL_FROM + 2.4, BARRIER_Z - 0.3, 4.6, 1.6 * frontFire);
   const gapFire = fireAt(CELL_TO + 1.0, (CELL_Z + REAR_Z) / 2, 2.0, 3.4);
   const cellAt = cam.anchor({ x: CELL_ANCHOR_X, z: CELL_Z });
+  const cellState = {
+    split: { front: CELL_POSE, show: "front" as const },
+    driver,
+  };
+  const rimClip = `rim${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const rearAt = cam.anchor({ x: REAR_ANCHOR_X, z: REAR_Z });
   return (
     <g>
@@ -199,19 +182,28 @@ export const WreckWorld: React.FC<{
         intensity={intensity}
         clip={clip}
       />
-      <MangaCar
-        car={VF20}
-        facing="left"
-        at={cellAt}
-        state={{ split: { front: CELL_POSE, show: "front" }, driver }}
-      />
+      {/* the rails' stubs either side of the gap (middle and top rails, and the posts) */}
       <BentGuardrail
         cam={cam}
         a={RUN.a}
         b={RUN.b}
-        gaps={gaps}
-        hanging={hanging}
-        deflect={bend}
+        gaps={WRECK_GAPS}
+        deflect={WRECK_BEND}
+        rails={[1, 2]}
+        tonePrefix={tonePrefix}
+      />
+      {/* the wreck's front section, one drawing in the gap: survival cell, cockpit sides, headrest, far and near halo
+          bars, helmet while the driver is in; with someone in the cockpit the near bar is drawn again over him below */}
+      <MangaCar car={VF20} facing="left" at={cellAt} state={cellState} />
+      {/* only the bottom rail passes in front of the cell's lower edge */}
+      <BentGuardrail
+        cam={cam}
+        a={RUN.a}
+        b={RUN.b}
+        gaps={WRECK_GAPS}
+        deflect={WRECK_BEND}
+        rails={[0]}
+        posts={false}
         tonePrefix={tonePrefix}
       />
       {/* the fire's light on the rails and the asphalt (not in the close-ups: it would wash the panel out) */}
@@ -226,9 +218,23 @@ export const WreckWorld: React.FC<{
           amount={intensity}
         />
       )}
-      {/* someone in the cockpit or out over its side, behind the low fire: drawn after the fire's light so he stays
-          solid (nothing of him overlaps the bottom rail until he crosses it) */}
-      {cockpit}
+      {/* someone in the cockpit, between the far parts and the near halo bar and cut to the rim, then the near bar
+          over him: drawn after the fire's light so he stays solid (as he is once out) */}
+      {cockpit ? (
+        <>
+          <defs>
+            <CockpitClip id={rimClip} cam={cam} />
+            <NearBarClip id={`${rimClip}-bar`} cam={cam} />
+          </defs>
+          <g clipPath={`url(#${rimClip})`}>{cockpit.behindHalo}</g>
+          <g clipPath={`url(#${rimClip}-bar)`}>
+            <MangaCar car={VF20} facing="left" at={cellAt} state={cellState} />
+          </g>
+          <g clipPath={`url(#${rimClip})`}>{cockpit.overHalo}</g>
+        </>
+      ) : null}
+      {/* someone out over the cell's side, behind the low fire (nothing of him overlaps the bottom rail until he
+          crosses it) */}
       {behindRails}
       {/* the low fire along the rails */}
       <Fire

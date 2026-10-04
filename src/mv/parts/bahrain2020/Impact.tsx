@@ -1,7 +1,8 @@
 // Shot 3.3 (bar 61, on the music's stop): the Haas hits the triple guardrail, its path at 29° and the car yawed 22°
 // further (FIA), so the barrier meets the car's side at 51°. The contact lands on the bar's
-// first beat; then an explicit slow motion of the 0.1 s that matter (MOT-5): sparks spray off the rails, the bottom and
-// top rails bend round the nose and the middle rail tears as the survival cell goes through it, the car breaks at the
+// first beat; then an explicit slow motion of the 0.1 s that matter (MOT-5): sparks spray off the rails, the nose bends
+// the rails back, then the middle and top rails split along the survival cell as it goes through — their torn ends
+// curling up and back, the same torn gap every later shot shows (wreck-geometry.ts tornCurl) — the car breaks at the
 // engine bulkhead — the power unit and rear left behind on the track side — and the fuel cell bursts into a fireball,
 // carbon shards flying. On the last beats the frame freezes into white paper and black line, an impact star round the
 // nose with 67G, the fireball still burning in colour (facts.md; FIA accident investigation summary).
@@ -17,6 +18,8 @@ import { BentGuardrail, bump, type Deflection } from "./bent-rail";
 import { BREAK_PIVOT, carPointOnScreen } from "./car-points";
 import { ramp, shotById, type PictureProps } from "./common";
 import { NightBackdrop, RAILS } from "./night";
+import { CAR_HALF_WIDTH } from "./crash-geometry.ts";
+import { tornCurl } from "./wreck-geometry.ts";
 import { IMPACT_ANGLE, IMPACT_YAW } from "./crash-geometry.ts";
 import { FACTS } from "./shots.ts";
 
@@ -31,8 +34,12 @@ const L = carLength(VF20);
 // The barrier through the contact point. The car faces left (we see its left side, the barrier on its right, behind):
 // the barrier runs toward the camera on the left and away on the right.
 const dir = { x: -Math.cos(ANGLE), z: -Math.sin(ANGLE) };
-const BAR_A = { x: NOSE_X + dir.x * NEAR, z: CAR_Z + 0.15 + dir.z * NEAR }; // near end
-const BAR_B = { x: NOSE_X - dir.x * 30, z: CAR_Z + 0.15 - dir.z * 30 }; // far end
+const BAR_BEHIND = 0.15; // the barrier crosses the car's line this far behind its centre line
+const BAR_A = {
+  x: NOSE_X + dir.x * NEAR,
+  z: CAR_Z + BAR_BEHIND + dir.z * NEAR,
+}; // near end
+const BAR_B = { x: NOSE_X - dir.x * 30, z: CAR_Z + BAR_BEHIND - dir.z * 30 }; // far end
 const RUN = Math.hypot(BAR_B.x - BAR_A.x, BAR_B.z - BAR_A.z);
 const S_CONTACT = NEAR; // metres from the near end to the contact
 const U_CONTACT = S_CONTACT / RUN;
@@ -42,6 +49,20 @@ const SLOW = 70; // frames of slow motion before the freeze
 const PIERCE = 4.2; // metres the cell travels into the barrier
 const BREAK_AT = 12; // frame the car starts to tear in two
 const BALL_AT = 15; // frame the fuel cell bursts
+// The torn gap: where the cell's footprint (2.0 m wide) crosses the barrier at 51°, a hand's breadth to spare either
+// side, metres along the run from the near end. The middle rail fails first, then the top rail; each splits from the
+// contact outward and is fully open (ends curled) well before the freeze.
+const TEAR = {
+  from: S_CONTACT - (CAR_HALF_WIDTH + BAR_BEHIND) / Math.sin(ANGLE) - 0.12, // the near side crosses here
+  to: S_CONTACT + (CAR_HALF_WIDTH - BAR_BEHIND) / Math.sin(ANGLE) + 0.12, // the far side
+};
+const SPLIT_AT = [Infinity, 1.6, 2.0]; // cell travel (m) when each rail starts to split (bottom: never)
+const SPLIT_OPEN = 1.0; // more metres of travel until it is fully open
+const opened = (travel: number, rail: number) =>
+  Math.min(1, Math.max(0, (travel - SPLIT_AT[rail]) / SPLIT_OPEN));
+// the run's direction (near end → far end) and the way toward the track (the camera side), in world x/z
+const ALONG = { x: (BAR_B.x - BAR_A.x) / RUN, z: (BAR_B.z - BAR_A.z) / RUN };
+const TRACKWARD = { x: ALONG.z, z: -ALONG.x };
 
 const star = (
   cx: number,
@@ -74,24 +95,29 @@ const stage = (t: number) => {
   return { travel, split, front, rear, p };
 };
 
-// How the rails give: dragged along with the car round the contact, the top rail prised up and the bottom one pressed
-// down where the cell goes through, more the further in it is.
+// How the rails give: bent back and dragged along with the car round the contact, the bottom one pressed down where
+// the cell goes through, more the further in it is; once a rail splits, its torn ends curl (no rail bulges up).
 const deflection =
   (travel: number): Deflection =>
   (s, rail) => {
     const k = bump(s, S_CONTACT - travel * 0.5, 1.0 + travel * 0.45);
     const d = travel * 0.5 * k;
+    const g = opened(travel, rail);
+    const c = g > 0 ? tornCurl(s, ...gapAt(travel, rail), rail, g) : null;
     return {
-      dx: -d * 0.8,
-      dz: d * 0.15,
-      dy:
-        rail === 2
-          ? 0.32 * k * Math.min(1, travel)
-          : rail === 0
-            ? -0.12 * k * Math.min(1, travel)
-            : 0,
+      dx: -d * 0.8 + (c ? c.along * ALONG.x + c.out * TRACKWARD.x : 0),
+      dz: d * 0.15 + (c ? c.along * ALONG.z + c.out * TRACKWARD.z : 0),
+      dy: (rail === 0 ? -0.12 * k * Math.min(1, travel) : 0) + (c ? c.up : 0),
     };
   };
+// The torn stretch of a rail (metres along the run) as it splits: from the contact outward to the full gap.
+const gapAt = (travel: number, rail: number): [number, number] => {
+  const g = opened(travel, rail);
+  return [
+    S_CONTACT + (TEAR.from - S_CONTACT) * g,
+    S_CONTACT + (TEAR.to - S_CONTACT) * g,
+  ];
+};
 
 export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
   const shot = shotById("3.3");
@@ -131,15 +157,12 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
           : 0;
   const ts = Math.min(t, SLOW);
   const deflect = deflection(travel);
-  // the middle rail fails first, then the cell is through it
-  const gapW = Math.max(0, travel - 0.4) * 0.9;
-  const gaps: [number, number][][] = [
-    [],
-    gapW > 0
-      ? [[U_CONTACT - (gapW * 0.9) / RUN, U_CONTACT + (gapW * 0.6) / RUN]]
-      : [],
-    [],
-  ];
+  // the middle rail fails first, then the top rail; both split along the cell as it goes through
+  const gaps: [number, number][][] = [0, 1, 2].map((rail) => {
+    if (opened(travel, rail) <= 0) return [];
+    const [a, b] = gapAt(travel, rail);
+    return [[a / RUN, b / RUN]];
+  });
   // sparks off the rails: streaks thrown back and up from the contact, under gravity, every frame
   const sparks = Array.from({ length: 46 }, (_, i) => {
     const born = (i * 37) % 44;
