@@ -11,9 +11,9 @@ import { Closeup, Slipstream, trackLayout } from "../../../scenes/abu-dhabi-2021
 import { hit, type ShotTime } from "./shotClock";
 import { hamDist, PULL_OUT, sidePlan } from "./staging.ts";
 
-const cam = pinhole({ f: 2500, horizon: 300, cx: 960, height: 1.1 });
+const cam = pinhole({ f: 1900, horizon: 400, cx: 960, height: 1.1 });
 const LAYOUT = trackLayout(-200, 1400, { x0: 250, x1: 330, z: 640, top: 38 });
-const HAM_X = -1.2;
+const HAM_X = -1.5;
 
 export const Charge: React.FC<{ st: ShotTime; t0: number }> = ({ st, t0 }) => {
   const { t } = st;

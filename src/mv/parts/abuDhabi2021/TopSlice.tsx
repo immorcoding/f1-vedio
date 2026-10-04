@@ -24,9 +24,9 @@ export const TopSlice: React.FC<{ st: ShotTime; t0: number }> = ({ st, t0 }) => 
   const sV = c.ver.s;
   const latV = c.ver.lat;
   const HAM_LAT = c.ham.lat;
-  const ppm = 105 * (1 + 0.12 * ramp(t, 0, dur));
-  // centred between VER's front axle and HAM's rear axle
-  const centre = poseAt(T, sH + 2.4, (HAM_LAT + latV) / 2);
+  const ppm = 92 * (1 + 0.12 * ramp(t, 0, dur));
+  // centred on the pair, VER's rear wing to HAM's nose
+  const centre = poseAt(T, sH + 0.8, (HAM_LAT + latV) / 2);
   const h0 = poseAt(T, sH).heading;
   const view = mapView({ centre, rotation: -h0, pxPerMetre: ppm, screen: { x: 960, y: 560 } });
   const seed = st.frame;
