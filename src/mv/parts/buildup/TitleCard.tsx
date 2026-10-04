@@ -2,7 +2,7 @@
 // running away to the Yas hotel, whose gridshell lights up panel by panel (all on at the `buildup.hotelLit` cue,
 // 74.1); floodlight cones, drifting haze and camera flashes in the grandstand keep it alive under a slow push-in. The
 // title is brushed in top left over the sky; the 2021 lap draws itself on in an inset panel top right, over the
-// grandstand roof — neither covers the hotel or the straight (ART-14).
+// grandstand canopy — neither covers the hotel or the straight (ART-14).
 import { BRUSH_FONT } from "../../../kit/lettering";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";

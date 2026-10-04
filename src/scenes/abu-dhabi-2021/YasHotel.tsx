@@ -188,8 +188,9 @@ const lattice = (
 
 /**
  * The hotel with its photo ground line (photo y = 170) on screen y `ground`, photo x = 0 at screen `x`, `scale` screen
- * px per photo px (1 photo px ≈ 0.39 m). `lit` 0..1 switches the gridshell panels on one by one in a wave from west to
- * east (all on at 1); `t` (seconds) drives the twinkle of lit panels and room lights. `id` keeps its clip paths unique.
+ * px per photo px (shot 4.1 draws it at 0.5 m per photo px, so the opening under the bridge spans the straight).
+ * `lit` 0..1 switches the gridshell panels on one by one in a wave from west to east (all on at 1); `t` (seconds) drives
+ * the twinkle of lit panels and room lights. `id` keeps its clip paths unique.
  */
 export const YasHotel: React.FC<{
   x: number;
