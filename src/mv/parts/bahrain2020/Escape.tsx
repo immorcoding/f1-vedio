@@ -50,7 +50,7 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
     { x: CLIMB_X - 0.25, y: 1.0, z: WALK_Z },
     // (the creep keeps the pace it had when 3.6 cut to black on 72.4)
     1.18 + 0.05 * ramp(t, 0, frameAt(at(72, 4)) - shot.from),
-    { x: 980, y: 600 },
+    { x: 1090, y: 600 }, // the torn-off rear mostly out of frame on the right (user review 2026-10-04)
   );
   const { groPose, groAt, groScaleZ, layers, holds, docPose, docAt } =
     stage36(t);

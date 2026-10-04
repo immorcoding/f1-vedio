@@ -3,8 +3,7 @@
 //   public/music/beat-map.json every section, bar line, beat and hit with its second, sample and frame
 // Run: npm run music  (or: node scripts/make-music.mjs [outDir])
 //
-// Original, code-synthesised electronic track: 128 BPM, 4/4, 113 bars, D minor (Bahrain's tail cadences in F major and
-// turns back to D minor through its dominant, bar 73).
+// Original, code-synthesised electronic track: 128 BPM, 4/4, 113 bars, D minor throughout.
 // Every time comes from src/mv/timing.ts. Deterministic: seeded noise, no clocks, fixed order.
 //
 // Final arrangement (ticket #10). Tempo, bars, sections and hits are untouched (timing.ts);
@@ -13,8 +12,8 @@
 //   suzuka   9-32   tense verse: soft kick, dry staccato bass, tresillo pluck, thin ticks
 //   brazil   33-60  rising: rolling bass, 16th arp that opens up, rain (hiss + drops + pings), fills
 //   bahrain  57-73  bars 57-60 drive on; hard stop on 61.1 (everything gated); heartbeat + long pad;
-//                   bar 73 is the bridge: the pad and the heartbeat resolve (Bb -> F, a last lub on 73.1),
-//                   then the pad turns to A major on 73.3, the dominant of D minor, and leads into the riser
+//                   bar 73 is the bridge: the pad settles on Dm and decays under a last soft lub on 73.1,
+//                   then a reverse swell rises from 73.3 into the riser
 //   buildup  74-81  riser, snare roll, half-time then quarter kick, one-eighth gap before the drop
 //   abuDhabi 82-105 strongest: heavy kick + sub, 16th bass, supersaw lead, stabs, open hats, snare
 //   outro    106-113 layers leave in order: arp/drums, bass, kick; ends on the intro pad and pings
@@ -138,21 +137,20 @@ const CHORDS = [
   [48, 52, 55, 60], // C:  C E G C
 ];
 const ROOTS = [38, 34, 41, 36]; // D2 Bb1 F2 C2
-// The bridge (bar 73): Bahrain's Bb resolves to F (a plagal close), then on beat 3 the pad turns to A major, voiced
-// C# E A C#: the dominant of D minor, every voice a step or less from the buildup's Dm on 74.1 (C# -> D, E -> F).
+// The bridge (bar 73): Bahrain's pad settles on its home chord, Dm, and decays under a last soft heartbeat; from 73.3 a
+// reverse swell (filtered noise and a backwards Dm pad) rises into the riser on 74.1. No key change: the buildup also
+// starts on Dm.
 const BRIDGE = 73;
-const A_MAJOR = [49, 52, 57, 61];
 const chordAt = (bar) => {
   if (bar <= 8 || bar >= 110) return 0; // intro and the last bars: a Dm drone
   if (bar >= 61 && bar <= 72) return Math.floor((bar - 61) / 2) % 4; // Bahrain: half-time chords
-  if (bar === BRIDGE) return 2; // the bridge: F (the pad and shimmer turn to A on 73.3, padChord)
+  if (bar === BRIDGE) return 0; // the bridge: home on Dm
   // the bridge bar sits between Bahrain and the buildup, so from 74 on the four-bar cycle counts from bar 2
   return bar > BRIDGE ? (bar - 2) % 4 : (bar - 1) % 4;
 };
 const barOf = (n) => Math.floor(n / (BEAT * T.BEATS_PER_BAR)) + 1;
 const DROP = [82, 105];
-const padChord = (n) =>
-  barOf(n) === BRIDGE && n >= S(BRIDGE, 3) ? A_MAJOR : CHORDS[chordAt(barOf(n))];
+const padChord = (n) => CHORDS[chordAt(barOf(n))];
 
 // -- kick pattern (also drives the sidechain duck) ----------------------------------------
 const kickGain = (bar) => {
@@ -203,7 +201,7 @@ for (const k of kicks) {
     [at(61), 0], // hard stop
     [at(61, 3), 0.15],
     [at(63), 0.95], // the long pad grows out of the silence
-    [at(73, 3), 0.95], // the bridge: held through the resolution and the turn to A
+    [at(BRIDGE), 0.95], // the bridge: the Dm pad sustains and decays into the buildup's level
     [at(74), 0.5],
     [at(82), 0.6],
     [at(106), 0.45],
@@ -221,7 +219,7 @@ for (const k of kicks) {
     [at(61), 600],
     [at(65), 500],
     [at(73), 520],
-    [at(73, 3), 700], // the bridge's dominant opens a little toward the buildup
+    [at(73, 3), 520], // the bridge holds closed, then opens with the swell into the buildup
     [at(74), 1100],
     [at(82), 3200],
     [at(106), 2000],
@@ -393,22 +391,6 @@ for (const k of kicks) {
         return Math.tanh(y * 1.8) * g * duck[n + i];
       });
     }
-  }
-  // The bridge (bar 73): no saw bass, a soft sine under the pad: F1 for the resolution, then A1 for the turn to A,
-  // which falls a fifth onto the buildup's D.
-  for (const [beat, note, beats] of [
-    [1, 29, 2],
-    [3, 33, 2],
-  ]) {
-    const a = S(BRIDGE, beat);
-    const len = Math.round(beats * BEAT);
-    const f = midi(note);
-    let ph = 0;
-    addEvent(a, len, (i) => {
-      ph += f / SR;
-      const s = Math.sin(2 * Math.PI * ph) + 0.25 * Math.sin(4 * Math.PI * ph);
-      return s * 0.11 * Math.min(1, i / 2400) * Math.min(1, (len - i) / 1200);
-    });
   }
   // Sub layer: a long sine under the drop gives it the weight Brazil does not have.
   for (let bar = DROP[0]; bar <= DROP[1]; bar++) {
@@ -860,8 +842,35 @@ for (const k of kicks) {
     [112, 86],
   ])
     ping(S(bar, 3), note, 0.03);
-  // the bridge's turn to A major: C#6, the leading tone of D, rings over 73.3
-  ping(S(BRIDGE, 3), 85, 0.022);
+}
+
+// -- the bridge's reverse swell: 73.3 -> 74.1, then it hands over to the riser -------------
+// Filtered noise whose cutoff climbs, plus a backwards Dm pad (D4 F4 A4 sines), both on a curve that grows
+// exponentially to 74.1 and then releases over two beats while the riser comes up.
+{
+  const rng = mulberry32(707);
+  const lp = lowpass(1.2);
+  const a = S(BRIDGE, 3);
+  const top = S(BRIDGE + 1);
+  const end = S(BRIDGE + 1, 3);
+  const notes = [62, 65, 69].map(midi);
+  for (let n = a; n < end; n++) {
+    const rise = n < top ? (n - a) / (top - a) : 1;
+    const env =
+      n < top
+        ? Math.pow(rise, 1.7)
+        : Math.pow(1 - (n - top) / (end - top), 2);
+    const fc = 300 + 2600 * rise * rise;
+    const t = n / SR;
+    let pad = 0;
+    for (const f of notes) pad += Math.sin(2 * Math.PI * f * t);
+    const noise = lp(rng() * 2 - 1, fc);
+    const s = (noise * 0.05 + pad * 0.012) * env;
+    L[n] += s;
+    R[n] += s;
+    DL[n] += s * 0.3;
+    DR[n] += s * 0.3;
+  }
 }
 
 // -- riser: bars 74-81, noise sweep plus a climbing saw and an upward sine -----------------
