@@ -4,6 +4,7 @@ import { MV, PartPreview, partPreviewFrames } from "./mv/MV";
 import { PARTS } from "./mv/edit-list";
 import { FPS, TOTAL_FRAMES } from "./mv/timing";
 import { ABU_DHABI_2021_FRAMES, AbuDhabi2021 } from "./prototype/AbuDhabi2021";
+import { CHAMPION_CLIP_FRAMES, ChampionMoments } from "./prototype/ChampionMoments";
 import { StyleA } from "./prototype/styles/StyleA";
 import { StyleB } from "./prototype/styles/StyleB";
 import { StyleC } from "./prototype/styles/StyleC";
@@ -24,6 +25,9 @@ export const RemotionRoot: React.FC = () => {
       {/* PROTOTYPE — race-moment look and style studies for review; remove once the look is settled. */}
       <Folder name="Prototype">
         <Composition id="Proto-AbuDhabi2021" component={AbuDhabi2021} durationInFrames={ABU_DHABI_2021_FRAMES} fps={60} width={1920} height={1080} />
+        {(["1989", "1990", "2008"] as const).map((m) => (
+          <Composition key={m} id={`Proto-Champion-${m}`} component={ChampionMoments} defaultProps={{ moment: m }} durationInFrames={CHAMPION_CLIP_FRAMES} fps={60} width={1920} height={1080} />
+        ))}
         <Still id="Style-A-InkWatercolor" component={StyleA} width={1920} height={1080} />
         <Still id="Style-B-Manga" component={StyleB} width={1920} height={1080} />
         <Still id="Style-C-Illustration" component={StyleC} width={1920} height={1080} />
