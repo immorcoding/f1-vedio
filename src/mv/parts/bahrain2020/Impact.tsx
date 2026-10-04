@@ -17,7 +17,8 @@ import { ToneDefs } from "../../../kit/tone";
 import { BentGuardrail, bump, type Deflection } from "./bent-rail";
 import { BREAK_PIVOT, carPointOnScreen } from "./car-points";
 import { ramp, shotById, type PictureProps } from "./common";
-import { NightBackdrop, RAILS } from "./night";
+import { FloodlitNight } from "./floodlit-night";
+import { RAILS } from "./night";
 import { CAR_HALF_WIDTH } from "./crash-geometry.ts";
 import { tornCurl } from "./wreck-geometry.ts";
 import { IMPACT_ANGLE, IMPACT_YAW } from "./crash-geometry.ts";
@@ -39,7 +40,9 @@ const BAR_A = {
   x: NOSE_X + dir.x * NEAR,
   z: CAR_Z + BAR_BEHIND + dir.z * NEAR,
 }; // near end
-const BAR_B = { x: NOSE_X - dir.x * 30, z: CAR_Z + BAR_BEHIND - dir.z * 30 }; // far end
+// far end: 140 m on, so the barrier runs on unbroken past the frame's right edge (user review 2026-10-04)
+const FAR = 140;
+const BAR_B = { x: NOSE_X - dir.x * FAR, z: CAR_Z + BAR_BEHIND - dir.z * FAR };
 const RUN = Math.hypot(BAR_B.x - BAR_A.x, BAR_B.z - BAR_A.z);
 const S_CONTACT = NEAR; // metres from the near end to the contact
 const U_CONTACT = S_CONTACT / RUN;
@@ -204,25 +207,27 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
       op: Math.min(1, 1.6 * (1 - age / life)),
     };
   }).filter((s) => s !== null);
-  // carbon shards and splinters from the nose and the break, tumbling
-  const shards = Array.from({ length: 18 }, (_, i) => i).flatMap((i) => {
+  // a spray of fine carbon bits off the nose and the break (the finer-particle language of the Abu Dhabi lock-up
+  // smoke): many small dark flecks, flung out and falling, each seen for a moment and gone (user review 2026-10-04:
+  // the big shards read as stickers)
+  const bits = Array.from({ length: 44 }, (_, i) => i).flatMap((i) => {
     const fromBreak = i % 3 === 0;
-    const born = fromBreak ? BREAK_AT + (i % 5) : i % 4;
+    const born = fromBreak ? BREAK_AT + (i % 9) : (i * 5) % 14;
+    const life = 12 + ((i * 7) % 11);
     const age = ts - born;
-    if (age < 0) return [];
+    if (age < 0 || age > life) return [];
     const o = fromBreak ? breakAt : hit;
-    const ang = -Math.PI * (0.1 + ((i * 0.41) % 1) * 0.8);
-    const v = 6 + ((i * 5) % 7) * 1.4;
-    const s = (0.08 + ((i * 3) % 5) * 0.035) * ppm;
-    const y = o.y + Math.sin(ang) * v * age + 0.2 * age * age;
-    if (y > 1180) return [];
+    const ang = -Math.PI * (0.05 + ((i * 0.618) % 1) * 0.9);
+    const v = 9 + ((i * 5) % 9) * 1.6;
+    const s = 2.2 + ((i * 3) % 5) * 1.1;
     return [
       {
         x: o.x + Math.cos(ang) * v * age,
-        y,
+        y: o.y + Math.sin(ang) * v * age + 0.35 * age * age,
         s,
-        rot: i * 47 + age * (i % 2 ? 9 : -7),
-        light: i % 4 === 1,
+        rot: i * 47 + age * (i % 2 ? 14 : -11),
+        grey: i % 4 === 1,
+        op: Math.min(1, (1 - age / life) * 2),
       },
     ];
   });
@@ -304,7 +309,7 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
             />
           </>
         ) : (
-          <NightBackdrop cam={CAM} tonePrefix="b33" />
+          <FloodlitNight cam={CAM} tonePrefix="b33" id="b33-night" />
         )}
         {lineArt(
           <>
@@ -373,15 +378,13 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
           palette={fire}
           backing={frozen}
         />
-        {shards.map((s, i) => (
+        {bits.map((s, i) => (
           <path
             key={`d${i}`}
             d={`M ${-s.s} ${-s.s * 0.3} L ${s.s * 0.2} ${-s.s * 0.6} L ${s.s} ${s.s * 0.1} L ${-s.s * 0.1} ${s.s * 0.5} Z`}
             transform={`translate(${s.x} ${s.y}) rotate(${s.rot})`}
-            fill={s.light ? PAPER : "#151515"}
-            stroke={s.light ? INK : PAPER}
-            strokeWidth={2}
-            strokeLinejoin="miter"
+            fill={s.grey ? "#6a6560" : "#1c1a19"}
+            opacity={s.op}
           />
         ))}
         {scrape.map((s, i) => (

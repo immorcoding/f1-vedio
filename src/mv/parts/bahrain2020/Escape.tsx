@@ -35,6 +35,37 @@ import { useGroExit } from "./GroExit";
 import { Haze } from "./haze";
 import { PowderJet } from "./powder";
 import { WRECK_CAM, WreckWorld, heartbeat, heatZone, zoomCam } from "./Wreck";
+import { CELL_FROM, CELL_Z, REAR_SPAN, REAR_Z } from "./wreck-geometry.ts";
+
+// The ground the people cover over the whole shot (GRO from the cockpit out onto the track, the doctor beside him):
+// sampled once, in world metres, so the haze's falloff reaches all of it.
+const PATH_X = (() => {
+  const shot = shotById("3.6");
+  const end = cueFrame("bahrain2020.halo") - shot.from;
+  let min = Infinity;
+  for (let t = 0; t <= end; t += 6) {
+    const s = stage36(t);
+    min = Math.min(min, s.groAt.x, s.docAt.x);
+  }
+  return min;
+})();
+
+// The heat haze round the fire (haze.tsx `falloff`): full over the fire and the cell, fading smoothly with distance
+// over GRO's whole way out, the doctor and the marshal, so everyone near the fire shares one focus (user review
+// 2026-10-04: GRO stepping out of the haze onto a crisp track looked abrupt).
+const escapeFalloff = (cam: Camera) => {
+  const fire = cam.project({ x: CELL_FROM + 2.2, y: 1.6, z: CELL_Z + 0.5 });
+  const zone = heatZone(cam);
+  const left = cam.project({ x: PATH_X - 1.2, y: 0, z: WALK_Z }).x;
+  const right = Math.max(
+    zone.x + zone.w,
+    cam.project({ x: REAR_SPAN.to + 1.0, y: 0, z: REAR_Z }).x,
+  );
+  // the far end of his walk sits on the slope (~0.4), the fire's top in the full haze
+  const rx = Math.max(fire.x - left, right - fire.x) / 0.82;
+  const ry = Math.max(fire.y - zone.y, zone.y + zone.h - fire.y) / 0.62;
+  return { cx: fire.x, cy: fire.y, rx, ry };
+};
 
 export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   const shot = shotById("3.6");
@@ -128,7 +159,13 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
       <defs>
         <ToneDefs prefix="b36" />
       </defs>
-      <Haze frame={f} zone={heatZone(cam)} calm={calm}>
+      <Haze
+        frame={f}
+        zone={heatZone(cam)}
+        falloff={escapeFalloff(cam)}
+        calm={calm}
+        calmHaze={{ disp: 8, blur: 1.0 }}
+      >
         <WreckWorld
           cam={cam}
           f={f}

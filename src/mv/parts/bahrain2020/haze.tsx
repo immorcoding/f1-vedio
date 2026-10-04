@@ -20,18 +20,42 @@ const NOISE = "0.007 0.026"; // wide, flat ripples, like air shimmering over a f
 const WARM = "1.04 0 0 0 0.03  0 0.98 0 0 0.008  0 0 0.86 0 0  0 0 0 1 0";
 
 export type Ellipse = { cx: number; cy: number; rx: number; ry: number };
+type Strength = { disp: number; blur: number };
+// How the haze fades out from the fire with `falloff` (fraction of the ellipse's radius → strength): full over the
+// fire, then a long smooth slope with no edge anywhere (user review 2026-10-04: one focus round the fire).
+const FALLOFF_STOPS: readonly [number, number][] = [
+  [0, 1],
+  [0.3, 1],
+  [0.45, 0.93],
+  [0.6, 0.75],
+  [0.75, 0.5],
+  [0.88, 0.24],
+  [1, 0],
+];
 const FRAME: ScreenRect = { x: 0, y: 0, w: 1920, h: 1080 };
 
 export const Haze: React.FC<{
   frame: number;
   // the hot zone, screen px (its edges are feathered)
   zone: ScreenRect;
+  // instead of the zone: an ellipse centred on the fire, the haze fading smoothly toward its rim (no edge)
+  falloff?: Ellipse;
+  // the ripple for the people in `calm` (default: the light CALM ripple)
+  calmHaze?: Strength;
   // people inside the zone: a lighter ripple here
   calm?: readonly Ellipse[];
   // the frame or panel the picture is in: filters and masks are cut to it
   clip?: ScreenRect;
   children: React.ReactNode;
-}> = ({ frame, zone, calm = [], clip = FRAME, children }) => {
+}> = ({
+  frame,
+  zone,
+  falloff,
+  calmHaze = CALM,
+  calm = [],
+  clip = FRAME,
+  children,
+}) => {
   const id = `hz${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const scroll = -(frame / FPS) * RISE_PX_S;
   const M = 40;
@@ -41,7 +65,7 @@ export const Haze: React.FC<{
     width: clip.w + 2 * M,
     height: clip.h + 2 * M,
   };
-  const filter = (name: string, k: { disp: number; blur: number }) => (
+  const filter = (name: string, k: Strength) => (
     <filter
       id={`${id}-${name}`}
       x={region.x}
@@ -99,7 +123,14 @@ export const Haze: React.FC<{
     <g>
       <defs>
         {filter("full", FULL)}
-        {filter("calm", CALM)}
+        {filter("calm", calmHaze)}
+        {falloff ? (
+          <radialGradient id={`${id}-fall`}>
+            {FALLOFF_STOPS.map(([o, a]) => (
+              <stop key={o} offset={o} stopColor="#fff" stopOpacity={a} />
+            ))}
+          </radialGradient>
+        ) : null}
         <filter
           id={`${id}-feather`}
           x={region.x - FEATHER * 3}
@@ -110,12 +141,16 @@ export const Haze: React.FC<{
         >
           <feGaussianBlur stdDeviation={FEATHER / 2} />
         </filter>
-        {/* the zone (feathered) */}
+        {/* the zone (feathered), or the falloff round the fire */}
         {mask(
           "full",
-          <g fill="#fff" filter={`url(#${id}-feather)`}>
-            {zoneRect}
-          </g>,
+          falloff ? (
+            <ellipse {...falloff} fill={`url(#${id}-fall)`} />
+          ) : (
+            <g fill="#fff" filter={`url(#${id}-feather)`}>
+              {zoneRect}
+            </g>
+          ),
         )}
         {/* the calm ellipses (feathered), used inside the zone only: the two masks are nested, so their product */}
         {calms.length
