@@ -28,7 +28,8 @@ export const EDIT: PartEdit = {
       from: at(61),
       to: at(62),
       view: "closeup",
-      content: "车头撞进三层护栏，画面定格成白底黑线的撞击星；音乐骤停",
+      content:
+        "第 61 小节第一拍撞上三层护栏、音乐骤停；慢动作：火花四溅，上下两层护栏被压弯、中间一层被撕开，座舱穿过去，车在发动机舱壁处断成两截（动力单元和车尾留在赛道一侧），油箱爆出火球，碎片飞散；最后定格成白底黑线的撞击星，火球保留彩色",
       text: ["67G"],
       cues: [hitCue("bahrain2020.impact")],
     },
@@ -38,14 +39,16 @@ export const EDIT: PartEdit = {
       to: at(66),
       view: "closeup",
       content:
-        "断成两截的 Haas：前半截（座舱）卡在护栏里，后半截落在赛道一侧，火焰升起；只剩心跳",
+        "断成两截的 Haas：前半截（座舱）卡在被撕开、压弯的护栏里，后半截落在赛道一侧；分层火焰（外焰/中焰/焰心各自闪动）升起，热浪扭曲夜空，火星上飘，墨线烟丝；只剩心跳",
     },
     {
       id: "3.5",
       from: at(66),
       to: at(70),
       view: "panel",
-      content: "火中 halo 的特写，每小节第一拍加一格、推近一层",
+      content:
+        "“28 秒”四格时间线，每小节第一拍加一格：0 秒 halo 顶开护栏、座舱卡在护栏里；11 秒医疗车停下、医生冲向火场；工作人员用干粉灭火器对着座舱喷（时间未核实，不标秒数）；28 秒戴手套的手从火里伸出抓住护栏",
+      text: ["0 秒", "11 秒", "28 秒"],
       cues: [
         { id: "bahrain2020.panel1", at: at(66) },
         { id: "bahrain2020.panel2", at: at(67) },
@@ -58,10 +61,12 @@ export const EDIT: PartEdit = {
       from: at(70),
       to: at(73),
       view: "closeup",
-      content: "GRO 从火里走出来；第 72 小节最后一拍切黑",
+      content:
+        "GRO 从火里走出来；第 72 小节第一拍切到烧黑但完好的 halo 特写（彩蛋），最后一拍切黑",
       text: ["28 秒"],
       cues: [
         { id: "bahrain2020.time", at: at(71) },
+        { id: "bahrain2020.halo", at: at(72) },
         { id: "bahrain2020.black", at: at(72, 4) },
       ],
     },
@@ -72,4 +77,5 @@ export const EDIT: PartEdit = {
 export const FACTS = {
   impactG: 67, // "冲击约 67 G"
   escapeSeconds: 28, // "约 28 秒后 Grosjean 自己从火中脱身"
+  medicalCarSeconds: 11, // "医疗车 11 秒内到场"
 } as const;
