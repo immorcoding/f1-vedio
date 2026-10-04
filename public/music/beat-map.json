@@ -25,7 +25,7 @@
     {"id":"intro.light5","bar":8,"beat":3,"seconds":14.0625,"sample":675000,"frame":844},
     {"id":"intro.lightsOut","bar":9,"beat":1,"seconds":15,"sample":720000,"frame":900},
     {"id":"suzuka1989.crash","bar":19,"beat":1,"seconds":33.75,"sample":1620000,"frame":2025},
-    {"id":"suzuka1990.crash","bar":27,"beat":1,"seconds":48.75,"sample":2340000,"frame":2925},
+    {"id":"suzuka1990.crash","bar":28,"beat":1,"seconds":50.625,"sample":2430000,"frame":3038},
     {"id":"brazil2008.pass","bar":47,"beat":1,"seconds":86.25,"sample":4140000,"frame":5175},
     {"id":"brazil2008.points","bar":53,"beat":1,"seconds":97.5,"sample":4680000,"frame":5850},
     {"id":"bahrain2020.impact","bar":61,"beat":1,"seconds":112.5,"sample":5400000,"frame":6750},

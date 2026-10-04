@@ -1,4 +1,4 @@
-// Edit list for 铃鹿 1989 (bars 9–20), treatment shots 1.1–1.4. Facts on screen: docs/production/facts.md.
+// Edit list for 铃鹿 1989 (bars 9–21), treatment shots 1.1–1.4. Facts on screen: docs/production/facts.md.
 import { hitCue, type PartEdit } from "../../shot.ts";
 import { at } from "../../timing.ts";
 
@@ -35,16 +35,16 @@ export const EDIT: PartEdit = {
     {
       id: "1.4",
       from: at(19),
-      to: at(21),
+      to: at(22),
       view: "panel",
       content:
-        "两车相撞定格成撞击星，锁在一起滑停在减速弯入口；第 20 小节结果页：撞停的两车压暗成背景，1.2 的两格头盔落回原位，SEN 盖红章“取消成绩”、PRO 盖红章“1989 冠军”（彩蛋）",
+        "两车相撞定格成撞击星，锁在一起滑停在减速弯入口；第 20 小节结果页：撞停的两车压暗成背景，1.2 的两格头盔落回原位，20.3 SEN 盖红章“取消成绩”，21.1 PRO 盖红章“1989 冠军”（彩蛋），第 21 小节停留缓推",
       text: ["咔！", "取消成绩", "1989 冠军"],
       cues: [
         hitCue("suzuka1989.crash"),
         { id: "suzuka1989.result", at: at(20, 1) },
-        { id: "suzuka1989.dsq", at: at(20, 2) },
-        { id: "suzuka1989.champion", at: at(20, 3) },
+        { id: "suzuka1989.dsq", at: at(20, 3) },
+        { id: "suzuka1989.champion", at: at(21, 1) },
       ],
     },
   ],

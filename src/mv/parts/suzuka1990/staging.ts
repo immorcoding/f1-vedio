@@ -48,7 +48,7 @@ const smooth01 = (x: number) => {
 // ── 1.6: the start, from above ──────────────────────────────────────────────────────────────────────────────
 
 export const SHOT_16 = shot("1.6");
-// lights out: 23.3
+// lights out: 24.3
 export const START_FRAME = cue("suzuka1990.start");
 // Lane centres either side of the centre line (track 13 m wide) and the slot spacing.
 export const LANE = 3.25;
@@ -107,7 +107,7 @@ const footprint = (
 
 // ── 1.7: the crash, side-on, cars placed in world metres (x along the track, z away from the camera) ───────────
 // The camera stands on the inside of Turn 1, so the cars run right to left on screen (facing left) and SEN, on the
-// inside, is the near car. On 27.1 SEN's left front tyre is against PRO's right rear tyre: PRO a car width further
+// inside, is the near car. On 28.1 SEN's left front tyre is against PRO's right rear tyre: PRO a car width further
 // away (tyres touching) and SEN's front axle level with PRO's rear axle. Both slide on together off the outside of
 // the corner into the gravel — away from the camera — and stop; PRO's Ferrari drifts a little further out, so they
 // part after the hit.
@@ -157,7 +157,7 @@ export const SAMPLERS: TopViewSampler[] = [
     part: "suzuka1990",
     shot: "1.7",
     ...SHOT_17,
-    // the hit on 27.1: tyre to tyre, touching, not passing through, until the cars part
+    // the hit on 28.1: tyre to tyre, touching, not passing through, until the cars part
     contact: [{ from: HIT, to: HIT + 40, ids: ["SEN", "PRO"], depth: 0.05 }],
     poses: (f) => {
       const c = cars17(f);

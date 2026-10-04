@@ -1,12 +1,13 @@
-// Shot 1.4 (bars 19–20): the crash, side-on from SEN's side of the track (1.3 seen from the inside of the chicane).
+// Shot 1.4 (bars 19–21): the crash, side-on from SEN's side of the track (1.3 seen from the inside of the chicane).
 // On 19.1 the picture freezes on the touch: the impact star sits on the contact point — PRO's right front wheel coming
 // down on SEN's front wing — with "咔！", focus lines and the first debris hanging in the air. Then it runs on: the two
 // McLarens, locked together exactly as they met at the end of 1.3 (staging.ts), slide on with their front wheels
 // locked, laying black marks and tyre smoke, debris skittering down the road, and stop at the mouth of the chicane's
 // escape road — PRO turned across SEN's nose, SEN's wing bent up under PRO's wheel. On 20.1 the result lands on the
 // page: the stopped pair stays as the background, dimmed, and the two helmet cards of 1.2 drop back in at the same
-// places — PRO left, SEN right — and are stamped in red: SEN "取消成绩" (disqualified), PRO "1989 冠军" (the title is
-// his). The stamps replace the push-start easter egg (STO-7, docs/production/facts.md).
+// places — PRO left, SEN right — and are stamped in red, each on its own beat: SEN "取消成绩" (disqualified) on 20.3,
+// PRO "1989 冠军" (the title is his) on 21.1. Bar 21 holds the result while the page keeps pushing in, to the cut on
+// 22.1. The stamps replace the push-start easter egg (STO-7, docs/production/facts.md).
 import { Easing, random } from "remotion";
 import { carPoint, MangaCar, MP4_5_PRO, MP4_5_SEN } from "../../../cars";
 import type { CarSpec, CarState } from "../../../cars";
@@ -238,7 +239,7 @@ const BentWing: React.FC<{
   );
 };
 
-// The result on 20.1 (facts.md: SEN disqualified for missing the chicane; PRO the 1989 champion).
+// The result from 20.1 (facts.md: SEN disqualified for missing the chicane; PRO the 1989 champion).
 export const RESULT_STAMPS = { pro: "1989 冠军", sen: "取消成绩" } as const;
 const DSQ = cueFrame("suzuka1989.dsq");
 const CHAMPION = cueFrame("suzuka1989.champion");
@@ -266,9 +267,11 @@ export const Crash: React.FC<PictureProps> = ({ f }) => {
   const starFade = 1 - ramp(d, FREEZE_14 + 6, FREEZE_14 + 30);
   const sfx = ramp(d, 0, 6, Easing.out(Easing.back(2.5)));
   // from 20.1 the result: the stopped pair dims into the background and creeps in, the helmet cards of 1.2 drop back
-  // in, SEN's is stamped on 20.2 and PRO's on 20.3
+  // in, SEN's is stamped on 20.3 and PRO's on 21.1; the creep and the cards' push-in run on to the cut, so the held
+  // result never stands still
   const page = ramp(f, RESULT, RESULT + 16, Easing.out(Easing.cubic));
-  const creep = 1 + 0.05 * ramp(f, RESULT, shot.to, Easing.inOut(Easing.quad));
+  const creep = 1 + 0.07 * ramp(f, RESULT, shot.to, Easing.in(Easing.sin));
+  const cardsPush = 1 + 0.04 * ramp(f, DSQ, shot.to, Easing.in(Easing.sin));
   const dropPro = ramp(f, RESULT, RESULT + 14, Easing.out(Easing.back(1.4)));
   const dropSen = ramp(
     f,
@@ -276,11 +279,11 @@ export const Crash: React.FC<PictureProps> = ({ f }) => {
     RESULT + 24,
     Easing.out(Easing.back(1.4)),
   );
-  const stampSen = ramp(f, DSQ, DSQ + 10, Easing.linear);
-  const stampPro = ramp(f, CHAMPION, CHAMPION + 10, Easing.linear);
-  // each card jolts when its stamp lands
+  const stampSen = ramp(f, DSQ - 10, DSQ, Easing.linear);
+  const stampPro = ramp(f, CHAMPION - 10, CHAMPION, Easing.linear);
+  // each stamp slams down over the 10 frames before its cue and lands on the beat; the card jolts as it lands
   const jolt = (from: number) => {
-    const k = f - from - 10;
+    const k = f - from;
     return k < 0 ? 0 : 7 * Math.exp(-k / 5) * Math.sin(k * 1.9);
   };
   const flicker = Math.floor((f - RESULT) / 5);
@@ -444,7 +447,9 @@ export const Crash: React.FC<PictureProps> = ({ f }) => {
           </g>
         </g>
         {page > 0 ? (
-          <g>
+          <g
+            transform={`translate(960 300) scale(${cardsPush}) translate(-960 -300)`}
+          >
             {/* the crash dims behind the result, as the 1990 ending dims behind its helmets */}
             <rect
               width={1920}
