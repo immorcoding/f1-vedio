@@ -1,9 +1,9 @@
-// Shot 3.6 (bars 70–72): GRO climbs out over the rails beside the burning cell; the FIA doctor (Ian Roberts, from the
-// medical car) reaches over the rail and takes his arm, then walks him away, a hand at his back, while a marshal turns
-// a dry-powder extinguisher on the cockpit (facts.md, easter egg). 27 秒 comes up on bar 71; the last beat of bar 72
+// Shot 3.6 (bars 70–72): GRO hauls himself out of the burning cell by the halo, steps out over the cockpit side through
+// the torn top rail and down over the bottom rail; the FIA doctor (Ian Roberts, from the medical car) reaches over the
+// rail and takes his arm, then walks him away, a hand at his back, while a marshal turns a dry-powder extinguisher on
+// the cockpit (facts.md, easter egg). 27 秒 comes up on bar 71; the last beat of bar 72
 // is black. People from the shared people module (src/kit/figure.tsx, ART-16), no faces; staging in
 // escape-staging.ts.
-import { GRO_2020 } from "../../../cars";
 import type { Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import { FIRE_PALETTES } from "../../../kit/fire";
@@ -14,7 +14,6 @@ import {
   DOCTOR,
   Figure,
   MARSHAL,
-  driverOutfit,
   nozzleOf,
   type BodyPart,
   type Held,
@@ -31,21 +30,40 @@ import {
   marshalPose,
   stage36,
 } from "./escape-staging.ts";
+import { useGroExit } from "./GroExit";
 import { PowderBillow } from "./powder";
 import { WRECK_CAM, WreckWorld, heartbeat, zoomCam } from "./Wreck";
-
-// Race suit of 2020 (Haas: black with a grey side band), GRO's helmet; the FIA doctor and the marshal from the cast.
-const GRO_KIT: Outfit = driverOutfit(GRO_2020.helmet, "#1f1f23", {
-  band: "#8d9099",
-  gloves: "#2c2c31",
-  boots: "#141416",
-});
 
 export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   const shot = shotById("3.6");
   const t = f - shot.from;
   const black = cueFrame("bahrain2020.black");
   const timeCue = cueFrame("bahrain2020.time");
+  const fire = FIRE_PALETTES[palette];
+  const rim = fire.glow ? "#ffb347" : PAPER;
+  // a held camera (he walks across the frame, not on the spot), creeping in a little: the cockpit he climbs out of
+  // right of centre, the way he walks out to the left
+  const cam: Camera = zoomCam(
+    WRECK_CAM,
+    { x: CLIMB_X - 0.25, y: 1.0, z: WALK_Z },
+    1.18 + 0.05 * ramp(t, 0, black - shot.from),
+    { x: 980, y: 600 },
+  );
+  const { groPose, groAt, groScaleZ, layers, holds, docPose, docAt } =
+    stage36(t);
+  const g = (p: { x: number; z: number }) =>
+    cam.project({ x: p.x, y: 0, z: p.z });
+  const ppm = (p: { z: number }) => cam.pxPerMetre(p.z);
+  // GRO: in the cockpit, out over its side, in front of the rails (GroExit.tsx)
+  const gro = useGroExit({
+    cam,
+    at: g(groAt),
+    ppm: cam.pxPerMetre(groScaleZ),
+    pose: groPose,
+    layers,
+    holds,
+    rim,
+  });
   if (f >= black) {
     return (
       <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
@@ -53,19 +71,6 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
       </svg>
     );
   }
-  const fire = FIRE_PALETTES[palette];
-  const rim = fire.glow ? "#ffb347" : PAPER;
-  // a held camera (he walks across the frame, not on the spot), creeping in a little
-  const cam: Camera = zoomCam(
-    WRECK_CAM,
-    { x: CLIMB_X - 0.1, y: 1.0, z: WALK_Z },
-    1.18 + 0.05 * ramp(t, 0, black - shot.from),
-    { x: 980, y: 600 },
-  );
-  const { groBehind, groPose, groAt, docPose, docAt } = stage36(t);
-  const g = (p: { x: number; z: number }) =>
-    cam.project({ x: p.x, y: 0, z: p.z });
-  const ppm = (p: { z: number }) => cam.pxPerMetre(p.z);
   // the marshal (on threes, like everyone): the jet leaves his nozzle for the cockpit
   const mPose = marshalPose(Math.floor(t / 3) * 3);
   const mppm = ppm(MARSHAL_AT);
@@ -104,20 +109,15 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
       held={held}
     />
   );
-  // GRO in two passes while he is on the rails: the parts still behind the guardrail, and the rest in front of it
-  const groFront = (["farLeg", "body", "nearLeg", "nearArm"] as BodyPart[]).filter(
-    (p) => !groBehind.includes(p),
-  );
+  const marshal = figure("marshal", MARSHAL_AT, mPose, MARSHAL, undefined, {
+    kind: "extinguisher",
+    aim: MARSHAL_AIM,
+  });
+  // GRO and the doctor, deepest first; both are in front of the jet where they stand (it crosses behind them into
+  // the cell), and neither overlaps the marshal
   const people = [
-    { z: groAt.z, node: groFront.length ? figure("gro", groAt, groPose, GRO_KIT, groFront) : null },
+    { z: groAt.z, node: gro.front },
     { z: docAt.z, node: figure("doc", docAt, docPose, DOCTOR) },
-    {
-      z: MARSHAL_AT.z,
-      node: figure("marshal", MARSHAL_AT, mPose, MARSHAL, undefined, {
-        kind: "extinguisher",
-        aim: MARSHAL_AIM,
-      }),
-    },
   ].sort((a, b) => b.z - a.z);
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
@@ -130,13 +130,12 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
         palette={palette}
         intensity={1}
         tonePrefix="b36"
-        behindRails={
-          groBehind.length ? figure("gro-behind", groAt, groPose, GRO_KIT, groBehind) : null
-        }
+        cockpit={gro.cockpit}
+        behindRails={gro.behindRails}
         driver={false}
       />
-      {/* deepest first: the doctor at the rail / a step deeper than GRO, GRO, the marshal at the cockpit */}
-      {people.map((p) => p.node)}
+      {/* the marshal, his powder jet into the back of the cockpit, then GRO and the doctor in front of it */}
+      {marshal}
       <path
         d={jet}
         fill={PAPER}
@@ -146,6 +145,7 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
         opacity={0.9}
       />
       <PowderBillow x={aim.x} y={aim.y} ppm={mppm} frame={f} />
+      {people.map((p) => p.node)}
       <rect width={1920} height={1080} fill={INK} opacity={0.12 * hb} />
       {text > 0 ? (
         <g

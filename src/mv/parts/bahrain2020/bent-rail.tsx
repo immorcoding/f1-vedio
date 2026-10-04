@@ -1,10 +1,11 @@
 // The triple guardrail as it gives way (facts.md / FIA summary: the middle rail failed, the upper and lower rails
 // deformed heavily, and the survival cell pierced the barrier). Same rails as night.tsx's Guardrail, but every rail is a
 // strip of short segments, each pushed by a deflection field (metres along the run → world offset), so the rails can bend
-// round the car, the top rail can be prised up over the halo and the bottom one pressed down. Torn stretches curl back
-// in jagged lips; posts in the bent zone are knocked flat.
+// round the car and the bottom one can be pressed down; where a rail is torn (`gaps`) its ends finish in jagged steel
+// with a strip hanging off (the curl itself is in the deflection field); posts in the bent zone are knocked flat.
 import type { Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
+import { random } from "remotion";
 import { tone } from "../../../kit/tone";
 import { POST_TOP, RAILS } from "./night";
 
@@ -25,6 +26,8 @@ export const BentGuardrail: React.FC<{
   deflect?: Deflection;
   // per rail, the stretches (fractions of a→b) that are torn away
   gaps?: readonly (readonly [number, number])[][];
+  // a strip of steel hanging off the lower corner of each torn end of the middle and top rails
+  hanging?: boolean;
   // draw only this part of the run (fractions), to layer the near and far stretches round a car
   from?: number;
   to?: number;
@@ -35,6 +38,7 @@ export const BentGuardrail: React.FC<{
   b,
   deflect = NONE,
   gaps = [[], [], []],
+  hanging = true,
   from = 0,
   to = 1,
   tonePrefix,
@@ -140,34 +144,60 @@ export const BentGuardrail: React.FC<{
                   />
                 </g>
               ))}
-            {/* torn ends: the rail peels back toward the track and up in a jagged lip */}
+            {/* torn ends: a jagged edge of ripped steel, its corrugation split into teeth, and a strip of it
+                hanging off the lower corner */}
             {lips.map((e) => {
               const o = deflect(e.u * len, r);
               const g = {
                 x: a.x + (b.x - a.x) * e.u + o.dx,
                 z: a.z + (b.z - a.z) * e.u + o.dz,
               };
-              const back = e.dir * 0.45;
-              const P = (dx: number, y: number, dz: number) =>
+              // a point `dx` m on along the run (into the gap: e.dir), at height y, `dz` toward the camera (−)
+              const P = (dx: number, y: number, dz = 0) =>
                 cam.project({
-                  x: g.x + ((b.x - a.x) / len) * dx,
+                  x: g.x + ((b.x - a.x) / len) * dx * e.dir,
                   y: y + o.dy,
-                  z: g.z + ((b.z - a.z) / len) * dx + dz,
+                  z: g.z + ((b.z - a.z) / len) * dx * e.dir + dz,
                 });
-              const p0 = P(0, y0, 0);
-              const p1 = P(0, y1, 0);
-              const q = P(back, y1 + 0.2, -0.35);
-              const q1 = P(back * 0.6, (y0 + y1) / 2 + 0.05, -0.2);
-              const q2 = P(back * 0.8, y0 + 0.1, -0.3);
+              const R = (k: string) => random(`${tonePrefix}-tear-${r}-${e.u}-${k}`);
+              const n = 5;
+              const teeth = Array.from({ length: n + 1 }, (_, i) => {
+                const y = y1 - ((y1 - y0) * i) / n;
+                const out = i % 2 ? 0.07 + 0.12 * R(`t${i}`) : 0.03 * R(`t${i}`);
+                return P(out, y, -0.04 * (i % 2));
+              });
+              const cap = `M ${f(P(-0.04, y1))} ${teeth.map((p) => `L ${f(p)}`).join(" ")} L ${f(P(-0.04, y0))} Z`;
+              // the hanging strip: a twisted ribbon from the lower corner, swinging a little
+              const hl = 0.2 + 0.25 * R("h");
+              const lean = (R("l") - 0.5) * 0.3;
+              const h0 = P(0.02, y0 + 0.04);
+              const h1 = P(0.08, y0 + 0.02);
+              const h2 = P(0.06 + lean + 0.06, y0 - hl, -0.05);
+              const h3 = P(0.03 + lean, y0 - hl * 0.9, -0.05);
               return (
-                <path
-                  key={`${e.u}`}
-                  d={`M ${f(p0)} L ${f(p1)} L ${f(q)} L ${q1.x + e.dir * 8} ${q1.y} L ${f(q2)} Z`}
-                  fill={PAPER}
-                  stroke={INK}
-                  strokeWidth={3}
-                  strokeLinejoin="miter"
-                />
+                <g key={`${e.u}`}>
+                  <path
+                    d={cap}
+                    fill={PAPER}
+                    stroke={INK}
+                    strokeWidth={3}
+                    strokeLinejoin="miter"
+                  />
+                  <path
+                    d={`M ${f(P(-0.04, mid))} L ${f(P(0.04, mid))}`}
+                    stroke={INK}
+                    strokeWidth={2}
+                  />
+                  {hanging && r > 0 ? (
+                    <path
+                      d={`M ${f(h0)} L ${f(h1)} L ${f(h2)} L ${f(h3)} Z`}
+                      fill={tone("mid", tonePrefix)}
+                      stroke={INK}
+                      strokeWidth={2.5}
+                      strokeLinejoin="miter"
+                    />
+                  ) : null}
+                </g>
               );
             })}
           </g>

@@ -2,7 +2,7 @@
 // src/mv/overlap.ts, src/mv/top-views.ts):
 // - 3.2, the top view: GRO and KVY touch (right rear on left front) on bar 60 beat 1 and must never overlap otherwise;
 // - 3.6, the trackside escape: GRO, the doctor and the marshal on the ground plane (x along the rails, z from the
-//   camera as map y), with the two wreck pieces. GRO climbing out over the cell is real contact.
+//   camera as map y), with the two wreck pieces. GRO climbing out of the cell's cockpit is real contact.
 // Pure TypeScript.
 import type { Footprint, TopViewSampler } from "../../overlap.ts";
 import { frameAt } from "../../timing.ts";
@@ -15,7 +15,7 @@ import {
   poseAtFrame,
   type CarPose,
 } from "./crash-geometry.ts";
-import { CLIMB_END, MARSHAL_AT, stage36 } from "./escape-staging.ts";
+import { CLIMB_END, MARSHAL_AT, WALK_Z, stage36 } from "./escape-staging.ts";
 import { EDIT } from "./shots.ts";
 import { CELL_SPAN, REAR_SPAN } from "./wreck-geometry.ts";
 
@@ -114,7 +114,8 @@ const SAMPLER_36: TopViewSampler = {
   poses: (f) => {
     const s = stage36(f - S36.from);
     return [
-      person("GRO", s.groAt),
+      // in the cockpit and on the cell's side he is deeper than his walking line, on the same line of sight
+      person("GRO", { x: (s.groAt.x * s.groDepth) / WALK_Z, z: s.groDepth }),
       person("doctor", s.docAt),
       person("marshal", MARSHAL_AT),
       piece("cell", CELL_SPAN),

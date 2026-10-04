@@ -23,26 +23,26 @@ import {
   BARRIER_Z,
   CELL_ANCHOR_X,
   CELL_FROM,
+  CELL_PIVOT,
   CELL_POSE,
   CELL_TO,
   CELL_Z,
+  COCKPIT_CLIP_PHOTO,
+  PPM,
+  WRECK_GAPS,
   HALO_WORLD,
   REAR_ANCHOR_X,
   RUN,
   WRECK_BEND,
   REAR_POSE,
   REAR_Z,
+  WRECK_CAM_SPEC,
 } from "./wreck-geometry.ts";
 
 export { HALO_WORLD };
 
 // Camera of shot 3.4: 1 m up at the track edge, long lens, looking square at the barrier 13 m away.
-export const WRECK_CAM = pinhole({
-  f: 2300,
-  horizon: 420,
-  cx: 960,
-  height: 1.0,
-});
+export const WRECK_CAM = pinhole(WRECK_CAM_SPEC);
 
 // A copy of a camera zoomed by `zoom` about a world point, which lands on `to` on screen.
 export const zoomCam = (
@@ -60,15 +60,59 @@ export const zoomCam = (
   });
 };
 
-// The barrier, its bend and the torn middle rail (wreck-geometry.ts). The middle rail is gone over this stretch
-// (fractions of the run); the top rail is bent up over the nose, ahead of the cockpit.
-export { RUN, WRECK_BEND, CELL_FROM };
-const along = (x: number) => (x - RUN.a.x) / (RUN.b.x - RUN.a.x);
-const GAPS: [number, number][][] = [
-  [],
-  [[along(CELL_FROM + 0.9), along(CELL_TO + 0.5)]],
-  [],
-];
+// The barrier as the impact left it (wreck-geometry.ts): the middle rail gone over the cell, the top rail torn open
+// over the cockpit, the bottom rail pressed down and back.
+export { RUN, WRECK_BEND, WRECK_GAPS, CELL_FROM };
+
+// The posed survival cell's own transform (MangaCar facing left, the split pose of the front piece): photo space of the
+// traced VF-20 → screen, for drawing over or clipping to parts of the cell.
+export const cellTransform = (cam: Camera) => {
+  const at = cam.anchor({ x: CELL_ANCHOR_X, z: CELL_Z });
+  const k = (VF20.frame.k * at.pxPerMetre) / 250;
+  return `translate(${at.x} ${at.y}) scale(${k} ${k}) translate(${-VF20.frame.x} ${-VF20.frame.ground}) translate(${-CELL_POSE.dx * PPM} 0) rotate(${CELL_POSE.rotate} ${CELL_PIVOT.x} ${CELL_PIVOT.y})`;
+};
+// A clip to everything above the cell's top edge round the cockpit: what shows of someone standing in it.
+export const CockpitClip: React.FC<{ id: string; cam: Camera }> = ({
+  id,
+  cam,
+}) => (
+  <clipPath id={id}>
+    <path d={COCKPIT_CLIP_PHOTO} transform={cellTransform(cam)} />
+  </clipPath>
+);
+// The halo's near side (pillar and near hoop bar), drawn again exactly as MangaCar draws it: over someone inside
+// the cockpit, who is behind it.
+export const NearHalo: React.FC<{ cam: Camera }> = ({ cam }) => {
+  const d = VF20.halo ?? "";
+  return (
+    <g transform={cellTransform(cam)}>
+      <path
+        d={d}
+        fill="none"
+        stroke={INK}
+        strokeWidth={16}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d={d}
+        fill="none"
+        stroke={VF20.paint.chassis}
+        strokeWidth={9}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d={d}
+        fill="none"
+        stroke={PAPER}
+        strokeWidth={3}
+        strokeLinecap="round"
+        transform="translate(0 -3)"
+      />
+    </g>
+  );
+};
 
 export const WreckWorld: React.FC<{
   cam: Camera;
@@ -77,7 +121,9 @@ export const WreckWorld: React.FC<{
   // 0–1: the fire growing after the impact
   intensity: number;
   tonePrefix: string;
-  // drawn behind the guardrail, just in front of the cell (someone climbing over the rails)
+  // someone in the cockpit (the caller clips them to it and redraws the halo over them)
+  cockpit?: React.ReactNode;
+  // someone out over the cell's side, behind the bottom rail but clear of it on screen
   behindRails?: React.ReactNode;
   // close-ups: no light pool, the fire throws no glow over the whole panel
   noGlow?: boolean;
@@ -87,8 +133,11 @@ export const WreckWorld: React.FC<{
   clip?: ScreenRect;
   // false once GRO is out: the cockpit is empty
   driver?: false;
-  // how the rails are bent (default: as they were left after the impact)
+  // how the rails are bent and where they are torn (default: as they were left after the impact)
   bend?: Deflection;
+  gaps?: [number, number][][];
+  // the torn ends trail hanging strips (not while the rail is still splitting)
+  hanging?: boolean;
   // the low fire along the rails, scaled (a close-up keeps it down so a hand on the rail still reads)
   frontFire?: number;
 }> = ({
@@ -97,12 +146,15 @@ export const WreckWorld: React.FC<{
   palette,
   intensity,
   tonePrefix,
+  cockpit,
   behindRails,
   noGlow = false,
   fireSeed = "",
   clip,
   driver,
   bend = WRECK_BEND,
+  gaps = WRECK_GAPS,
+  hanging = true,
   frontFire = 1,
 }) => {
   const p = noGlow
@@ -153,12 +205,12 @@ export const WreckWorld: React.FC<{
         at={cellAt}
         state={{ split: { front: CELL_POSE, show: "front" }, driver }}
       />
-      {behindRails}
       <BentGuardrail
         cam={cam}
         a={RUN.a}
         b={RUN.b}
-        gaps={GAPS}
+        gaps={gaps}
+        hanging={hanging}
         deflect={bend}
         tonePrefix={tonePrefix}
       />
@@ -174,6 +226,10 @@ export const WreckWorld: React.FC<{
           amount={intensity}
         />
       )}
+      {/* someone in the cockpit or out over its side, behind the low fire: drawn after the fire's light so he stays
+          solid (nothing of him overlaps the bottom rail until he crosses it) */}
+      {cockpit}
+      {behindRails}
       {/* the low fire along the rails */}
       <Fire
         x={front.x}
@@ -302,20 +358,9 @@ export const HaloScorch: React.FC<{ cam: Camera; f: number }> = ({
   f,
 }) => {
   const soot = `soot${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
-  const at = cam.anchor({ x: CELL_ANCHOR_X, z: CELL_Z });
-  const k = (VF20.frame.k * at.pxPerMetre) / 250;
-  const ppmPhoto = 250 / VF20.frame.k;
-  const nums = (VF20.breakLine ?? "")
-    .replace(/[ML]/g, " ")
-    .trim()
-    .split(/\s+/)
-    .map(Number);
-  const bx = nums.filter((_, i) => i % 2 === 0);
-  const by = nums.filter((_, i) => i % 2 === 1);
-  const pivot = {
-    x: (Math.min(...bx) + Math.max(...bx)) / 2,
-    y: (Math.min(...by) + Math.max(...by)) / 2,
-  };
+  const k =
+    (VF20.frame.k * cam.anchor({ x: CELL_ANCHOR_X, z: CELL_Z }).pxPerMetre) /
+    250;
   const halo = VF20.halo ?? "";
   const haloFar = VF20.haloFar ?? "";
   // the last embers on the tube: soft glowing points (fire style B, no outline) drifting slowly up and burning out
@@ -329,9 +374,7 @@ export const HaloScorch: React.FC<{ cam: Camera; f: number }> = ({
     };
   });
   return (
-    <g
-      transform={`translate(${at.x} ${at.y}) scale(${k} ${k}) translate(${-VF20.frame.x} ${-VF20.frame.ground}) translate(${-CELL_POSE.dx * ppmPhoto} 0) rotate(${CELL_POSE.rotate} ${pivot.x} ${pivot.y})`}
-    >
+    <g transform={cellTransform(cam)}>
       <defs>
         <TonePattern id={soot} r={2.4 / k} gap={6 / k} />
       </defs>
