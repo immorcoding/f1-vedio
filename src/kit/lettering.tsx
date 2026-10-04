@@ -4,6 +4,8 @@
 // - labels, captions, lines: Titillium Web 600/700 inside ink narration boxes (CAPTION_FONT, <Caption>)
 // - sound effects: Bangers, ink with a paper halo, letters jittered (SFX_FONT, <Sfx>)
 // - stamps: Saira Stencil Bold in a red rubber-stamp box (STAMP_FONT, <RubberStamp>; the red is ART-8's exception)
+// - scores and margins: the one points box, big numerals over driver codes with a gold under-stroke (<PointsBox> in
+//   ./points-box.tsx, #17)
 // Under every title card's title: a short chequered strip and the circuit's name (<CircuitTag>).
 import { useEffect, useState } from "react";
 import { continueRender, delayRender } from "remotion";

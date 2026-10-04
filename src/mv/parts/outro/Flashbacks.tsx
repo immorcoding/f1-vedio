@@ -7,6 +7,7 @@
 //   2020     the burnt but whole halo of 3.6 (HaloFinale), a glint on beat 3
 //   2021     VER's RB16B: on beat 3 its number turns over from 33 to 1 and the year from 2021 to 2022 (he raced as the
 //            champion's number 1 the next season: facts.md)
+// Over them, on beats 2 and 4, the margin between the two rivals flashes in the shared points box: 16 → 9 → 1 → 0 → 8.
 import { Easing, random } from "remotion";
 import {
   DriverHelmet,
@@ -19,15 +20,16 @@ import { INK, PAPER } from "../../../kit/colors";
 import { ImpactStar } from "../../../kit/impact";
 import { Caption, captionSize, useLettering } from "../../../kit/lettering";
 import { focusLines } from "../../../kit/lines";
+import { GOLD, PointsBox } from "../../../kit/points-box";
 import { ToneDefs, tone } from "../../../kit/tone";
 import { HaloFinale } from "../bahrain2020/HaloFinale";
 import { FIRE_PALETTE, cueFrame as bahrainCue } from "../bahrain2020/common";
-import { SCORE_H, SCORE_W, ScoreBox } from "../brazil2008/Champion";
 import { ChampionCard } from "../abuDhabi2021/ChampionCard";
 import { EDIT as ABU_EDIT } from "../abuDhabi2021/shots.ts";
 import { cueAt, secondsInShot, type ShotTime } from "../abuDhabi2021/shotClock";
 import { FPS, SECONDS_PER_BEAT, frameAt } from "../../timing";
 import { EDIT } from "./shots.ts";
+import { marginColumns, scoreColumns, type StandingId } from "../../points";
 
 // the panel on the page
 const PW = 1640;
@@ -87,16 +89,6 @@ const Clash: React.FC<PanelProps> = ({ t }) => {
 
 // 2008: the final points, rain falling over the page; the gold 98 lands on beat 3
 const Score: React.FC<PanelProps> = ({ t, keyT }) => {
-  const sinceGold = t - keyT;
-  const gold =
-    sinceGold < 0
-      ? null
-      : {
-          s:
-            1.5 -
-            0.5 * Easing.out(Easing.back(2))(Math.min(1, sinceGold / 0.12)),
-          o: Math.min(1, sinceGold * 20),
-        };
   const k = 2.15 * (1 + 0.025 * t);
   const rain = Array.from({ length: 70 }, (_, i) => {
     const x = ((random(`o62r${i}`) * (PW + 400) + t * 260) % (PW + 400)) - 200;
@@ -115,7 +107,7 @@ const Score: React.FC<PanelProps> = ({ t, keyT }) => {
         key={i}
         transform={`translate(${x} ${y})`}
         d={`M 0 ${-s} L ${s * 0.22} ${-s * 0.22} L ${s} 0 L ${s * 0.22} ${s * 0.22} L 0 ${s} L ${-s * 0.22} ${s * 0.22} L ${-s} 0 L ${-s * 0.22} ${-s * 0.22} Z`}
-        fill={i % 2 ? "#f2c230" : PAPER}
+        fill={i % 2 ? GOLD : PAPER}
         stroke={INK}
         strokeWidth={1.5}
       />
@@ -132,9 +124,9 @@ const Score: React.FC<PanelProps> = ({ t, keyT }) => {
       <path d={rain} stroke={INK} strokeWidth={2.5} opacity={0.45} />
       {stars}
       <g
-        transform={`translate(${PW / 2} ${PH / 2 - 10}) scale(${k}) translate(${-SCORE_W / 2} ${-SCORE_H / 2})`}
+        transform={`translate(${PW / 2} ${PH / 2 - 10}) scale(${k})`}
       >
-        <ScoreBox gold={gold} />
+        <PointsBox columns={scoreColumns("brazil2008")} goldSince={t - keyT} />
       </g>
     </g>
   );
@@ -295,6 +287,21 @@ const PANELS: {
   },
 ];
 
+// The margin sequence (#17, the points motif): the gap between the two title rivals flashes in the shared points box,
+// 16 → 9 → 1 → 0 → 8 (src/mv/points.ts, facts.md), on beats 2 and 4, between the panels' own accents (beat 1 and beat
+// 3). Each margin belongs to its panel and leaves with it; the halo panel (2020) has none.
+const MARGINS: { cue: string; panel: number; id: StandingId }[] = [
+  { cue: "outro.margin16", panel: 0, id: "suzuka1989" },
+  { cue: "outro.margin9", panel: 0, id: "suzuka1990" },
+  { cue: "outro.margin1", panel: 1, id: "brazil2008" },
+  { cue: "outro.margin0", panel: 3, id: "abuDhabiBefore" },
+  { cue: "outro.margin8", panel: 3, id: "abuDhabiFinal" },
+];
+// The box sits inside the panel's top-right corner, over the empty top of every panel (clear of the helmets, the
+// 98 · 97 box and the car: ART-14), and pushes in with the panel.
+const MARGIN_SIZE = 96;
+const MARGIN_AT = { x: PX + PW - 200, y: PY + 30 + (MARGIN_SIZE * 1.49) / 2 };
+
 const shot58 = ABU_EDIT.shots.find((s) => s.id === "5.8");
 
 /** The paper dissolve into panels 3 and 4, s (5 frames). */
@@ -309,7 +316,9 @@ const Page: React.FC<{
   t: number;
   keyAt: number;
   yearFlip?: number;
-}> = ({ i, t, keyAt, yearFlip = 0 }) => {
+  /** The margin on show in this panel and the seconds since it slammed in. */
+  margin?: { id: StandingId; since: number } | null;
+}> = ({ i, t, keyAt, yearFlip = 0, margin = null }) => {
   const p = PANELS[i];
   const Art = p.Art;
   const cx = PX + PW / 2;
@@ -349,6 +358,20 @@ const Page: React.FC<{
         >
           <Caption x={capX} y={capY} lines={[year]} size={54} />
         </g>
+        {margin ? (
+          <g
+            key={margin.id}
+            transform={`translate(${MARGIN_AT.x} ${MARGIN_AT.y}) rotate(${-1.5 * p.tilt})`}
+          >
+            <PointsBox
+              columns={marginColumns(margin.id)}
+              size={MARGIN_SIZE}
+              unit="PTS"
+              since={margin.since}
+              goldSince={margin.since}
+            />
+          </g>
+        ) : null}
       </g>
     </g>
   );
@@ -376,12 +399,23 @@ export const Flashbacks: React.FC<{ st: ShotTime }> = ({ st }) => {
   const e = Math.min(1, (Math.round(since * FPS) + 1) / 6);
   const yearFlip =
     cur === 3 ? Math.max(0, Math.min(1, (st.t - turn) / 0.16)) : 0;
+  const marginAt = MARGINS.map((m) => secondsInShot(st, cueAt(EDIT, m.cue)));
+  // the latest margin of panel i that has slammed in
+  const marginOf = (i: number) => {
+    let out: { id: StandingId; since: number } | null = null;
+    MARGINS.forEach((m, k) => {
+      if (m.panel === i && st.t >= marginAt[k])
+        out = { id: m.id, since: st.t - marginAt[k] };
+    });
+    return out;
+  };
   const page = (i: number) => (
     <Page
       i={i}
       t={st.t - starts[i]}
       keyAt={keys[i]}
       yearFlip={i === 3 ? yearFlip : 0}
+      margin={marginOf(i)}
     />
   );
   // the first panel slams onto 5.8's last frame (still running: the confetti keeps falling)

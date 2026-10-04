@@ -3,20 +3,22 @@
 // — turns over on 22.1 like a manga page, and under it is the same circuit on a fresh page in the same hand:
 // "SUZUKA 1990" is lettered in and the ring lands on Turn 1, where this year's crash happens. PRO's helmet card drops
 // into his slot of 1.2 (top left) in the 1989 McLaren and flips over on 23.1: the same helmet — a driver keeps his
-// helmet when he changes team — now sits in the red Ferrari, "PRO MOVES TO FERRARI". Then the stakes, and on the last beats
+// helmet when he changes team — now sits in the red Ferrari, "PRO MOVES TO FERRARI". Then the stakes slam in on 23.2 in the
+// shared points box (#17: SEN 78 · PRO 69, gold on SEN's 78 on 23.3), and on the last beats
 // the page pushes in toward the main straight and Turn 1, into the top view of shot 1.6.
 import { Easing } from "remotion";
 import { F641_PRO, MP4_5_PRO } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
 import {
-  Caption,
   CircuitTag,
   TitleText,
   circuitAnim,
 } from "../../../kit/lettering";
 import { ToneDefs, tone } from "../../../kit/tone";
 import { fitMap, poseAt, SUZUKA_1989, TrackMap } from "../../../tracks";
+import { PointsBox } from "../../../kit/points-box";
+import { scoreColumns } from "../../points";
 import { CARD_PRO, CardCaption, HelmetCard } from "../suzuka1989/Helmets";
 import { Title89Page } from "../suzuka1989/Title";
 import { cueFrame, ramp, shotById, type PictureProps } from "./common";
@@ -29,6 +31,10 @@ const H = 1080;
 
 type Pt = { x: number; y: number };
 
+// The stakes box: numeral size and centre (its left edge where v1's caption box began, x = 120, top at y = 790).
+const STAKES_SIZE = 120;
+const STAKES_AT = { x: 290, y: 790 + (STAKES_SIZE * 1.49) / 2 };
+
 // The 1990 page: the inked lap, the Turn 1 ring, the title, PRO's card and the stakes.
 const Page: React.FC<{
   title: string;
@@ -37,11 +43,12 @@ const Page: React.FC<{
   card: number;
   flip: number;
   move: number;
+  // the stakes before the race (facts.md: SEN leads PRO by 9 points with two races left; the crash that put both out
+  // here settled the title for SEN): seconds since the points box slams in, and since its gold stroke
   stakes: number;
-  // PRO's move (facts.md: Prost drove Ferrari #1 in 1990) and the stakes before the race (facts.md: SEN leads PRO by 9
-  // points with two races left; the crash that put both out here settled the title for SEN)
+  stakesGold: number;
+  // PRO's move (facts.md: Prost drove Ferrari #1 in 1990)
   moveText: string;
-  stakesText: string;
   circuit: string;
   circuitT: { strip: number; name: number };
 }> = ({
@@ -54,8 +61,8 @@ const Page: React.FC<{
   flip,
   move,
   stakes,
+  stakesGold,
   moveText,
-  stakesText,
 }) => {
   const c = VIEW.project(poseAt(T, T.corners.turn1Apex));
   // the card flips about its vertical middle: the McLaren face turns away, the Ferrari face turns in
@@ -107,14 +114,15 @@ const Page: React.FC<{
           ) : null}
         </g>
       ) : null}
-      {stakes > 0 ? (
-        <g
-          opacity={stakes}
-          transform={`translate(${120 - 30 * (1 - stakes)} 790)`}
-        >
-          <Caption x={0} y={0} lines={[stakesText]} size={50} />
-        </g>
-      ) : null}
+      {/* the stakes, in the left column under the title where v1's caption stood */}
+      <g transform={`translate(${STAKES_AT.x} ${STAKES_AT.y}) rotate(-2)`}>
+        <PointsBox
+          columns={scoreColumns("suzuka1990")}
+          size={STAKES_SIZE}
+          since={stakes}
+          goldSince={stakesGold}
+        />
+      </g>
     </g>
   );
 };
@@ -180,7 +188,8 @@ export const Title: React.FC<PictureProps> = ({ f }) => {
     Easing.inOut(Easing.cubic),
   );
   const move = ramp(f, moveAt + 6, moveAt + 20, Easing.out(Easing.back(1.6)));
-  const stakes = ramp(t, 132, 148, Easing.out(Easing.back(1.6)));
+  const stakes = (f - cueFrame("suzuka1990.stakes")) / 60;
+  const stakesGold = (f - cueFrame("suzuka1990.stakesGold")) / 60;
   // the push-in toward Turn 1 and the main straight on the last beats
   const push = ramp(t, len - 46, len, Easing.in(Easing.cubic));
   const t1 = VIEW.project(poseAt(T, 200));
@@ -210,8 +219,8 @@ export const Title: React.FC<PictureProps> = ({ f }) => {
             flip={cardFlip}
             move={move}
             stakes={stakes}
+            stakesGold={stakesGold}
             moveText={shot.text[2]}
-            stakesText={shot.text[3]}
           />
         </g>
       </g>

@@ -1,7 +1,8 @@
 // Shot 1.2 (bars 11–14): broadcast-style side tracking at Suzuka by day. The two McLarens run nose to tail along the
 // back of the circuit, PRO on the near line just ahead, SEN on the far line closing on him; the camera pans with them
 // so the stands, fence and hills slide past at their own depths (ART-9). From bar 13 two manga panels drop in over the
-// sky: PRO's helmet and SEN's helmet, side by side (treatment 1.2: "SEN 与 PRO 头盔对比").
+// sky: PRO's helmet and SEN's helmet, side by side (treatment 1.2: "SEN 与 PRO 头盔对比"). PRO's lead slams in under his
+// helmet in the points box on 13.2, its gold stroke on 13.3.
 import { Easing } from "remotion";
 import { MangaCar, MP4_5_PRO, MP4_5_SEN, type CarSpec } from "../../../cars";
 import {
@@ -12,6 +13,8 @@ import {
   HelmetCard,
 } from "./Helmets";
 import { pinhole } from "../../../kit/camera";
+import { PointsBox } from "../../../kit/points-box";
+import { marginColumns } from "../../points";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
 import { speedLines } from "../../../kit/lines";
@@ -32,7 +35,7 @@ import { cars12, camX12, SPEED, Z_PRO_12, Z_SEN_12 } from "./staging";
 const CAM = pinhole({ f: 1500, horizon: 300, cx: 960, height: 3.0 });
 const TYRE_R = 0.33; // m
 
-// A helmet card dropping in from above the frame (Helmets.tsx), with the stakes in its caption box.
+// A helmet card dropping in from above the frame (Helmets.tsx), with the stakes on its bottom edge (`children`).
 const HelmetPanel: React.FC<{
   car: CarSpec;
   box: Box;
@@ -40,8 +43,8 @@ const HelmetPanel: React.FC<{
   wheel: number;
   drop: number;
   seed: number;
-  caption: string;
-}> = ({ car, box, id, wheel, drop, seed, caption }) => {
+  children: React.ReactNode;
+}> = ({ car, box, id, wheel, drop, seed, children }) => {
   const cx = box.x + box.w * 0.52;
   const cy = box.y + box.h * 0.5;
   const y = box.y - (1 - drop) * (box.h + 80);
@@ -51,13 +54,20 @@ const HelmetPanel: React.FC<{
     >
       <HelmetCard car={car} box={box} id={id} seed={seed} wheel={wheel} />
       {/* who and what is at stake (facts.md: before the race PRO 76, SEN 60) */}
-      <CardCaption box={box} text={caption} />
+      {children}
     </g>
   );
 };
 
-// On-screen stakes under the helmets (STO-5: a few words; facts.md "赛前积分").
+// On-screen stakes under the helmets (STO-5: a few words; facts.md "赛前积分"): PRO's lead in the shared points box
+// (#17, the margin variant "+16 PTS" over "PRO", src/mv/points.ts), SEN's in a caption box.
 export const STAKES = { pro: "PRO +16 PTS", sen: "SEN MUST WIN" } as const;
+// The margin box straddles the bottom edge of PRO's card, under the helmet (ART-14), at half of 2.7's size.
+const MARGIN_SIZE = 84;
+const MARGIN_AT = {
+  x: CARD_PRO.x + CARD_PRO.w / 2,
+  y: CARD_PRO.y + CARD_PRO.h - 6 + (MARGIN_SIZE * 1.49) / 2,
+};
 
 export const Pair: React.FC<PictureProps> = ({ f }) => {
   const shot = shotById("1.2");
@@ -173,8 +183,19 @@ export const Pair: React.FC<PictureProps> = ({ f }) => {
             wheel={wheel}
             drop={helmets}
             seed={3}
-            caption={STAKES.pro}
-          />
+          >
+            <g
+              transform={`translate(${MARGIN_AT.x} ${MARGIN_AT.y}) rotate(-2)`}
+            >
+              <PointsBox
+                columns={marginColumns("suzuka1989")}
+                size={MARGIN_SIZE}
+                unit="PTS"
+                since={(f - cueFrame("suzuka1989.margin")) / 60}
+                goldSince={(f - cueFrame("suzuka1989.marginGold")) / 60}
+              />
+            </g>
+          </HelmetPanel>
         ) : null}
         {helmets2 > 0 ? (
           <HelmetPanel
@@ -184,8 +205,9 @@ export const Pair: React.FC<PictureProps> = ({ f }) => {
             wheel={wheel}
             drop={helmets2}
             seed={7}
-            caption={STAKES.sen}
-          />
+          >
+            <CardCaption box={CARD_SEN} text={STAKES.sen} />
+          </HelmetPanel>
         ) : null}
         <rect
           x={0}
