@@ -385,6 +385,27 @@ export const WreckWorld: React.FC<{
           }}
         />
       </g>
+      {/* debris on the asphalt: three small, dark, low-contrast scraps lying flat, drawn under the smoke drifting off
+          the gap fire so they sink into it — scattered wreckage, not graphic shapes (user review 2026-10-04) */}
+      {[
+        [CELL_TO + 1.6, 11.7, 0.2],
+        [CELL_TO + 2.9, 12.2, 0.12],
+        [REAR_ANCHOR_X - 3.3, 9.8, 0.16],
+      ].map(([x, z, s]) => {
+        const c = cam.project({ x, y: 0, z });
+        const k = cam.pxPerMetre(z) * s;
+        return (
+          <path
+            key={`${x}${z}`}
+            d={`M ${c.x - k} ${c.y} L ${c.x - k * 0.3} ${c.y - k * 0.32} L ${c.x + k} ${c.y - k * 0.08} L ${c.x + k * 0.35} ${c.y + k * 0.12} Z`}
+            fill="#2b2724"
+            stroke="#3b3531"
+            strokeWidth={1}
+            strokeLinejoin="round"
+            opacity={0.8}
+          />
+        );
+      })}
       {/* bubble smoke (ART-20) drifting across from the fire in the gap over the torn-off rear, partly veiling it */}
       {veil > 0 ? (
         <g
@@ -421,25 +442,6 @@ export const WreckWorld: React.FC<{
           />
         </g>
       ) : null}
-      {/* debris on the asphalt */}
-      {[
-        [CELL_TO + 1.6, 11.6, 0.5],
-        [CELL_TO + 2.6, 12.2, 0.3],
-        [REAR_ANCHOR_X - 3.3, 9.6, 0.4],
-        [REAR_ANCHOR_X + 0.6, 9.2, 0.25],
-      ].map(([x, z, s]) => {
-        const c = cam.project({ x, y: 0, z });
-        const k = cam.pxPerMetre(z) * s;
-        return (
-          <path
-            key={`${x}${z}`}
-            d={`M ${c.x - k} ${c.y} L ${c.x - k * 0.2} ${c.y - k * 0.5} L ${c.x + k} ${c.y - k * 0.1} L ${c.x + k * 0.3} ${c.y + k * 0.15} Z`}
-            fill={INK}
-            stroke={PAPER}
-            strokeWidth={1.5}
-          />
-        );
-      })}
     </g>
   );
 };
