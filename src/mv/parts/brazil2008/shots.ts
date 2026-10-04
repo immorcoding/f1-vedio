@@ -18,8 +18,9 @@ export const EDIT: PartEdit = {
       from: at(35),
       to: at(39),
       view: "closeup",
-      content: "雨中跟拍 HAM（McLaren MP4-23，半雨胎），后轮卷起水雾",
-      text: ["LAST LAP"],
+      content:
+        "雨中跟拍 HAM（McLaren MP4-23，半雨胎），后轮卷起水雾；车下挂 HAM 名次牌（第 6），左上说明框两行：最后一圈、HAM 要拿第 5 才是冠军",
+      text: ["LAST LAP", "HAM NEEDS P5", "6 HAM"],
     },
     {
       id: "2.3",
@@ -41,18 +42,26 @@ export const EDIT: PartEdit = {
     {
       id: "2.5",
       from: at(47),
-      to: at(49),
+      to: at(51),
       view: "closeup",
-      content: "Junção 出弯冲上坡：HAM 在第 47 小节第一拍超过 GLO",
-      text: ["WHOOSH!"],
-      cues: [hitCue("brazil2008.pass")],
+      content:
+        "Junção 出弯冲上坡：第 47 小节第一拍 HAM 的车头追平 GLO（WHOOSH，慢动作），47.3 车头领先、名次牌 6 → 5；慢动作留满 47–48 小节，49.1 回到实时，HAM 拉开、GLO 落出画面",
+      text: ["WHOOSH!", "5 HAM", "6 GLO"],
+      cues: [
+        hitCue("brazil2008.pass"),
+        { id: "brazil2008.p5", at: at(47, 3) },
+        { id: "brazil2008.realTime", at: at(49, 1) },
+      ],
     },
     {
       id: "2.6",
-      from: at(49),
+      from: at(51),
       to: at(53),
       view: "closeup",
-      content: "HAM 冲过终点线，第 5 名",
+      content:
+        "HAM 冲过终点线，第 5 名：前轮压上终点方格线落在第 52 小节第一拍，同一拍方格旗小格落下；之后慢动作推近座舱",
+      text: ["5 HAM"],
+      cues: [{ id: "brazil2008.line", at: at(52, 1) }],
     },
     {
       id: "2.7",

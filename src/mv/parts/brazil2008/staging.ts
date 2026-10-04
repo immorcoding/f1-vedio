@@ -27,29 +27,51 @@ export const split23 = (t: number) => {
 
 // ── 2.5: HAM passes GLO up the hill (side-on) ────────────────────────────────────────────────────────────────
 // True speeds (MOT-5): GLO crawls out of Junção on slicks at ~30 m/s, HAM ~5 m/s quicker. The pass is shown in
-// slow motion — race time τ runs at 0.3× for the first 1.4 s after the cue, then back to real time — not by slow cars.
-const PASS_SLOW_UNTIL = 1.4;
+// slow motion — race time τ runs at 0.3× from the cue (47.1) to the real-time cue (49.1), then eases back to real
+// time over 0.4 s — not by slow cars. Shot seconds come from the edit list's cues, so a retime keeps them on the beat.
+const SHOT_25_FROM = shot("2.5").from;
+const cueSeconds = (id: string) => {
+  for (const s of EDIT.shots)
+    for (const c of s.cues ?? [])
+      if (c.id === id) return seconds(frameAt(c.at), SHOT_25_FROM);
+  throw new Error(`brazil2008: no cue ${id}`);
+};
+const PASS_RATE = 0.3;
+const PASS_EASE = 0.4;
+/** Shot seconds of the beat HAM is past GLO (the tags flip, 47.3) and of the snap back to real time (49.1). */
+export const PASS_P5_AT = cueSeconds("brazil2008.p5");
+export const PASS_SLOW_UNTIL = cueSeconds("brazil2008.realTime");
 export const passRaceTime = (t: number) => {
-  if (t <= PASS_SLOW_UNTIL) return 0.3 * t;
+  if (t <= PASS_SLOW_UNTIL) return PASS_RATE * t;
   const u = t - PASS_SLOW_UNTIL;
-  const ease = Math.min(u, 0.4);
-  // rate eases from 0.3 to 1 over 0.4 s
+  const ease = Math.min(u, PASS_EASE);
+  // rate eases from PASS_RATE to 1 over PASS_EASE
   return (
-    0.3 * PASS_SLOW_UNTIL +
-    0.3 * ease +
-    (0.7 * ease * ease) / 0.8 +
-    Math.max(0, u - 0.4)
+    PASS_RATE * PASS_SLOW_UNTIL +
+    PASS_RATE * ease +
+    ((1 - PASS_RATE) * ease * ease) / (2 * PASS_EASE) +
+    Math.max(0, u - PASS_EASE)
   );
 };
 export const passSlow = (t: number) =>
-  t <= PASS_SLOW_UNTIL ? 1 : Math.max(0, 1 - (t - PASS_SLOW_UNTIL) / 0.4);
+  t <= PASS_SLOW_UNTIL
+    ? 1
+    : Math.max(0, 1 - (t - PASS_SLOW_UNTIL) / PASS_EASE);
 export const PASS_GLO_SPEED = 30;
+const PASS_GAIN = 5; // HAM's extra speed, m/s
+/** HAM's nose ahead of GLO's, m (both 4.65 m cars, so rear ends and noses are the same gap). */
+export const passLead = (t: number) => 0.5 + PASS_GAIN * passRaceTime(t);
 export const pass25 = (t: number) => {
   const tau = passRaceTime(t);
-  // HAM's nose level with GLO's at the cue, then 5 m/s quicker
-  const d = -0.3 + 5 * tau;
-  const glo = -3 - 0.8 * d; // the camera rides with HAM as he pulls away
-  return { tau, glo: { x: glo, z: 16 }, ham: { x: glo + d, z: 10 } };
+  // on the hit (47.1) HAM's nose is just level-and-ahead (0.5 m); by 47.3 he leads by ~2 m, the tags flip
+  const d = passLead(t);
+  // the camera drifts from GLO to HAM: HAM settles left of centre with his nose clear of the right edge (BRAZIL_CAM,
+  // 230 px/m at 10 m: rear end ≥ −2.8 m, nose ≤ 1800 px), GLO falls back out of the left of the frame
+  const ham = -3 + 1.8 * (1 - Math.exp(-d / 5));
+  const glo = ham - d;
+  // the camera's place along the road (world m): GLO is at PASS_GLO_SPEED · τ, on screen at `glo`
+  const camX = PASS_GLO_SPEED * tau - glo;
+  return { tau, camX, glo: { x: glo, z: 16 }, ham: { x: ham, z: 10 } };
 };
 
 // A side-on car (rear end at x, distance z) as a footprint on the plan.
