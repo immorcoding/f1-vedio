@@ -6,6 +6,7 @@ import { CARS, type CarId } from "../cars";
 import type { TrackId } from "../tracks";
 import { T5Panel } from "../scenes/abu-dhabi-2021/T5Panel";
 import { Cars2020States, FireSheet } from "./Bahrain2020Sheets";
+import { BahrainGeometry } from "./BahrainGeometry";
 import { CarCheck } from "./CarCheck";
 import { CarSheet, SHEETS } from "./CarSheet";
 import { CAR_STATES_FRAMES, CarStates } from "./CarStates";
@@ -97,6 +98,7 @@ export const LibraryFolder: React.FC = () => (
       />
     ))}
     <Folder name="Checks">
+      <Still id="Check-Bahrain-Geometry" component={BahrainGeometry} {...SIZE} />
       {(Object.keys(CARS) as CarId[]).map((car) => (
         <Still
           key={`trace-${car}`}

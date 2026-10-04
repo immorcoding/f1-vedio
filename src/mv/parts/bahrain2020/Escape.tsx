@@ -27,6 +27,7 @@ import {
   CLIMB_X,
   MARSHAL_AIM,
   MARSHAL_AT,
+  MARSHAL_FACING,
   WALK_Z,
   marshalPose,
   stage36,
@@ -34,37 +35,66 @@ import {
 import { useGroExit } from "./GroExit";
 import { Haze } from "./haze";
 import { PowderJet } from "./powder";
-import { WRECK_CAM, WreckWorld, heartbeat, heatZone, zoomCam } from "./Wreck";
-import { CELL_FROM, CELL_Z, REAR_SPAN, REAR_Z } from "./wreck-geometry.ts";
+import {
+  Flip,
+  WRECK_CAM,
+  WreckWorld,
+  heartbeat,
+  heatZone,
+  zoomCam,
+} from "./Wreck";
+import { FIRES, REAR_SPAN, REAR_Z } from "./wreck-geometry.ts";
 
-// The ground the people cover over the whole shot (GRO from the cockpit out onto the track, the doctor beside him):
-// sampled once, in world metres, so the haze's falloff reaches all of it.
+// The ground the people cover over the whole shot (GRO from the cockpit back toward the track, the doctor behind
+// him): sampled once, in the wreck view's metres, so the haze's falloff reaches all of it.
 const PATH_X = (() => {
   const shot = shotById("3.6");
   const end = cueFrame("bahrain2020.halo") - shot.from;
-  let min = Infinity;
+  let max = -Infinity;
   for (let t = 0; t <= end; t += 6) {
     const s = stage36(t);
-    min = Math.min(min, s.groAt.x, s.docAt.x);
+    max = Math.max(max, s.groAt.x, s.docAt.x);
   }
-  return min;
+  return max;
 })();
+// the side the fire lights someone from, in the unflipped picture
+const rimSideAt = (x: number) => (x < FIRES.back.x ? "right" : "left");
 
 // The heat haze round the fire (haze.tsx `falloff`): full over the fire and the cell, fading smoothly with distance
 // over GRO's whole way out, the doctor and the marshal, so everyone near the fire shares one focus (user review
 // 2026-10-04: GRO stepping out of the haze onto a crisp track looked abrupt).
 const escapeFalloff = (cam: Camera) => {
-  const fire = cam.project({ x: CELL_FROM + 2.2, y: 1.6, z: CELL_Z + 0.5 });
+  const fire = cam.project({ x: FIRES.back.x, y: 1.6, z: FIRES.back.z });
   const zone = heatZone(cam);
-  const left = cam.project({ x: PATH_X - 1.2, y: 0, z: WALK_Z }).x;
+  const left = Math.min(
+    zone.x,
+    cam.project({ x: MARSHAL_AT.x - 0.8, y: 0, z: MARSHAL_AT.z }).x,
+  );
   const right = Math.max(
     zone.x + zone.w,
+    cam.project({ x: PATH_X + 1.2, y: 0, z: WALK_Z }).x,
     cam.project({ x: REAR_SPAN.to + 1.0, y: 0, z: REAR_Z }).x,
   );
   // the far end of his walk sits on the slope (~0.4), the fire's top in the full haze
   const rx = Math.max(fire.x - left, right - fire.x) / 0.82;
   const ry = Math.max(fire.y - zone.y, zone.y + zone.h - fire.y) / 0.62;
   return { cx: fire.x, cy: fire.y, rx, ry };
+};
+
+// Shot 3.6's camera at song frame f: held (he walks across the frame, not on the spot), creeping in a little: the
+// cockpit he climbs out of right of centre on screen, the way he walks out to the left (the picture is flipped: in
+// the camera's own picture the cockpit is left of centre and he walks right).
+export const escapeCam = (f: number): Camera => {
+  const shot = shotById("3.6");
+  return zoomCam(
+    WRECK_CAM,
+    { x: CLIMB_X + 0.25, y: 1.0, z: WALK_Z },
+    // the people at the size they had at 1.18 of the earlier camera (216 px/m on GRO's line); the creep keeps the
+    // pace it had when 3.6 cut to black on 72.4
+    (216 / WRECK_CAM.pxPerMetre(WALK_Z)) *
+      (1 + (0.05 / 1.18) * ramp(f - shot.from, 0, frameAt(at(72, 4)) - shot.from)),
+    { x: 1920 - 1090, y: 600 },
+  );
 };
 
 export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
@@ -74,17 +104,17 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   const timeCue = cueFrame("bahrain2020.time");
   const fire = FIRE_PALETTES[palette];
   const rim = fire.glow ? "#ffb347" : PAPER;
-  // a held camera (he walks across the frame, not on the spot), creeping in a little: the cockpit he climbs out of
-  // right of centre, the way he walks out to the left
-  const cam: Camera = zoomCam(
-    WRECK_CAM,
-    { x: CLIMB_X - 0.25, y: 1.0, z: WALK_Z },
-    // (the creep keeps the pace it had when 3.6 cut to black on 72.4)
-    1.18 + 0.05 * ramp(t, 0, frameAt(at(72, 4)) - shot.from),
-    { x: 1090, y: 600 }, // the torn-off rear mostly out of frame on the right (user review 2026-10-04)
-  );
-  const { groPose, groAt, groScaleZ, layers, holds, docPose, docAt } =
-    stage36(t);
+  const cam = escapeCam(f);
+  const {
+    groPose,
+    groAt,
+    groScaleZ,
+    groFacing,
+    layers,
+    holds,
+    docPose,
+    docAt,
+  } = stage36(t);
   const g = (p: { x: number; z: number }) =>
     cam.project({ x: p.x, y: 0, z: p.z });
   const ppm = (p: { z: number }) => cam.pxPerMetre(p.z);
@@ -96,6 +126,8 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
     layers,
     holds,
     rim,
+    facing: groFacing,
+    rimSide: rimSideAt(groAt.x),
   });
   if (f >= black) {
     return (
@@ -109,7 +141,10 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   const mppm = ppm(MARSHAL_AT);
   const mBase = g(MARSHAL_AT);
   const tipF = nozzleOf(mPose, MARSHAL_AIM).tip;
-  const nozzle = { x: mBase.x - tipF.x * mppm, y: mBase.y - tipF.y * mppm }; // facing left
+  const nozzle = {
+    x: mBase.x + (MARSHAL_FACING === "right" ? 1 : -1) * tipF.x * mppm,
+    y: mBase.y - tipF.y * mppm,
+  };
   const aim = cam.project(AIM);
   const hb = heartbeat(f);
   const text = ramp(f, timeCue, timeCue + 8);
@@ -143,9 +178,9 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
       pxPerMetre={ppm(at)}
       pose={pose}
       outfit={outfit}
-      facing="left"
+      facing="right"
       rim={rim}
-      rimSide="right"
+      rimSide={rimSideAt(at.x)}
       parts={parts}
       held={held}
     />
@@ -159,41 +194,44 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   const people = [
     { z: groAt.z, node: gro.front },
     { z: docAt.z, node: figure("doc", docAt, docPose, DOCTOR) },
+    { z: MARSHAL_AT.z, node: marshal },
   ].sort((a, b) => b.z - a.z);
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
         <ToneDefs prefix="b36" />
       </defs>
-      <Haze
-        frame={f}
-        zone={heatZone(cam)}
-        falloff={escapeFalloff(cam)}
-        calm={calm}
-        calmHaze={{ disp: 8, blur: 1.0 }}
-      >
-        <WreckWorld
-          cam={cam}
-          f={f}
-          palette={palette}
-          intensity={fireLevel}
-          frontFire={frontFire}
-          tonePrefix="b36"
-          cockpit={gro.cockpit}
-          behindRails={gro.behindRails}
-          driver={false}
-        />
-        {/* the marshal, his powder jet into the back of the cockpit, then GRO and the doctor in front of it */}
-        {marshal}
-        <PowderJet
-          from={nozzle}
-          to={aim}
-          ppm={mppm}
+      <Flip>
+        <Haze
           frame={f}
-          seed="b36-powder"
-        />
-        {people.map((p) => p.node)}
-      </Haze>
+          zone={heatZone(cam)}
+          falloff={escapeFalloff(cam)}
+          calm={calm}
+          calmHaze={{ disp: 8, blur: 1.0 }}
+        >
+          <WreckWorld
+            cam={cam}
+            f={f}
+            palette={palette}
+            intensity={fireLevel}
+            frontFire={frontFire}
+            tonePrefix="b36"
+            cockpit={gro.cockpit}
+            behindRails={gro.behindRails}
+            driver={false}
+          />
+          {/* the marshal's powder jet into the front of the cockpit, then everyone, deepest first (it crosses
+              behind GRO and the doctor into the cell) */}
+          <PowderJet
+            from={nozzle}
+            to={aim}
+            ppm={mppm}
+            frame={f}
+            seed="b36-powder"
+          />
+          {people.map((p) => p.node)}
+        </Haze>
+      </Flip>
       <rect width={1920} height={1080} fill={INK} opacity={0.12 * hb} />
       {text > 0 ? (
         <g

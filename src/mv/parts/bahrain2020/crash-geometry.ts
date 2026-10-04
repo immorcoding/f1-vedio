@@ -1,10 +1,15 @@
-// Shot 3.2's choreography as pure data (no React), so the scene and the overlap check use the same numbers (ART-18).
-// World: metres, x along the straight in the race direction, y to the right of it (down the screen on the map).
+// The impact's angles (the one place they are written) and shot 3.2's choreography as pure data (no React), so the
+// scene and the overlap check use the same numbers (ART-18). The top-view world model every Bahrain shot derives its
+// poses and cameras from (barrier, impact point, rest poses, torn gap, shot cameras) is in wreck-geometry.ts; it builds
+// on the angles here.
+// World of 3.2: metres, x along the straight in the race direction, y to the right of it (down the screen on the map).
 // Facts (docs/production/facts.md): GRO crossing from the left of the track to the right, his right rear wheel touches
-// KVY's left front wheel at 241 km/h; the Haas yaws right and hits the guardrail behind the run-off at 192 km/h: its
-// path at 29° to the barrier, the car itself yawed a further 22° to its direction of travel (FIA summary: "at an angle
-// of 29 degrees, with an estimated yaw of 22 degrees to the direction of travel"; yawed right, so the nose points
-// 51° into the barrier).
+// KVY's left front wheel at 241 km/h; the contact "forc[ed] it to yaw to the right" and the Haas hits the guardrail on
+// the right of the run-off at 192 km/h: its path at 29° to the barrier, "with an estimated yaw of 22 degrees to the
+// direction of travel" (FIA summary). The yaw is to the right — the same way the kick turned it — so the nose points
+// 29° + 22° = 51° into the barrier and the car slides toward its own left (the track side) as it goes in. Evidence
+// for the direction (facts.md): the FIA's "yaw to the right"; the nose went in first and through the slots between the
+// rails (Gary Anderson, The Race), which a car at 29° − 22° = 7° (nearly side-on) could not have done.
 import { AT01, VF20 } from "../../../cars/cars-2020.ts";
 import { carLength, carPoint } from "../../../cars/spec.ts";
 
@@ -24,7 +29,21 @@ const GRO_CG = GRO_FA;
 export const TRACK_HALF = 7.5; // the straight is ~15 m wide
 export const IMPACT_ANGLE = 29; // degrees, the path to the barrier (FIA)
 export const IMPACT_YAW = 22; // degrees, the car's heading to its path at the hit (FIA), nose turned right
-const HEADING_END = IMPACT_ANGLE + IMPACT_YAW;
+// the body's angle to the barrier at the hit: path plus yaw (the yaw is to the right, into the barrier)
+export const BODY_ANGLE = IMPACT_ANGLE + IMPACT_YAW;
+const HEADING_END = BODY_ANGLE;
+// The car's front-wing corner on its right (the barrier side): where it first touches the rails. Metres back from the
+// nose along the centre line, and out from it.
+export const WING_CORNER = { back: 0.15, out: CAR_HALF_WIDTH };
+// The right front corner of a car posed as in planCrash (rear end, heading), on 3.2's map.
+export const rightFrontCorner = (p: CarPose, length: number) => {
+  const h = (p.heading * Math.PI) / 180;
+  const along = length - WING_CORNER.back;
+  return {
+    x: p.x + along * Math.cos(h) - WING_CORNER.out * Math.sin(h),
+    y: p.y + along * Math.sin(h) + WING_CORNER.out * Math.cos(h),
+  };
+};
 const V0 = 67; // m/s = 241 km/h at the moment of contact (FIA)
 const V_IMPACT = 53.3; // m/s = 192 km/h at the barrier (FIA)
 const KVY_Y = -0.4; // KVY just left of the middle of the track
@@ -52,7 +71,13 @@ export type CrashPlan = {
 
 const smooth = (u: number) => u * u * (3 - 2 * u);
 
-export const planCrash = (frames: number, contact: number): CrashPlan => {
+// `touch`: the real-time frame of the cut to 3.3, where the right front-wing corner reaches the rails (default: the
+// last planned frame).
+export const planCrash = (
+  frames: number,
+  contact: number,
+  touch = frames,
+): CrashPlan => {
   const gro: CarPose[] = [];
   const kvy: CarPose[] = [];
   const dt = 1 / FPS;
@@ -119,10 +144,9 @@ export const planCrash = (frames: number, contact: number): CrashPlan => {
     cx += v * Math.cos(path) * dt;
     cy += v * Math.sin(path) * dt;
   }
-  const last = gro[frames];
-  const lh = (last.heading * Math.PI) / 180;
-  const barrierY =
-    last.y + L_GRO * Math.sin(lh) + CAR_HALF_WIDTH * 0.3 * Math.cos(lh);
+  // the guardrail runs along the straight where the car's right front-wing corner reaches it at the cut: the cut to
+  // 3.3 is the first touch (wreck-geometry.ts IMPACT_POINT)
+  const barrierY = rightFrontCorner(poseAtFrame(gro, touch), L_GRO).y;
   return {
     frames,
     contact,

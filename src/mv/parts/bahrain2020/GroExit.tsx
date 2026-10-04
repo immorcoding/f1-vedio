@@ -31,6 +31,8 @@ export const useGroExit = ({
   layers,
   holds,
   rim,
+  facing = "left",
+  rimSide = "right",
 }: {
   at: { x: number; y: number }; // his ground point on screen
   ppm: number;
@@ -38,8 +40,13 @@ export const useGroExit = ({
   layers: Record<BodyPart, ExitLayer>;
   holds: { near: boolean; far: boolean };
   rim: string;
+  // the way he faces in the wreck camera's (unflipped) picture: the nose in the cockpit, the track once he turns
+  facing?: "left" | "right";
+  // the side the fire lights him from, in the same picture
+  rimSide?: "left" | "right";
 }) => {
   const id = `gx${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const k = facing === "left" ? 1 : -1;
   const on = (l: ExitLayer) => PARTS.filter((p) => layers[p] === l);
   const fig = (key: string, parts: BodyPart[]) =>
     parts.length ? (
@@ -49,9 +56,9 @@ export const useGroExit = ({
         pxPerMetre={ppm}
         pose={pose}
         outfit={GRO_KIT}
-        facing="left"
+        facing={facing}
         rim={rim}
-        rimSide="right"
+        rimSide={rimSide}
         parts={parts}
         shadow={false}
       />
@@ -68,7 +75,11 @@ export const useGroExit = ({
     };
     return (
       <clipPath id={`${id}-h${side}`}>
-        <circle cx={at.x - c.x * ppm} cy={at.y - c.y * ppm} r={0.075 * ppm} />
+        <circle
+          cx={at.x - k * c.x * ppm}
+          cy={at.y - c.y * ppm}
+          r={0.075 * ppm}
+        />
       </clipPath>
     );
   };
