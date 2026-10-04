@@ -59,9 +59,19 @@ export const EDIT: PartEdit = {
       from: at(53),
       to: at(57),
       view: "title",
-      content: "积分翻牌：第 53 小节第一拍翻到 HAM 98 · MAS 97",
-      text: ["98 · 97", "1 分"],
-      cues: [hitCue("brazil2008.points")],
+      content:
+        "夺冠卡（同 5.8 的语言，只用事实）：第 53 小节第一拍积分 HAM 98 · MAS 97 砸入，随后飞到角落；第 54 小节四行字逐拍砸入，旁边是 HAM 头盔特写；55–56 小节推近定格，雨中闪光",
+      text: ["98 · 97", "LEWIS HAMILTON", "2008", "WORLD", "CHAMPION"],
+      cues: [
+        hitCue("brazil2008.points"),
+        { id: "brazil2008.gold98", at: at(53, 2) },
+        { id: "brazil2008.corner", at: at(53, 3) },
+        { id: "brazil2008.name", at: at(54, 1) },
+        { id: "brazil2008.year", at: at(54, 2) },
+        { id: "brazil2008.world", at: at(54, 3) },
+        { id: "brazil2008.champion", at: at(54, 4) },
+        { id: "brazil2008.hold", at: at(55, 1) },
+      ],
     },
   ],
 };
