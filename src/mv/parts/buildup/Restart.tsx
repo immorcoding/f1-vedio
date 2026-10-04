@@ -6,7 +6,8 @@
 //   intro's start-light lamp, flash in turn through bar 80, all burn on 81.1 like the five red lights, then go out one
 //   by one from 81.3 (`buildup.scLightsOut`) on every third thirty-second of the snare roll, the last on 81.4& where the
 //   music's one-eighth gap begins — and HAM launches into the silence, so the drop on 82.1 lands like a second start;
-// - top middle, for bar 80 only, why the safety car was out: Latifi's Williams in the turn-14 wall on lap 53 (STO-7).
+// - top middle, for bar 80 only, why the safety car was out (STO-7): a top-down panel of the turn-14 exit, Latifi's
+//   Williams losing the rear, spinning and hitting the outside wall on 80.3, stopped across the track (LAP 53).
 import { PIRELLI_2021, RB16B, W12 } from "../../../cars";
 import { INK } from "../../../kit/colors";
 import { Caption } from "../../../kit/lettering";

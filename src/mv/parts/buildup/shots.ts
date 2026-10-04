@@ -36,7 +36,7 @@ export const EDIT: PartEdit = {
       to: at(82),
       view: "closeup",
       content:
-        "两车贴近；VER 新软胎（红圈）、HAM 旧硬胎（白圈），80.3 打出 FRESH SOFTS vs OLD HARDS；右上小格是安全车（Vantage 车尾、车顶灯架，SC IN），五盏琥珀灯用片头起跑灯的画法，第 80 小节轮流闪，81.1 全亮，81.3 起每隔三个三十二分音符灭一盏，最后一盏灭在 81.4 后半拍（音乐空拍开始），HAM 起步，第 82 小节第一拍进 drop（切点）；第 80 小节上方中间小格是 Latifi 的 Williams 撞上 14 号弯墙（LAP 53）",
+        "两车贴近；VER 新软胎（红圈）、HAM 旧硬胎（白圈），80.3 打出 FRESH SOFTS vs OLD HARDS；右上小格是安全车（Vantage 车尾、车顶灯架，SC IN），五盏琥珀灯用片头起跑灯的画法，第 80 小节轮流闪，81.1 全亮，81.3 起每隔三个三十二分音符灭一盏，最后一盏灭在 81.4 后半拍（音乐空拍开始），HAM 起步，第 82 小节第一拍进 drop（切点）；第 80 小节上方中间是俯视小格：Latifi 的 Williams 在 14 号弯（左弯）出口车尾滑出打转，80.3 车尾右角撞上外侧墙，横在赛道上停下（LAP 53）",
       text: ["LAP 58", "LAP 53", "SC IN", "FRESH SOFTS vs OLD HARDS"],
       cues: [
         { id: "buildup.tyres", at: at(80, 3) },

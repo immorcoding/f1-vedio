@@ -89,6 +89,7 @@ export type CarPlan = {
     endplateColor?: string; // default paint.wing
   };
   glints?: string; // floodlight on the upper edges, white lines (open path)
+  tcam?: Accent; // the T-camera pod on the airbox, drawn over it (where the car's colour tells team-mates apart)
 };
 
 // Colours seen only from above, for a car drawn with the modern planform (modernPlan). Real livery, no logos (ART-5).
@@ -206,6 +207,33 @@ export type CarSpec = {
   // (modernPlan), coloured with `paint` and the top-only `marks`. A car of another shape carries its own `plan`.
   top?: { marks?: TopMarks; plan?: CarPlan };
 };
+
+// The lengths the modern planform (modernPlanFrom) is built from, m from the car's rear end: the axles, the overall
+// length (nose tip) and the helmet centre; `halo` for a 2018+ car. A traced car takes them from its side trace
+// (modernPlan); a car drawn only from above (TopOnlyCar) measures them on its reference photo.
+export type PlanLengths = {
+  rearAxle: number;
+  frontAxle: number;
+  length: number;
+  helmet: number;
+  halo: boolean;
+};
+
+// A car that is only ever seen from above (MangaCar view "top"), with no side trace: its planform in metres (built
+// with modernPlanFrom from lengths measured on the reference photo), paint, tyres and driver. Used where a scene needs
+// the car only on a top-down map (the 2021 Williams FW43B in shot 4.3). Tracing it from the side later turns it into
+// a CarSpec.
+export type TopOnlyCar = Pick<
+  CarSpec,
+  "name" | "reference" | "driver" | "paint" | "compound" | "tyreGrooves" | "shade"
+> & {
+  lengths: PlanLengths;
+  plan: CarPlan;
+  flap: string; // front-wing flap accent colour (CarSpec.frontWing.flap.color)
+};
+
+export const isTopOnly = (car: CarSpec | TopOnlyCar): car is TopOnlyCar =>
+  "plan" in car;
 
 export const CAR_UNITS_PER_METRE = 250;
 

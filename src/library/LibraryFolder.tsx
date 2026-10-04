@@ -16,6 +16,7 @@ import { PeopleSheet } from "./PeopleSheet";
 import { SuzukaTracksideSheet } from "./SceneSheets";
 import {
   AllTopsSheet,
+  Top2021TrioSheet,
   TOP_SHEET_2021,
   TOP_SHEETS_2008,
   TopCarSheet,
@@ -54,6 +55,11 @@ export const LibraryFolder: React.FC = () => (
       {...SIZE}
     />
     <Still id="Cars-Top-All-Sheet" component={AllTopsSheet} {...SIZE} />
+    <Still
+      id="Cars-2021-Top-Trio-Sheet"
+      component={Top2021TrioSheet}
+      {...SIZE}
+    />
     {(["A", "B"] as const).map((k) => (
       <Still
         key={k}
