@@ -114,10 +114,13 @@ export const ToFinish: React.FC<{ st: ShotTime }> = ({ st }) => {
             const glow = r * (2.6 + 1.2 * pulse);
             const c = DOTS[tag];
             // tags beside the track, never on it: VER to the left of his direction of travel, HAM to the right (ART-14)
-            const a = (view.heading(pose.heading) * Math.PI) / 180;
+            // (the direction is taken over the next 120 m so the tags do not whip round in the hairpins, and they are
+            // kept inside the panel)
+            const ahead = view.project(poseAt(T, s + 120));
+            const a = Math.atan2(ahead.y - p.y, ahead.x - p.x);
             const side = tag === "VER" ? 1 : -1;
-            const lx = p.x + Math.sin(a) * 78 * side;
-            const ly = p.y - Math.cos(a) * 78 * side;
+            const lx = Math.min(PANEL.x + PANEL.w - 70, Math.max(PANEL.x + 70, p.x + Math.sin(a) * 78 * side));
+            const ly = Math.min(PANEL.y + PANEL.h - 42, Math.max(PANEL.y + 42, p.y - Math.cos(a) * 78 * side));
             return (
               <g key={tag}>
                 <path d={tail} fill="none" stroke={c.ring} strokeWidth={r * 0.9} strokeLinecap="round" opacity={0.75} />
