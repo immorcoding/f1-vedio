@@ -4,13 +4,15 @@ import type { Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import { tone } from "../../../kit/tone";
 
-// Rails of the triple guardrail: bottom and top edge heights, m.
+// Rails of the triple guardrail: bottom and top edge heights, m. Three W-beams of about 0.31 m stacked with only a
+// hairline between them, the top edge 1.05 m up (FIA 3501-2017 safety barrier: 1.0–1.2 m), so it meets a 1.78 m
+// person between hip and waist.
 export const RAILS: readonly [number, number][] = [
-  [0.25, 0.55],
-  [0.62, 0.92],
-  [0.99, 1.29],
+  [0.12, 0.425],
+  [0.43, 0.735],
+  [0.74, 1.05],
 ];
-export const POST_TOP = 1.36;
+export const POST_TOP = 1.1;
 
 type Ground = { x: number; z: number };
 

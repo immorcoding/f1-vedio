@@ -107,8 +107,8 @@ export const PeopleHands: React.FC = () => (
       <text x={30} y={480} fontFamily={CAPTION_FONT} fontSize={28} fill={INK}>
         上身特写：领口、拉链、肩线、肩带、手套
       </text>
-      <Crop x={30} y={500} w={560} h={540} s={720} pose={walk(0.4)} outfit={SENNA} focus={v(0.06, 1.3)} facing="left" />
-      <Crop x={610} y={500} w={460} h={540} s={720} pose={wave(0.15)} outfit={GROSJEAN} focus={v(0.12, 1.45)} />
+      <Crop x={30} y={500} w={560} h={540} s={720} pose={walk(0.4)} outfit={SENNA} focus={v(0.06, 1.37)} facing="left" />
+      <Crop x={610} y={500} w={460} h={540} s={720} pose={wave(0.15)} outfit={GROSJEAN} focus={v(0.12, 1.51)} />
       <Crop
         x={1090}
         y={500}
@@ -117,10 +117,10 @@ export const PeopleHands: React.FC = () => (
         s={520}
         pose={spray(0.2)}
         outfit={MARSHAL}
-        focus={v(0.3, 1.0)}
+        focus={v(0.3, 1.07)}
         held={{ kind: "extinguisher" }}
       />
-      <Crop x={1530} y={500} w={360} h={260} s={520} pose={stand({ t: 1 })} outfit={FAN_RED} focus={v(0.05, 1.2)} />
+      <Crop x={1530} y={500} w={360} h={260} s={520} pose={stand({ t: 1 })} outfit={FAN_RED} focus={v(0.05, 1.26)} />
       <Crop x={1530} y={780} w={360} h={260} s={520} pose={walk(0.3)} outfit={DOCTOR} focus={v(0.05, 1.15)} facing="left" />
     </svg>
   </AbsoluteFill>

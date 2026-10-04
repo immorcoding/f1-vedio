@@ -516,21 +516,20 @@ export const shiftPose = (p: Pose, dx: number): Pose => {
 };
 
 // ── Getting out of a wreck ───────────────────────────────────────────────────────────────────────────────────────
-// Climbing over a chest-high guardrail sideways (the rail runs along x, between the near and far legs in depth),
+// Climbing over a waist-high guardrail sideways (the rail runs along x, between the near and far legs in depth),
 // facing along it. `top` is the top rail's upper edge at the climb spot (the caller passes the real height, bends
-// included). u 0..1:
-//   0     standing behind the rail, both hands on its top edge, the near foot up on the wreck/bottom rail;
-//   0.2   hauled up on straight arms, the hip level with the top edge, the near knee still behind;
-//   0.36  the near leg lifted up and over: astride the top rail, sitting on it (hip one pelvis-depth above it);
-//   0.5   still astride, a breath (the far leg hangs behind);
-//   0.68  the far leg swung up and over: sitting on the rail with both legs on the near side;
-//   0.84  dropped down on the near side (pushing off the rail), knees bent from the landing, hands out for balance;
+// included; a 1.05 m barrier meets a 1.78 m body between hip and waist). u 0..1:
+//   0     standing behind the rail, both hands on its top edge, the near foot up on the bottom rail;
+//   0.2   pushed up on nearly straight arms, the hip just over the top edge, the near knee raised to go over;
+//   0.36  the near leg lifted up and over: astride the top rail, sitting on it, the far foot still on the bottom rail;
+//   0.5   still astride, a breath, sliding toward the near side until the near foot's toes reach the ground;
+//   0.68  the far leg swung up and over: sitting on the rail's edge with both legs on the near side;
+//   0.84  stepped down on the near side (pushing off the rail), knees bent, hands out for balance;
 //   1     standing, the first frame of the stumble away.
 // Rules the keys keep (MOT-5, ART-18): the hands never move while they hold the rail (fixed points, one grip from the
-// start until he drops off, within arm's reach at every key); a foot on the ground stays where it is; a limb only changes sides of
-// the rail when every joint of it is above the top edge, and the body only once the hip is over it — so nothing passes
-// through a rail, and the crotch is never below the top edge while the legs are on both sides.
-// `behind` lists the parts the caller draws behind the rails at this moment (everything else in front).
+// start until he steps off, within arm's reach at every key); a foot on the ground stays where it is; a limb only
+// changes sides of the rail when every joint of it is above the top edge, and the body only once the hip is over it —
+// so nothing passes through a rail, and the hip stays at the top edge or above while the legs are on both sides.
 export type BodyPart = "farLeg" | "body" | "nearLeg" | "nearArm";
 export const CLIMB_FORWARD = 0.3; // the hip ends this far forward (x) of the ground point
 // where the climber's hands hold the top rail (figure frame, relative to the top edge) for the whole climb
@@ -543,28 +542,31 @@ const CLIMB_KEYS = (top: number): { u: number; pose: Pose }[] => {
     far: { hand: v(CLIMB_HANDS.far.x, top + CLIMB_HANDS.far.y), grip: "hold", wrist: 24 },
   } as const;
   const end = shiftPose(stumble(0), CLIMB_FORWARD);
-  // sitting on the rail: the hip joint a pelvis-depth above the top edge
-  const seat = top + 0.09;
+  // sitting astride the rail: the hip joint a little above the top edge (the crotch on it)
+  const TOE_DOWN = 0.24; // where the near foot's toes reach the ground, then where it steps down
+  const seat = top + 0.07;
+  // the far foot on the bottom rail behind, until that leg swings over
+  const onBottomRail = (x: number, pitch: number): FootPose => ({ ankle: v(x, 0.38), pitch });
   return [
     {
       u: 0,
       pose: {
-        hip: v(-0.12, 0.98),
-        pelvis: 14,
-        chest: 22,
+        hip: v(-0.1, 0.9),
+        pelvis: 12,
+        chest: 26,
         head: -10,
-        feet: { far: flatFoot(-0.22), near: { ankle: v(0.06, 0.64), pitch: 6 } },
+        feet: { far: flatFoot(-0.22), near: onBottomRail(0.04, 6) },
         arms,
       },
     },
     {
       u: 0.2,
       pose: {
-        hip: v(-0.03, top + 0.11),
-        pelvis: 24,
-        chest: 40,
+        hip: v(-0.03, top + 0.05),
+        pelvis: 22,
+        chest: 38,
         head: -8,
-        feet: { far: { ankle: v(-0.16, 0.66), pitch: 8 }, near: { ankle: v(0.02, 0.98), pitch: 30 } },
+        feet: { far: onBottomRail(-0.16, 10), near: { ankle: v(0.02, top - 0.14), pitch: 30 } },
         arms,
       },
     },
@@ -573,43 +575,45 @@ const CLIMB_KEYS = (top: number): { u: number; pose: Pose }[] => {
       pose: {
         hip: v(0.02, seat),
         pelvis: 8,
-        chest: 26,
+        chest: 24,
         head: -4,
-        feet: { far: { ankle: v(-0.12, 0.68), pitch: 10 }, near: { ankle: v(0.16, 0.66), pitch: 24 } },
+        feet: { far: onBottomRail(-0.12, 10), near: { ankle: v(0.16, seat - 0.68), pitch: 30 } },
         arms,
       },
     },
     {
       u: 0.5,
+      // slid to the near side of the seat: the near leg straight down, toes on the ground
       pose: {
-        hip: v(0.03, seat),
-        pelvis: 6,
-        chest: 24,
+        hip: v(0.05, top - 0.01),
+        pelvis: 4,
+        chest: 18,
         head: 0,
-        feet: { far: { ankle: v(-0.08, 0.64), pitch: 12 }, near: { ankle: v(0.14, 0.62), pitch: 22 } },
+        feet: { far: onBottomRail(-0.08, 12), near: footFrom(v(TOE_DOWN, 0), BONES.toe, 68) },
         arms,
       },
     },
     {
       u: 0.68,
       pose: {
-        hip: v(0.05, seat),
+        hip: v(0.07, top - 0.01),
         pelvis: 6,
-        chest: 22,
+        chest: 20,
         head: 4,
-        feet: { far: { ankle: v(0.1, 0.64), pitch: 18 }, near: { ankle: v(0.18, 0.62), pitch: 22 } },
+        feet: { far: { ankle: v(0.12, top - 0.6), pitch: 20 }, near: footFrom(v(TOE_DOWN, 0), BONES.toe, 60) },
         arms,
       },
     },
     {
       u: 0.84,
       pose: {
-        hip: v(end.hip.x - 0.06, end.hip.y - 0.14),
-        pelvis: 16,
-        chest: 26,
-        head: 10,
-        feet: end.feet,
-        // he pushed off the rail as he dropped: hands free, out in front for balance
+        // weight down onto the near foot (heel down where the toes touched), the far foot landing beside it
+        hip: v(0.12, end.hip.y - 0.08),
+        pelvis: 14,
+        chest: 22,
+        head: 8,
+        feet: { near: flatFoot(TOE_DOWN - BONES.toe.x), far: end.feet.far },
+        // he pushed off the rail as he stepped down: hands free, out in front for balance
         arms: {
           near: { shoulder: 34, elbow: 40, grip: "open", wrist: 10 },
           far: { shoulder: 22, elbow: 48, grip: "open", wrist: 10 },
@@ -621,7 +625,7 @@ const CLIMB_KEYS = (top: number): { u: number; pose: Pose }[] => {
 };
 export const climbRail = (
   u: number,
-  top = 1.29,
+  top = 1.05,
 ): { pose: Pose; behind: BodyPart[] } => {
   const keys = CLIMB_KEYS(top);
   const x = clamp01(u);
@@ -641,6 +645,8 @@ export const climbRail = (
   };
   if (i === 1) lift(pose.feet.near.ankle);
   if (i === 3) lift(pose.feet.far.ankle);
+  // and the first step away off the rail: the near foot lifts clear as it swings forward
+  if (i === 5) pose.feet.near.ankle.y += 0.1 * over;
   const behind: BodyPart[] = [];
   if (x < CLIMB_SWITCH.farLeg) behind.push("farLeg");
   if (x < CLIMB_SWITCH.body) behind.push("body", "nearArm");

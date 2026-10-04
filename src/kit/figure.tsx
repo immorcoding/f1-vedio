@@ -626,7 +626,7 @@ export const Figure: React.FC<{
   const handF = handShape(b.arms.far, cuffs);
   const neckBase = b.neck;
   const headLean = b.chest * 0.55 + b.head;
-  const headC = add(neckBase, lean(v(0.035, 0.13), headLean));
+  const headC = add(neckBase, lean(v(0.035, BONES.headUp), headLean));
   const neck = [
     add(neckBase, lean(v(0.055, -0.02), b.chest)),
     add(headC, lean(v(0.03, -0.08), headLean)),

@@ -60,16 +60,16 @@ const S_CELL = (CELL_FROM + CELL_TO) / 2 - RUN.a.x;
 // World offset of rail r (0 bottom, 1 middle, 2 top) at s metres along the run.
 export const WRECK_BEND = (s: number, rail: number): RailOffset => {
   if (rail === 2) {
-    const k = bump(s, S_NOSE, 0.9);
+    const k = bump(s, S_NOSE, 0.7);
     return { dx: 0, dy: 0.26 * k, dz: 0.45 * k };
   }
   const k = bump(s, S_CELL, 2.2);
   return rail === 0
-    ? { dx: 0, dy: -0.12 * k, dz: 0.4 * k }
+    ? { dx: 0, dy: -0.08 * k, dz: 0.4 * k }
     : { dx: 0, dy: 0, dz: 0.3 * k };
 };
 // The top rail's upper edge (m, night.tsx RAILS) and its depth at world x, as the wreck left it.
-export const TOP_RAIL_EDGE = 1.29;
+export const TOP_RAIL_EDGE = 1.05;
 export const topRailAt = (x: number) => {
   const o = WRECK_BEND(x - RUN.a.x, 2);
   return { y: TOP_RAIL_EDGE + o.dy, z: BARRIER_Z + o.dz };
