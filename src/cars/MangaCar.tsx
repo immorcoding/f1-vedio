@@ -631,7 +631,9 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
         {car.rearWing.farFrom ? (
           <Endplate
             d={car.rearWing.near}
-            livery={car.rearWing.livery}
+            livery={
+              car.rearWing.farLivery === false ? [] : car.rearWing.livery
+            }
             fill={p.wing}
             w={5}
             copy={car.rearWing.farFrom}

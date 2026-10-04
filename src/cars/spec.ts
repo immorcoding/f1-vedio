@@ -205,6 +205,8 @@ export type CarSpec = {
     // the far rear endplate (the near one's perspective copy), drawn behind the wing surface (`top`)
     farFrom?: EndplateCopy;
     livery?: Accent[];
+    // false: the far rear endplate is drawn plain, in the wing colour, without the near one's colour blocks
+    farLivery?: false;
     // the wing elements between the endplates as the camera sees them from above; leave it out where the reference
     // photo sees the wing edge-on
     top?: string;
