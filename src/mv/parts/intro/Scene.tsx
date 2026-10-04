@@ -7,10 +7,9 @@ import { useSongFrame } from "../../clock";
 import type { SceneProps } from "../../scenes";
 import { frameAt } from "../../timing.ts";
 import { EDIT } from "./shots.ts";
+import { Lamp as SignalLamp, type LampPaint } from "../../../kit/lamp";
 import {
-  arcPath,
   BLACK,
-  circlePath,
   DrawPath,
   focusLines,
   ramp,
@@ -76,6 +75,18 @@ const camera = (f: number) => {
 
 // A lit lamp is a flat block of the lamp's real red (ART-8) with a white-hot core, a dark-red
 // screentone on its lower rim, and, for a moment after it switches on, a burst of ink ticks.
+// The drawing is the shared one in src/kit/lamp.tsx (4.3's safety-car lamps rhyme with it).
+const PAINT: LampPaint = {
+  lit: RED,
+  hot: HOT,
+  bloom: "url(#intro-bloom)",
+  litTone: "url(#intro-tone-red)",
+  midTone: "url(#intro-tone-mid)",
+  darkTone: "url(#intro-tone-dark)",
+  line: WHITE,
+  glass: BLACK,
+};
+
 const Lamp: React.FC<{
   x: number;
   y: number;
@@ -83,77 +94,7 @@ const Lamp: React.FC<{
   tone: number;
   on: number;
   age: number;
-}> = ({ x, y, draw, tone, on, age }) => (
-  <g>
-    <circle cx={x} cy={y} r={LAMP_R} fill={BLACK} />
-    {on > 0 ? (
-      <>
-        <circle
-          cx={x}
-          cy={y}
-          r={LAMP_R * 2.3}
-          fill="url(#intro-bloom)"
-          opacity={Math.min(1, 0.5 * on)}
-        />
-        <circle cx={x} cy={y} r={LAMP_R} fill={RED} />
-        <path
-          d={`${arcPath(x, y, LAMP_R, Math.PI * -0.15, Math.PI * 0.85)} ${arcPath(x + 12, y + 12, LAMP_R - 8, Math.PI * 0.85, Math.PI * -0.15).replace("M", "L")} Z`}
-          fill="url(#intro-tone-red)"
-        />
-        <circle
-          cx={x - 10}
-          cy={y - 10}
-          r={LAMP_R * 0.42}
-          fill={HOT}
-          opacity={Math.min(1, 0.75 + 0.25 * (on - 1))}
-        />
-        {age < 14 ? (
-          <path
-            d={Array.from({ length: 12 }, (_, i) => {
-              const a = (i / 12) * Math.PI * 2 + 0.13;
-              const r0 = LAMP_R + 26;
-              const r1 = LAMP_R + 26 + 46 * (1 - age / 14);
-              return `M ${x + Math.cos(a) * r0} ${y + Math.sin(a) * r0} L ${x + Math.cos(a) * r1} ${y + Math.sin(a) * r1}`;
-            }).join(" ")}
-            stroke={WHITE}
-            strokeWidth={4}
-            strokeLinecap="round"
-            opacity={1 - age / 14}
-          />
-        ) : null}
-      </>
-    ) : (
-      // unlit: dark glass with a mid screentone
-      <circle
-        cx={x}
-        cy={y}
-        r={LAMP_R}
-        fill="url(#intro-tone-mid)"
-        opacity={0.55 * tone}
-      />
-    )}
-    {/* inside of the hood: a crescent of dark tone above the lens */}
-    <path
-      d={`${arcPath(x, y, LAMP_R + 14, Math.PI * 1.08, Math.PI * 1.92)} ${arcPath(x, y, LAMP_R + 2, Math.PI * 1.92, Math.PI * 1.08).replace("M", "L")} Z`}
-      fill="url(#intro-tone-dark)"
-      opacity={tone}
-    />
-    <DrawPath d={circlePath(x, y, LAMP_R + 14)} progress={draw} width={4} />
-    <DrawPath
-      d={circlePath(x, y, LAMP_R)}
-      progress={draw}
-      width={2}
-      opacity={0.8}
-    />
-    {/* gloss on the glass */}
-    <DrawPath
-      d={arcPath(x, y, LAMP_R - 14, Math.PI * 1.15, Math.PI * 1.45)}
-      progress={draw}
-      width={5}
-      opacity={0.6}
-    />
-  </g>
-);
+}> = (p) => <SignalLamp {...p} r={LAMP_R} paint={PAINT} />;
 
 export type GantryProps = {
   /** Frames into the ink draw-in (the intro's song frame; complete by ~450). */
