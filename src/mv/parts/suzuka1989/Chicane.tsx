@@ -1,18 +1,22 @@
-// Shot 1.3 (bars 15–18): the Casio Triangle chicane after 130R from straight above (MOT-2), lap 47. The view opens
-// wide on the run from 130R and comes down onto the two McLarens as they brake. SEN sits in PRO's tow, pulls right
-// onto the inside while still a car length back, and draws up until his nose is at PRO's sidepod; PRO, on the
-// outside, turns in at the cut (19.1, the crash) — where shot 1.4 picks them up.
+// Shot 1.3 (bars 15–18): lap 47, out of 130R into the Casio Triangle chicane, from straight above (MOT-2), driven for
+// real (MOT-5; drive13.ts). The camera rides with the pair at 300 km/h, so the track — seams, kerbs, marker boards,
+// grass — streams past at its true speed while the cars hold the frame. SEN leaves PRO's tow and pulls right; at
+// the braking point the shot drops into half-speed slow motion (a white flash, the frame's edges fall into tone,
+// afterimages trail the cars): PRO locks up and brakes, SEN brakes later and draws alongside on the inside, PRO
+// turns in across him and their front wheels touch — the cut to the side-on impact on 19.1.
 //
-// Every car position comes from staging.ts, which the interpenetration check (npm run check:overlap, ART-18) tests
-// frame by frame: the footprints, at the scale the cars are drawn, never meet in this shot.
-//
-// The chicane must read as the track: the main line is the asphalt with kerbs and bold edges; the escape road that
-// runs straight on is drawn narrower, in light tone with thin edges, and barred by a staggered row of bollards.
-import { Easing } from "remotion";
-import { MangaCar, MP4_5_PRO, MP4_5_SEN, topAnchorAt } from "../../../cars";
+// Every car pose comes from drive13.ts through staging.ts, which the interpenetration check tests frame by frame.
+import { random } from "remotion";
+import {
+  MangaCar,
+  MP4_5_PRO,
+  MP4_5_SEN,
+  topAnchorAt,
+  type CarSpec,
+} from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
-import { Caption } from "../../../kit/lettering";
+import { CAPTION_FONT, Caption } from "../../../kit/lettering";
 import { speedLines } from "../../../kit/lines";
 import { ToneDefs, tone } from "../../../kit/tone";
 import {
@@ -26,16 +30,25 @@ import {
   type MapPoint,
   type MapView,
 } from "../../../tracks";
-import { ramp, shotById, type PictureProps } from "./common";
+import { shotById, type PictureProps } from "./common";
 import {
-  CHICANE as C,
+  proAt,
+  rate,
+  senAt,
+  SLOWMO_AT,
+  T_BRAKE_PRO,
+  T_BRAKE_SEN,
+  type CarDrive,
+} from "./drive13";
+import {
   carScale13,
   cars13,
   ppm13,
-  senLine13,
-  u13,
+  smooth as smoothstep,
+  tau13,
 } from "./staging";
 
+const C = SUZUKA_1989.corners.chicane;
 const T = SUZUKA_1989;
 const ESCAPE = polylinePoints(T.escapeRoads?.[0]?.path ?? []);
 const ESCAPE_W = 7; // drawn narrower than the race track (13 m): a service road, not the circuit
@@ -57,37 +70,55 @@ const escapeAt = (k: number, across: number): MapPoint => {
 const BOLLARDS: [number, number][] = [
   [0.1, -2.3],
   [0.1, 0.6],
+  [0.16, 1.9],
+  [0.22, -1.9],
   [0.3, 1.8],
   [0.45, -1.8],
   [0.6, 1.8],
   [0.75, -1.8],
 ];
 
+// Near the escape road (for the gaps in the tyre wall and the grass).
+const onEscape = (p: MapPoint, clear: number) =>
+  ESCAPE.some((e) => Math.hypot(e.x - p.x, e.y - p.y) < clear);
+
 const EscapeRoad: React.FC<{ view: MapView }> = ({ view }) => {
   const ppm = view.pxPerMetre;
-  const r = Math.max(10, 0.45 * ppm);
+  const r = Math.max(12, 0.55 * ppm);
+  const road = view.path(widen(ESCAPE, ESCAPE_W), true);
   return (
     <g>
+      {/* opaque under the tone, so the barrier line behind it is cut by the road */}
+      <path d={road} fill={PAPER} />
       <path
-        d={view.path(widen(ESCAPE, ESCAPE_W), true)}
+        d={road}
         fill={tone("light")}
         stroke={INK}
         strokeWidth={Math.max(1.5, 0.15 * ppm)}
         strokeDasharray={`${Math.max(6, ppm)} ${Math.max(4, 0.6 * ppm)}`}
       />
+      {/* temporary bollards seen from above: striped posts as ink-and-paper rings */}
       {BOLLARDS.map(([k, a]) => {
         const p = view.project(escapeAt(k, a));
         return (
           <g key={`${k}-${a}`}>
             <circle
+              cx={p.x + r * 0.35}
+              cy={p.y + r * 0.35}
+              r={r}
+              fill={INK}
+              opacity={0.3}
+            />
+            <circle
               cx={p.x}
               cy={p.y}
               r={r}
-              fill={PAPER}
+              fill={INK}
               stroke={INK}
-              strokeWidth={Math.max(2, r * 0.3)}
+              strokeWidth={2}
             />
-            <circle cx={p.x} cy={p.y} r={r * 0.4} fill={INK} />
+            <circle cx={p.x} cy={p.y} r={r * 0.68} fill={PAPER} />
+            <circle cx={p.x} cy={p.y} r={r * 0.36} fill={INK} />
           </g>
         );
       })}
@@ -95,66 +126,143 @@ const EscapeRoad: React.FC<{ view: MapView }> = ({ view }) => {
   );
 };
 
+// Ground marks of a car: black tyre marks where the front wheels locked, as a band along the lap.
+const LOCK_TIME = 0.3; // s of locked front wheels at the start of braking
+
+type Car = {
+  car: CarSpec;
+  tag: "PRO" | "SEN";
+  at: (t: number) => CarDrive;
+  brake: number;
+};
+const CARS: Car[] = [
+  { car: MP4_5_SEN, tag: "SEN", at: senAt, brake: T_BRAKE_SEN },
+  { car: MP4_5_PRO, tag: "PRO", at: proAt, brake: T_BRAKE_PRO },
+];
+
+// A point on the car, metres forward (dx) and to the right (dy) of the middle of its wheelbase, on the map.
+const onCar = (c: CarDrive, dx: number, dy: number): MapPoint => {
+  const a = (c.heading * Math.PI) / 180;
+  return {
+    x: c.x + Math.cos(a) * dx - Math.sin(a) * dy,
+    y: c.y + Math.sin(a) * dx + Math.cos(a) * dy,
+  };
+};
+const FRONT = 1.53; // front axle ahead of the middle of the wheelbase, m
+const TRACK_HALF = 0.91; // half the front track, m
+
+// Brake marker boards (plain boards with 3/2/1 bars, ART-5) on the left verge before the chicane.
+const BOARDS = [
+  { s: C - 150, bars: 3 },
+  { s: C - 100, bars: 2 },
+  { s: C - 50, bars: 1 },
+];
+
 export const Chicane: React.FC<PictureProps> = ({ f }) => {
   const shot = shotById("1.3");
-  const len = shot.to - shot.from;
-  const t = f - shot.from;
-  const u = u13(f);
-  const e = Math.pow(u, 1.3);
-  const { pro, sen } = cars13(u);
+  const tau = tau13(f);
+  const { t, pro, sen } = cars13(f);
+  const ppm = ppm13(f);
+  const scale = carScale13(f);
+  const cppm = ppm * scale;
+  const slow = smoothstep(tau, SLOWMO_AT - 0.05, SLOWMO_AT + 0.25);
+  // camera: on the pair, looking ahead along the road (further at speed), turned so they run left to right
+  const mid = { x: (pro.x + sen.x) / 2, y: (pro.y + sen.y) / 2 };
   const sMid = (pro.s + sen.s) / 2;
-  const ppm = ppm13(u);
-  // wide: centred between the cars and the chicane; close: on the cars
-  const centre = poseAt(T, sMid + (C - sMid) * 0.35 * (1 - e) + 4 * e);
-  const h0 = poseAt(T, C - 120).heading;
+  const v = (pro.v + sen.v) / 2;
+  const lookAhead = 0.14 * v;
+  const aheadPose = poseAt(T, sMid + lookAhead, (pro.lat + sen.lat) / 2);
+  const centre = {
+    x: mid.x + (aheadPose.x - poseAt(T, sMid, (pro.lat + sen.lat) / 2).x),
+    y: mid.y + (aheadPose.y - poseAt(T, sMid, (pro.lat + sen.lat) / 2).y),
+  };
+  // the road's mean heading over the next stretch, so the frame turns smoothly with it
+  let hSum = 0;
+  for (let k = -2; k <= 2; k++) hSum += poseAt(T, sMid + 10 + k * 12).heading;
   const view = mapView({
     centre,
-    rotation: -h0,
+    rotation: -hSum / 5,
     pxPerMetre: ppm,
-    screen: { x: 860, y: 520 },
+    // in the slow motion the pair drifts left and down in the frame, so the chicane ahead — the right-hander, the
+    // escape road running straight on, its bollards — opens up in the frame before the touch
+    screen: {
+      x: 960 - 250 * smoothstep(tau, SLOWMO_AT, SLOWMO_AT + 2.2),
+      y: 560 + 120 * smoothstep(tau, SLOWMO_AT, SLOWMO_AT + 2.2),
+    },
   });
-  const carScale = carScale13(u);
-  const cppm = ppm * carScale;
-  const lineDraw = ramp(t, len * 0.3, len * 0.7);
-  const arrowFrom = sen.s + 10;
-  const arrowPts = samplePath(
-    T,
-    Math.min(arrowFrom, C - 60),
-    C + 18,
-    senLine13,
-  );
-  const end = view.project(arrowPts[arrowPts.length - 1]);
-  const prev = view.project(arrowPts[arrowPts.length - 4]);
-  const ah = Math.atan2(end.y - prev.y, end.x - prev.x);
-  const caption = ramp(t, 8, 22, Easing.out(Easing.back(1.5)));
-  const steerPro = 14 * ramp(u, 0.8, 1);
-  const cars = [
-    { car: MP4_5_SEN, c: sen, steer: 0, tag: "SEN" },
-    { car: MP4_5_PRO, c: pro, steer: steerPro, tag: "PRO" },
-  ];
-  // the main line over the junction is redrawn on top of the escape road
-  const junction = { from: C - 70, to: C + 40 };
+  const sFrom = sMid - 1100 / ppm - 40;
+  const sTo = sMid + 1500 / ppm + 40;
+  // the track's markings: a transverse asphalt seam every 8 m, so the road visibly streams past
+  const seams: string[] = [];
+  for (let s = Math.ceil(sFrom / 8) * 8; s < sTo; s += 8) {
+    const a = view.project(poseAt(T, s, -T.width / 2 + 0.6));
+    const b = view.project(poseAt(T, s, T.width / 2 - 0.6));
+    seams.push(
+      `M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${b.x.toFixed(1)} ${b.y.toFixed(1)}`,
+    );
+  }
+  // tyre wall on the outside (left) of the chicane, beyond the run-off, open where the escape road runs through
+  const tyres: MapPoint[] = [];
+  for (let s = C - 70; s < C + 30; s += 0.7) {
+    const p = poseAt(T, s, -(T.width / 2 + 6.5));
+    if (!onEscape(p, ESCAPE_W / 2 + 1.5)) tyres.push(p);
+  }
+  // grass: ink tufts fixed to the ground (a 1.6 m grid along the lap), so the verges stream past with the road;
+  // none on the escape road
+  const tufts: string[] = [];
+  const half = T.width / 2;
+  for (let i = Math.ceil(sFrom / 1.6); i < sTo / 1.6; i++) {
+    for (const side of [-1, 1]) {
+      const r = (k: string) => random(`s13-tuft-${i}-${side}-${k}`);
+      const lat = side * (half + 6.5 + r("o") * 38);
+      const p = poseAt(T, i * 1.6 + r("s") * 1.6, lat);
+      if (Math.abs(i * 1.6 - C) < 160 && onEscape(p, 6)) continue;
+      const q = view.project(p);
+      const l = (0.35 + 0.35 * r("l")) * ppm;
+      tufts.push(
+        `M ${q.x.toFixed(1)} ${q.y.toFixed(1)} l ${(-l * 0.4).toFixed(1)} ${(-l).toFixed(1)} M ${(q.x + l * 0.3).toFixed(1)} ${q.y.toFixed(1)} l ${(l * 0.2).toFixed(1)} ${(-l * 1.1).toFixed(1)}`,
+      );
+    }
+  }
+  // rubber laid down on the racing line, fixed to the road (every 30 m, two lines a car's track apart)
+  const rubber: string[] = [];
+  for (let i = Math.ceil(sFrom / 30); i < sTo / 30; i++) {
+    const lat = -3 + 6 * random(`s13-rub-${i}`);
+    for (const d of [-0.8, 0.8])
+      rubber.push(view.path(samplePath(T, i * 30, i * 30 + 16, lat + d, 2)));
+  }
+  // the outside kerb at the entry of the right-hander (red and white in 1989; ink and paper here, ART-8)
+  const outerKerb = Array.from({ length: 20 }, (_, i) => {
+    const s0 = C - 36 + i * 1.6;
+    return {
+      d: view.band(
+        samplePath(T, s0, s0 + 1.6, -(half - 0.2), 0.4),
+        samplePath(T, s0, s0 + 1.6, -(half + 1.3), 0.4),
+      ),
+      dark: i % 2 === 0,
+    };
+  });
+  // the chicane's name, once, while its first apex is in the frame
+  const apex = view.project(poseAt(T, C + 8, T.width / 2 - 1));
+  const label = smoothstep(tau, 2.2, 2.7);
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
         <ToneDefs />
         <InkFilterDef />
+        <radialGradient id="s13-slow">
+          <stop offset="55%" stopColor="#fff" stopOpacity={0} />
+          <stop offset="100%" stopColor="#fff" stopOpacity={1} />
+        </radialGradient>
         <mask
-          id="s13-draw"
+          id="s13-vignette"
           maskUnits="userSpaceOnUse"
           x={0}
           y={0}
           width={1920}
           height={1080}
         >
-          <path
-            d={view.path(arrowPts)}
-            fill="none"
-            stroke="#fff"
-            strokeWidth={80}
-            pathLength={1}
-            strokeDasharray={`${lineDraw} 1`}
-          />
+          <rect width={1920} height={1080} fill="url(#s13-slow)" />
         </mask>
       </defs>
       <rect width={1920} height={1080} fill={PAPER} />
@@ -162,93 +270,240 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
         <TrackSection
           track={T}
           view={view}
-          from={C - 560}
-          to={C + 260}
+          from={sFrom}
+          to={sTo}
           runoff={5}
           barrier
-          grass={{ x: 0, y: 0, w: 1920, h: 1080 }}
           escapeRoads={false}
+        />
+        <path
+          d={tufts.join(" ")}
+          stroke={INK}
+          strokeWidth={Math.max(2, 0.07 * ppm)}
+          strokeLinecap="round"
+          opacity={0.6}
         />
         <EscapeRoad view={view} />
         <TrackSection
           track={T}
           view={view}
-          from={junction.from}
-          to={junction.to}
+          from={Math.max(sFrom, C - 70)}
+          to={Math.min(sTo, C + 40)}
           runoff={0}
           escapeRoads={false}
         />
-        {/* SEN's line down the inside */}
-        <g mask="url(#s13-draw)">
+        <path
+          d={rubber.join(" ")}
+          fill="none"
+          stroke={INK}
+          strokeWidth={0.3 * ppm}
+          strokeLinecap="round"
+          opacity={0.18}
+        />
+        {outerKerb.map((k) => (
           <path
-            d={view.path(arrowPts)}
-            fill="none"
-            stroke={PAPER}
-            strokeWidth={22}
-            strokeLinecap="round"
-            strokeDasharray="34 16"
-          />
-          <path
-            d={view.path(arrowPts)}
-            fill="none"
+            key={k.d}
+            d={k.d}
+            fill={k.dark ? INK : PAPER}
             stroke={INK}
-            strokeWidth={11}
-            strokeLinecap="round"
-            strokeDasharray="34 16"
+            strokeWidth={1.5}
           />
-        </g>
-        {lineDraw > 0.97 ? (
-          <path
-            d={`M ${end.x + Math.cos(ah) * 40} ${end.y + Math.sin(ah) * 40} L ${end.x + Math.cos(ah + 2.4) * 34} ${end.y + Math.sin(ah + 2.4) * 34} L ${end.x + Math.cos(ah - 2.4) * 34} ${end.y + Math.sin(ah - 2.4) * 34} Z`}
-            fill={INK}
-            stroke={PAPER}
-            strokeWidth={5}
-          />
-        ) : null}
-        {cars.map(({ car, c, steer }) => {
-          const heading = view.heading(c.heading);
-          const p = view.project(c);
+        ))}
+        <path
+          d={seams.join(" ")}
+          stroke={INK}
+          strokeWidth={Math.max(3, 0.14 * ppm)}
+          opacity={0.6}
+        />
+        {/* tyre wall */}
+        {tyres.map((p, i) => {
+          const q = view.project(p);
           return (
-            <g key={car.driver.number}>
-              {/* short speed streaks just off the rear wing */}
-              <g transform={`translate(${p.x} ${p.y}) rotate(${heading})`}>
+            <circle
+              key={i}
+              cx={q.x}
+              cy={q.y}
+              r={0.3 * ppm}
+              fill={INK}
+              stroke={PAPER}
+              strokeWidth={Math.max(1, 0.12 * ppm)}
+            />
+          );
+        })}
+        {/* brake marker boards */}
+        {BOARDS.map((b) => {
+          const p = poseAt(T, b.s, -(T.width / 2 + 3.2));
+          const q = view.project(p);
+          const w = 2.4 * ppm;
+          const h = 0.7 * ppm;
+          return (
+            <g
+              key={b.s}
+              transform={`translate(${q.x} ${q.y}) rotate(${view.heading(p.heading)})`}
+            >
+              <rect
+                x={-w / 2}
+                y={-h / 2}
+                width={w}
+                height={h}
+                fill={PAPER}
+                stroke={INK}
+                strokeWidth={3}
+              />
+              {Array.from({ length: b.bars }, (_, k) => (
+                <rect
+                  key={k}
+                  x={-w / 2 + (k + 0.5) * (w / 4)}
+                  y={-h / 2}
+                  width={w / 9}
+                  height={h}
+                  fill={INK}
+                />
+              ))}
+            </g>
+          );
+        })}
+        {/* tyre marks of the locked front wheels, laid down from the braking point */}
+        {CARS.map(({ tag, at, brake }) => {
+          if (t < brake) return null;
+          const lines: string[] = [];
+          for (const side of [-1, 1]) {
+            const pts: MapPoint[] = [];
+            for (let u = brake; u <= Math.min(t, brake + LOCK_TIME); u += 0.01)
+              pts.push(onCar(at(u), FRONT, side * TRACK_HALF));
+            if (pts.length > 1) lines.push(view.path(pts));
+          }
+          return (
+            <g key={`mark-${tag}`}>
+              {lines.map((d) => (
+                <path
+                  key={d}
+                  d={d}
+                  fill="none"
+                  stroke={INK}
+                  strokeWidth={0.28 * ppm}
+                  strokeLinecap="round"
+                  opacity={0.55}
+                />
+              ))}
+            </g>
+          );
+        })}
+        {/* contact shadows, offset down-right (sun high in the south-west) and toward the outside of the turn */}
+        {CARS.map(({ tag, at }) => {
+          const c = at(t);
+          const q = view.project(onCar(c, 0.12 * scale, 0));
+          const roll = Math.max(-1, Math.min(1, c.latAccel / 30));
+          return (
+            <rect
+              key={`sh-${tag}`}
+              x={-2.1 * cppm}
+              y={-0.95 * cppm}
+              width={4.2 * cppm}
+              height={1.9 * cppm}
+              rx={0.5 * cppm}
+              fill={INK}
+              opacity={0.28}
+              transform={`translate(${q.x + 0.35 * cppm} ${q.y + (0.45 - 0.25 * roll) * cppm}) rotate(${view.heading(c.heading)})`}
+            />
+          );
+        })}
+        {/* slow-motion afterimages: where each car was a moment ago, fading (manga multiple image) */}
+        {slow > 0
+          ? CARS.flatMap(({ car, tag, at }) =>
+              [0.09, 0.06, 0.03].map((dt, k) => {
+                const c = at(t - dt);
+                const h = view.heading(c.heading);
+                const q = view.project(c);
+                return (
+                  <g
+                    key={`ghost-${tag}-${k}`}
+                    opacity={slow * (0.12 + 0.06 * k)}
+                  >
+                    <MangaCar
+                      car={car}
+                      view="top"
+                      at={topAnchorAt(
+                        car,
+                        { x: q.x, y: q.y, pxPerMetre: cppm },
+                        h,
+                      )}
+                      state={{ heading: h, steer: c.steer }}
+                    />
+                  </g>
+                );
+              }),
+            )
+          : null}
+        {CARS.map(({ car, tag, at }) => {
+          const c = at(t);
+          const h = view.heading(c.heading);
+          const q = view.project(c);
+          // speed streaks behind the car, as long as the screen speed (shorter in the slow motion)
+          const streak = c.v * rate(tau) * 0.09 * ppm;
+          return (
+            <g key={tag}>
+              <g transform={`translate(${q.x} ${q.y}) rotate(${h})`}>
                 <path
                   d={speedLines({
-                    x: -4.6 * cppm,
+                    x: -2.4 * cppm - streak,
                     y: -0.9 * cppm,
-                    w: 2.4 * cppm,
+                    w: streak,
                     h: 1.8 * cppm,
-                    n: 7,
-                    seed: `${car.driver.number}-${Math.floor(t / 4)}`,
+                    n: 8,
+                    seed: `${tag}-${Math.floor(f / 3)}`,
                     thickness: 5,
-                    length: [0.4, 1],
+                    length: [0.5, 1],
                   })}
                   fill={INK}
-                  opacity={0.7 * (1 - ramp(u, 0.8, 0.95))}
+                  opacity={0.75}
                 />
               </g>
               <MangaCar
                 car={car}
                 view="top"
-                at={topAnchorAt(
-                  car,
-                  { x: p.x, y: p.y, pxPerMetre: cppm },
-                  heading,
-                )}
-                state={{ heading, steer }}
+                at={topAnchorAt(car, { x: q.x, y: q.y, pxPerMetre: cppm }, h)}
+                state={{ heading: h, steer: c.steer }}
               />
             </g>
           );
         })}
-        {/* driver tags on the wide map: PRO's above his car (his left), SEN's below (his right) */}
-        {cars.map(({ c, tag }) => {
+        {/* lock-up smoke: puffs left behind at the front wheels while locked, drifting and growing */}
+        {CARS.flatMap(({ tag, at, brake }) =>
+          Array.from({ length: 10 }, (_, k) => {
+            const born = brake + (k / 10) * LOCK_TIME;
+            const age = t - born;
+            if (age < 0 || age > 1.2) return null;
+            return [-1, 1].map((side) => {
+              const p = view.project(
+                onCar(at(born), FRONT - 0.3, side * TRACK_HALF),
+              );
+              const r = (0.25 + 0.9 * age) * ppm;
+              return (
+                <circle
+                  key={`smoke-${tag}-${k}-${side}`}
+                  cx={p.x}
+                  cy={p.y - age * 0.4 * ppm}
+                  r={r}
+                  fill={PAPER}
+                  stroke={INK}
+                  strokeWidth={2}
+                  opacity={Math.max(0, 0.85 - age * 0.7)}
+                />
+              );
+            });
+          }),
+        )}
+        {/* driver tags above and below the pair while they are still far from the corner */}
+        {CARS.map(({ tag, at }) => {
+          const c = at(t);
           const q = view.project(c);
           const p = {
             x: q.x,
-            y: q.y + (tag === "SEN" ? 1 : -1) * (1.6 * cppm + 30),
+            y: q.y + (tag === "SEN" ? 1 : -1) * (1.4 * cppm + 34),
           };
           return (
-            <g key={tag} opacity={1 - ramp(u, 0.72, 0.88)}>
+            <g key={`tag-${tag}`} opacity={1 - smoothstep(tau, 4.5, 5.2)}>
               <rect
                 x={p.x - 52}
                 y={p.y - 26}
@@ -273,10 +528,72 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
             </g>
           );
         })}
-        <g
-          opacity={caption}
-          transform={`translate(${1460 + 20 * (1 - caption)} 80)`}
-        >
+        {/* the slow-motion beat: a white flash at its start, then the edges of the frame fall into tone */}
+        {slow > 0 ? (
+          <g>
+            <rect
+              width={1920}
+              height={1080}
+              fill={tone("mid")}
+              mask="url(#s13-vignette)"
+              opacity={0.5 * slow}
+            />
+            <rect
+              width={1920}
+              height={1080}
+              fill={PAPER}
+              opacity={
+                0.7 *
+                (1 - smoothstep(tau, SLOWMO_AT, SLOWMO_AT + 0.25)) *
+                (tau >= SLOWMO_AT ? 1 : 0)
+              }
+            />
+          </g>
+        ) : null}
+        {/* the chicane's name, once, pointing at its first apex (over the slow-motion tone, so it reads) */}
+        {label > 0 && apex.x < 1880 && apex.y > 40 && apex.y < 1040
+          ? (() => {
+              // the box sits right of and below the apex, kept inside the frame; a leader line points at the apex
+              const bx = Math.min(1620, Math.max(420, apex.x + 110));
+              const by = Math.min(930, Math.max(120, apex.y + 70));
+              return (
+                <g
+                  opacity={
+                    label *
+                    (1 - smoothstep(apex.x, 1700, 1880)) *
+                    (1 - smoothstep(tau, 6.9, 7.15))
+                  }
+                >
+                  <path
+                    d={`M ${apex.x} ${apex.y} L ${bx + 20} ${by + 6}`}
+                    stroke={INK}
+                    strokeWidth={4}
+                  />
+                  <circle cx={apex.x} cy={apex.y} r={7} fill={INK} />
+                  <rect
+                    x={bx}
+                    y={by}
+                    width={240}
+                    height={72}
+                    fill={PAPER}
+                    stroke={INK}
+                    strokeWidth={5}
+                  />
+                  <text
+                    x={bx + 120}
+                    y={by + 52}
+                    textAnchor="middle"
+                    fontFamily={CAPTION_FONT}
+                    fontSize={46}
+                    fill={INK}
+                  >
+                    减速弯
+                  </text>
+                </g>
+              );
+            })()
+          : null}
+        <g transform="translate(90 70)">
           <Caption
             x={0}
             y={0}

@@ -9,11 +9,15 @@ import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
 import { focusLines, speedLines } from "../../../kit/lines";
 import { ToneDefs } from "../../../kit/tone";
+import { CAPTION_FONT } from "../../../kit/lettering";
 import {
-  Trackside,
+  Barriers,
+  Grandstand,
+  Hills,
+  Sky,
   TRACKSIDE_DEFAULT,
 } from "../../../scenes/suzuka-1989/trackside";
-import { Foreground } from "./Foreground";
+import { bounce, FarVerge, NearKerb, RoadFlow, WheelBlur } from "./Motion";
 import { cueFrame, ramp, shotById, type PictureProps } from "./common";
 import { cars12, camX12, SPEED, Z_PRO_12, Z_SEN_12 } from "./staging";
 
@@ -39,7 +43,8 @@ const HelmetPanel: React.FC<{
   wheel: number;
   drop: number;
   seed: number;
-}> = ({ car, box, id, wheel, drop, seed }) => {
+  caption: string;
+}> = ({ car, box, id, wheel, drop, seed, caption }) => {
   const ppm = 760;
   const h = helmetM(car);
   const cx = box.x + box.w * 0.52;
@@ -70,9 +75,32 @@ const HelmetPanel: React.FC<{
         stroke={INK}
         strokeWidth={9}
       />
+      {/* who and what is at stake (facts.md: before the race PRO 76, SEN 60) */}
+      <rect
+        x={box.x + 20}
+        y={box.y + box.h - 6}
+        width={box.w - 40}
+        height={74}
+        fill={PAPER}
+        stroke={INK}
+        strokeWidth={6}
+      />
+      <text
+        x={box.x + box.w / 2}
+        y={box.y + box.h + 50}
+        textAnchor="middle"
+        fontFamily={CAPTION_FONT}
+        fontSize={46}
+        fill={INK}
+      >
+        {caption}
+      </text>
     </g>
   );
 };
+
+// On-screen stakes under the helmets (STO-5: a few characters; facts.md "赛前积分").
+export const STAKES = { pro: "PRO 领先 16 分", sen: "SEN 必须赢" } as const;
 
 export const Pair: React.FC<PictureProps> = ({ f }) => {
   const shot = shotById("1.2");
@@ -92,10 +120,22 @@ export const Pair: React.FC<PictureProps> = ({ f }) => {
     cueFrame("suzuka1989.helmets") + 24,
     Easing.out(Easing.back(1.4)),
   );
-  const proA = CAM.anchor({ x: proX - camX, z: Z_PRO_12 });
-  const senA = CAM.anchor({ x: senX - camX, z: Z_SEN_12 });
-  // a slight bob of the camera, as from a broadcast tower
-  const bob = 3 * Math.sin(t * 2.1);
+  const bPro = bounce(t, 1);
+  const bSen = bounce(t, 4);
+  const proA0 = CAM.anchor({ x: proX - camX, z: Z_PRO_12 });
+  const senA0 = CAM.anchor({ x: senX - camX, z: Z_SEN_12 });
+  const proA = { ...proA0, y: proA0.y + bPro.dy };
+  const senA = { ...senA0, y: senA0.y + bSen.dy };
+  // the camera operator's small corrections while panning
+  const shakeX = 2.2 * Math.sin(t * 9.1) + 1.2 * Math.sin(t * 23.7);
+  const shakeY = 1.6 * Math.sin(t * 7.3 + 1) + 1 * Math.sin(t * 19.1);
+  const spin = f * 37; // blur arcs creep round at a readable rate (the true rate aliases)
+  const layout = {
+    ...TRACKSIDE_DEFAULT,
+    stand: 110,
+    standFrom: -400,
+    standTo: 1200,
+  };
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
@@ -104,47 +144,69 @@ export const Pair: React.FC<PictureProps> = ({ f }) => {
       </defs>
       <rect width={1920} height={1080} fill={PAPER} />
       <g filter={inkFilter()}>
-        <g transform={`translate(0 ${bob})`}>
-          <Trackside
+        <g transform={`translate(${shakeX} ${shakeY})`}>
+          <Sky cam={CAM} camX={camX} layout={layout} />
+          <Hills cam={CAM} camX={camX} layout={layout} />
+          <Grandstand cam={CAM} camX={camX} layout={layout} />
+          <Barriers cam={CAM} camX={camX} layout={layout} />
+          <FarVerge
             cam={CAM}
             camX={camX}
-            layout={{
-              ...TRACKSIDE_DEFAULT,
-              stand: 110,
-              standFrom: -400,
-              standTo: 1200,
-            }}
+            speed={SPEED}
+            z={layout.farEdge + 1.4}
           />
-          <Foreground cam={CAM} camX={camX} nearEdge={6} farEdge={19} />
-          {/* speed streaks on the track behind each car */}
+          <RoadFlow
+            cam={CAM}
+            camX={camX}
+            speed={SPEED}
+            nearEdge={layout.nearEdge}
+            farEdge={layout.farEdge}
+          />
+          <NearKerb
+            cam={CAM}
+            camX={camX}
+            speed={SPEED}
+            nearEdge={layout.nearEdge}
+          />
+          {/* speed streaks trailing each car */}
           <path
             d={speedLines({
-              x: senA.x - 900,
-              y: senA.y - 70,
-              w: 760,
-              h: 60,
-              n: 14,
-              seed: `sen-${Math.floor(f / 3)}`,
+              x: senA.x - 700,
+              y: senA.y - 0.9 * senA.pxPerMetre,
+              w: 640,
+              h: 0.8 * senA.pxPerMetre,
+              n: 12,
+              seed: `sen-${Math.floor(f / 2)}`,
               thickness: 4,
             })}
             fill={INK}
-            opacity={0.6}
+            opacity={0.55}
           />
-          <MangaCar car={MP4_5_SEN} at={senA} state={{ wheelAngle: wheel }} />
+          <MangaCar
+            car={MP4_5_SEN}
+            at={senA}
+            state={{ wheelAngle: wheel, tilt: bSen.tilt }}
+          />
+          <WheelBlur car={MP4_5_SEN} at={senA} spin={spin} />
           <path
             d={speedLines({
-              x: proA.x - 1000,
-              y: proA.y - 90,
-              w: 900,
-              h: 80,
-              n: 18,
-              seed: `pro-${Math.floor(f / 3)}`,
+              x: proA.x - 820,
+              y: proA.y - 0.9 * proA.pxPerMetre,
+              w: 760,
+              h: 0.8 * proA.pxPerMetre,
+              n: 14,
+              seed: `pro-${Math.floor(f / 2)}`,
               thickness: 5,
             })}
             fill={INK}
-            opacity={0.6}
+            opacity={0.55}
           />
-          <MangaCar car={MP4_5_PRO} at={proA} state={{ wheelAngle: wheel }} />
+          <MangaCar
+            car={MP4_5_PRO}
+            at={proA}
+            state={{ wheelAngle: wheel, tilt: bPro.tilt }}
+          />
+          <WheelBlur car={MP4_5_PRO} at={proA} spin={spin + 60} />
         </g>
         {helmets > 0 ? (
           <HelmetPanel
@@ -154,6 +216,7 @@ export const Pair: React.FC<PictureProps> = ({ f }) => {
             wheel={wheel}
             drop={helmets}
             seed={3}
+            caption={STAKES.pro}
           />
         ) : null}
         {helmets2 > 0 ? (
@@ -164,6 +227,7 @@ export const Pair: React.FC<PictureProps> = ({ f }) => {
             wheel={wheel}
             drop={helmets2}
             seed={7}
+            caption={STAKES.sen}
           />
         ) : null}
         <rect

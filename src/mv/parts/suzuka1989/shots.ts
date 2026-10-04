@@ -10,7 +10,8 @@ export const EDIT: PartEdit = {
       from: at(9),
       to: at(11),
       view: "title",
-      content: "铃鹿 8 字形赛道全图墨线画出，130R 之后的减速弯亮起",
+      content:
+        "铃鹿 8 字形赛道全图墨线画出，130R 之后的减速弯被圈出，放大成标题下的圆形小格：右左连弯和直行的缓冲道",
       text: ["1989 · 铃鹿"],
     },
     {
