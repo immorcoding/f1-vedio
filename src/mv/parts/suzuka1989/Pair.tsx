@@ -56,8 +56,8 @@ const HelmetPanel: React.FC<{
   );
 };
 
-// On-screen stakes under the helmets (STO-5: a few characters; facts.md "赛前积分").
-export const STAKES = { pro: "PRO 领先 16 分", sen: "SEN 必须赢" } as const;
+// On-screen stakes under the helmets (STO-5: a few words; facts.md "赛前积分").
+export const STAKES = { pro: "PRO +16 PTS", sen: "SEN MUST WIN" } as const;
 
 export const Pair: React.FC<PictureProps> = ({ f }) => {
   const shot = shotById("1.2");

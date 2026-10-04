@@ -93,7 +93,7 @@ export const Restart: React.FC<{ st: ShotTime }> = ({ st }) => {
           <LatifiCrash x={EGG.x} y={EGG.y} w={EGG.w} h={EGG.h} t={t} />
         </g>
       ) : null}
-      <Caption x={90} y={80} w={300} h={100} lines={["第 58 圈"]} size={56} />
+      <Caption x={90} y={80} lines={["LAP 58"]} size={56} />
       {/* the white builds toward the drop */}
       <rect x={0} y={0} width={1920} height={1080} fill={PAPER} opacity={0.85 * ramp(t, dur - 0.22, dur)} />
     </Closeup>

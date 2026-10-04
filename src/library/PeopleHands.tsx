@@ -57,12 +57,12 @@ const Crop: React.FC<{
 
 // One arm held out for each hand shape (the near arm; the rest of the body is a plain stand).
 const GRIPS: { grip: Grip; label: string; arm: ArmPose }[] = [
-  { grip: "fist", label: "握拳", arm: { shoulder: 60, elbow: 30, wrist: 0 } },
-  { grip: "hold", label: "握持", arm: { shoulder: 60, elbow: 30, wrist: 0 } },
-  { grip: "flat", label: "手掌", arm: { shoulder: 70, elbow: 24, wrist: 40 } },
-  { grip: "open", label: "放松", arm: { shoulder: 12, elbow: 18, wrist: 10 } },
-  { grip: "spread", label: "张开", arm: { shoulder: 104, elbow: 58, wrist: 0, upper: 0.7 } },
-  { grip: "point", label: "指", arm: { shoulder: 88, elbow: 4, wrist: -4 } },
+  { grip: "fist", label: "FIST", arm: { shoulder: 60, elbow: 30, wrist: 0 } },
+  { grip: "hold", label: "HOLD", arm: { shoulder: 60, elbow: 30, wrist: 0 } },
+  { grip: "flat", label: "FLAT", arm: { shoulder: 70, elbow: 24, wrist: 40 } },
+  { grip: "open", label: "RELAXED", arm: { shoulder: 12, elbow: 18, wrist: 10 } },
+  { grip: "spread", label: "SPREAD", arm: { shoulder: 104, elbow: 58, wrist: 0, upper: 0.7 } },
+  { grip: "point", label: "POINT", arm: { shoulder: 88, elbow: 4, wrist: -4 } },
 ];
 const gripPose = (g: (typeof GRIPS)[number]): Pose => {
   const s = stand({ t: 0.4 });
@@ -78,7 +78,7 @@ export const PeopleHands: React.FC = () => (
   <AbsoluteFill style={{ backgroundColor: PAPER }}>
     <svg width={1920} height={1080}>
       <text x={30} y={44} fontFamily={CAPTION_FONT} fontSize={28} fill={INK}>
-        手 · 500 px/m
+        HANDS · 500 px/m
       </text>
       {GRIPS.map((g, i) => {
         const pose = gripPose(g);
@@ -91,7 +91,7 @@ export const PeopleHands: React.FC = () => (
         );
       })}
       <text x={1250} y={44} fontFamily={CAPTION_FONT} fontSize={28} fill={INK}>
-        104 px/m（实际像素）
+        104 px/m (ACTUAL PIXELS)
       </text>
       {GRIPS.map((g, i) => {
         const pose = gripPose(g);
@@ -105,7 +105,7 @@ export const PeopleHands: React.FC = () => (
         );
       })}
       <text x={30} y={480} fontFamily={CAPTION_FONT} fontSize={28} fill={INK}>
-        上身特写：领口、拉链、肩线、肩带、手套
+        UPPER BODY CLOSE-UP: COLLAR, ZIP, SHOULDER SEAM, STRAPS, GLOVES
       </text>
       <Crop x={30} y={500} w={560} h={540} s={720} pose={walk(0.4)} outfit={SENNA} focus={v(0.06, 1.37)} facing="left" />
       <Crop x={610} y={500} w={460} h={540} s={720} pose={wave(0.15)} outfit={GROSJEAN} focus={v(0.12, 1.51)} />

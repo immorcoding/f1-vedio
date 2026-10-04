@@ -72,8 +72,8 @@ export const Pass: React.FC<{ st: ShotTime }> = ({ st }) => {
           opacity={sfx}
           transform={`translate(1500 330) scale(${1.4 - 0.4 * sfx}) translate(-1500 -330)`}
         >
-          <Sfx x={1380} y={330} size={230} rotate={-10}>
-            嗖！
+          <Sfx x={1580} y={330} size={180} rotate={-10} anchor="middle">
+            WHOOSH!
           </Sfx>
         </g>
         {/* slow motion: a screen of dots over the edges of the page */}

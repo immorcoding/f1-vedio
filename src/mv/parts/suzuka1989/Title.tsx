@@ -1,14 +1,19 @@
 // Shot 1.1 (bars 9–10): title card. The figure-eight of Suzuka is inked onto the page along the race direction (the
-// back straight bridging the lap after Degner), "1989 · 铃鹿" is brushed in, and on the last beats the chicane after
+// back straight bridging the lap after Degner), "SUZUKA 1989" is lettered in (the chequered strip and the circuit's name under it), and on the last beats the chicane after
 // 130R — where the next shots happen — is ringed and blown up in a round callout under the title: the right-left
 // flick of the Casio Triangle with the escape road running straight on between its bollards, turned the way 1.3 sees
 // it (racing left to right). Clean lines only: a thin ribbon on the map so the chicane does not clot into a blob.
-// Under the title one small brushed line sets up the story of both Suzuka parts: "队友 · 宿敌" (team-mates, rivals).
+// Below them one small line sets up the story of both Suzuka parts: "TEAM-MATES · RIVALS".
 // The 1990 page turn (suzuka1990/Title.tsx) shows this page's last frame through Title89Page.
 import { Easing } from "remotion";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
-import { BRUSH_FONT } from "../../../kit/lettering";
+import {
+  CAPTION_FONT,
+  CircuitTag,
+  TitleText,
+  circuitAnim,
+} from "../../../kit/lettering";
 import { ToneDefs, tone } from "../../../kit/tone";
 import {
   fitMap,
@@ -26,6 +31,10 @@ const T = SUZUKA_1989;
 const C = T.corners.chicane;
 const VIEW = fitMap(T, { x: 760, y: 120, w: 1100, h: 860 }, 0);
 const ESCAPE = polylinePoints(T.escapeRoads?.[0]?.path ?? []);
+
+// The title's baseline: high enough that the title, the chequered strip with the circuit's name and the story line
+// all sit above the callout.
+const TITLE_Y = 430;
 
 // The callout: a circle under the title, the chicane at 2.4 px/m, turned so the approach runs left to right.
 const BUBBLE = { x: 500, y: 866, r: 176 };
@@ -60,7 +69,7 @@ export const Title: React.FC<PictureProps> = ({ f }) => {
   const len = shot.to - shot.from;
   const draw = ramp(t, 2, len * 0.55, Easing.inOut(Easing.quad));
   const title = ramp(t, 14, 40, Easing.out(Easing.back(2)));
-  const sub = ramp(t, 36, 60, Easing.out(Easing.back(1.8)));
+  const sub = ramp(t, 70, 94, Easing.out(Easing.back(1.8)));
   const ring = ramp(t, len * 0.56, len * 0.64, Easing.out(Easing.back(1.6)));
   const bubble = ramp(t, len * 0.62, len * 0.74, Easing.out(Easing.back(1.4)));
   const route = ramp(t, len * 0.72, len * 0.92, Easing.inOut(Easing.quad));
@@ -125,29 +134,29 @@ export const Title: React.FC<PictureProps> = ({ f }) => {
         ) : null}
         <g
           opacity={title}
-          transform={`translate(110 610) scale(${0.85 + 0.15 * title})`}
+          transform={`translate(110 ${TITLE_Y}) scale(${0.85 + 0.15 * title})`}
         >
-          <text x={0} y={0} fontFamily={BRUSH_FONT} fontSize={150} fill={INK}>
-            {shot.text[0]}
-          </text>
-          <path
-            d="M 6 40 L 560 28"
-            stroke={INK}
-            strokeWidth={8}
-            strokeLinecap="round"
-          />
+          <TitleText x={0} y={0} size={124} text={shot.text[0]} />
         </g>
+        <CircuitTag
+          x={114}
+          y={TITLE_Y + 34}
+          text={shot.text[1]}
+          {...circuitAnim(t, 36)}
+        />
         {sub > 0 ? (
           <text
-            x={118 + 30 * (1 - sub)}
-            y={710}
+            x={116 + 30 * (1 - sub)}
+            y={TITLE_Y + 168}
             opacity={sub}
-            fontFamily={BRUSH_FONT}
-            fontSize={56}
+            fontFamily={CAPTION_FONT}
+            fontWeight={600}
+            fontSize={40}
+            letterSpacing="0.26em"
             fill={INK}
           >
-            {/* the story line (STO-5: a few characters; facts.md: McLaren team-mates in 1988–1989) */}
-            {shot.text[1]}
+            {/* the story line (STO-5: a few words; facts.md: McLaren team-mates in 1988–1989) */}
+            {shot.text[2]}
           </text>
         ) : null}
         {bubble > 0 ? (

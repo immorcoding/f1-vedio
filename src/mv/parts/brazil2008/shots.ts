@@ -11,7 +11,7 @@ export const EDIT: PartEdit = {
       to: at(35),
       view: "title",
       content: "标题卡：Interlagos 全图沿比赛方向画出，雨点落下",
-      text: ["2008 · 巴西"],
+      text: ["BRAZIL 2008", "AUTÓDROMO JOSÉ CARLOS PACE · INTERLAGOS"],
     },
     {
       id: "2.2",
@@ -19,7 +19,7 @@ export const EDIT: PartEdit = {
       to: at(39),
       view: "closeup",
       content: "雨中跟拍 HAM（McLaren MP4-23，半雨胎），后轮卷起水雾",
-      text: ["最后一圈"],
+      text: ["LAST LAP"],
     },
     {
       id: "2.3",
@@ -36,7 +36,7 @@ export const EDIT: PartEdit = {
       view: "top",
       content:
         "俯视最后区段（雨天）：GLO 干地胎打滑，VET 先超过，HAM 跟上；小格对比两种胎面（彩蛋）",
-      text: ["干地胎"],
+      text: ["DRY TYRES"],
     },
     {
       id: "2.5",
@@ -44,7 +44,7 @@ export const EDIT: PartEdit = {
       to: at(49),
       view: "closeup",
       content: "Junção 出弯冲上坡：HAM 在第 47 小节第一拍超过 GLO",
-      text: ["嗖！"],
+      text: ["WHOOSH!"],
       cues: [hitCue("brazil2008.pass")],
     },
     {

@@ -7,14 +7,14 @@ import { CAPTION_FONT } from "../kit/lettering";
 export const CAR_STATES_FRAMES = 120;
 
 const CELLS: { label: string; state: (frame: number) => CarState }[] = [
-  { label: "车轮转动", state: (f) => ({ wheelAngle: f * 9 }) },
-  { label: "前轮锁死", state: (f) => ({ wheelAngle: f * 9, lockFront: 0 }) },
+  { label: "WHEELS TURNING", state: (f) => ({ wheelAngle: f * 9 }) },
+  { label: "FRONT LOCKED", state: (f) => ({ wheelAngle: f * 9, lockFront: 0 }) },
   {
-    label: "刹车点头 −2°，前轮锁死",
+    label: "BRAKING DIVE −2°, FRONT LOCKED",
     state: (f) => ({ wheelAngle: f * 9, lockFront: 0, tilt: -2 }),
   },
   {
-    label: "车头抬起 +4°，旧硬胎",
+    label: "NOSE UP +4°, OLD HARDS",
     state: (f) => ({ wheelAngle: f * 9, tilt: 4, compound: "#f4f4f4" }),
   },
 ];

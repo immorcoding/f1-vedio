@@ -8,17 +8,19 @@
 // a free photo of the same moment before the film is published.
 import { Easing, Img, interpolate, random, staticFile } from "remotion";
 import { INK, PAPER } from "../../../kit/colors";
+import { TITLE_FONT, fitTitleSize, lean, useLettering } from "../../../kit/lettering";
 import { focusLines } from "../../../kit/lines";
 import { at, FPS } from "../../timing";
 import { secondsInShot, type ShotTime } from "./shotClock";
 
 const PHOTO = staticFile("photos/ver-2021-abu-dhabi-podium.png");
 
+// Big Shoulders Black (ART-6): each line sized to the 660 px column (no stretching), its caps never taller than `cap`.
 const LINES = [
-  { t: "MAX VERSTAPPEN,", y: 560, fs: 60, beat: 1 },
-  { t: "YOU ARE THE", y: 640, fs: 60, beat: 2 },
-  { t: "WORLD", y: 810, fs: 150, beat: 3 },
-  { t: "CHAMPION!", y: 950, fs: 120, beat: 4 },
+  { t: "MAX VERSTAPPEN,", y: 560, cap: 58, beat: 1 },
+  { t: "YOU ARE THE", y: 640, cap: 58, beat: 2 },
+  { t: "WORLD", y: 810, cap: 140, beat: 3 },
+  { t: "CHAMPION!", y: 950, cap: 112, beat: 4 },
 ];
 const TEXT_C = { x: 1540, y: 760 };
 
@@ -106,6 +108,7 @@ const Confetti: React.FC<{ t: number; front?: boolean }> = ({ t, front }) => {
 };
 
 export const ChampionCard: React.FC<{ st: ShotTime }> = ({ st }) => {
+  useLettering();
   const sinceBeat = LINES.map(
     ({ beat }) => st.t - secondsInShot(st, at(103, beat)),
   );
@@ -197,7 +200,8 @@ export const ChampionCard: React.FC<{ st: ShotTime }> = ({ st }) => {
             <Glint key={g.x} x={g.x} y={g.y} r={g.r} s={glintPulse(g.phase)} />
           ))}
           <g transform="rotate(-3 1540 760)">
-            {LINES.map(({ t, y, fs }, i) => {
+            {LINES.map(({ t, y, cap }, i) => {
+              const fs = fitTitleSize(t, 660, cap);
               // each line slams in on its beat: oversize and transparent → settled in ~0.12 s
               const since = sinceBeat[i];
               if (since < 0) return null;
@@ -217,11 +221,9 @@ export const ChampionCard: React.FC<{ st: ShotTime }> = ({ st }) => {
                       x={1540 + 8}
                       y={y + 8}
                       textAnchor="middle"
-                      textLength={660}
-                      lengthAdjust="spacingAndGlyphs"
-                      fontFamily="Arial Black, Arial, sans-serif"
+                      transform={lean(1540 + 8, y + 8)}
+                      fontFamily={TITLE_FONT}
                       fontWeight={900}
-                      fontStyle="italic"
                       fontSize={fs}
                       fill="#f2c230"
                       stroke={INK}
@@ -236,11 +238,9 @@ export const ChampionCard: React.FC<{ st: ShotTime }> = ({ st }) => {
                     x={1540}
                     y={y}
                     textAnchor="middle"
-                    textLength={660}
-                    lengthAdjust="spacingAndGlyphs"
-                    fontFamily="Arial Black, Arial, sans-serif"
+                    transform={lean(1540, y)}
+                    fontFamily={TITLE_FONT}
                     fontWeight={900}
-                    fontStyle="italic"
                     fontSize={fs}
                     fill={PAPER}
                     stroke={INK}

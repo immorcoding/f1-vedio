@@ -4,7 +4,13 @@
 // 1989 result, 1.5 PRO's move to Ferrari, 1.8 the 1990 result; PRO always on the left, SEN on the right.
 import { MangaCar, type CarSpec } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
-import { BRUSH_FONT, CAPTION_FONT } from "../../../kit/lettering";
+import {
+  CAPTION_FONT,
+  RubberStamp,
+  STAMP_FONT,
+  measure,
+  useLettering,
+} from "../../../kit/lettering";
 import { focusLines } from "../../../kit/lines";
 
 export type Box = { x: number; y: number; w: number; h: number };
@@ -12,9 +18,6 @@ export type Box = { x: number; y: number; w: number; h: number };
 // The two card slots of 1.2 and 1.4 (1.8 uses the same layout, larger).
 export const CARD_PRO: Box = { x: 90, y: 50, w: 600, h: 320 };
 export const CARD_SEN: Box = { x: 1230, y: 50, w: 600, h: 320 };
-
-// The result stamps' red: a seal on the page, not part of the environment (ART-8 covers the drawn world only).
-export const STAMP_RED = "#d3221c";
 
 // Helmet centre of a car in metres from its origin (rear end on the ground): x forward, y up.
 const helmetM = (car: CarSpec) => {
@@ -133,36 +136,74 @@ export const StampedCard: React.FC<{
   );
 };
 
-// The caption box straddling the card's bottom edge (1.2's stakes, 1.5's move).
+// The caption box straddling the card's bottom edge (1.2's stakes, 1.5's move), centred on the card and hugging its
+// text. A leading driver code ("PRO +16 PTS") sits in an inverted chip, as in type system D's stakes box (ART-6).
 export const CardCaption: React.FC<{ box: Box; text: string }> = ({
   box,
   text,
-}) => (
-  <g>
-    <rect
-      x={box.x + 20}
-      y={box.y + box.h - 6}
-      width={box.w - 40}
-      height={74}
-      fill={PAPER}
-      stroke={INK}
-      strokeWidth={6}
-    />
-    <text
-      x={box.x + box.w / 2}
-      y={box.y + box.h + 50}
-      textAnchor="middle"
-      fontFamily={CAPTION_FONT}
-      fontSize={46}
-      fill={INK}
-    >
-      {text}
-    </text>
-  </g>
-);
+}) => {
+  useLettering();
+  const size = 44;
+  const m = /^([A-Z]{3}) (.+)$/.exec(text);
+  const code = m ? m[1] : "";
+  const rest = m ? m[2] : text;
+  const padX = size * 0.4;
+  const codeW = code
+    ? measure(code, CAPTION_FONT, 700, size, 0.02) + padX * 1.4
+    : 0;
+  const restW = measure(rest, CAPTION_FONT, 700, size, 0.02) + padX * 2;
+  const w = codeW + restW;
+  const h = 74;
+  const x = box.x + box.w / 2 - w / 2;
+  const y = box.y + box.h - 6;
+  const base = y + h / 2 + size * 0.345;
+  return (
+    <g>
+      <rect x={x + 7} y={y + 7} width={w} height={h} fill={INK} />
+      <rect x={x} y={y} width={w} height={h} fill={PAPER} />
+      {code ? (
+        <>
+          <rect x={x} y={y} width={codeW} height={h} fill={INK} />
+          <text
+            x={x + codeW / 2}
+            y={base}
+            textAnchor="middle"
+            fontFamily={CAPTION_FONT}
+            fontWeight={700}
+            fontSize={size}
+            letterSpacing="0.02em"
+            fill={PAPER}
+          >
+            {code}
+          </text>
+        </>
+      ) : null}
+      <rect
+        x={x}
+        y={y}
+        width={w}
+        height={h}
+        fill="none"
+        stroke={INK}
+        strokeWidth={6}
+      />
+      <text
+        x={x + codeW + padX}
+        y={base}
+        fontFamily={CAPTION_FONT}
+        fontWeight={700}
+        fontSize={size}
+        letterSpacing="0.02em"
+        fill={INK}
+      >
+        {rest}
+      </text>
+    </g>
+  );
+};
 
-// A red seal slammed onto the card's bottom edge, clear of the helmet (ART-14): a double-ruled frame round brush
-// characters, tilted. `t` 0–1 is the slam: it drops from twice the size and lands with a small overshoot.
+// A red rubber stamp slammed onto the card's bottom edge, clear of the helmet (ART-14), tilted. `t` 0–1 is the slam:
+// it drops from twice the size and lands with a small overshoot.
 export const Stamp: React.FC<{
   box: Box;
   text: string;
@@ -170,9 +211,12 @@ export const Stamp: React.FC<{
   size?: number;
   rotate?: number;
 }> = ({ box, text, t, size = 72, rotate = -8 }) => {
+  useLettering();
   if (t <= 0) return null;
-  const w = size * (text.length * 0.78 + 0.9);
-  const h = size * 1.42;
+  // English words run long: the letters shrink until the stamp is at most 92% of the card's width
+  const s0 = size * 0.72;
+  const tw = measure(text, STAMP_FONT, 700, s0, 0.05);
+  const letters = Math.min(s0, (box.w * 0.92 * s0) / (tw + s0 * 0.9));
   const x = box.x + box.w / 2;
   const y = box.y + box.h + size * 0.08;
   const s = 1 + 1.2 * Math.pow(1 - Math.min(1, t), 3);
@@ -182,36 +226,7 @@ export const Stamp: React.FC<{
       opacity={o * 0.95}
       transform={`translate(${x} ${y}) rotate(${rotate}) scale(${s})`}
     >
-      <rect
-        x={-w / 2}
-        y={-h / 2}
-        width={w}
-        height={h}
-        rx={size * 0.12}
-        fill={PAPER}
-        stroke={STAMP_RED}
-        strokeWidth={size * 0.11}
-      />
-      <rect
-        x={-w / 2 + size * 0.16}
-        y={-h / 2 + size * 0.16}
-        width={w - size * 0.32}
-        height={h - size * 0.32}
-        rx={size * 0.06}
-        fill="none"
-        stroke={STAMP_RED}
-        strokeWidth={size * 0.04}
-      />
-      <text
-        x={0}
-        y={size * 0.34}
-        textAnchor="middle"
-        fontFamily={BRUSH_FONT}
-        fontSize={size}
-        fill={STAMP_RED}
-      >
-        {text}
-      </text>
+      <RubberStamp text={text} size={letters} />
     </g>
   );
 };

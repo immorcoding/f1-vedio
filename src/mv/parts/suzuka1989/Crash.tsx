@@ -240,7 +240,7 @@ const BentWing: React.FC<{
 };
 
 // The result from 20.1 (facts.md: SEN disqualified for missing the chicane; PRO the 1989 champion).
-export const RESULT_STAMPS = { pro: "1989 冠军", sen: "取消成绩" } as const;
+export const RESULT_STAMPS = { pro: "1989 CHAMPION", sen: "DISQUALIFIED" } as const;
 const DSQ = cueFrame("suzuka1989.dsq");
 const CHAMPION = cueFrame("suzuka1989.champion");
 

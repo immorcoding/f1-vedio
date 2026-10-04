@@ -12,7 +12,7 @@ export const EDIT: PartEdit = {
       view: "title",
       content:
         "Yas Marina 夜景：起跑直道发车格通向 Yas 酒店，看台与照明灯塔；酒店网格天篷一格格亮起，2021 赛道全图在小格里画出",
-      text: ["2021 · 阿布扎比"],
+      text: ["ABU DHABI 2021", "YAS MARINA CIRCUIT"],
       cues: [{ id: "buildup.hotelLit", at: at(74) }],
     },
     {
@@ -31,7 +31,7 @@ export const EDIT: PartEdit = {
       view: "closeup",
       content:
         "安全车灯熄灭，两车贴近；VER 新软胎（红圈）、HAM 旧硬胎（白圈）；第 81 小节第一拍进 drop（切点）",
-      text: ["第 58 圈"],
+      text: ["LAP 58"],
       cues: [{ id: "buildup.scLightsOut", at: at(80) }, hitCue("buildup.drop")],
     },
   ],

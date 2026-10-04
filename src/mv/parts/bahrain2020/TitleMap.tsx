@@ -3,7 +3,12 @@
 // and marks it with a small cross.
 import { Easing } from "remotion";
 import { INK, PAPER } from "../../../kit/colors";
-import { BRUSH_FONT, CAPTION_FONT } from "../../../kit/lettering";
+import {
+  CAPTION_FONT,
+  CircuitTag,
+  TitleText,
+  circuitAnim,
+} from "../../../kit/lettering";
 import { TonePattern } from "../../../kit/tone";
 import { ramp, shotById, type PictureProps } from "./common";
 import { BAHRAIN_CENTRE_LINE, BAHRAIN_TURNS } from "./track";
@@ -210,25 +215,15 @@ export const TitleMap: React.FC<PictureProps> = ({ f }) => {
         opacity={title}
         transform={`translate(120 640) scale(${0.85 + 0.15 * title})`}
       >
-        {shot.text.map((line) => (
-          <text
-            key={line}
-            x={0}
-            y={0}
-            fontFamily={BRUSH_FONT}
-            fontSize={150}
-            fill={PAPER}
-          >
-            {line}
-          </text>
-        ))}
-        <path
-          d="M 6 40 L 560 28"
-          stroke={PAPER}
-          strokeWidth={7}
-          strokeLinecap="round"
-        />
+        <TitleText x={0} y={0} size={100} text={shot.text[0]} colour={PAPER} />
       </g>
+      <CircuitTag
+        x={124}
+        y={674}
+        text={shot.text[1]}
+        colour={PAPER}
+        {...circuitAnim(t, 40)}
+      />
     </svg>
   );
 };

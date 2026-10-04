@@ -6,7 +6,7 @@ import { MangaCar, RB16B, W12, type CarSpec } from "../../cars";
 import { CAR_UNITS_PER_METRE } from "../../cars/spec";
 import { INK, PAPER } from "../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../kit/ink";
-import { CAPTION_FONT } from "../../kit/lettering";
+import { CAPTION_FONT, TITLE_FONT, lean } from "../../kit/lettering";
 import { focusLines, speedLines } from "../../kit/lines";
 import { ToneDefs } from "../../kit/tone";
 
@@ -110,10 +110,10 @@ const Points: React.FC<{
         x={x}
         y={y}
         textAnchor={anchor}
-        fontFamily="Arial Black, Arial, sans-serif"
+        transform={lean(x, y)}
+        fontFamily={TITLE_FONT}
         fontWeight={900}
-        fontStyle="italic"
-        fontSize={150}
+        fontSize={168}
         fill={PAPER}
         stroke={INK}
         strokeWidth={14}
@@ -126,6 +126,7 @@ const Points: React.FC<{
         y={y - 150}
         textAnchor={anchor}
         fontFamily={CAPTION_FONT}
+        fontWeight={700}
         fontSize={58}
         fill={PAPER}
         stroke={INK}

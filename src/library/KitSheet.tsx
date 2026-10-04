@@ -42,7 +42,7 @@ export const KitSheet: React.FC = () => (
               stroke={INK}
               strokeWidth={5}
             />
-            <Label x={60 + i * 300} y={290}>{`网点 ${level}`}</Label>
+            <Label x={60 + i * 300} y={290}>{`TONE ${level}`}</Label>
           </g>
         ))}
         {[2.2, 4, 7, 12].map((w, i) => (
@@ -53,17 +53,15 @@ export const KitSheet: React.FC = () => (
           />
         ))}
         <Label x={1000} y={290}>
-          墨线
+          INK LINES
         </Label>
         <Caption
           x={1500}
           y={80}
-          w={330}
-          h={150}
-          lines={["第 58 圈，", "T5 发卡弯。"]}
+          lines={["LAP 58 · TURN 5"]}
         />
         <Sfx x={1520} y={380} size={110} rotate={-8}>
-          轰——！
+          VROOOM!
         </Sfx>
 
         <g clipPath="url(#kit-focus)">
@@ -79,7 +77,7 @@ export const KitSheet: React.FC = () => (
           strokeWidth={8}
         />
         <Label x={80} y={460}>
-          集中线
+          FOCUS LINES
         </Label>
 
         <g clipPath="url(#kit-speed)">
@@ -120,7 +118,7 @@ export const KitSheet: React.FC = () => (
           strokeWidth={8}
         />
         <Label x={1020} y={460}>
-          速度线
+          SPEED LINES
         </Label>
       </g>
     </svg>

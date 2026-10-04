@@ -3,6 +3,7 @@
 // theme for the floodlit races (white ink on black). Optional chequered finish line and turn labels. Figure-eight
 // laps (Track.crossover) get a bridge: the upper pass is redrawn on top with a page-coloured gap either side.
 import { INK, PAPER } from "../kit/colors";
+import { CAPTION_FONT } from "../kit/lettering";
 import { tone } from "../kit/tone";
 import {
   centrelineLength,
@@ -157,11 +158,14 @@ export const TrackMap: React.FC<TrackMapProps> = ({
                 x={p.x}
                 y={p.y + labelSize * 0.36}
                 textAnchor="middle"
-                fontFamily="Arial Black, Arial, sans-serif"
-                fontWeight={900}
-                fontStyle="italic"
+                fontFamily={CAPTION_FONT}
+                fontWeight={700}
                 fontSize={labelSize}
                 fill={T.ink}
+                stroke={T.page}
+                strokeWidth={labelSize * 0.22}
+                strokeLinejoin="round"
+                paintOrder="stroke"
                 opacity={labels}
               >
                 {t.label}

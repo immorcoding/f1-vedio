@@ -22,7 +22,7 @@ export const Cars2020States: React.FC = () => (
   <AbsoluteFill style={{ backgroundColor: PAPER }}>
     <svg width={1920} height={1080}>
       <Label x={60} y={70}>
-        VF-20 断成两截（state.split）
+        VF-20 SPLIT IN TWO (state.split)
       </Label>
       <MangaCar
         car={VF20}
@@ -35,7 +35,7 @@ export const Cars2020States: React.FC = () => (
         }}
       />
       <Label x={60} y={620}>
-        俯视（view top），2 m 宽通用平面
+        TOP VIEW (view top), GENERIC 2 M-WIDE PLAN
       </Label>
       <MangaCar
         car={VF20}
@@ -98,7 +98,7 @@ export const FireSheet: React.FC<{ palette: FirePaletteName }> = ({
           fontSize={44}
           fill={INK}
         >
-          {`火焰配色：${palette === "manga" ? "黑白（FIRE_MANGA）" : "彩色（FIRE_COLOR）"}`}
+          {`FIRE PALETTE: ${palette === "manga" ? "BLACK AND WHITE (FIRE_MANGA)" : "COLOUR (FIRE_COLOR)"}`}
         </text>
         <text
           x={620}
@@ -107,7 +107,7 @@ export const FireSheet: React.FC<{ palette: FirePaletteName }> = ({
           fontSize={30}
           fill={INK}
         >
-          上排：同一团火的第 0、20、40 帧（B 型火焰，每帧平滑流动）
+          TOP ROW: ONE FIRE AT FRAMES 0, 20, 40 (TYPE B FIRE, FLOWING SMOOTHLY EVERY FRAME)
         </text>
       </svg>
     </AbsoluteFill>

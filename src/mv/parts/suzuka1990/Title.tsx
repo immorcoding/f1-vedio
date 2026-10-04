@@ -1,15 +1,20 @@
 // Shot 1.5 (bars 22–23): title card, a page turn. The finished 1989 page — drawn by the 1989 part itself
-// (suzuka1989/Title.tsx: the figure-eight, the chicane ringed and blown up in its callout, "1989 · 铃鹿 / 队友 · 宿敌")
+// (suzuka1989/Title.tsx: the figure-eight, the chicane ringed and blown up in its callout, "SUZUKA 1989 / TEAM-MATES · RIVALS")
 // — turns over on 22.1 like a manga page, and under it is the same circuit on a fresh page in the same hand:
-// "1990 · 铃鹿" is brushed in and the ring lands on Turn 1, where this year's crash happens. PRO's helmet card drops
+// "SUZUKA 1990" is lettered in and the ring lands on Turn 1, where this year's crash happens. PRO's helmet card drops
 // into his slot of 1.2 (top left) in the 1989 McLaren and flips over on 23.1: the same helmet — a driver keeps his
-// helmet when he changes team — now sits in the red Ferrari, "PRO 转投法拉利". Then the stakes, and on the last beats
+// helmet when he changes team — now sits in the red Ferrari, "PRO MOVES TO FERRARI". Then the stakes, and on the last beats
 // the page pushes in toward the main straight and Turn 1, into the top view of shot 1.6.
 import { Easing } from "remotion";
 import { F641_PRO, MP4_5_PRO } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
-import { BRUSH_FONT, Caption } from "../../../kit/lettering";
+import {
+  Caption,
+  CircuitTag,
+  TitleText,
+  circuitAnim,
+} from "../../../kit/lettering";
 import { ToneDefs, tone } from "../../../kit/tone";
 import { fitMap, poseAt, SUZUKA_1989, TrackMap } from "../../../tracks";
 import { CARD_PRO, CardCaption, HelmetCard } from "../suzuka1989/Helmets";
@@ -24,7 +29,7 @@ const H = 1080;
 
 type Pt = { x: number; y: number };
 
-// The 1990 page: the inked lap, the Turn 1 ring, the brushed title, PRO's card and the stakes.
+// The 1990 page: the inked lap, the Turn 1 ring, the title, PRO's card and the stakes.
 const Page: React.FC<{
   title: string;
   ring: number;
@@ -37,8 +42,12 @@ const Page: React.FC<{
   // points with two races left; the crash that put both out here settled the title for SEN)
   moveText: string;
   stakesText: string;
+  circuit: string;
+  circuitT: { strip: number; name: number };
 }> = ({
   title,
+  circuit,
+  circuitT,
   ring,
   title01,
   card,
@@ -73,16 +82,9 @@ const Page: React.FC<{
         opacity={title01}
         transform={`translate(110 610) scale(${0.85 + 0.15 * title01})`}
       >
-        <text x={0} y={0} fontFamily={BRUSH_FONT} fontSize={150} fill={INK}>
-          {title}
-        </text>
-        <path
-          d="M 6 40 L 560 28"
-          stroke={INK}
-          strokeWidth={8}
-          strokeLinecap="round"
-        />
+        <TitleText x={0} y={0} size={124} text={title} />
       </g>
+      <CircuitTag x={114} y={644} text={circuit} {...circuitT} />
       {card > 0 ? (
         <g
           transform={`translate(0 ${dropY}) rotate(${(1 - card) * -4} ${cx} ${cy})`}
@@ -108,9 +110,9 @@ const Page: React.FC<{
       {stakes > 0 ? (
         <g
           opacity={stakes}
-          transform={`translate(${120 - 30 * (1 - stakes)} 740)`}
+          transform={`translate(${120 - 30 * (1 - stakes)} 790)`}
         >
-          <Caption x={0} y={0} w={640} h={96} lines={[stakesText]} size={50} />
+          <Caption x={0} y={0} lines={[stakesText]} size={50} />
         </g>
       ) : null}
     </g>
@@ -200,14 +202,16 @@ export const Title: React.FC<PictureProps> = ({ f }) => {
         >
           <Page
             title={shot.text[0]}
+            circuit={shot.text[1]}
+            circuitT={circuitAnim(t, 62)}
             ring={ring}
             title01={title}
             card={card}
             flip={cardFlip}
             move={move}
             stakes={stakes}
-            moveText={shot.text[1]}
-            stakesText={shot.text[2]}
+            moveText={shot.text[2]}
+            stakesText={shot.text[3]}
           />
         </g>
       </g>

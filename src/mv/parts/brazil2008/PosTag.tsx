@@ -1,6 +1,7 @@
 // Race-position tag for the side shots: a black square with the position and the driver's three-letter code (STO-5),
 // so a casual viewer can follow the stakes (HAM needs 5th; facts.md). `big` for the driver the shot is about.
 import { INK, PAPER } from "../../../kit/colors";
+import { CAPTION_FONT } from "../../../kit/lettering";
 
 export const PosTag: React.FC<{
   x: number;
@@ -26,8 +27,8 @@ export const PosTag: React.FC<{
         x={-51}
         y={10}
         textAnchor="middle"
-        fontFamily="Arial Black, Arial, sans-serif"
-        fontWeight={900}
+        fontFamily={CAPTION_FONT}
+        fontWeight={700}
         fontSize={30}
         fill={PAPER}
       >
@@ -37,9 +38,8 @@ export const PosTag: React.FC<{
         x={24}
         y={10}
         textAnchor="middle"
-        fontFamily="Arial Black, Arial, sans-serif"
-        fontWeight={900}
-        fontStyle="italic"
+        fontFamily={CAPTION_FONT}
+        fontWeight={700}
         fontSize={28}
         fill={INK}
       >

@@ -11,7 +11,7 @@ export const EDIT: PartEdit = {
       to: at(59),
       view: "title",
       content: "巴林夜间赛道全图墨线画出，3 号弯后的直道亮起",
-      text: ["2020 · 巴林"],
+      text: ["BAHRAIN 2020", "BAHRAIN INTERNATIONAL CIRCUIT"],
     },
     {
       id: "3.2",
@@ -20,7 +20,7 @@ export const EDIT: PartEdit = {
       view: "top",
       content:
         "第 1 圈 3 号弯后直道俯视：GRO 从左往右并线，右后轮擦到 KVY 左前轮，斜冲向右侧护栏",
-      text: ["第 1 圈"],
+      text: ["LAP 1", "SKRRT!"],
       cues: [{ id: "bahrain2020.contact", at: at(60) }],
     },
     {
@@ -47,8 +47,8 @@ export const EDIT: PartEdit = {
       to: at(70),
       view: "panel",
       content:
-        "“27 秒”四格时间线，每小节第一拍加一格：0 秒 座舱冲穿护栏、halo 把顶层护栏顶起撕裂（火花）；11 秒医疗车急刹进场（速度线、车头下沉回弹、轮胎烟）停下、医生冲向火场；工作人员用干粉灭火器对着座舱喷（时间未核实，不标秒数）；27 秒 GRO（头盔、肩膀）从火里的座舱中撑起来，双手抓住 halo（一手中柱、一手环梁）",
-      text: ["0 秒", "11 秒", "27 秒"],
+        "“27s”四格时间线，每小节第一拍加一格：0 秒 座舱冲穿护栏、halo 把顶层护栏顶起撕裂（火花）；11 秒医疗车急刹进场（速度线、车头下沉回弹、轮胎烟）停下、医生冲向火场；工作人员用干粉灭火器对着座舱喷（时间未核实，不标秒数）；27 秒 GRO（头盔、肩膀）从火里的座舱中撑起来，双手抓住 halo（一手中柱、一手环梁）",
+      text: ["0s", "11s", "27s"],
       cues: [
         { id: "bahrain2020.panel1", at: at(66) },
         { id: "bahrain2020.panel2", at: at(67) },
@@ -63,7 +63,7 @@ export const EDIT: PartEdit = {
       view: "closeup",
       content:
         "GRO 抓着 halo 从座舱里撑起、从顶层护栏的撕裂口跨出，踩过底层护栏到赛道一侧，医生扶住他的手臂，从火里走出来；第 72 小节第一拍切到烧黑但完好的 halo 特写（彩蛋），最后一拍切黑",
-      text: ["27 秒"],
+      text: ["27s"],
       cues: [
         { id: "bahrain2020.time", at: at(71) },
         { id: "bahrain2020.halo", at: at(72) },
