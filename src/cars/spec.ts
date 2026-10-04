@@ -30,6 +30,8 @@ export type RearWingPlanes = {
   flap: string;
   pivot: { x: number; y: number };
   drsOpen: number;
+  // the main plane's livery colour where the photo shows one (VF-20: Haas red); else the wing-top paint
+  mainColor?: string;
   // the flap's livery colour where the photo shows one (W12: Petronas teal); else a shade lighter than the main plane
   flapColor?: string;
 };
