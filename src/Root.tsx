@@ -9,6 +9,7 @@ import { StyleB } from "./prototype/styles/StyleB";
 import { StyleC } from "./prototype/styles/StyleC";
 import { TraceCheck } from "./prototype/styles/TraceCheck";
 import { CarSheet2021 } from "./prototype/styles/CarSheet2021";
+import { FIRE_CLIP_FRAMES, FireBaseline, FireStyle } from "./prototype/FireStyles";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -24,6 +25,10 @@ export const RemotionRoot: React.FC = () => {
       {/* PROTOTYPE — race-moment look and style studies for review; remove once the look is settled. */}
       <Folder name="Prototype">
         <Composition id="Proto-AbuDhabi2021" component={AbuDhabi2021} durationInFrames={ABU_DHABI_2021_FRAMES} fps={60} width={1920} height={1080} />
+        <Composition id="Proto-Fire-Baseline" component={FireBaseline} durationInFrames={FIRE_CLIP_FRAMES} fps={60} width={1920} height={1080} />
+        {(["A", "B", "C", "D"] as const).map((s) => (
+          <Composition key={s} id={`Proto-Fire-${s}`} component={FireStyle} defaultProps={{ style: s }} durationInFrames={FIRE_CLIP_FRAMES} fps={60} width={1920} height={1080} />
+        ))}
         <Still id="Style-A-InkWatercolor" component={StyleA} width={1920} height={1080} />
         <Still id="Style-B-Manga" component={StyleB} width={1920} height={1080} />
         <Still id="Style-C-Illustration" component={StyleC} width={1920} height={1080} />
