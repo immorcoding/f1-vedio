@@ -1,8 +1,12 @@
 // Intro (bars 1–8): the start-light gantry is inked onto a black page, its tones fade in,
 // then the five red lights come on with the five hits. Lights out is the cut at 9.1.
+// The first frame already shows the whole gantry in the middle of the frame (#24: no black opening, and frame 0 is
+// the video's thumbnail): a faint pencil underdrawing of all of it, the five modules and the truss already part-inked
+// over it and the screentone coming up. Through bars 1–4 the ink finishes the modules, the truss, rail and hangers,
+// then the twenty lamps one after another; the pencil fades as the ink covers it.
 // Gantry layout after the FIA start lights (5 columns × 4 lamps: amber, green, red, red;
 // a "light" is one column's red pair) — see docs/assets/reference-register.md.
-import { AbsoluteFill } from "remotion";
+import { AbsoluteFill, Easing } from "remotion";
 import { useSongFrame } from "../../clock";
 import type { SceneProps } from "../../scenes";
 import { frameAt } from "../../timing.ts";
@@ -10,6 +14,7 @@ import { EDIT } from "./shots.ts";
 import { Lamp as SignalLamp, type LampPaint } from "../../../kit/lamp";
 import {
   BLACK,
+  circlePath,
   DrawPath,
   focusLines,
   ramp,
@@ -36,6 +41,21 @@ const cueFrame = (id: string) => {
 };
 const LIGHTS = [1, 2, 3, 4, 5].map((k) => cueFrame(`intro.light${k}`));
 const SHOT_2 = frameAt(EDIT.shots[1].from);
+
+/** Ink draw-in that is already `at0` drawn on the first frame and complete at frame `end`. */
+const inkIn = (f: number, end: number, at0: number) =>
+  at0 + (1 - at0) * ramp(f, 0, end, Easing.out(Easing.cubic));
+// The draw-in schedule (song frames; a bar is 112.5): what is inked on frame 0 and when each part is finished.
+const INK = {
+  truss: { end: 170, at0: 0.35 },
+  hanger: (i: number) => ({ end: 150 + i * 20, at0: 0.2 }),
+  rail: { end: 180, at0: 0.3 },
+  module: (c: number) => ({ end: 120 + c * 24, at0: 0.42 - 0.04 * c }),
+  /** Lamps, one after another (order = column × 4 + row), the last finishing just before bar 5. */
+  lamp: (order: number) => [26 + order * 17, 100 + order * 17] as const,
+};
+/** The pencil underdrawing: as strong as this on frame 0, gone once the ink and tones are complete. */
+const SKETCH = { opacity: 0.5, fadeFrom: 260, fadeTo: 440 };
 
 const roundRect = (x0: number, y0: number, x1: number, y1: number, r: number) =>
   `M ${x0 + r} ${y0} L ${x1 - r} ${y0} Q ${x1} ${y0} ${x1} ${y0 + r} L ${x1} ${y1 - r} Q ${x1} ${y1} ${x1 - r} ${y1} L ${x0 + r} ${y1} Q ${x0} ${y1} ${x0} ${y1 - r} L ${x0} ${y0 + r} Q ${x0} ${y0} ${x0 + r} ${y0} Z`;
@@ -110,7 +130,33 @@ export type GantryProps = {
   /** Opacity of the white focus lines behind the gantry, and their animation frame. */
   focus: number;
   focusFrame: number;
+  /** Opacity of the pencil underdrawing (0 = none). */
+  sketch?: number;
 };
+
+// The whole gantry as thin pencil lines, under the ink: what the page shows before the ink reaches it.
+const SKETCH_LINES = [
+  beamTruss(),
+  ...HANGERS.map(
+    (x) =>
+      `M ${x - 16} ${BEAM.y1} L ${x - 16} ${RAIL.y} M ${x + 16} ${BEAM.y1} L ${x + 16} ${RAIL.y}`,
+  ),
+  roundRect(RAIL.x0, RAIL.y, RAIL.x1, RAIL.y + RAIL.h, 6),
+  ...COLS.flatMap((x) => [
+    roundRect(
+      x - MODULE.halfW,
+      MODULE.top,
+      x + MODULE.halfW,
+      MODULE.bottom,
+      MODULE.r,
+    ),
+    `M ${x - MODULE.halfW} ${(ROWS[1] + ROWS[2]) / 2} L ${x + MODULE.halfW} ${(ROWS[1] + ROWS[2]) / 2}`,
+    ...ROWS.flatMap((y) => [
+      circlePath(x, y, LAMP_R + 14),
+      circlePath(x, y, LAMP_R),
+    ]),
+  ]),
+].join(" ");
 
 // The gantry itself, drawn on a black page (exported; the outro no longer uses it since it ends on the chequered flag).
 export const GantryArt: React.FC<GantryProps> = ({
@@ -121,6 +167,7 @@ export const GantryArt: React.FC<GantryProps> = ({
   cam,
   focus,
   focusFrame,
+  sketch = 0,
 }) => {
   const litCount = lit.filter((l) => l > 0).length;
   return (
@@ -169,7 +216,11 @@ export const GantryArt: React.FC<GantryProps> = ({
           fill="url(#intro-tone-light)"
           opacity={tone * 0.8}
         />
-        <DrawPath d={beamTruss()} progress={ramp(f, 0, 150)} width={3} />
+        <DrawPath
+          d={beamTruss()}
+          progress={inkIn(f, INK.truss.end, INK.truss.at0)}
+          width={3}
+        />
         {HANGERS.map((x, i) => (
           <g key={x}>
             <rect
@@ -182,7 +233,7 @@ export const GantryArt: React.FC<GantryProps> = ({
             />
             <DrawPath
               d={`M ${x - 16} ${BEAM.y1} L ${x - 16} ${RAIL.y} M ${x + 16} ${BEAM.y1} L ${x + 16} ${RAIL.y}`}
-              progress={ramp(f, 60 + i * 20, 170 + i * 20)}
+              progress={inkIn(f, INK.hanger(i).end, INK.hanger(i).at0)}
               width={3}
             />
           </g>
@@ -198,12 +249,12 @@ export const GantryArt: React.FC<GantryProps> = ({
         />
         <DrawPath
           d={roundRect(RAIL.x0, RAIL.y, RAIL.x1, RAIL.y + RAIL.h, 6)}
-          progress={ramp(f, 110, 220)}
+          progress={inkIn(f, INK.rail.end, INK.rail.at0)}
           width={3}
         />
 
         {COLS.map((x, c) => {
-          const drawModule = ramp(f, 140 + c * 22, 250 + c * 22);
+          const drawModule = inkIn(f, INK.module(c).end, INK.module(c).at0);
           return (
             <g key={x}>
               <path
@@ -252,7 +303,7 @@ export const GantryArt: React.FC<GantryProps> = ({
                     key={y}
                     x={x}
                     y={y}
-                    draw={ramp(f, 200 + order * 8, 290 + order * 8)}
+                    draw={ramp(f, ...INK.lamp(order))}
                     tone={tone}
                     on={RED_ROWS.includes(r) ? lit[c] : 0}
                     age={age[c]}
@@ -262,6 +313,19 @@ export const GantryArt: React.FC<GantryProps> = ({
             </g>
           );
         })}
+
+        {/* the pencil underdrawing, over the black module and lens fills; the white ink covers it where it lands */}
+        {sketch > 0 ? (
+          <path
+            d={SKETCH_LINES}
+            fill="none"
+            stroke={WHITE}
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity={sketch}
+          />
+        ) : null}
       </g>
     </svg>
   );
@@ -272,11 +336,11 @@ export const Scene: React.FC<SceneProps> = ({ part }) => {
   const lit = LIGHTS.map((lf) =>
     f >= lf ? 1 + 0.7 * Math.exp(-(f - lf) / 4) : 0,
   );
-  const tone = ramp(
-    f,
-    frameAt({ bar: 3, beat: 1 }),
-    frameAt({ bar: 5, beat: 1 }) - 10,
-  );
+  // the tones are already coming up on the first frame and full before the first light (bar 5)
+  const tone =
+    0.35 + 0.65 * ramp(f, 0, frameAt({ bar: 5, beat: 1 }) - 10, Easing.linear);
+  const sketch =
+    SKETCH.opacity * (1 - ramp(f, SKETCH.fadeFrom, SKETCH.fadeTo, Easing.linear));
   const last = LIGHTS[4];
   const focus = f >= last ? 0.28 + 0.45 * Math.exp(-(f - last) / 8) : 0;
 
@@ -290,6 +354,7 @@ export const Scene: React.FC<SceneProps> = ({ part }) => {
         cam={camera(f)}
         focus={focus}
         focusFrame={f}
+        sketch={sketch}
       />
     </AbsoluteFill>
   );
