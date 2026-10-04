@@ -16,7 +16,7 @@ import {
 } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { inkFilter } from "../../../kit/ink";
-import { BRUSH_FONT } from "../../../kit/lettering";
+import { CAPTION_FONT, Caption } from "../../../kit/lettering";
 import { Rain } from "../../../kit/rain";
 import { tone } from "../../../kit/tone";
 import {
@@ -64,8 +64,8 @@ const Tag: React.FC<{ x: number; y: number; code: string; pos: number }> = ({
       x={-51}
       y={10}
       textAnchor="middle"
-      fontFamily="Arial Black, Arial, sans-serif"
-      fontWeight={900}
+      fontFamily={CAPTION_FONT}
+      fontWeight={700}
       fontSize={30}
       fill={PAPER}
     >
@@ -75,9 +75,8 @@ const Tag: React.FC<{ x: number; y: number; code: string; pos: number }> = ({
       x={24}
       y={10}
       textAnchor="middle"
-      fontFamily="Arial Black, Arial, sans-serif"
-      fontWeight={900}
-      fontStyle="italic"
+      fontFamily={CAPTION_FONT}
+      fontWeight={700}
       fontSize={28}
       fill={INK}
     >
@@ -158,9 +157,8 @@ const TyrePanel: React.FC<{
         <text
           y={12}
           textAnchor="middle"
-          fontFamily="Arial Black, Arial, sans-serif"
-          fontWeight={900}
-          fontStyle="italic"
+          fontFamily={CAPTION_FONT}
+          fontWeight={700}
           fontSize={34}
           fill={INK}
         >
@@ -168,19 +166,13 @@ const TyrePanel: React.FC<{
         </text>
       </g>
       {label ? (
-        <text
-          x={box.x + box.w - 30}
-          y={box.y + box.h - 34}
-          textAnchor="end"
-          fontFamily={BRUSH_FONT}
-          fontSize={96}
-          fill={INK}
-          stroke={PAPER}
-          strokeWidth={10}
-          paintOrder="stroke"
-        >
-          {label}
-        </text>
+        <Caption
+          x={box.x + box.w - 36}
+          y={box.y + box.h - 116}
+          boxAnchor="end"
+          lines={[label]}
+          size={56}
+        />
       ) : null}
     </g>
   );
@@ -380,9 +372,8 @@ export const Juncao: React.FC<{ st: ShotTime }> = ({ st }) => {
                 x={q.x}
                 y={q.y}
                 textAnchor="middle"
-                fontFamily="Arial Black, Arial, sans-serif"
-                fontStyle="italic"
-                fontWeight={900}
+                fontFamily={CAPTION_FONT}
+                fontWeight={700}
                 fontSize={46}
                 fill={INK}
                 stroke={PAPER}
@@ -419,7 +410,7 @@ export const Juncao: React.FC<{ st: ShotTime }> = ({ st }) => {
           box={DRY_BOX}
           t={t}
           id="b24-glo"
-          label="干地胎"
+          label="DRY TYRES"
           show={gloShow}
         />
         <TyrePanel

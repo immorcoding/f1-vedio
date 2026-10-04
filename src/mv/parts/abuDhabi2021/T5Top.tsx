@@ -4,6 +4,7 @@
 // where the T5 panel (shot 5.3) picks them up.
 import { MangaCar, PIRELLI_2021, RB16B, topAnchorAt, W12 } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
+import { CAPTION_FONT } from "../../../kit/lettering";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
 import { speedLines } from "../../../kit/lines";
 import { ToneDefs, tone } from "../../../kit/tone";
@@ -168,7 +169,7 @@ export const T5Top: React.FC<{ st: ShotTime }> = ({ st }) => {
           {/* turn number */}
           <g opacity={labelIn} transform={`translate(${label.x} ${label.y}) scale(${0.6 + 0.4 * labelIn})`}>
             <circle r={62} fill={PAPER} stroke={INK} strokeWidth={8} />
-            <text y={21} textAnchor="middle" fontFamily="Arial Black, Arial, sans-serif" fontWeight={900} fontStyle="italic" fontSize={58} fill={INK}>
+            <text y={21} textAnchor="middle" fontFamily={CAPTION_FONT} fontWeight={700} fontSize={58} fill={INK}>
               T5
             </text>
           </g>

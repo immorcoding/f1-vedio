@@ -158,14 +158,14 @@ export const PeopleMotion: React.FC = () => {
       <svg width={1920} height={1080}>
         <Cell
           i={0}
-          title="走（地面刻度 0.5 m）"
+          title="WALK (GROUND TICKS 0.5 M)"
           s={105}
           camX={0}
           people={[{ x: -2.9 + dWalk, pose: walk(dWalk), outfit: SENNA, facing: "right" }]}
         />
         <Cell
           i={1}
-          title="翻护栏 · 医生拉住手臂 · 扶着走开"
+          title="CLIMB THE RAIL · DOCTOR TAKES HIS ARM · HELPED AWAY"
           s={s2}
           camX={0}
           between={rail}
@@ -181,14 +181,14 @@ export const PeopleMotion: React.FC = () => {
         />
         <Cell
           i={2}
-          title="喷灭火器（前膝弯，远手低提瓶）"
+          title="SPRAY EXTINGUISHER (FRONT KNEE BENT, FAR HAND LOW ON THE BOTTLE)"
           s={110}
           camX={0.6}
           people={[{ x: 0, pose: sprayPose, outfit: MARSHAL, facing: "right", held: { kind: "extinguisher", spray: 0.9 + 0.1 * Math.sin(t * 9), aim: nozzleOf(sprayPose).dir } }]}
         />
         <Cell
           i={3}
-          title="踩拍挥拳 · 双拳举起"
+          title="FIST PUMP ON THE BEAT · BOTH FISTS UP"
           s={105}
           people={[
             { x: -1.1, pose: fistPump(beat), outfit: FERRARI_MECHANIC, facing: "right" },
@@ -197,7 +197,7 @@ export const PeopleMotion: React.FC = () => {
         />
         <Cell
           i={4}
-          title="起跳（两拍一跳）"
+          title="JUMP (ONE JUMP PER TWO BEATS)"
           s={105}
           people={[
             { x: -1.0, pose: jump(frac(beat / 2)), outfit: FERRARI_MECHANIC, facing: "right" },
@@ -206,7 +206,7 @@ export const PeopleMotion: React.FC = () => {
         />
         <Cell
           i={5}
-          title="转身击掌 → 拥抱"
+          title="TURN, HIGH FIVE → HUG"
           s={105}
           people={
             hugging
@@ -224,7 +224,7 @@ export const PeopleMotion: React.FC = () => {
         />
         <Cell
           i={6}
-          title="看屏幕：抱臂 / 手扶头（朝两边）"
+          title="WATCHING THE SCREEN: ARMS FOLDED / HAND ON HEAD (BOTH WAYS)"
           s={105}
           people={[
             { x: -1.6, pose: armsFolded({ t }), outfit: FERRARI_MECHANIC, facing: "right" },
@@ -235,7 +235,7 @@ export const PeopleMotion: React.FC = () => {
         />
         <Cell
           i={7}
-          title="挥手 · 仰头欢呼"
+          title="WAVE · HEAD-BACK CHEER"
           s={105}
           people={[
             { x: -1.0, pose: wave(t * 1.6), outfit: SENNA, facing: "right" },
@@ -244,7 +244,7 @@ export const PeopleMotion: React.FC = () => {
         />
         <Cell
           i={8}
-          title="推车（脚踩实）"
+          title="PUSH THE CAR (FEET PLANTED)"
           s={100}
           camX={0}
           people={[{ x: -2.4 + dPush, pose: push(dPush), outfit: MARSHAL, facing: "right" }]}

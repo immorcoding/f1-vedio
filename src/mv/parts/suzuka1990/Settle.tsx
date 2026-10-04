@@ -106,12 +106,11 @@ export const Settle: React.FC<PictureProps> = ({ f }) => {
             transform={`translate(960 ${960 + 24 * (1 - line)})`}
           >
             <Caption
-              x={-300}
+              x={0}
               y={-50}
-              w={600}
-              h={96}
+              boxAnchor="middle"
               lines={[admitted]}
-              size={50}
+              size={46}
             />
           </g>
         ) : null}

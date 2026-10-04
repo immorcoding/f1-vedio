@@ -16,7 +16,7 @@ import {
 } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
-import { Caption } from "../../../kit/lettering";
+import { CAPTION_FONT, Caption } from "../../../kit/lettering";
 import { speedLines } from "../../../kit/lines";
 import { ToneDefs, tone } from "../../../kit/tone";
 import {
@@ -553,9 +553,7 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
                   <Caption
                     x={p.x - 20}
                     y={p.y + 70}
-                    w={410}
-                    h={84}
-                    lines={["杆位在较脏的一侧"]}
+                    lines={[shot.text[1]]}
                     size={44}
                   />
                 </g>
@@ -585,10 +583,9 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
                     x={p.x}
                     y={p.y + dy + 11}
                     textAnchor="middle"
-                    fontFamily="Arial Black, Arial, sans-serif"
-                    fontWeight={900}
-                    fontStyle="italic"
-                    fontSize={30}
+                    fontFamily={CAPTION_FONT}
+                    fontWeight={700}
+                    fontSize={32}
                     fill={id === "SEN" ? PAPER : INK}
                   >
                     {id}
@@ -601,14 +598,7 @@ export const Start: React.FC<PictureProps> = ({ f }) => {
           opacity={caption}
           transform={`translate(${1500 + 20 * (1 - caption)} 70)`}
         >
-          <Caption
-            x={0}
-            y={0}
-            w={300}
-            h={110}
-            lines={[...shot.text]}
-            size={56}
-          />
+          <Caption x={0} y={0} lines={[shot.text[0]]} size={56} />
         </g>
         <rect
           x={0}

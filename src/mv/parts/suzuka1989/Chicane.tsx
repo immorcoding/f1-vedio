@@ -517,10 +517,9 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
                 x={p.x}
                 y={p.y + 10}
                 textAnchor="middle"
-                fontFamily="Arial Black, Arial, sans-serif"
-                fontWeight={900}
-                fontStyle="italic"
-                fontSize={30}
+                fontFamily={CAPTION_FONT}
+                fontWeight={700}
+                fontSize={32}
                 fill={tag === "SEN" ? PAPER : INK}
               >
                 {tag}
@@ -570,38 +569,13 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
                     strokeWidth={4}
                   />
                   <circle cx={apex.x} cy={apex.y} r={7} fill={INK} />
-                  <rect
-                    x={bx}
-                    y={by}
-                    width={240}
-                    height={72}
-                    fill={PAPER}
-                    stroke={INK}
-                    strokeWidth={5}
-                  />
-                  <text
-                    x={bx + 120}
-                    y={by + 52}
-                    textAnchor="middle"
-                    fontFamily={CAPTION_FONT}
-                    fontSize={46}
-                    fill={INK}
-                  >
-                    减速弯
-                  </text>
+                  <Caption x={bx} y={by} lines={["CHICANE"]} size={46} />
                 </g>
               );
             })()
           : null}
         <g transform="translate(90 70)">
-          <Caption
-            x={0}
-            y={0}
-            w={330}
-            h={110}
-            lines={[...shot.text]}
-            size={56}
-          />
+          <Caption x={0} y={0} lines={[...shot.text]} size={56} />
         </g>
         <rect
           x={0}

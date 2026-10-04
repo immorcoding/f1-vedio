@@ -332,7 +332,7 @@ export const CrashMap: React.FC<PictureProps> = ({ f }) => {
       ) : null}
       {sinceContact >= 0 && sinceContact < 70 ? (
         <Sfx x={contact.x - 60} y={contact.y - 80} size={96} rotate={-10}>
-          擦！
+          {shot.text[1]}
         </Sfx>
       ) : null}
       <Tag x={sx(gro.x + L_GRO * 0.5)} y={sy(gro.y) - 2.6 * PX}>
@@ -372,11 +372,10 @@ export const CrashMap: React.FC<PictureProps> = ({ f }) => {
         </g>
       ) : null}
       <Caption
-        x={1570}
+        x={1860}
         y={60}
-        w={290}
-        h={100}
-        lines={[...shot.text]}
+        boxAnchor="end"
+        lines={[shot.text[0]]}
         size={56}
       />
     </svg>

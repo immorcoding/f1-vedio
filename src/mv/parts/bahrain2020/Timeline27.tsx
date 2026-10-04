@@ -23,7 +23,7 @@ import {
   FIRE_PALETTES,
   type FirePaletteName,
 } from "../../../kit/fire";
-import { CAPTION_FONT } from "../../../kit/lettering";
+import { Caption } from "../../../kit/lettering";
 import { random } from "remotion";
 import { ToneDefs } from "../../../kit/tone";
 import { bump, type Deflection } from "./bent-rail";
@@ -112,33 +112,15 @@ const TimeLabel: React.FC<{
   r: Rect;
   corner: "tl" | "tr";
   children: string;
-}> = ({ r, corner, children }) => {
-  const w = 34 * children.length + 40;
-  const x = corner === "tl" ? r.x + 18 : r.x + r.w - 18 - w;
-  return (
-    <g>
-      <rect
-        x={x}
-        y={r.y + 18}
-        width={w}
-        height={64}
-        fill={PAPER}
-        stroke={INK}
-        strokeWidth={4}
-      />
-      <text
-        x={x + w / 2}
-        y={r.y + 64}
-        textAnchor="middle"
-        fontFamily={CAPTION_FONT}
-        fontSize={42}
-        fill={INK}
-      >
-        {children}
-      </text>
-    </g>
-  );
-};
+}> = ({ r, corner, children }) => (
+  <Caption
+    x={corner === "tl" ? r.x + 18 : r.x + r.w - 18}
+    y={r.y + 18}
+    boxAnchor={corner === "tl" ? "start" : "end"}
+    lines={[children]}
+    size={42}
+  />
+);
 
 // 0 s: the halo drives the top rail up and back — the rail rides up on the hoop, pushed back to it (real contact) and
 // lifted so its lower edge sits on the hoop's top — and the rail is splitting open right there: a narrow tear over the
@@ -235,7 +217,7 @@ const PanelPry: React.FC<PanelProps> = ({ r, f, age, palette }) => {
         </g>
       ))}
       <TimeLabel r={r} corner="tl">
-        0 秒
+        0s
       </TimeLabel>
     </g>
   );
@@ -381,7 +363,7 @@ const PanelMedical: React.FC<PanelProps> = ({ r, f, age, palette }) => {
       />
       {doctor}
       <TimeLabel r={r} corner="tr">
-        {`${FACTS.medicalCarSeconds} 秒`}
+        {`${FACTS.medicalCarSeconds}s`}
       </TimeLabel>
     </g>
   );
@@ -484,7 +466,7 @@ const PanelClimb: React.FC<PanelProps> = ({ r, f, age, palette }) => {
         tonePrefix="b35"
       />
       <TimeLabel r={r} corner="tl">
-        {`${FACTS.escapeSeconds} 秒`}
+        {`${FACTS.escapeSeconds}s`}
       </TimeLabel>
     </g>
   );

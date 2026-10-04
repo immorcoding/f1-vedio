@@ -16,6 +16,13 @@
 import { Easing, random } from "remotion";
 import { INK, PAPER } from "../../../kit/colors";
 import { inkFilter } from "../../../kit/ink";
+import {
+  CAPTION_FONT,
+  TITLE_FONT,
+  fitTitleSize,
+  lean,
+  useLettering,
+} from "../../../kit/lettering";
 import { focusLines, speedLines } from "../../../kit/lines";
 import { Rain } from "../../../kit/rain";
 import { tone } from "../../../kit/tone";
@@ -28,7 +35,6 @@ import {
 import { ChampionMoment, MOMENT_CAR, MOMENT_HELMET } from "./ChampionMoment";
 import { Page } from "./common";
 
-const ARIAL_BLACK = "Arial Black, Arial, sans-serif";
 const GOLD = "#f2c230";
 
 type Box = { x: number; y: number; w: number; h: number };
@@ -51,11 +57,13 @@ const BIG = {
 const TEXT_X = 1480;
 const TEXT_W = 690;
 const TEXT_C = { x: 1480, y: 600 };
+// Big Shoulders Black (ART-6): each line is sized to TEXT_W (no stretching), but its caps never taller than `cap`, so
+// the lines keep clear of each other.
 const LINES = [
-  { t: "LEWIS HAMILTON", y: 290, fs: 74, sw: 10 },
-  { t: "2008", y: 520, fs: 210, sw: 16 },
-  { t: "WORLD", y: 715, fs: 150, sw: 14 },
-  { t: "CHAMPION", y: 870, fs: 118, sw: 14 },
+  { t: "LEWIS HAMILTON", y: 290, cap: 64, sw: 10 },
+  { t: "2008", y: 520, cap: 190, sw: 16 },
+  { t: "WORLD", y: 715, cap: 158, sw: 14 },
+  { t: "CHAMPION", y: 870, cap: 124, sw: 14 },
 ];
 
 // glints twinkling on the car's bodywork in the hold: page px from the middle of the car, star radius in px
@@ -139,10 +147,10 @@ const ScoreBox: React.FC<{ gold: { s: number; o: number } | null }> = ({
       textAnchor="middle"
       textLength={t === "·" ? undefined : 150}
       lengthAdjust="spacingAndGlyphs"
-      fontFamily={ARIAL_BLACK}
+      transform={lean(x + dx, 168 + dx)}
+      fontFamily={TITLE_FONT}
       fontWeight={900}
-      fontStyle="italic"
-      fontSize={150}
+      fontSize={168}
       fill={fill}
       stroke={dx ? INK : undefined}
       strokeWidth={dx ? 10 : undefined}
@@ -175,10 +183,9 @@ const ScoreBox: React.FC<{ gold: { s: number; o: number } | null }> = ({
           x={d.x}
           y={225}
           textAnchor="middle"
-          fontFamily={ARIAL_BLACK}
-          fontWeight={900}
-          fontStyle="italic"
-          fontSize={36}
+          fontFamily={CAPTION_FONT}
+          fontWeight={700}
+          fontSize={38}
           fill={INK}
         >
           {d.t}
@@ -196,6 +203,7 @@ const ScoreBox: React.FC<{ gold: { s: number; o: number } | null }> = ({
 };
 
 export const Champion: React.FC<{ st: ShotTime }> = ({ st }) => {
+  useLettering();
   const { t, dur } = st;
   const since = (p: Pos) => t - secondsInShot(st, p);
   const beat = secondsInShot(st, at(53, 2));
@@ -385,7 +393,8 @@ export const Champion: React.FC<{ st: ShotTime }> = ({ st }) => {
               <g
                 transform={`translate(${TEXT_C.x} ${TEXT_C.y}) scale(${textPush}) translate(${-TEXT_C.x} ${-TEXT_C.y}) rotate(-3 ${TEXT_X} 580)`}
               >
-                {LINES.map(({ t: line, y, fs, sw }, i) => {
+                {LINES.map(({ t: line, y, cap, sw }, i) => {
+                  const fs = fitTitleSize(line, TEXT_W, cap);
                   const s0 = sinceLine[i];
                   if (s0 < 0) return null;
                   const { s, o } = slam(s0, i === 3);
@@ -395,11 +404,9 @@ export const Champion: React.FC<{ st: ShotTime }> = ({ st }) => {
                       x={TEXT_X + d}
                       y={y + d}
                       textAnchor="middle"
-                      textLength={TEXT_W}
-                      lengthAdjust="spacingAndGlyphs"
-                      fontFamily={ARIAL_BLACK}
+                      transform={lean(TEXT_X + d, y + d)}
+                      fontFamily={TITLE_FONT}
                       fontWeight={900}
-                      fontStyle="italic"
                       fontSize={fs}
                       fill={fill}
                       stroke={INK}

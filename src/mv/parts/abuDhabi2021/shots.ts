@@ -27,7 +27,7 @@ export const EDIT: PartEdit = {
       view: "closeup",
       content:
         "定版那一格（style-b-manga-v2.png）：VER 锁死前轮冒烟，HAM 在外线；第一帧即定版画面",
-      text: ["吱——", "轰——！"],
+      text: ["SCREECH", "VROOOM!", "LAP 58 · TURN 5"],
       cues: [hitCue("abuDhabi2021.lockup")],
     },
     {

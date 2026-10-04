@@ -51,58 +51,58 @@ export const FAN_LIGHT = crowdOutfit("#eceae4", { trousers: "#5b6270", hair: "#6
 type Cell = { label: string; pose: Pose; held?: Held };
 const ROWS: { role: string; outfit: Outfit; cells: Cell[] }[] = [
   {
-    role: "车手",
+    role: "DRIVER",
     outfit: SENNA,
     cells: [
-      { label: "站立", pose: stand({ t: 0.6 }) },
-      { label: "走", pose: walk(0.25) },
-      { label: "挥手", pose: wave(0.2) },
-      { label: "推车", pose: push(0.4) },
-      { label: "踉跄", pose: stumble(0.3) },
-      { label: "指引", pose: point() },
+      { label: "STAND", pose: stand({ t: 0.6 }) },
+      { label: "WALK", pose: walk(0.25) },
+      { label: "WAVE", pose: wave(0.2) },
+      { label: "PUSH", pose: push(0.4) },
+      { label: "STUMBLE", pose: stumble(0.3) },
+      { label: "POINT", pose: point() },
     ],
   },
   {
-    role: "医生",
+    role: "DOCTOR",
     outfit: DOCTOR,
     cells: [
-      { label: "站立", pose: stand({ t: 2, head: 8 }) },
-      { label: "走", pose: walk(0.95, { lean: 6 }) },
-      { label: "伸手接应", pose: reachTo(v(0.62, 1.5)) },
+      { label: "STAND", pose: stand({ t: 2, head: 8 }) },
+      { label: "WALK", pose: walk(0.95, { lean: 6 }) },
+      { label: "REACH OUT", pose: reachTo(v(0.62, 1.5)) },
       {
-        label: "扶人走",
+        label: "HELP WALK",
         pose: walkWithHands(0.6, { near: { hand: v(0.5, 1.22), grip: "flat", wrist: 20 } }, { lean: 10, stride: 0.5 }),
       },
     ],
   },
   {
-    role: "工作人员",
+    role: "MARSHAL",
     outfit: MARSHAL,
     cells: [
-      { label: "持灭火器", pose: standReady(), held: { kind: "extinguisher", carry: true } },
-      { label: "喷灭火器", pose: spray(0.3), held: { kind: "extinguisher", spray: 1 } },
-      { label: "推车", pose: push(1.1) },
+      { label: "HOLD EXTINGUISHER", pose: standReady(), held: { kind: "extinguisher", carry: true } },
+      { label: "SPRAY", pose: spray(0.3), held: { kind: "extinguisher", spray: 1 } },
+      { label: "PUSH", pose: push(1.1) },
     ],
   },
   {
-    role: "技师",
+    role: "MECHANIC",
     outfit: FERRARI_MECHANIC,
     cells: [
-      { label: "抱臂看", pose: armsFolded() },
-      { label: "手扶头", pose: handOnHead() },
-      { label: "双拳举起", pose: armsUp(0.3) },
-      { label: "挥拳", pose: fistPump(0.05) },
-      { label: "起跳", pose: jump(0.55) },
-      { label: "仰头欢呼", pose: headBack(0.2) },
+      { label: "ARMS FOLDED", pose: armsFolded() },
+      { label: "HAND ON HEAD", pose: handOnHead() },
+      { label: "FISTS UP", pose: armsUp(0.3) },
+      { label: "FIST PUMP", pose: fistPump(0.05) },
+      { label: "JUMP", pose: jump(0.55) },
+      { label: "HEAD-BACK CHEER", pose: headBack(0.2) },
     ],
   },
   {
-    role: "家人",
+    role: "FAMILY",
     outfit: FAN_RED,
     cells: [
-      { label: "站立", pose: stand({ t: 1.3 }) },
-      { label: "走", pose: walk(0.6) },
-      { label: "欢呼", pose: armsUp(0.6) },
+      { label: "STAND", pose: stand({ t: 1.3 }) },
+      { label: "WALK", pose: walk(0.6) },
+      { label: "CHEER", pose: armsUp(0.6) },
     ],
   },
 ];
@@ -124,7 +124,7 @@ export const PeopleSheet: React.FC = () => (
             <line x1={24} x2={1290} y1={base} y2={base} stroke={INK} strokeWidth={1} opacity={0.25} />
             {row.cells.map((c, i) => {
               const x = 170 + COL_W * i;
-              const outfit = row.role === "家人" && i === 1 ? FAN_LIGHT : row.outfit;
+              const outfit = row.role === "FAMILY" && i === 1 ? FAN_LIGHT : row.outfit;
               return (
                 <g key={c.label}>
                   <Figure at={{ x, y: base }} pxPerMetre={S} pose={c.pose} outfit={outfit} facing="right" held={c.held} />
@@ -140,7 +140,7 @@ export const PeopleSheet: React.FC = () => (
       <line x1={1310} x2={1310} y1={30} y2={1050} stroke={INK} strokeWidth={2} />
       <Figure at={{ x: 1600, y: 1010 }} pxPerMetre={500} pose={walk(0.62)} outfit={GROSJEAN} facing="left" />
       <text x={1335} y={70} fontFamily={CAPTION_FONT} fontSize={28} fill={INK}>
-        特写尺寸
+        CLOSE-UP SIZE
       </text>
     </svg>
   </AbsoluteFill>

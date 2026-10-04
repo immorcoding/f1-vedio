@@ -55,7 +55,7 @@ export const Chase: React.FC<{ st: ShotTime }> = ({ st }) => {
     <Page>
       {scene}
       <g opacity={cap} transform={`translate(${-40 * (1 - cap)} 0)`}>
-        <Caption x={70} y={70} w={430} h={110} lines={["最后一圈"]} size={64} />
+        <Caption x={70} y={70} lines={["LAST LAP"]} size={64} />
       </g>
       {t >= cut ? (
         <g opacity={inset} transform={`translate(0 ${-40 * (1 - inset)})`}>

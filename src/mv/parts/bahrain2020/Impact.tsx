@@ -10,7 +10,7 @@ import { MangaCar, VF20, carLength } from "../../../cars";
 import { pinhole } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import { BubbleSmoke, FIRE_PALETTES, Fireball } from "../../../kit/fire";
-import { BRUSH_FONT } from "../../../kit/lettering";
+import { BigText } from "../../../kit/lettering";
 import { focusLines } from "../../../kit/lines";
 import { ToneDefs } from "../../../kit/tone";
 import { BentGuardrail, bump, type Deflection } from "./bent-rail";
@@ -401,19 +401,11 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
         ))}
       </g>
       {frozen ? (
-        <text
-          x={1330}
-          y={250}
-          fontFamily={BRUSH_FONT}
-          fontSize={220}
-          fill={INK}
-          stroke={PAPER}
-          strokeWidth={18}
-          paintOrder="stroke"
-          transform="rotate(-8 1330 250)"
-        >
-          {`${FACTS.impactG}G`}
-        </text>
+        <g transform="rotate(-8 1330 250)">
+          <BigText x={1330} y={250} size={200} haloWidth={22}>
+            {`${FACTS.impactG}G`}
+          </BigText>
+        </g>
       ) : null}
       <rect width={1920} height={1080} fill={PAPER} opacity={flash} />
     </svg>

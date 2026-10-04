@@ -160,7 +160,7 @@ const Inset: React.FC<{ t: number }> = ({ t }) => {
         strokeWidth={9}
       />
       <Sfx x={INSET.x + 24 + jx} y={INSET.y + 104} size={92} rotate={-8}>
-        吱——
+        SCREECH
       </Sfx>
     </g>
   );
@@ -252,8 +252,8 @@ export const T5Panel: React.FC<{ t?: number }> = ({ t = 0 }) => {
               />
             </g>
             <g transform={shake}>
-              <Sfx x={960} y={360} size={150} rotate={-10}>
-                轰——！
+              <Sfx x={640} y={360} size={150} rotate={-10}>
+                VROOOM!
               </Sfx>
             </g>
           </g>
@@ -267,13 +267,7 @@ export const T5Panel: React.FC<{ t?: number }> = ({ t = 0 }) => {
             strokeWidth={10}
           />
           <Inset t={t} />
-          <Caption
-            x={420}
-            y={80}
-            w={330}
-            h={150}
-            lines={["第 58 圈，", "T5 发卡弯。"]}
-          />
+          <Caption x={420} y={80} lines={["LAP 58 · TURN 5"]} />
         </g>
       </svg>
     </AbsoluteFill>

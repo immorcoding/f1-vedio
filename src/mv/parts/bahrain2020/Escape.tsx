@@ -7,7 +7,7 @@
 import type { Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import { FIRE_PALETTES } from "../../../kit/fire";
-import { Sfx } from "../../../kit/lettering";
+import { CAPTION_FONT } from "../../../kit/lettering";
 import { ToneDefs } from "../../../kit/tone";
 import { cueFrame, ramp, shotById, type PictureProps } from "./common";
 import {
@@ -152,9 +152,22 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
           opacity={text}
           transform={`translate(110 220) scale(${0.8 + 0.2 * text})`}
         >
-          <Sfx x={0} y={0} size={210} rotate={-4}>
-            {`${FACTS.escapeSeconds} 秒`}
-          </Sfx>
+          {/* the time in Titillium with a lowercase s, as in 3.5's panels (ART-6), ink on a paper halo */}
+          <text
+            x={0}
+            y={0}
+            fontFamily={CAPTION_FONT}
+            fontWeight={700}
+            fontSize={210}
+            fill={INK}
+            stroke={PAPER}
+            strokeWidth={26}
+            strokeLinejoin="round"
+            paintOrder="stroke"
+            transform="rotate(-4)"
+          >
+            {`${FACTS.escapeSeconds}s`}
+          </text>
         </g>
       ) : null}
     </svg>

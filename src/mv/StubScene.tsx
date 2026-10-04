@@ -14,7 +14,7 @@ export const StubScene: React.FC<SceneProps> = ({ part }) => (
         fontFamily: "sans-serif",
       }}
     >
-      {part.name} · 待做（{part.ticket}）
+      {part.id} · TODO ({part.ticket})
     </div>
   </AbsoluteFill>
 );
