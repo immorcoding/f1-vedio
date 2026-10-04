@@ -91,7 +91,7 @@ export const warpPath = (d: string, w: PointWarp, keepFirst = false) => {
 };
 
 // Polyline points of an absolute M/L/C/Z path (curves sampled).
-const pathPoints = (d: string) => {
+export const pathPoints = (d: string) => {
   const toks = d.match(/[MLCZ]|-?\d+(?:\.\d+)?/g) ?? [];
   const pts: { x: number; y: number }[][] = [];
   let cur: { x: number; y: number }[] = [];
@@ -184,7 +184,7 @@ const pairs = (d: string) => {
 const sideOnRearWing = (
   car: CarSpec,
   near: string,
-  pylon: string,
+  pylon: string | undefined,
   elevation: number,
 ) => {
   const ppm = photoPxPerMetre(car);
@@ -194,17 +194,21 @@ const sideOnRearWing = (
     ...ep.filter((p) => p.y <= top + REAR_TOP_BAND * ppm).map((p) => p.x),
   );
   const lift = (CENTRE - REAR_ENDPLATE_DEPTH) * Math.sin(rad(elevation)) * ppm;
-  const [tl, tr, br, bl] = pairs(pylon);
-  const dx = Math.max(0, front - tl.x);
-  const yTop = Math.max(tl.y, top + 0.05 * ppm);
   const r = (n: number) => Math.round(n * 10) / 10;
+  const tucked = (d: string) => {
+    const [tl, tr, br, bl] = pairs(d);
+    const dx = Math.max(0, front - tl.x);
+    const yTop = Math.max(tl.y, top + 0.05 * ppm);
+    return `M ${r(tl.x + dx)} ${r(yTop)} L ${r(tr.x + dx)} ${r(yTop)} L ${r(br.x + dx)} ${r(br.y)} L ${r(bl.x + dx)} ${r(bl.y)} Z`;
+  };
   return {
+    lift,
     // only the top edge (with its steps) is lifted; the rest stays behind the endplate, so no edge below it peeks out
     top: warpPath(near, (x, y) => ({
       x,
       y: y <= top + REAR_TOP_BAND * ppm ? y - lift : y,
     })),
-    pylon: `M ${r(tl.x + dx)} ${r(yTop)} L ${r(tr.x + dx)} ${r(yTop)} L ${r(br.x + dx)} ${r(br.y)} L ${r(bl.x + dx)} ${r(bl.y)} Z`,
+    pylon: pylon === undefined ? undefined : tucked(pylon),
   };
 };
 
@@ -245,7 +249,13 @@ export const specSeenFrom = (car: CarSpec, camera: FarSideCamera): CarSpec => {
       livery: rw.livery?.map((a) => ({ ...a, d: P(a.d) })),
       top: opt(rw.top),
       elements: rw.elements.map(P),
-      pylon: P(rw.pylon),
+      planes: rw.planes && {
+        ...rw.planes,
+        main: P(rw.planes.main),
+        flap: P(rw.planes.flap),
+        pivot: w(rw.planes.pivot.x, rw.planes.pivot.y),
+      },
+      pylon: opt(rw.pylon),
       beam: opt(rw.beam),
     },
     panelLines: car.panelLines.map(P),
@@ -278,8 +288,10 @@ export const specSeenFrom = (car: CarSpec, camera: FarSideCamera): CarSpec => {
     rearWing: {
       ...warped.rearWing,
       farFrom: undefined,
-      top: rear.top,
+      // with traced planes the planes themselves, lifted the same, are the sliver (RearWingPlanes.tsx)
+      top: rw.planes ? undefined : rear.top,
       elements: [],
+      planesLift: rear.lift,
       pylon: rear.pylon,
       beam: undefined,
     },

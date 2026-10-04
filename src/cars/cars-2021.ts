@@ -116,6 +116,17 @@ export const W12: CarSpec = {
     // No separate wing-top block; the wing planes between the endplates come later.
     farFrom: { dx: 19, dy: -69, scale: 0.84 },
     elements: [],
+    // Main plane and DRS flap side-on (prototype, user review pending). The wing box is 150–500 mm behind the rear
+    // axle (2021 Technical Regulations, Art. 3.6.3): 1689–1798 px from the wheel centre at 1642, which matches the
+    // endplate's front at 1695. Main plane: thick and nearly flat, low in the box. Flap: thin and steep, its trailing
+    // edge at the endplate's top. The slot between them is 11.5 mm closed and 84 mm with the flap turned 30.3° about
+    // its trailing edge (DRS open, max 85 mm).
+    planes: {
+      main: "M 1692 584 C 1692 578 1697 576 1704 576 L 1768 566 L 1770 571 C 1745 584 1725 594 1708 594 C 1698 594 1692 590 1692 584 Z",
+      flap: "M 1756 562 C 1755 557 1758 554 1763 553 L 1797 529 L 1798 533 L 1764 563 C 1761 565 1757 565 1756 562 Z",
+      pivot: { x: 1797, y: 529 },
+      drsOpen: 30.3,
+    },
     pylon: "M 1640 500 L 1682 500 L 1690 612 L 1650 616 Z",
     beam: "M 1690 600 L 1840 600",
   },

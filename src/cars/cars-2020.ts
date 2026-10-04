@@ -125,14 +125,15 @@ export const VF20: CarSpec = {
     flap: { d: "M 364 617 L 404 616 L 416 762 L 380 762 Z", color: HAAS_RED },
   },
   rearWing: {
-    near: "M 1688 520 L 1892 516 L 1834 626 L 1800 640 L 1700 640 L 1688 600 Z",
+    // near endplate as in the photo: its lower edge sweeps forward and down from the rear tip to meet the rear crash
+    // structure and diffuser at the body's rear edge (user review 2026-10-04: it floated)
+    near: "M 1688 520 L 1892 516 L 1838 622 L 1812 642 L 1774 656 L 1746 674 L 1702 688 L 1688 600 Z",
     // far endplate (HIGH; LOW hides it): the near one's copy (uniform scale), lifted above it, its bounding-box centre x on
     // the near one's (no sideways perspective offset; user review 2026-10-04).
     // Centre x 1790; dx = (1 - 0.79) * 204 / 2; lifted 82 px.
     // No separate wing-top block; the wing planes between the endplates come later.
     farFrom: { dx: 21, dy: -82, scale: 0.79 },
     elements: [],
-    pylon: "M 1606 468 L 1632 468 L 1642 612 L 1616 614 Z",
     beam: "M 1700 626 L 1830 626",
   },
   panelLines: [
