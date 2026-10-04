@@ -30,7 +30,12 @@ const camAt = (t: number) => {
   return x;
 };
 
-export const Finish: React.FC<{ st: ShotTime }> = ({ st }) => {
+// `behind` (PROTOTYPE hook) draws under the cars, over the track; `inset`: undefined = the flag, null = none, or a node.
+export const Finish: React.FC<{ st: ShotTime; behind?: React.ReactNode; inset?: React.ReactNode | null }> = ({
+  st,
+  behind,
+  inset,
+}) => {
   const { t } = st;
   const camX = camAt(t);
   const flash = hit(t, 0, 0.12);
@@ -58,6 +63,7 @@ export const Finish: React.FC<{ st: ShotTime }> = ({ st }) => {
       between={
         // flash and burst behind VER only: he stays the most solid thing on screen
         <g>
+          {behind}
           <rect x={-200} y={-200} width={2320} height={1480} fill={PAPER} opacity={0.75 * flash} />
           <path
             d={focusLines(LINE_AT.x, LINE_AT.y - 120, 430, 150, Math.floor(t * 10))}
@@ -67,6 +73,8 @@ export const Finish: React.FC<{ st: ShotTime }> = ({ st }) => {
         </g>
       }
     >
+      {inset === undefined ? (
+        <>
       <defs>
         <clipPath id="fin-inset">
           <rect x={INSET.x} y={INSET.y} width={INSET.w} height={INSET.h} />
@@ -78,6 +86,10 @@ export const Finish: React.FC<{ st: ShotTime }> = ({ st }) => {
         <ChequeredFlag x={INSET.x + 130} y={INSET.y + 60} w={380} h={230} t={t} swing={Math.sin(t * 5) * 12} />
       </g>
       <rect x={INSET.x} y={INSET.y} width={INSET.w} height={INSET.h} fill="none" stroke={INK} strokeWidth={9} />
+        </>
+      ) : (
+        inset
+      )}
     </Closeup>
   );
 };
