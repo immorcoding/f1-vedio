@@ -32,6 +32,23 @@ export type FarSideLook = {
   // the front wing surface and its flap seen side-on, in place of the traced (from above) `deck` and `flap.d`
   frontDeck?: string;
   frontFlap?: string;
+  // The body as a camera at `body.elevation` sees it, re-projected from the trace photo's higher camera (seenFrom.ts).
+  // Leave it out to draw the body as traced.
+  body?: BodyView;
+};
+
+// PROTOTYPE (prototype/car-high-low): the trace photos look down 8–22° on the car, so every part further from the
+// camera than the near wheels is drawn higher than it is: the nose and the engine cover (on the centre line, ~0.8 m
+// behind the near wheel plane) by 0.8·sin(e), the sidepod undercut and floor edge by less. BodyView re-projects the
+// body for a lower camera (seenFrom.ts). Heights are photo px; the depth of a body point (m behind the near wheel
+// plane) is read from its height: FLOOR_DEPTH at `floorY` and below, POD_DEPTH at `podY`, the centre line (0.8 m)
+// from 0.65 m up, and the whole nose (its near face, 0.65 m) ahead of the front axle (blending into the body by `noseTo`).
+export type BodyView = {
+  photoElevation: number; // deg, the trace photo's camera (out/review/v2-far-side/perspective.md)
+  elevation: number; // deg, the camera the look is drawn for
+  floorY: number; // photo y of the floor edge, mid-car
+  podY: number; // photo y of the sidepod's lower line, mid-car
+  noseTo: number; // photo x where the nose has blended into the body
 };
 // Which look a scene asks for (CarState.farSide): "low" for a trackside camera near the cars' height (the default),
 // "high" for a camera looking down on the car, as the trace photos and Bahrain's 3.2 m wreck cam do.

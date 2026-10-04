@@ -3,7 +3,7 @@
 // The photos show the cars' left sides facing right; the trace photos (`*_side.jpg`) are mirrored to face left like the
 // 2021 traces, and rectified with a homography from the Pirelli sidewall bands so both wheel centres sit level at one
 // scale (docs/assets/reference-register.md). Tyre diameter 0.672 m sets the scale, as for the 2021 cars.
-import type { CarSpec, Driver } from "./spec";
+import type { CarSpec, Driver } from "../../cars/spec";
 
 // Pirelli 2020 sidewall bands. At the 2020 Bahrain GP start GRO was on the hard, KVY on the medium (Pirelli race report).
 export const PIRELLI_2020 = {
@@ -87,10 +87,9 @@ export const VF20: CarSpec = {
         { cx: 1659, cy: 752, r: 93 },
       ],
       frontEndplate: false,
-      // LOW camera (prototype/car-high-low): the body re-projected from the photo's 21.5° to a 4° trackside camera
-      // (seenFrom.ts): the nose drops onto the wing, the floor to the ground, the undercut closes up, the top comes
-      // down; the front wing is drawn side-on from the endplate to the nose.
-      body: { photoElevation: 21.5, elevation: 4, floorY: 797, podY: 715, noseTo: 700 },
+      frontDeck:
+        "M 258 792 L 330 772 L 390 742 L 420 716 L 420 830 L 404 846 L 272 848 L 258 834 Z",
+      frontFlap: "M 360 754 L 420 716 L 420 729 L 364 765 Z",
     },
   },
   rimR: 53,
@@ -100,7 +99,7 @@ export const VF20: CarSpec = {
     "M 222 712 C 250 692 320 664 400 632 C 480 600 570 566 640 546 L 772 549 C 784 551 792 560 800 568 C 805 573 810 576 822 576 " +
     "L 952 576 C 976 576 994 568 1010 560 C 1026 552 1044 546 1062 543 L 1062 460 " +
     "L 1150 460 L 1360 449 C 1450 458 1520 476 1556 492 L 1600 540 L 1640 600 L 1700 640 L 1702 690 L 1590 760 L 1580 795 " +
-    "L 690 795 L 668 780 L 660 700 C 560 702 450 714 360 728 C 310 736 262 738 236 732 L 226 724 Z",
+    "L 690 795 L 668 780 L 660 700 C 560 698 450 700 360 708 C 300 714 252 722 226 724 Z",
   regions: {
     cover:
       "M 1062 460 L 1150 460 L 1360 449 C 1450 458 1520 476 1556 492 L 1600 540 L 1600 655 C 1500 650 1300 625 1100 610 L 990 605 L 978 602 L 996 576 L 1000 530 L 1062 530 Z",
@@ -109,7 +108,7 @@ export const VF20: CarSpec = {
     undercut:
       "M 640 640 L 965 602 L 970 726 L 1000 726 L 1150 728 C 1300 708 1450 676 1600 664 L 1600 800 L 680 800 Z",
     chassis:
-      "M 200 730 L 222 712 C 250 692 320 664 400 632 C 480 600 570 566 640 546 L 772 549 L 812 574 L 996 574 L 978 602 L 965 602 L 640 640 L 660 700 C 560 704 450 720 360 742 L 200 742 Z",
+      "M 200 730 L 222 712 C 250 692 320 664 400 632 C 480 600 570 566 640 546 L 772 549 L 812 574 L 996 574 L 978 602 L 965 602 L 640 640 L 660 700 C 560 698 450 700 360 708 Z",
   },
   glints: [
     "M 1215 466 L 1352 457 L 1340 467 L 1222 474 Z",
@@ -206,24 +205,15 @@ export const AT01: CarSpec = {
   // near ones, the far front endplate a sliver over the near one, the wing seen side-on, its elements rising from the
   // endplate to the nose (ART-26).
   farSide: {
-    // HIGH camera (prototype/car-high-low): the car as traced, far wheels where the photo shows them (the photo camera
-    // looks down ~8°, like the MV's 2.6–3.2 m cameras).
-    high: {
-      wheels: [
-        { cx: 452, cy: 668, r: 92 },
-        { cx: 1628, cy: 600, r: 92 },
-      ],
-    },
     low: {
       wheels: [
         { cx: 554, cy: 692, r: 93 },
         { cx: 1688, cy: 692, r: 93 },
       ],
       frontEndplate: { dx: 4, dy: -8, scale: 0.95 },
-      // LOW camera (prototype/car-high-low): the body re-projected from the photo's 8.1° to a 4° trackside camera
-      // (seenFrom.ts): the nose drops onto the wing, the floor to the ground, the undercut closes up, the top comes
-      // down; the front wing is drawn side-on from the endplate to the nose.
-      body: { photoElevation: 8.1, elevation: 4, floorY: 780, podY: 738, noseTo: 650 },
+      frontDeck:
+        "M 246 722 L 330 710 L 418 699 L 418 766 L 404 778 L 256 780 L 244 768 Z",
+      frontFlap: "M 340 709 L 418 698 L 418 707 L 342 717 Z",
     },
   },
   rimR: 53,
@@ -232,7 +222,7 @@ export const AT01: CarSpec = {
   body:
     "M 195 712 C 240 690 300 664 360 640 C 430 612 520 584 600 574 L 700 570 L 720 578 L 934 577 C 942 576 946 562 954 556 L 994 548 L 990 520 L 990 470 " +
     "C 1010 462 1050 462 1100 464 L 1300 470 C 1380 476 1440 490 1480 505 L 1520 540 L 1560 590 L 1600 620 L 1640 640 L 1650 690 " +
-    "L 1600 770 L 1590 780 L 640 782 L 620 772 L 612 700 C 520 700 420 706 330 714 C 270 719 225 722 198 720 Z",
+    "L 1600 770 L 1590 780 L 640 782 L 620 772 L 612 700 C 520 698 420 700 330 706 C 270 710 225 716 198 720 Z",
   regions: {
     cover:
       "M 990 470 C 1010 462 1050 462 1100 464 L 1300 470 C 1380 476 1440 490 1480 505 L 1520 540 L 1560 590 L 1600 620 L 1640 640 L 1650 700 L 1472 700 C 1472 600 1452 552 1402 528 C 1300 510 1150 516 1000 540 Z",
@@ -241,7 +231,7 @@ export const AT01: CarSpec = {
     undercut:
       "M 612 700 L 950 690 L 950 720 C 1050 735 1150 740 1300 738 C 1360 736 1420 720 1472 690 L 1650 700 L 1650 800 L 620 800 Z",
     chassis:
-      "M 180 730 L 195 712 C 240 690 300 664 360 640 C 430 612 520 584 600 574 L 700 570 L 720 578 L 950 576 L 985 560 L 1000 540 L 940 595 L 950 690 L 612 700 C 520 702 420 710 330 720 L 180 730 Z",
+      "M 180 730 L 195 712 C 240 690 300 664 360 640 C 430 612 520 584 600 574 L 700 570 L 720 578 L 950 576 L 985 560 L 1000 540 L 940 595 L 950 690 L 612 700 C 520 698 420 700 330 706 Z",
   },
   glints: [
     "M 1030 470 L 1290 474 L 1280 482 L 1040 480 Z",

@@ -9,6 +9,7 @@ import { StyleB } from "./prototype/styles/StyleB";
 import { StyleC } from "./prototype/styles/StyleC";
 import { TraceCheck } from "./prototype/styles/TraceCheck";
 import { CarSheet2021 } from "./prototype/styles/CarSheet2021";
+import { CarHighLowNoses, CarHighLowSheet, NOSES_SIZE, SHEET_SIZE } from "./prototype/car-high-low/CarHighLow";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -27,6 +28,8 @@ export const RemotionRoot: React.FC = () => {
         <Still id="Style-A-InkWatercolor" component={StyleA} width={1920} height={1080} />
         <Still id="Style-B-Manga" component={StyleB} width={1920} height={1080} />
         <Still id="Style-C-Illustration" component={StyleC} width={1920} height={1080} />
+        <Still id="Proto-CarHighLow" component={CarHighLowSheet} {...SHEET_SIZE} />
+        <Still id="Proto-CarHighLow-Noses" component={CarHighLowNoses} {...NOSES_SIZE} />
         <Still id="Sheet-Cars2021" component={CarSheet2021} width={1920} height={1080} />
         <Still id="Trace-W12" component={TraceCheck} defaultProps={{ car: "W12" }} width={1920} height={1080} />
         <Still id="Trace-RB16B" component={TraceCheck} defaultProps={{ car: "RB16B" }} width={1920} height={1080} />

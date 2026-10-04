@@ -76,13 +76,14 @@ export const Tow: React.FC<{ st: ShotTime }> = ({ st }) => {
           car: RB16B,
           x: v.x,
           z: v.z,
-          state: { wheelAngle: wheel, compound: PIRELLI_2021.soft },
+          // PROTOTYPE (car-high-low): the 2.9 m / 5 m cameras look down 7–15°: the HIGH look
+          state: { wheelAngle: wheel, compound: PIRELLI_2021.soft, farSide: "high" },
         },
         {
           car: W12,
           x: h.x,
           z: h.z,
-          state: { wheelAngle: wheel + 23, compound: PIRELLI_2021.hard },
+          state: { wheelAngle: wheel + 23, compound: PIRELLI_2021.hard, farSide: "high" },
         },
       ]}
       between={
