@@ -13,24 +13,78 @@ type P = readonly [number, number]; // photo px: x right, y down; the ground in 
 
 // West shell: outer (top) edge, measured column by column against the sky, tip to tail.
 const WEST_TOP: P[] = [
-  [21, 74], [22, 71], [28, 62], [34, 58], [40, 56], [52, 52], [64, 51], [82, 51], [100, 53], [118, 54], [136, 58],
-  [154, 62], [172, 67], [190, 73], [208, 79], [226, 85], [244, 92], [256, 98], [268, 107], [280, 117], [288, 121.5],
+  [21, 74],
+  [22, 71],
+  [28, 62],
+  [34, 58],
+  [40, 56],
+  [52, 52],
+  [64, 51],
+  [82, 51],
+  [100, 53],
+  [118, 54],
+  [136, 58],
+  [154, 62],
+  [172, 67],
+  [190, 73],
+  [208, 79],
+  [226, 85],
+  [244, 92],
+  [256, 98],
+  [268, 107],
+  [280, 117],
+  [288, 121.5],
 ];
 // West shell: the rim (its lower front edge, the bright line running down over the tower), tip to tail.
 const WEST_RIM: P[] = [
-  [21, 74], [30, 78], [41, 80], [66, 86], [85, 95], [110, 106], [135, 116], [160, 126], [180, 131.5], [200, 132],
-  [225, 127.5], [250, 123.5], [270, 122], [288, 121.5],
+  [21, 74],
+  [30, 78],
+  [41, 80],
+  [66, 86],
+  [85, 95],
+  [110, 106],
+  [135, 116],
+  [160, 126],
+  [180, 131.5],
+  [200, 132],
+  [225, 127.5],
+  [250, 123.5],
+  [270, 122],
+  [288, 121.5],
 ];
 // The curled lip under the west tip: the shell's inner face, seen through the rim.
 const WEST_LIP: P[] = [
-  [21, 74], [24, 81], [29, 87.5], [35, 94], [40, 98.5], [50, 95], [62, 89], [41, 80], [30, 78],
+  [21, 74],
+  [24, 81],
+  [29, 87.5],
+  [35, 94],
+  [40, 98.5],
+  [50, 95],
+  [62, 89],
+  [41, 80],
+  [30, 78],
 ];
 // East shell, top edge then bottom edge back to its west end (behind the west shell's tail).
 const EAST_TOP: P[] = [
-  [286, 122], [300, 121], [325, 120.5], [350, 120], [362, 120.5], [372, 123], [377, 128], [379, 134],
+  [286, 122],
+  [300, 121],
+  [325, 120.5],
+  [350, 120],
+  [362, 120.5],
+  [372, 123],
+  [377, 128],
+  [379, 134],
 ];
 const EAST_BOT: P[] = [
-  [286, 122], [291, 132], [300, 143], [312, 148.5], [337, 151], [356, 150], [370, 144], [376, 140], [379, 134],
+  [286, 122],
+  [291, 132],
+  [300, 143],
+  [312, 148.5],
+  [337, 151],
+  [356, 150],
+  [370, 144],
+  [376, 140],
+  [379, 134],
 ];
 
 // Floor slabs of the west tower (photo y), its rounded west end at x = 40.6.
@@ -232,17 +286,33 @@ export const YasHotel: React.FC<{
       ) : null}
 
       {/* east block: glass floors under the east shell */}
-      <rect x={X(296)} y={Y(128)} width={78 * scale} height={(PODIUM_TOP + 1 - 128) * scale} fill="#151515" />
+      <rect
+        x={X(296)}
+        y={Y(128)}
+        width={78 * scale}
+        height={(PODIUM_TOP + 1 - 128) * scale}
+        fill="#151515"
+      />
       {rooms(298, 372, eastSlabs, 2.4, 7)}
       {eastSlabs.map((y) => (
-        <path key={`e${y}`} d={`M ${X(296)} ${Y(y)} L ${X(374)} ${Y(y)}`} stroke={PAPER} strokeWidth={sw(0.55)} opacity={0.8} />
+        <path
+          key={`e${y}`}
+          d={`M ${X(296)} ${Y(y)} L ${X(374)} ${Y(y)}`}
+          stroke={PAPER}
+          strokeWidth={sw(0.55)}
+          opacity={0.8}
+        />
       ))}
 
       {/* west tower: rounded west end, slabs as pale bands, rooms lit between them */}
       <path
-        d={`M ${X(46)} ${Y(82)} L ${X(214)} ${Y(82)} ${WEST_TOP.filter(([px]) => px > 214)
+        d={`M ${X(46)} ${Y(82)} L ${X(214)} ${Y(82)} ${WEST_TOP.filter(
+          ([px]) => px > 214,
+        )
           .map(([px, py]) => `L ${X(Math.min(px, 286))} ${Y(py + 1.5)}`)
-          .join(" ")} L ${X(286)} ${Y(PODIUM_TOP)} L ${X(46)} ${Y(PODIUM_TOP)} Q ${X(40.6)} ${Y(PODIUM_TOP)} ${X(40.6)} ${Y(PODIUM_TOP - 5)} L ${X(40.6)} ${Y(87)} Q ${X(40.6)} ${Y(82)} ${X(46)} ${Y(82)} Z`}
+          .join(
+            " ",
+          )} L ${X(286)} ${Y(PODIUM_TOP)} L ${X(46)} ${Y(PODIUM_TOP)} Q ${X(40.6)} ${Y(PODIUM_TOP)} ${X(40.6)} ${Y(PODIUM_TOP - 5)} L ${X(40.6)} ${Y(87)} Q ${X(40.6)} ${Y(82)} ${X(46)} ${Y(82)} Z`}
         fill="#141414"
       />
       {rooms(43, 200, [83, ...westSlabs], 2.5, 1)}
@@ -257,7 +327,13 @@ export const YasHotel: React.FC<{
         />
       ))}
       {lowSlabs.slice(0, -1).map((y) => (
-        <path key={`l${y}`} d={`M ${X(200)} ${Y(y)} L ${X(284)} ${Y(y)}`} stroke={PAPER} strokeWidth={sw(0.55)} opacity={0.85} />
+        <path
+          key={`l${y}`}
+          d={`M ${X(200)} ${Y(y)} L ${X(284)} ${Y(y)}`}
+          stroke={PAPER}
+          strokeWidth={sw(0.55)}
+          opacity={0.85}
+        />
       ))}
 
       {/* podium on both sides of the track, its lobby glowing; open under the bridge */}
@@ -266,8 +342,21 @@ export const YasHotel: React.FC<{
         [GAP[1], 384],
       ].map(([a, b]) => (
         <g key={a}>
-          <rect x={X(a)} y={Y(PODIUM_TOP)} width={(b - a) * scale} height={(170 - PODIUM_TOP) * scale} fill="#1b1b1b" />
-          <rect x={X(a)} y={Y(152)} width={(b - a) * scale} height={13 * scale} fill={PAPER} opacity={0.42} />
+          <rect
+            x={X(a)}
+            y={Y(PODIUM_TOP)}
+            width={(b - a) * scale}
+            height={(170 - PODIUM_TOP) * scale}
+            fill="#1b1b1b"
+          />
+          <rect
+            x={X(a)}
+            y={Y(152)}
+            width={(b - a) * scale}
+            height={13 * scale}
+            fill={PAPER}
+            opacity={0.42}
+          />
           {Array.from({ length: Math.floor((b - a) / 6) }, (_, i) => (
             <path
               key={i}
@@ -276,7 +365,11 @@ export const YasHotel: React.FC<{
               strokeWidth={sw(0.5)}
             />
           ))}
-          <path d={`M ${X(a)} ${Y(PODIUM_TOP)} L ${X(b)} ${Y(PODIUM_TOP)}`} stroke={PAPER} strokeWidth={sw(0.9)} />
+          <path
+            d={`M ${X(a)} ${Y(PODIUM_TOP)} L ${X(b)} ${Y(PODIUM_TOP)}`}
+            stroke={PAPER}
+            strokeWidth={sw(0.9)}
+          />
         </g>
       ))}
 
@@ -290,6 +383,14 @@ export const YasHotel: React.FC<{
         fill="none"
       />
 
+      {/* deck arms tying the bridge into both blocks (behind the white body) */}
+      <path
+        d={`M ${X(236)} ${Y(149)} L ${X(268)} ${Y(150.5)} L ${X(268)} ${Y(158)} L ${X(236)} ${Y(158)} Z M ${X(309)} ${Y(150.5)} L ${X(342)} ${Y(149)} L ${X(342)} ${Y(158)} L ${X(309)} ${Y(158)} Z`}
+        fill="#262626"
+        stroke={PAPER}
+        strokeWidth={sw(0.55)}
+        opacity={0.95}
+      />
       {/* the link bridge over the track: a white streamlined body with a dark band, the track passing underneath */}
       <path
         d={`M ${X(264)} ${Y(154.5)} C ${X(268)} ${Y(148.5)} ${X(302)} ${Y(147.5)} ${X(313)} ${Y(151)} L ${X(313)} ${Y(157)} C ${X(302)} ${Y(159.5)} ${X(272)} ${Y(159.5)} ${X(264)} ${Y(157.5)} Z`}
@@ -299,7 +400,45 @@ export const YasHotel: React.FC<{
       />
       <path
         d={`M ${X(270)} ${Y(153)} C ${X(282)} ${Y(151.6)} ${X(298)} ${Y(151.4)} ${X(308)} ${Y(152.4)} L ${X(308)} ${Y(154.2)} C ${X(298)} ${Y(155)} ${X(282)} ${Y(155.1)} ${X(270)} ${Y(154.8)} Z`}
-        fill={INK}
+        fill="#4a4a4a"
+      />
+      {/* lit window bays along the bridge's glass band, so it reads as a solid body, not a hoop */}
+      {Array.from({ length: 9 }, (_, n) => {
+        const x = 273 + n * 4;
+        return (
+          <path
+            key={`bw${n}`}
+            d={`M ${X(x)} ${Y(152.6)} L ${X(x)} ${Y(154.6)}`}
+            stroke={PAPER}
+            strokeWidth={sw(1.4)}
+            opacity={0.75}
+          />
+        );
+      })}
+      {/* the bridge is carried by the podium blocks: their lit faces either side of the track, and the deck's
+          shadow line running into them, so it reads as built in rather than floating */}
+      {[GAP[0], GAP[1]].map((x) => (
+        <path
+          key={x}
+          d={`M ${X(x)} ${Y(PODIUM_TOP)} L ${X(x)} ${Y(170)}`}
+          stroke={PAPER}
+          strokeWidth={sw(0.9)}
+          opacity={0.85}
+        />
+      ))}
+      <path
+        d={`M ${X(GAP[0] - 14)} ${Y(158.5)} L ${X(264)} ${Y(158)} M ${X(313)} ${Y(158)} L ${X(GAP[1] + 14)} ${Y(158.5)}`}
+        stroke={PAPER}
+        strokeWidth={sw(0.6)}
+        opacity={0.7}
+      />
+      <rect
+        x={X(GAP[0])}
+        y={Y(159)}
+        width={(GAP[1] - GAP[0]) * scale}
+        height={4 * scale}
+        fill={PAPER}
+        opacity={0.12}
       />
 
       {/* east shell: dark glass, lattice, panels */}
@@ -307,7 +446,9 @@ export const YasHotel: React.FC<{
       <g clipPath={`url(#${id}-east)`}>
         {east.map((c, i) => {
           const a = panelLight(c);
-          return a > 0 ? <path key={i} d={c.panel} fill={PAPER} opacity={a} /> : null;
+          return a > 0 ? (
+            <path key={i} d={c.panel} fill={PAPER} opacity={a} />
+          ) : null;
         })}
         <path
           d={east.map((c) => c.d).join(" ")}
@@ -323,13 +464,24 @@ export const YasHotel: React.FC<{
       <path d={lip} fill="#1e1e1e" stroke={PAPER} strokeWidth={sw(0.6)} />
       {[0.2, 0.4, 0.6, 0.8].map((f, i) => {
         const p = map([24 + f * 18, 80 + f * 15]);
-        return <circle key={i} cx={p[0]} cy={p[1]} r={sw(0.9)} fill={PAPER} opacity={lit > f * 0.2 ? 0.9 : 0.35} />;
+        return (
+          <circle
+            key={i}
+            cx={p[0]}
+            cy={p[1]}
+            r={sw(0.9)}
+            fill={PAPER}
+            opacity={lit > f * 0.2 ? 0.9 : 0.35}
+          />
+        );
       })}
       <path d={westOutline} fill="#101010" />
       <g clipPath={`url(#${id}-west)`}>
         {west.map((c, i) => {
           const a = panelLight(c);
-          return a > 0 ? <path key={i} d={c.panel} fill={PAPER} opacity={a} /> : null;
+          return a > 0 ? (
+            <path key={i} d={c.panel} fill={PAPER} opacity={a} />
+          ) : null;
         })}
         <path
           d={west.map((c) => c.d).join(" ")}
@@ -339,7 +491,13 @@ export const YasHotel: React.FC<{
           opacity={lit > 0.86 ? 0.7 : 0.55}
         />
       </g>
-      <path d={westOutline} fill="none" stroke={PAPER} strokeWidth={sw(0.9)} strokeLinejoin="round" />
+      <path
+        d={westOutline}
+        fill="none"
+        stroke={PAPER}
+        strokeWidth={sw(0.9)}
+        strokeLinejoin="round"
+      />
     </g>
   );
 };
