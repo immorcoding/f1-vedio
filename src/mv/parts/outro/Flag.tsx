@@ -1,10 +1,10 @@
-// Shots 6.2 and 6.3 (outro bar 4 beat 3 to the end): the chequered flag, the race's real end signal, closes the film. A manga flag in
-// black and white: the cloth rolls in travelling waves (dot tone in the folds, paper highlights on the crests) and
-// pumps on the low pulse every beat.
-//   6.2 (4.3–6.4)   the flag waves in from the left over the last flashback panel on the beat its number turns over,
-//                   pole leading, small at first and growing until the cloth fills the frame on bar 6 beat 1 (a full
-//                   bar of the big flag before the title); the ping on bar 5 beat 3 gives it a snap and a flash on
-//                   the crests.
+// Shots 6.2 and 6.3 (outro bars 5–8): the chequered flag, the race's real end signal, closes the film. A manga flag in
+// black and white: the cloth rolls in travelling waves (dot tone in the folds, paper highlights on the crests). The
+// score is winding down here (no kick after bar 4, back to the intro pad), so the flag moves calmly: no beat pump, low
+// waves that keep slowing from its entrance to the end.
+//   6.2 (bars 5–6)  on bar 5 beat 1 the flag sweeps in from the left over the last flashback panel, pole leading, in
+//                   one unhurried eased move, small at first and growing until the cloth fills the frame around bar 6
+//                   beat 1; the ping on bar 5 beat 3 gives it its one accent, a snap and a flash on the crests.
 //   6.3 (bars 7–8)  the waves slow and settle to near-still; on bar 7 beat 1 a paper banner slams across the flag with
 //                   the title F1 · 1989–2021 in ink; the ping on beat 3 glints on it and the chequered strip wipes in;
 //                   the title holds through bar 7; from bar 8 beat 1 the flag sinks and the frame fades slowly to
@@ -14,9 +14,8 @@ import { Easing, random } from "remotion";
 import { INK, PAPER } from "../../../kit/colors";
 import { CircuitTag, TitleText, titleWidth } from "../../../kit/lettering";
 import { useLettering } from "../../../kit/lettering";
-import { speedLines } from "../../../kit/lines";
 import { TonePattern } from "../../../kit/tone";
-import { FPS, SECONDS_PER_BEAT, frameAt } from "../../timing";
+import { FPS, frameAt } from "../../timing";
 import {
   cueAt,
   hit,
@@ -48,45 +47,38 @@ type FlagState = {
   /** Pole x and a vertical offset, in the flag's own (unscaled) space. */
   px: number;
   dy: number;
-  /** Pole speed in the flag's space, px/s (streaks and flecks). */
-  vel: number;
   /** Wave clock (seconds at full flap) and wave height factor. */
   wt: number;
   amp: number;
-  /** 0 → 1 once the flag is up and flying free (sway and pump on). */
+  /** 0 → 1 once the flag is well in (sway on). */
   free: number;
-  /** Sway and pump strength (the waves settling takes them down too). */
+  /** Sway strength (easing down with the waves). */
   live: number;
   /** The snap on the ping: 1 on the beat, decaying. */
   snap: number;
 };
 
-// It comes in on the beat the 2021 number turns over, but only peeks in at the lower left for that beat, so the new
-// "1" reads before the cloth dashes over it.
-const T_PEEK = SECONDS_PER_BEAT;
-const T_IN = T_PEEK + 0.55; // the end of the pole's dash in
-const SETTLE_RATE = 0.07; // the waves' speed at rest, as a share of full flap
-const SETTLE_TAU = 0.8; // s
+// The waves, from the flag's entrance to the end: speed (share of full flap) and height ease down all the way.
+const RATE_REST = 0.08;
+const RATE_START = 0.55;
+const RATE_TAU = 2.2; // s
+const AMP_REST = 0.25;
+const AMP_START = 0.75;
+const AMP_TAU = 2.6; // s
 
-// screen x of the pole and the flag's scale, at tf seconds since `outro.flag`
-const poleScreen = (tf: number, tFull: number) => {
-  if (tf < T_PEEK) return -40 + (300 - -40) * smooth(tf / T_PEEK);
-  if (tf < T_IN)
-    return (
-      300 + (1150 - 300) * (1 - (1 - (tf - T_PEEK) / (T_IN - T_PEEK)) ** 2)
-    );
-  return 1150 + (2010 - 1150) * smooth((tf - T_IN) / (tFull - T_IN));
-};
+// screen x of the pole and the flag's scale, at tf seconds since `outro.flag`: one eased sweep to full frame, then
+// a slow drift
+const poleScreen = (tf: number, tFull: number) =>
+  tf < tFull
+    ? -40 + (2010 - -40) * Easing.inOut(Easing.sin)(tf / tFull)
+    : 2010 + 40 * Math.min(1, (tf - tFull) / tFull);
 const scaleAt = (tf: number, tFull: number) =>
-  0.36 +
-  (1.06 - 0.36) *
-    Easing.inOut(Easing.cubic)(
-      Math.min(1, Math.max(0, (tf - 0.35) / (tFull - 0.35))),
-    );
+  0.42 +
+  (1.06 - 0.42) *
+    Easing.inOut(Easing.sin)(Math.min(1, Math.max(0, tf / tFull)));
 
 export const flagState = (tf: number): FlagState => {
   const tFull = cueS("outro.flagFull");
-  const tTitle = cueS("outro.title");
   const tSnap = cueS("outro.flagSnap");
   const tSink = cueS("outro.fade");
   const tEnd = cueS("outro.black");
@@ -95,34 +87,29 @@ export const flagState = (tf: number): FlagState => {
     return { s, px: 960 + (poleScreen(t, tFull) - 960) / s };
   };
   const { s, px } = place(tf);
-  const vel = (place(tf + 1 / FPS).px - px) * FPS;
-  // the waves: full flap (and a little bigger) while it flies in, then slowing to near-still after the title lands
-  const d = Math.max(0, tf - tTitle);
-  const slow = Math.exp(-d / SETTLE_TAU);
-  const wt =
-    Math.min(tf, tTitle) +
-    SETTLE_RATE * d +
-    (1 - SETTLE_RATE) * SETTLE_TAU * (1 - slow);
-  const amp = tf < tTitle ? 1.3 : 0.25 + 1.05 * slow;
+  // the waves: gentle from the start and slowing to near-still by the end (the clock integrates the falling rate)
+  const t = Math.max(0, tf);
+  const slow = Math.exp(-t / RATE_TAU);
+  const wt = RATE_REST * t + (RATE_START - RATE_REST) * RATE_TAU * (1 - slow);
+  const amp = AMP_REST + (AMP_START - AMP_REST) * Math.exp(-t / AMP_TAU);
   // it rises a little as it comes in, and sinks away at the end
   const sink = smooth((tf - tSink) / (tEnd - tSink));
-  const dy = 260 * (1 - smooth(tf / T_IN)) + 160 * sink * sink;
+  const dy = 180 * (1 - smooth(tf / tFull)) + 160 * sink * sink;
   return {
     s,
     px,
     dy,
-    vel,
     wt,
     amp,
-    free: smooth((tf - T_IN) / 0.4),
-    live: 0.15 + 0.85 * slow,
+    free: smooth((tf - tFull * 0.5) / 0.6),
+    live: Math.exp(-t / AMP_TAU),
     snap: hit(tf, tSnap, 0.22),
   };
 };
 
 // ── the cloth ──────────────────────────────────────────────────────────────────────────────────────────────────────
 const ChequeredFlag: React.FC<{ tf: number; fs: FlagState }> = ({ tf, fs }) => {
-  const { px, wt, amp: ampK, vel, snap } = fs;
+  const { px, wt, amp: ampK, snap } = fs;
 
   // the cloth: u from the pole (0) back to the trailing edge (W), v down from the top
   const wave = (u: number, v: number) => {
@@ -217,24 +204,6 @@ const ChequeredFlag: React.FC<{ tf: number; fs: FlagState }> = ({ tf, fs }) => {
           <circle cx={5} cy={5} r={2.6} fill={PAPER} />
         </pattern>
       </defs>
-      {/* streaks behind the trailing edge while the flag dashes in */}
-      {vel > 2500 ? (
-        <path
-          d={speedLines({
-            x: px - W - 900,
-            y: 60,
-            w: 900,
-            h: 960,
-            angle: 0,
-            n: 26,
-            seed: "o61",
-            thickness: 7,
-            length: [0.3, 0.9],
-          })}
-          fill={INK}
-          opacity={Math.min(0.8, (vel - 2500) / 3000)}
-        />
-      ) : null}
       <path d={whites.join(" ")} fill={PAPER} />
       <path d={blacks.join(" ")} fill={INK} />
       {shines.map((f, k) => (
@@ -312,7 +281,7 @@ const ChequeredFlag: React.FC<{ tf: number; fs: FlagState }> = ({ tf, fs }) => {
           strokeWidth={7}
         />
       </g>
-      {/* a few flecks thrown off the trailing edge while it whips */}
+      {/* a few flecks thrown off the trailing edge on the snap */}
       {Array.from({ length: 10 }, (_, k) => {
         const age = (tf * 1.3 + random(`o61f${k}`)) % 1;
         const e = wave(W, H * random(`o61v${k}`));
@@ -323,7 +292,7 @@ const ChequeredFlag: React.FC<{ tf: number; fs: FlagState }> = ({ tf, fs }) => {
             stroke={INK}
             strokeWidth={4}
             strokeLinecap="round"
-            opacity={vel > 400 || snap > 0.2 ? 0.8 * (1 - age) : 0}
+            opacity={snap > 0.2 ? 0.8 * (1 - age) : 0}
           />
         );
       })}
@@ -331,16 +300,11 @@ const ChequeredFlag: React.FC<{ tf: number; fs: FlagState }> = ({ tf, fs }) => {
   );
 };
 
-// The flag placed in the frame: flying in, swaying, pumping on the beat.
+// The flag placed in the frame: sweeping in and swaying gently (no beat pump: the score is winding down); the one
+// accent is the snap on the 5.3 ping.
 const FlagLayer: React.FC<{ tf: number }> = ({ tf }) => {
   const fs = flagState(tf);
-  const sinceBeat =
-    ((tf % SECONDS_PER_BEAT) + SECONDS_PER_BEAT) % SECONDS_PER_BEAT;
-  const pump =
-    1 +
-    fs.free * fs.live * 0.018 * Math.max(0, 1 - sinceBeat / 0.2) ** 2 +
-    0.035 * fs.snap;
-  const k = fs.s * (1 + 0.04 * fs.free) * pump;
+  const k = fs.s * (1 + 0.04 * fs.free) * (1 + 0.03 * fs.snap);
   const rot = fs.free * fs.live * 3 * Math.sin(fs.wt * 2.6);
   return (
     <g

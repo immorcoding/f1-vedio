@@ -1,7 +1,7 @@
 // Shot 6.1 (outro bars 1–4): four flashback panels, one a bar, each switched on beat 1. The first slams straight onto
-// 5.8's champion photo; the cuts into the other three are a 3-frame whip (the old page flung off left under speed
-// lines and a paper flash). Every panel pushes in slowly (5 % a bar), and each one's key event lands on beat 3. Each
-// panel reuses its part's art:
+// 5.8's champion photo while the music is still full; from there the score winds down (the kick stops after bar 4),
+// so the picture calms with it: a plain hard cut into 2008, a 5-frame paper dissolve into 2020 and 2021. Every panel
+// pushes in slowly (5 % a bar), and each one's key event lands on beat 3. Each panel reuses its part's art:
 //   1989/90  PRO's and SEN's helmets (their real designs, the same as on the cars) clashing in an impact star
 //   2008     the 98 · 97 score box of 2.7, its gold under-stroke landing on beat 3
 //   2020     the burnt but whole halo of 3.6 (HaloFinale), a glint on beat 3
@@ -18,7 +18,7 @@ import {
 import { INK, PAPER } from "../../../kit/colors";
 import { ImpactStar } from "../../../kit/impact";
 import { Caption, captionSize, useLettering } from "../../../kit/lettering";
-import { focusLines, speedLines } from "../../../kit/lines";
+import { focusLines } from "../../../kit/lines";
 import { ToneDefs, tone } from "../../../kit/tone";
 import { HaloFinale } from "../bahrain2020/HaloFinale";
 import { FIRE_PALETTE, cueFrame as bahrainCue } from "../bahrain2020/common";
@@ -141,7 +141,7 @@ const Score: React.FC<PanelProps> = ({ t, keyT }) => {
 };
 
 // 2020: the scorched halo, slowly pushing in (3.6's last shot, held on its first second)
-const HALO_GLINT = { x: 0.52, y: 0.38 }; // the halo's top in the panel, as a share of its size
+const HALO_GLINT = { x: 0.46, y: 0.3 }; // the halo's top in the panel, as a share of its size
 const Halo: React.FC<PanelProps> = ({ t, keyT }) => {
   const f = bahrainCue("bahrain2020.halo") + 6 + Math.round(t * 60 * 0.5);
   const g = t < keyT ? 0 : decay(t - keyT, 0.55);
@@ -297,8 +297,8 @@ const PANELS: {
 
 const shot58 = ABU_EDIT.shots.find((s) => s.id === "5.8");
 
-/** The whip between panels, s (3 frames). */
-const WHIP = 3 / FPS;
+/** The paper dissolve into panels 3 and 4, s (5 frames). */
+const DISSOLVE = 5 / FPS;
 /** Slow push-in on every panel: this much bigger per bar. */
 const PUSH = 0.05;
 const BAR_S = 4 * SECONDS_PER_BEAT;
@@ -368,12 +368,12 @@ export const Flashbacks: React.FC<{ st: ShotTime }> = ({ st }) => {
   const slam = cur === 0 ? Math.min(1, since / 0.12) : 1;
   const slamS =
     cur === 0 ? 1.22 - 0.22 * Easing.out(Easing.back(1.8))(slam) : 1;
-  const punch = decay(since, cur === 0 ? 0.3 : 0.16);
-  const shakeX = punch * (cur === 0 ? 12 : 8) * Math.sin(st.t * 97);
-  const shakeY = punch * (cur === 0 ? 9 : 6) * Math.cos(st.t * 83);
-  // panels 2–4: a 3-frame whip — the new page sweeps in from the right as the old one is flung off left
-  const whipping = cur > 0 && since < WHIP;
-  const e = Math.min(1, (Math.round(since * FPS) + 1) / 3);
+  const punch = cur === 0 ? decay(since, 0.3) : 0;
+  const shakeX = punch * 12 * Math.sin(st.t * 97);
+  const shakeY = punch * 9 * Math.cos(st.t * 83);
+  // panels 3 and 4: the new page dissolves in over the old through a light paper wash (panel 2 is a hard cut)
+  const dissolving = cur >= 2 && since < DISSOLVE;
+  const e = Math.min(1, (Math.round(since * FPS) + 1) / 6);
   const yearFlip =
     cur === 3 ? Math.max(0, Math.min(1, (st.t - turn) / 0.16)) : 0;
   const page = (i: number) => (
@@ -403,31 +403,16 @@ export const Flashbacks: React.FC<{ st: ShotTime }> = ({ st }) => {
           <ToneDefs prefix="o62" />
         </defs>
         <g transform={`translate(${shakeX} ${shakeY})`}>
-          {whipping ? (
+          {dissolving ? (
             <g>
-              <g transform={`translate(${-1920 * e} 0)`}>{page(cur - 1)}</g>
-              <g transform={`translate(${1920 * (1 - e)} 0)`}>{page(cur)}</g>
-              <path
-                d={speedLines({
-                  x: -100,
-                  y: 0,
-                  w: 2120,
-                  h: 1080,
-                  angle: 0,
-                  n: 40,
-                  seed: `o62w${cur}`,
-                  thickness: 9,
-                  length: [0.3, 0.8],
-                })}
-                fill={INK}
-                opacity={0.75}
-              />
+              {page(cur - 1)}
               <rect
                 width={1920}
                 height={1080}
                 fill={PAPER}
-                opacity={0.55 * (1 - e) + 0.15}
+                opacity={0.35 * Math.sin(Math.PI * e)}
               />
+              <g opacity={e}>{page(cur)}</g>
             </g>
           ) : (
             <g
