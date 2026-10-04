@@ -1,9 +1,9 @@
-// Shot 1.6 (bars 23–26): the start and the run to Turn 1 from straight above (MOT-2), lap 1, at true car size
+// Shot 1.6 (bars 24–27): the start and the run to Turn 1 from straight above (MOT-2), lap 1, at true car size
 // (ART-18). The front of the grid: SEN on pole on the right, where the grid lane is dusty and gritty (the dotted
 // screen — the easter egg, STO-7, facts.md), PRO second on the left, on the dark rubbered racing line; MAN and BER
-// behind. Lights out on 23.3; PRO's better launch from the clean side puts him ahead, the camera runs with the
+// behind. Lights out on 24.3; PRO's better launch from the clean side puts him ahead, the camera runs with the
 // leaders down the straight (pit wall and pit exit on the right) and opens onto Turn 1, where PRO turns in from the
-// left and SEN keeps the inside — his front wheel level with PRO's rear wheel at the cut (27.1, the crash in 1.7).
+// left and SEN keeps the inside — his front wheel level with PRO's rear wheel at the cut (28.1, the crash in 1.7).
 import { Easing, random } from "remotion";
 import {
   F641_MAN,

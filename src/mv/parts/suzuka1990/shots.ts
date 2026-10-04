@@ -1,4 +1,4 @@
-// Edit list for 铃鹿 1990 (bars 21–32), treatment shots 1.5–1.8. Facts on screen: docs/production/facts.md.
+// Edit list for 铃鹿 1990 (bars 22–32), treatment shots 1.5–1.8. Facts on screen: docs/production/facts.md.
 import { hitCue, type PartEdit } from "../../shot.ts";
 import { at } from "../../timing.ts";
 
@@ -7,31 +7,31 @@ export const EDIT: PartEdit = {
   shots: [
     {
       id: "1.5",
-      from: at(21),
-      to: at(23),
+      from: at(22),
+      to: at(24),
       view: "title",
       content:
-        "1989 那一页（1.1 的成品：减速弯圈和放大小格、“队友 · 宿敌”）翻过去，下一页是同一条铃鹿，圈落在 1 号弯；PRO 的头盔格落在 1.2 的左上位置，第 22 小节翻面，同一顶头盔从 McLaren 红白换到法拉利红；镜头推向发车直道",
+        "1989 那一页（1.1 的成品：减速弯圈和放大小格、“队友 · 宿敌”）翻过去，下一页是同一条铃鹿，圈落在 1 号弯；PRO 的头盔格落在 1.2 的左上位置，第 23 小节翻面，同一顶头盔从 McLaren 红白换到法拉利红；镜头推向发车直道",
       text: ["1990 · 铃鹿", "PRO 转投法拉利", "积分 SEN 78 · PRO 69"],
       cues: [
-        { id: "suzuka1990.flip", at: at(21, 1) },
-        { id: "suzuka1990.move", at: at(22, 1) },
+        { id: "suzuka1990.flip", at: at(22, 1) },
+        { id: "suzuka1990.move", at: at(23, 1) },
       ],
     },
     {
       id: "1.6",
-      from: at(23),
-      to: at(27),
+      from: at(24),
+      to: at(28),
       view: "top",
       content:
         "俯视发车区与 1 号弯：SEN 杆位在较脏的右侧（网点），PRO 在干净的行车线一侧；起步 PRO 领先，SEN 从内线冲向 1 号弯（彩蛋）",
       text: ["第 1 圈"],
-      cues: [{ id: "suzuka1990.start", at: at(23, 3) }],
+      cues: [{ id: "suzuka1990.start", at: at(24, 3) }],
     },
     {
       id: "1.7",
-      from: at(27),
-      to: at(29),
+      from: at(28),
+      to: at(30),
       view: "closeup",
       content:
         "1 号弯相撞，与 1989 的撞击格同一套画法、左右镜像、角色对调：SEN 左前轮撞上 PRO 右后轮，定格成撞击星加集中线，拟声字在镜像的一角；两车锁在一起冲出赛道，滑进砂石缓冲区，尘土与碎片飞起",
@@ -40,17 +40,17 @@ export const EDIT: PartEdit = {
     },
     {
       id: "1.8",
-      from: at(29),
+      from: at(30),
       to: at(33),
       view: "panel",
       content:
-        "尘土落定，两车停在缓冲区；第 30 小节画面压暗，1.2/1.4 的两格头盔放大回到左右对称的位置、面对面：PRO（法拉利）盖“1989 冠军”，SEN 盖“1990 冠军”（与 1.4 同款红章），最后一行小字",
+        "尘土落定，两车停在缓冲区；30.2 画面压暗，1.2/1.4 的两格头盔放大回到左右对称的位置、面对面：30.4 PRO（法拉利）盖“1989 冠军”，31.2 SEN 盖“1990 冠军”（与 1.4 同款红章），31.4 最后一行小字；缓推到第 32 小节末尾切",
       text: ["1989 冠军", "1990 冠军", "SEN 后来承认是故意的"],
       cues: [
-        { id: "suzuka1990.helmets", at: at(30) },
-        { id: "suzuka1990.stamp89", at: at(30, 2) },
-        { id: "suzuka1990.stamp90", at: at(31) },
-        { id: "suzuka1990.admitted", at: at(31, 3) },
+        { id: "suzuka1990.helmets", at: at(30, 2) },
+        { id: "suzuka1990.stamp89", at: at(30, 4) },
+        { id: "suzuka1990.stamp90", at: at(31, 2) },
+        { id: "suzuka1990.admitted", at: at(31, 4) },
       ],
     },
   ],

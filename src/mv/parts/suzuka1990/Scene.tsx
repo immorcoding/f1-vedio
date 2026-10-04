@@ -1,5 +1,5 @@
-// Picture for 铃鹿 1990 (bars 21–32), treatment shots 1.5–1.8: the page turn to 1990, the start and the run to Turn 1
-// from above (with the dirty-side pole easter egg), the crash on 27.1, and the two champions' helmets. Shot timing
+// Picture for 铃鹿 1990 (bars 22–32), treatment shots 1.5–1.8: the page turn to 1990, the start and the run to Turn 1
+// from above (with the dirty-side pole easter egg), the crash on 28.1, and the two champions' helmets. Shot timing
 // comes from shots.ts, car positions from staging.ts; facts on screen from docs/production/facts.md.
 import { AbsoluteFill } from "remotion";
 import { useSongFrame } from "../../clock";

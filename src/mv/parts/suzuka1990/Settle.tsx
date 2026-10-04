@@ -1,9 +1,10 @@
-// Shot 1.8 (bars 29–32): the dust settles, and the story closes on the layout it opened with. The crash panel holds on
-// the two cars stopped in the Turn 1 gravel while the dust sinks and thins; on 30.1 it dims (as 1.4's result does) and
+// Shot 1.8 (bars 30–32): the dust settles, and the story closes on the layout it opened with. The crash panel holds on
+// the two cars stopped in the Turn 1 gravel while the dust sinks and thins; on 30.2 it dims (as 1.4's result does) and
 // the two helmet cards of 1.2 and 1.4 come back, larger, side by side and facing each other — PRO on the left (his own
-// helmet, in the Ferrari he drives now), SEN on the right (the MP4/5B). PRO's card is stamped "1989 冠军" on 30.2 in
-// the same red stamp as 1.4, SEN's "1990 冠军" on 31.1; on 31.3 one small line, "SEN 后来承认是故意的" (facts.md:
-// Senna admitted it in 1991; no quote, STO-7). The last bar pushes slowly in; the cut is 33.1.
+// helmet, in the Ferrari he drives now), SEN on the right (the MP4/5B). PRO's card is stamped "1989 冠军" on 30.4 in
+// the same red stamp as 1.4, SEN's "1990 冠军" on 31.2; on 31.4 one small line, "SEN 后来承认是故意的" (facts.md:
+// Senna admitted it in 1991; no quote, STO-7). From the cards' entry the page pushes in, gathering pace to the cut on
+// 33.1, so the ending never stands still.
 import { Easing } from "remotion";
 import { F641_PRO, MP4_5B_SEN } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
@@ -24,8 +25,13 @@ export const Settle: React.FC<PictureProps> = ({ f }) => {
   const [stampPro, stampSen, admitted] = shot.text;
   const helm = cueFrame("suzuka1990.helmets");
   const t = f - shot.from;
-  // the dust sinks and thins over the first bar and a half
-  const dustFade = ramp(t, 10, 150, Easing.inOut(Easing.quad));
+  // the dust sinks and thins from the cut until the first stamp
+  const dustFade = ramp(
+    f,
+    shot.from,
+    cueFrame("suzuka1990.stamp89"),
+    Easing.inOut(Easing.quad),
+  );
   const left = ramp(f, helm, helm + 22, Easing.out(Easing.back(1.2)));
   const right = ramp(f, helm + 8, helm + 30, Easing.out(Easing.back(1.2)));
   const dim = ramp(f, helm, helm + 20);
@@ -40,9 +46,9 @@ export const Settle: React.FC<PictureProps> = ({ f }) => {
     const k = f - from - 10;
     return k < 0 ? 0 : 9 * Math.exp(-k / 5) * Math.sin(k * 1.9);
   };
-  // a slow push-in from the moment the cards land to the cut, the focus lines flickering like a held manga beat
-  const push =
-    1 + 0.08 * ramp(f, helm + 30, shot.to, Easing.inOut(Easing.quad));
+  // a push-in from the cards' entry to the cut that gathers pace instead of settling, the lines boiling like a held
+  // manga beat
+  const push = 1 + 0.08 * ramp(f, helm, shot.to, Easing.in(Easing.sin));
   const flicker = Math.floor(t / 5);
   const bob = (k: number) => 6 * Math.sin((t + k) / 22);
   return (

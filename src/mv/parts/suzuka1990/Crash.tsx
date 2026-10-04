@@ -1,5 +1,5 @@
-// Shot 1.7 (bars 27–28): the crash at Turn 1. The camera stands on the inside of the corner (its kerb in the
-// foreground), so the cars run right to left and SEN, on the inside, is the near car. On 27.1 SEN's left front tyre
+// Shot 1.7 (bars 28–29): the crash at Turn 1. The camera stands on the inside of the corner (its kerb in the
+// foreground), so the cars run right to left and SEN, on the inside, is the near car. On 28.1 SEN's left front tyre
 // hits PRO's right rear tyre: the frame freezes on an impact star with "轰！", debris flies, then the frame shakes out
 // and the two cars, locked together, slide off the outside of the corner — away from the camera, across the grass
 // and into the gravel trap — throwing up dust, and stop. Staging (world metres) lives in staging.ts and is tested for

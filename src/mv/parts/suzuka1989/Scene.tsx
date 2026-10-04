@@ -1,4 +1,4 @@
-// Picture for 铃鹿 1989 (bars 9–20), treatment shots 1.1–1.4: the title map, the two McLarens side by side with the
+// Picture for 铃鹿 1989 (bars 9–21), treatment shots 1.1–1.4: the title map, the two McLarens side by side with the
 // helmet panels, the chicane from above on lap 47, and the crash on 19.1 with the push-start easter egg. Shot timing
 // comes from shots.ts; facts on screen from docs/production/facts.md.
 import { AbsoluteFill } from "remotion";

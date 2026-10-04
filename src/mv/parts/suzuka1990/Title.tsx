@@ -1,8 +1,8 @@
-// Shot 1.5 (bars 21–22): title card, a page turn. The finished 1989 page — drawn by the 1989 part itself
+// Shot 1.5 (bars 22–23): title card, a page turn. The finished 1989 page — drawn by the 1989 part itself
 // (suzuka1989/Title.tsx: the figure-eight, the chicane ringed and blown up in its callout, "1989 · 铃鹿 / 队友 · 宿敌")
-// — turns over on 21.1 like a manga page, and under it is the same circuit on a fresh page in the same hand:
+// — turns over on 22.1 like a manga page, and under it is the same circuit on a fresh page in the same hand:
 // "1990 · 铃鹿" is brushed in and the ring lands on Turn 1, where this year's crash happens. PRO's helmet card drops
-// into his slot of 1.2 (top left) in the 1989 McLaren and flips over on 22.1: the same helmet — a driver keeps his
+// into his slot of 1.2 (top left) in the 1989 McLaren and flips over on 23.1: the same helmet — a driver keeps his
 // helmet when he changes team — now sits in the red Ferrari, "PRO 转投法拉利". Then the stakes, and on the last beats
 // the page pushes in toward the main straight and Turn 1, into the top view of shot 1.6.
 import { Easing } from "remotion";
@@ -169,7 +169,7 @@ export const Title: React.FC<PictureProps> = ({ f }) => {
   const title = ramp(t, 40, 66, Easing.out(Easing.back(2)));
   const card = ramp(t, 58, 74, Easing.out(Easing.back(1.4)));
   const ring = ramp(t, 74, 92, Easing.out(Easing.back(1.6)));
-  // the card turns over across 22.1: edge-on exactly on the beat
+  // the card turns over across 23.1: edge-on exactly on the beat
   const moveAt = cueFrame("suzuka1990.move");
   const cardFlip = ramp(
     f,

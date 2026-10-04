@@ -93,7 +93,7 @@ export const HITS = {
   "intro.light5": at(8, 3),
   "intro.lightsOut": at(9, 1),
   "suzuka1989.crash": at(19, 1),
-  "suzuka1990.crash": at(27, 1),
+  "suzuka1990.crash": at(28, 1),
   "brazil2008.pass": at(47, 1),
   "brazil2008.points": at(53, 1),
   "bahrain2020.impact": at(61, 1),
