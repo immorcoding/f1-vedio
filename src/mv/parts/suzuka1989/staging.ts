@@ -69,7 +69,7 @@ export const carScale13 = (f: number) => Math.max(1, CAR_PPM_MIN / ppm13(f));
 export const SHOT_12 = shot("1.2");
 export const SHOT_14 = shot("1.4");
 export const HIT = cue("suzuka1989.crash");
-export const PUSH = cue("suzuka1989.push");
+export const RESULT = cue("suzuka1989.result");
 
 // 1.2: rear ends in world metres; the camera's own x is camX12.
 export const SPEED = 83; // m/s, 300 km/h (MOT-5)
@@ -204,7 +204,7 @@ export const SAMPLERS: TopViewSampler[] = [
     part: "suzuka1989",
     shot: "1.4",
     ...SHOT_14,
-    // locked together from 19.1 to the end (the left panel keeps the stopped pair after 20.1): PRO's right front
+    // locked together from 19.1 to the end (the stopped pair stays behind the result after 20.1): PRO's right front
     // wheel over SEN's wing, the footprints touching, never passing through
     contact: [{ from: HIT, to: SHOT_14.to, ids: ["PRO", "SEN"], depth: 0.05 }],
     poses: (f) => {

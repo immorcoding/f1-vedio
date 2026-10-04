@@ -3,29 +3,19 @@
 // down on SEN's front wing — with "咔！", focus lines and the first debris hanging in the air. Then it runs on: the two
 // McLarens, locked together exactly as they met at the end of 1.3 (staging.ts), slide on with their front wheels
 // locked, laying black marks and tyre smoke, debris skittering down the road, and stop at the mouth of the chicane's
-// escape road — PRO turned across SEN's nose, SEN's wing bent up under PRO's wheel. On 20.1 the page splits: the
-// stopped pair on the left, and on the right the fans' easter egg (STO-7, docs/production/facts.md): marshals push
-// SEN down the escape road past the abandoned PRO car, the Honda fires and he drives off between the bollards — read
-// left to right.
+// escape road — PRO turned across SEN's nose, SEN's wing bent up under PRO's wheel. On 20.1 the result lands on the
+// page: the stopped pair stays as the background, dimmed, and the two helmet cards of 1.2 drop back in at the same
+// places — PRO left, SEN right — and are stamped in red: SEN "取消成绩" (disqualified), PRO "1989 冠军" (the title is
+// his). The stamps replace the push-start easter egg (STO-7, docs/production/facts.md).
 import { Easing, random } from "remotion";
 import { carPoint, MangaCar, MP4_5_PRO, MP4_5_SEN } from "../../../cars";
 import type { CarSpec, CarState } from "../../../cars";
 import { offsetFrom, pinhole, type Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
-import {
-  Figure,
-  mixPose,
-  push,
-  stand,
-  v,
-  walk,
-  type Outfit,
-  type Pose,
-} from "../../../kit/figure";
 import { ImpactStar } from "../../../kit/impact";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
 import { Sfx } from "../../../kit/lettering";
-import { focusLines, speedLines } from "../../../kit/lines";
+import { focusLines } from "../../../kit/lines";
 import { ToneDefs, tone } from "../../../kit/tone";
 import {
   Barriers,
@@ -36,8 +26,9 @@ import {
   type TracksideLayout,
 } from "../../../scenes/suzuka-1989/trackside";
 import { Foreground } from "./Foreground";
+import { CARD_PRO, CARD_SEN, RESULT_DIM, StampedCard } from "./Helmets";
 import { FarVerge, RoadFlow } from "./Motion";
-import { ramp, shotById, type PictureProps } from "./common";
+import { cueFrame, ramp, shotById, type PictureProps } from "./common";
 import {
   CONTACT_14,
   FREEZE_14,
@@ -45,7 +36,7 @@ import {
   MID_WHEELBASE,
   PRO_AHEAD_14,
   PRO_YAW_14,
-  PUSH,
+  RESULT,
   SEN_MID_14,
   slide14,
   slideSpeed14,
@@ -107,24 +98,7 @@ const YawedCar: React.FC<{
   );
 };
 
-// ── tyre smoke: inked puffs ───────────────────────────────────────────────────────────────────────────────────
-const Puff: React.FC<{ x: number; y: number; r: number; o: number }> = ({
-  x,
-  y,
-  r,
-  o,
-}) => (
-  <g opacity={o}>
-    <circle cx={x} cy={y} r={r} fill={PAPER} stroke={INK} strokeWidth={2.6} />
-    <path
-      d={`M ${x - r * 0.2} ${y + r * 0.9} A ${r} ${r} 0 0 0 ${x + r * 0.95} ${y + r * 0.2}`}
-      fill="none"
-      stroke={tone("light")}
-      strokeWidth={r * 0.35}
-    />
-  </g>
-);
-
+// ── tyre smoke ─────────────────────────────────────────────────────────────────────────────────────────────
 // A cloud of puffs drawn as one inked silhouette: every outline first, then every fill over it, so the puffs merge
 // instead of showing each other's rims.
 type PuffAt = { x: number; y: number; r: number; o: number };
@@ -264,240 +238,10 @@ const BentWing: React.FC<{
   );
 };
 
-// ── the easter-egg panel ─────────────────────────────────────────────────────────────────────────────────────
-// Marshals of 1989: white overalls with a red band, light head covering (no faces, ART-5).
-const MARSHAL: Outfit = {
-  fit: "overall",
-  suit: "#ecebe6",
-  shade: "#bdbcb6",
-  band: RED,
-  gloves: "#d8d7d2",
-  boots: "#222222",
-  head: { kind: "openHelmet", color: "#d9d8d2" },
-};
-
-// A marshal `d` metres down the escape road (feet planted): pushing until the engine catches at `dFire`, then
-// letting go, a few steps falling back, and standing.
-const marshalPoseAt = (d: number, dFire: number, stopped: number): Pose => {
-  const pushing = push(d, v(0.62, 0.86), { stride: 0.8, lean: 40, pelvis: 24 });
-  if (d < dFire) return pushing;
-  const letGo = Math.min(1, (d - dFire) / 0.6);
-  const running = mixPose(pushing, walk(d, { stride: 0.8, lean: 12, armSwing: 26 }), letGo);
-  return stopped > 0 ? mixPose(running, stand({ lean: 2 }), stopped) : running;
-};
-
-// The panel's own frame (EGG.w × EGG.h px), drawn through its own camera and scaled into the box on the page.
-const EGG = { w: 1180, h: 1007 };
-const EGG_CAM = pinhole({ f: 1450, horizon: 400, cx: EGG.w / 2, height: 1.5 });
-const EGG_LAYOUT: TracksideLayout = {
-  ...TRACKSIDE_DEFAULT,
-  nearEdge: 6.6,
-  farEdge: 15,
-  rail: 17,
-  fence: 18.5,
-  stand: 60,
-  standFrom: -60,
-  standTo: 80,
-};
-const EGG_Z = 9.4; // SEN's centreline in the escape road
-const FIRE = 0.85; // s into the panel: the Honda catches
-// SEN's rear end, world x: pushed from a standstill up to a running pace, then away under power.
-const eggX = (t: number) => {
-  const x0 = -4.6;
-  if (t < FIRE) return x0 + 1.2 * t + 1.6 * t * t;
-  const vF = 1.2 + 3.2 * FIRE;
-  const dt = t - FIRE;
-  return x0 + 1.2 * FIRE + 1.6 * FIRE * FIRE + vF * dt + 0.5 * 6.5 * dt * dt;
-};
-// the camera follows the push, then lets him go off to the right
-const eggCam = (t: number) => {
-  const follow = (x: number) => x + MID_WHEELBASE + 0.6;
-  if (t < FIRE) return follow(eggX(t));
-  return follow(eggX(FIRE)) + 2.6 * (t - FIRE);
-};
-// Bollards: two gates across the escape road (one post either side of his path).
-const GATES = [0.9, 6.2];
-const BOLLARD_Z = [EGG_Z - 1.75, EGG_Z + 1.75];
-
-const Bollard: React.FC<{ cam: Camera; x: number; z: number }> = ({
-  cam,
-  x,
-  z,
-}) => {
-  const p = cam.anchor({ x, z });
-  const w = 0.24 * p.pxPerMetre;
-  const h = 1.0 * p.pxPerMetre;
-  return (
-    <g>
-      <ellipse
-        cx={p.x}
-        cy={p.y}
-        rx={w * 1.3}
-        ry={w * 0.32}
-        fill={INK}
-        opacity={0.35}
-      />
-      {[0, 1, 2, 3].map((k) => (
-        <rect
-          key={k}
-          x={p.x - w / 2}
-          y={p.y - h + (k * h) / 4}
-          width={w}
-          height={h / 4}
-          fill={k % 2 ? PAPER : INK}
-          stroke={INK}
-          strokeWidth={2}
-        />
-      ))}
-      <rect
-        x={p.x - w * 0.8}
-        y={p.y - 0.06 * p.pxPerMetre}
-        width={w * 1.6}
-        height={0.06 * p.pxPerMetre}
-        fill={INK}
-      />
-    </g>
-  );
-};
-
-const PushPanel: React.FC<{ t: number }> = ({ t }) => {
-  const cam = EGG_CAM;
-  const camX = eggCam(t);
-  const x = eggX(t);
-  const fired = t >= FIRE;
-  const sinceFire = Math.max(0, t - FIRE);
-  const carA = cam.anchor({ x: x - camX, z: EGG_Z });
-  const speed = fired ? 1.2 + 3.2 * FIRE + 6.5 * sinceFire : 1.2 + 3.2 * t;
-  // the marshals push at the rear wing until the engine fires, then run on a step or two and stop
-  const xFire = eggX(FIRE);
-  const marshalX = (dx: number) =>
-    (fired ? xFire + 1.3 * 0.35 * (1 - Math.exp(-sinceFire / 0.35)) : x) + dx;
-  const marshals = [
-    { dx: -0.72, z: EGG_Z - 0.55, ph: 0 },
-    { dx: -0.78, z: EGG_Z + 0.5, ph: 0.5 },
-  ];
-  const x0 = eggX(0);
-  const marshalPose = (m: (typeof marshals)[number]) =>
-    marshalPoseAt(
-      marshalX(m.dx) - x0 + m.ph,
-      xFire + m.dx - x0 + m.ph,
-      Math.min(1, Math.max(0, (sinceFire - 0.6) / 0.5)),
-    );
-  const exhaust = offsetFrom(carA, 0.05, 0.42);
-  // PRO's car, abandoned where the pair stopped (Prost got out, facts.md): beyond SEN, on the track side
-  const proRear = { x: -5.4 - camX, z: EGG_Z + 4 };
-  const marshal = (m: (typeof marshals)[number]) => {
-    const p = cam.anchor({ x: marshalX(m.dx) - camX, z: m.z });
-    return (
-      <Figure
-        key={m.z}
-        at={p}
-        pxPerMetre={p.pxPerMetre}
-        pose={marshalPose(m)}
-        outfit={MARSHAL}
-        facing="right"
-      />
-    );
-  };
-  return (
-    <g>
-      <Sky cam={cam} camX={camX} layout={EGG_LAYOUT} />
-      <Hills cam={cam} camX={camX} layout={EGG_LAYOUT} />
-      <Grandstand cam={cam} camX={camX} layout={EGG_LAYOUT} />
-      <Barriers cam={cam} camX={camX} layout={EGG_LAYOUT} />
-      <RoadFlow
-        cam={cam}
-        camX={camX}
-        speed={0}
-        nearEdge={EGG_LAYOUT.nearEdge}
-        farEdge={EGG_LAYOUT.farEdge}
-      />
-      <Foreground
-        cam={cam}
-        camX={camX}
-        nearEdge={EGG_LAYOUT.nearEdge}
-        farEdge={EGG_LAYOUT.farEdge}
-      />
-      <YawedCar
-        cam={cam}
-        car={MP4_5_PRO}
-        rear={proRear}
-        yaw={PRO_YAW_14}
-        state={{ driver: false, lockFront: 20 }}
-      />
-      {GATES.map((g) => (
-        <Bollard key={`far-${g}`} cam={cam} x={g - camX} z={BOLLARD_Z[1]} />
-      ))}
-      {marshal(marshals[1])}
-      {fired ? (
-        <path
-          d={speedLines({
-            x: carA.x - 520,
-            y: carA.y - 0.9 * carA.pxPerMetre,
-            w: 480,
-            h: 0.85 * carA.pxPerMetre,
-            n: 10,
-            seed: `egg-${Math.floor(t * 20)}`,
-            thickness: 5,
-          })}
-          fill={INK}
-          opacity={Math.min(1, sinceFire * 3)}
-        />
-      ) : null}
-      <MangaCar
-        car={MP4_5_SEN}
-        at={carA}
-        state={{ wheelAngle: (x / 0.33) * 57.3, tilt: fired ? 0.8 : 0 }}
-      />
-      <BentWing at={carA} />
-      {fired
-        ? Array.from({ length: 6 }, (_, i) => {
-            const age = sinceFire - i * 0.05;
-            if (age < 0) return null;
-            const r = (14 + 60 * age) * (1 + i * 0.12);
-            return (
-              <Puff
-                key={i}
-                x={exhaust.x - 30 - age * 260 - i * 18}
-                y={exhaust.y - age * 70 - (i % 2) * 14}
-                r={r}
-                o={Math.max(0, 0.95 - age * 1.1)}
-              />
-            );
-          })
-        : null}
-      {marshal(marshals[0])}
-      {GATES.map((g) => (
-        <Bollard key={`near-${g}`} cam={cam} x={g - camX} z={BOLLARD_Z[0]} />
-      ))}
-      {fired ? (
-        <g
-          transform={`translate(${EGG.w - 440} 290) scale(${0.6 + 0.4 * Math.min(1, sinceFire * 6)})`}
-        >
-          <Sfx x={0} y={0} size={210} rotate={-8}>
-            轰！
-          </Sfx>
-        </g>
-      ) : null}
-      {/* the push: a manga motion arrow behind the marshals while they shove */}
-      {speed > 0 && !fired ? (
-        <path
-          d={speedLines({
-            x: carA.x - 2.2 * carA.pxPerMetre,
-            y: carA.y - 1.6 * carA.pxPerMetre,
-            w: 1.1 * carA.pxPerMetre,
-            h: 1.2 * carA.pxPerMetre,
-            n: 6,
-            seed: `push-${Math.floor(t * 12)}`,
-            thickness: 4,
-          })}
-          fill={INK}
-          opacity={0.5}
-        />
-      ) : null}
-    </g>
-  );
-};
+// The result on 20.1 (facts.md: SEN disqualified for missing the chicane; PRO the 1989 champion).
+export const RESULT_STAMPS = { pro: "1989 冠军", sen: "取消成绩" } as const;
+const DSQ = cueFrame("suzuka1989.dsq");
+const CHAMPION = cueFrame("suzuka1989.champion");
 
 // ── the main panel ───────────────────────────────────────────────────────────────────────────────────────────
 export const Crash: React.FC<PictureProps> = ({ f }) => {
@@ -521,14 +265,25 @@ export const Crash: React.FC<PictureProps> = ({ f }) => {
   const star = ramp(d, 0, 8, Easing.out(Easing.cubic));
   const starFade = 1 - ramp(d, FREEZE_14 + 6, FREEZE_14 + 30);
   const sfx = ramp(d, 0, 6, Easing.out(Easing.back(2.5)));
-  // from 20.1 the page splits: the stopped pair on the left, the push-start on the right
-  const page = ramp(f, PUSH, PUSH + 16, Easing.out(Easing.cubic));
-  const PANEL = { x: 1060, y: 190, w: 820, h: 700 };
-  const K = PANEL.w / EGG.w;
-  const leftW = 1920 - (1920 - (PANEL.x - 26)) * page;
-  // the main picture shrinks into the left panel, framing both cars
-  const S = 1;
-  const pageTx = -330 * page;
+  // from 20.1 the result: the stopped pair dims into the background and creeps in, the helmet cards of 1.2 drop back
+  // in, SEN's is stamped on 20.2 and PRO's on 20.3
+  const page = ramp(f, RESULT, RESULT + 16, Easing.out(Easing.cubic));
+  const creep = 1 + 0.05 * ramp(f, RESULT, shot.to, Easing.inOut(Easing.quad));
+  const dropPro = ramp(f, RESULT, RESULT + 14, Easing.out(Easing.back(1.4)));
+  const dropSen = ramp(
+    f,
+    RESULT + 10,
+    RESULT + 24,
+    Easing.out(Easing.back(1.4)),
+  );
+  const stampSen = ramp(f, DSQ, DSQ + 10, Easing.linear);
+  const stampPro = ramp(f, CHAMPION, CHAMPION + 10, Easing.linear);
+  // each card jolts when its stamp lands
+  const jolt = (from: number) => {
+    const k = f - from - 10;
+    return k < 0 ? 0 : 7 * Math.exp(-k / 5) * Math.sin(k * 1.9);
+  };
+  const flicker = Math.floor((f - RESULT) / 5);
   // wheels in world terms for the smoke and the black marks (rear-end relative to the camera at slide 0)
   const senWheel = (axle: number) => (): Plan => ({
     x: senRear.x + axle,
@@ -584,18 +339,12 @@ export const Crash: React.FC<PictureProps> = ({ f }) => {
       <defs>
         <ToneDefs />
         <InkFilterDef />
-        <clipPath id="s14-panel">
-          <rect x={PANEL.x} y={PANEL.y} width={PANEL.w} height={PANEL.h} />
-        </clipPath>
-        <clipPath id="s14-main">
-          <rect x={0} y={0} width={leftW} height={1080} />
-        </clipPath>
       </defs>
       <rect width={1920} height={1080} fill={PAPER} />
       <g filter={inkFilter()}>
-        <g clipPath="url(#s14-main)">
+        <g>
           <g
-            transform={`translate(${pageTx} ${(1 - S) * 540 * page}) scale(${S})`}
+            transform={`translate(960 700) scale(${creep}) translate(-960 -700)`}
           >
             <g transform={`translate(${sx} ${sy}) rotate(${tilt} 960 540)`}>
               <Sky cam={CAM} camX={camX} layout={LAYOUT} />
@@ -694,49 +443,52 @@ export const Crash: React.FC<PictureProps> = ({ f }) => {
             ) : null}
           </g>
         </g>
+        {page > 0 ? (
+          <g>
+            {/* the crash dims behind the result, as the 1990 ending dims behind its helmets */}
+            <rect
+              width={1920}
+              height={1080}
+              fill={tone("light")}
+              opacity={RESULT_DIM * page}
+            />
+            {dropPro > 0 ? (
+              <StampedCard
+                box={CARD_PRO}
+                car={MP4_5_PRO}
+                id="s14-pro"
+                seed={3 + (flicker % 5)}
+                dy={-(1 - dropPro) * (CARD_PRO.y + CARD_PRO.h + 140)}
+                tilt={(1 - dropPro) * -4}
+                jolt={jolt(CHAMPION)}
+                stamp={RESULT_STAMPS.pro}
+                stampT={stampPro}
+              />
+            ) : null}
+            {dropSen > 0 ? (
+              <StampedCard
+                box={CARD_SEN}
+                car={MP4_5_SEN}
+                id="s14-sen"
+                seed={7 + (flicker % 5)}
+                dy={-(1 - dropSen) * (CARD_SEN.y + CARD_SEN.h + 140)}
+                tilt={(1 - dropSen) * -4}
+                jolt={jolt(DSQ)}
+                stamp={RESULT_STAMPS.sen}
+                stampT={stampSen}
+              />
+            ) : null}
+          </g>
+        ) : null}
         <rect
           x={0}
           y={0}
-          width={leftW}
+          width={1920}
           height={1080}
           fill="none"
           stroke={INK}
           strokeWidth={18}
         />
-        {page > 0 ? (
-          <g transform={`translate(${(1 - page) * 960} 0)`}>
-            <rect
-              x={PANEL.x + 14}
-              y={PANEL.y + 14}
-              width={PANEL.w}
-              height={PANEL.h}
-              fill={INK}
-            />
-            <g clipPath="url(#s14-panel)">
-              <rect
-                x={PANEL.x}
-                y={PANEL.y}
-                width={PANEL.w}
-                height={PANEL.h}
-                fill={PAPER}
-              />
-              <g
-                transform={`translate(${PANEL.x + PANEL.w / 2 - (K * EGG.w) / 2} ${PANEL.y}) scale(${K})`}
-              >
-                <PushPanel t={(f - PUSH) / 60} />
-              </g>
-            </g>
-            <rect
-              x={PANEL.x}
-              y={PANEL.y}
-              width={PANEL.w}
-              height={PANEL.h}
-              fill="none"
-              stroke={INK}
-              strokeWidth={10}
-            />
-          </g>
-        ) : null}
       </g>
     </svg>
   );

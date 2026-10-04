@@ -1,82 +1,27 @@
-// Shot 1.8 (bars 29–32): the dust settles. The crash panel holds on the two cars stopped in the Turn 1 gravel while the
-// dust sinks and thins; on 30.1 two tall manga panels slide in from either side and face each other — PRO's helmet
-// on the left (the 1989 champion, in the 1989 McLaren), SEN's on the right (the 1990 champion, in the MP4/5B) — over
-// "89 PRO · 90 SEN". The last bar pushes slowly in; the cut is 33.1.
+// Shot 1.8 (bars 29–32): the dust settles, and the story closes on the layout it opened with. The crash panel holds on
+// the two cars stopped in the Turn 1 gravel while the dust sinks and thins; on 30.1 it dims (as 1.4's result does) and
+// the two helmet cards of 1.2 and 1.4 come back, larger, side by side and facing each other — PRO on the left (his own
+// helmet, in the Ferrari he drives now), SEN on the right (the MP4/5B). PRO's card is stamped "1989 冠军" on 30.2 in
+// the same red stamp as 1.4, SEN's "1990 冠军" on 31.1; on 31.3 one small line, "SEN 后来承认是故意的" (facts.md:
+// Senna admitted it in 1991; no quote, STO-7). The last bar pushes slowly in; the cut is 33.1.
 import { Easing } from "remotion";
-import { MangaCar, MP4_5_PRO, MP4_5B_SEN, type CarSpec } from "../../../cars";
+import { F641_PRO, MP4_5B_SEN } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
-import { focusLines } from "../../../kit/lines";
+import { Caption } from "../../../kit/lettering";
 import { ToneDefs, tone } from "../../../kit/tone";
+import { RESULT_DIM, StampedCard, type Box } from "../suzuka1989/Helmets";
 import { cueFrame, ramp, shotById, type PictureProps } from "./common";
 import { CrashStage } from "./Crash";
 
-// Helmet centre of a car in metres from its origin (rear end on the ground): x forward, y up.
-const helmetM = (car: CarSpec) => {
-  const ppm = 250 / car.frame.k;
-  return {
-    x: (car.frame.x - car.helmetAt.cx) / ppm,
-    y: (car.frame.ground - car.helmetAt.cy) / ppm,
-  };
-};
-
-type Box = { x: number; y: number; w: number; h: number };
-
-// A tall panel of one driver's helmet in the cockpit: the car drawn huge so the helmet fills the panel, facing the
-// other panel.
-const HelmetPanel: React.FC<{
-  car: CarSpec;
-  box: Box;
-  facing: "left" | "right";
-  id: string;
-  seed: number;
-  zoom: number;
-}> = ({ car, box, facing, id, seed, zoom }) => {
-  const ppm = 1150 * zoom;
-  const h = helmetM(car);
-  const cx = box.x + box.w * 0.5;
-  const cy = box.y + box.h * 0.46;
-  const dir = facing === "right" ? 1 : -1;
-  return (
-    <g>
-      <rect
-        x={box.x + 16}
-        y={box.y + 16}
-        width={box.w}
-        height={box.h}
-        fill={INK}
-      />
-      <clipPath id={id}>
-        <rect x={box.x} y={box.y} width={box.w} height={box.h} />
-      </clipPath>
-      <g clipPath={`url(#${id})`}>
-        <rect x={box.x} y={box.y} width={box.w} height={box.h} fill={PAPER} />
-        <path
-          d={focusLines(cx, cy, 260, 110, seed)}
-          fill={INK}
-          opacity={0.85}
-        />
-        <MangaCar
-          car={car}
-          facing={facing}
-          at={{ x: cx - dir * h.x * ppm, y: cy + h.y * ppm, pxPerMetre: ppm }}
-        />
-      </g>
-      <rect
-        x={box.x}
-        y={box.y}
-        width={box.w}
-        height={box.h}
-        fill="none"
-        stroke={INK}
-        strokeWidth={10}
-      />
-    </g>
-  );
-};
+// The 1.2/1.4 card slots, scaled up about the frame's middle column: PRO left, SEN right, mirror images.
+const L: Box = { x: 90, y: 70, w: 820, h: 440 };
+const R: Box = { x: 1920 - 90 - 820, y: 70, w: 820, h: 440 };
+const STAMP_SIZE = 96;
 
 export const Settle: React.FC<PictureProps> = ({ f }) => {
   const shot = shotById("1.8");
+  const [stampPro, stampSen, admitted] = shot.text;
   const helm = cueFrame("suzuka1990.helmets");
   const t = f - shot.from;
   // the dust sinks and thins over the first bar and a half
@@ -84,13 +29,22 @@ export const Settle: React.FC<PictureProps> = ({ f }) => {
   const left = ramp(f, helm, helm + 22, Easing.out(Easing.back(1.2)));
   const right = ramp(f, helm + 8, helm + 30, Easing.out(Easing.back(1.2)));
   const dim = ramp(f, helm, helm + 20);
-  const text = ramp(f, helm + 34, helm + 52, Easing.out(Easing.back(1.8)));
-  // a slow push-in from the moment the panels land to the cut, the focus lines flickering like a held manga beat
-  const push = 1 + 0.1 * ramp(f, helm + 30, shot.to, Easing.inOut(Easing.quad));
+  const proStampAt = cueFrame("suzuka1990.stamp89");
+  const senStampAt = cueFrame("suzuka1990.stamp90");
+  const pro = ramp(f, proStampAt, proStampAt + 10, Easing.linear);
+  const sen = ramp(f, senStampAt, senStampAt + 10, Easing.linear);
+  const lineAt = cueFrame("suzuka1990.admitted");
+  const line = ramp(f, lineAt, lineAt + 16, Easing.out(Easing.back(1.6)));
+  // each card jolts when its stamp lands
+  const jolt = (from: number) => {
+    const k = f - from - 10;
+    return k < 0 ? 0 : 9 * Math.exp(-k / 5) * Math.sin(k * 1.9);
+  };
+  // a slow push-in from the moment the cards land to the cut, the focus lines flickering like a held manga beat
+  const push =
+    1 + 0.08 * ramp(f, helm + 30, shot.to, Easing.inOut(Easing.quad));
   const flicker = Math.floor(t / 5);
   const bob = (k: number) => 6 * Math.sin((t + k) / 22);
-  const L: Box = { x: 90, y: 70, w: 840, h: 700 };
-  const R: Box = { x: 990, y: 70, w: 840, h: 700 };
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
@@ -101,57 +55,58 @@ export const Settle: React.FC<PictureProps> = ({ f }) => {
       <g filter={inkFilter()}>
         {/* the crash panel, held on its last frame, the cars at rest */}
         <CrashStage f={shot.from - 1} dustFade={dustFade} dustAge={t / 60} />
-        {/* the scene dims behind the helmet panels */}
+        {/* the scene dims behind the helmet cards, as in 1.4 */}
         <rect
           width={1920}
           height={1080}
           fill={tone("light")}
-          opacity={0.6 * dim}
+          opacity={RESULT_DIM * dim}
         />
-        <g transform={`translate(960 470) scale(${push}) translate(-960 -470)`}>
+        <g transform={`translate(960 150) scale(${push}) translate(-960 -150)`}>
           {left > 0 ? (
-            <g transform={`translate(${-(1 - left) * 1100} ${bob(0)})`}>
-              <HelmetPanel
-                car={MP4_5_PRO}
-                box={L}
-                facing="right"
-                id="s18-pro"
-                seed={4 + (flicker % 5)}
-                zoom={1}
-              />
-            </g>
+            <StampedCard
+              car={F641_PRO}
+              box={L}
+              facing="right"
+              id="s18-pro"
+              seed={4 + (flicker % 5)}
+              dx={-(1 - left) * 1100}
+              dy={bob(0)}
+              jolt={jolt(proStampAt)}
+              stamp={stampPro}
+              stampT={pro}
+              stampSize={STAMP_SIZE}
+            />
           ) : null}
           {right > 0 ? (
-            <g transform={`translate(${(1 - right) * 1100} ${bob(30)})`}>
-              <HelmetPanel
-                car={MP4_5B_SEN}
-                box={R}
-                facing="left"
-                id="s18-sen"
-                seed={9 + (flicker % 5)}
-                zoom={1}
-              />
-            </g>
+            <StampedCard
+              car={MP4_5B_SEN}
+              box={R}
+              facing="left"
+              id="s18-sen"
+              seed={9 + (flicker % 5)}
+              dx={(1 - right) * 1100}
+              dy={bob(30)}
+              jolt={jolt(senStampAt)}
+              stamp={stampSen}
+              stampT={sen}
+              stampSize={STAMP_SIZE}
+            />
           ) : null}
         </g>
-        {text > 0 ? (
+        {line > 0 ? (
           <g
-            opacity={text}
-            transform={`translate(960 950) scale(${0.8 + 0.2 * text})`}
+            opacity={Math.min(1, line)}
+            transform={`translate(960 ${960 + 24 * (1 - line)})`}
           >
-            <rect x={-560} y={-82} width={1120} height={124} fill={INK} />
-            <text
-              x={0}
-              y={18}
-              textAnchor="middle"
-              fontFamily="Arial Black, Arial, sans-serif"
-              fontWeight={900}
-              fontStyle="italic"
-              fontSize={92}
-              fill={PAPER}
-            >
-              {shot.text[0]}
-            </text>
+            <Caption
+              x={-300}
+              y={-50}
+              w={600}
+              h={96}
+              lines={[admitted]}
+              size={50}
+            />
           </g>
         ) : null}
         <rect

@@ -4,12 +4,18 @@
 // sky: PRO's helmet and SEN's helmet, side by side (treatment 1.2: "SEN 与 PRO 头盔对比").
 import { Easing } from "remotion";
 import { MangaCar, MP4_5_PRO, MP4_5_SEN, type CarSpec } from "../../../cars";
+import {
+  type Box,
+  CARD_PRO,
+  CARD_SEN,
+  CardCaption,
+  HelmetCard,
+} from "./Helmets";
 import { pinhole } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
-import { focusLines, speedLines } from "../../../kit/lines";
+import { speedLines } from "../../../kit/lines";
 import { ToneDefs } from "../../../kit/tone";
-import { CAPTION_FONT } from "../../../kit/lettering";
 import {
   Barriers,
   Grandstand,
@@ -26,27 +32,16 @@ import { cars12, camX12, SPEED, Z_PRO_12, Z_SEN_12 } from "./staging";
 const CAM = pinhole({ f: 1500, horizon: 300, cx: 960, height: 3.0 });
 const TYRE_R = 0.33; // m
 
-// Helmet centre of a car in metres from its origin (rear end on the ground): x forward, y up.
-const helmetM = (car: CarSpec) => {
-  const ppm = 250 / car.frame.k;
-  return {
-    x: (car.frame.x - car.helmetAt.cx) / ppm,
-    y: (car.frame.ground - car.helmetAt.cy) / ppm,
-  };
-};
-
-// A close-up panel of one driver's helmet: the car drawn huge so its helmet fills the panel.
+// A helmet card dropping in from above the frame (Helmets.tsx), with the stakes in its caption box.
 const HelmetPanel: React.FC<{
   car: CarSpec;
-  box: { x: number; y: number; w: number; h: number };
+  box: Box;
   id: string;
   wheel: number;
   drop: number;
   seed: number;
   caption: string;
 }> = ({ car, box, id, wheel, drop, seed, caption }) => {
-  const ppm = 760;
-  const h = helmetM(car);
   const cx = box.x + box.w * 0.52;
   const cy = box.y + box.h * 0.5;
   const y = box.y - (1 - drop) * (box.h + 80);
@@ -54,47 +49,9 @@ const HelmetPanel: React.FC<{
     <g
       transform={`translate(0 ${y - box.y}) rotate(${(1 - drop) * -4} ${cx} ${cy})`}
     >
-      <clipPath id={id}>
-        <rect x={box.x} y={box.y} width={box.w} height={box.h} />
-      </clipPath>
-      <g clipPath={`url(#${id})`}>
-        <rect x={box.x} y={box.y} width={box.w} height={box.h} fill={PAPER} />
-        <path d={focusLines(cx, cy, 200, 90, seed)} fill={INK} opacity={0.85} />
-        <MangaCar
-          car={car}
-          at={{ x: cx - h.x * ppm, y: cy + h.y * ppm, pxPerMetre: ppm }}
-          state={{ wheelAngle: wheel }}
-        />
-      </g>
-      <rect
-        x={box.x}
-        y={box.y}
-        width={box.w}
-        height={box.h}
-        fill="none"
-        stroke={INK}
-        strokeWidth={9}
-      />
+      <HelmetCard car={car} box={box} id={id} seed={seed} wheel={wheel} />
       {/* who and what is at stake (facts.md: before the race PRO 76, SEN 60) */}
-      <rect
-        x={box.x + 20}
-        y={box.y + box.h - 6}
-        width={box.w - 40}
-        height={74}
-        fill={PAPER}
-        stroke={INK}
-        strokeWidth={6}
-      />
-      <text
-        x={box.x + box.w / 2}
-        y={box.y + box.h + 50}
-        textAnchor="middle"
-        fontFamily={CAPTION_FONT}
-        fontSize={46}
-        fill={INK}
-      >
-        {caption}
-      </text>
+      <CardCaption box={box} text={caption} />
     </g>
   );
 };
@@ -211,7 +168,7 @@ export const Pair: React.FC<PictureProps> = ({ f }) => {
         {helmets > 0 ? (
           <HelmetPanel
             car={MP4_5_PRO}
-            box={{ x: 90, y: 50, w: 600, h: 320 }}
+            box={CARD_PRO}
             id="s12-pro"
             wheel={wheel}
             drop={helmets}
@@ -222,7 +179,7 @@ export const Pair: React.FC<PictureProps> = ({ f }) => {
         {helmets2 > 0 ? (
           <HelmetPanel
             car={MP4_5_SEN}
-            box={{ x: 1230, y: 50, w: 600, h: 320 }}
+            box={CARD_SEN}
             id="s12-sen"
             wheel={wheel}
             drop={helmets2}
