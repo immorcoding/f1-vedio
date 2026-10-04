@@ -77,11 +77,6 @@ export const W12: CarSpec = {
     // Both endplates black, as the near one's outer face in the photo (ART-17); the far one is its copy, its top
     // edge where the photo shows it.
     near: "M 152 756 L 330 756 L 330 813 L 317 825 L 162 825 L 147 810 Z",
-    // the wing seen dead level, within the endplate's length: the elements below the endplate top, the flap rising
-    // to just above it at the trailing edge (as on the STR3); swept across the span for the camera (far-side.ts)
-    deckSide:
-      "M 150 796 L 282 790 L 286 748 L 330 748 L 330 800 L 317 825 L 162 825 L 147 810 Z",
-    flapSide: "M 286 748 L 330 748 L 330 758 L 284 758 Z",
     farFrom: { dx: -11, dy: -158, scale: 0.93 },
     deck: "M 140 642 L 305 640 L 330 758 L 330 800 L 162 825 C 128 804 102 744 104 712 C 106 698 124 668 140 642 Z",
     flap: { d: "M 262 641 L 305 640 L 330 758 L 282 757 Z", color: "#00a19b" },
@@ -183,11 +178,6 @@ export const RB16B: CarSpec = {
   frontWing: {
     // far endplate: the near one's copy, its top edge where the photo shows it (ART-17)
     near: "M 136 752 L 318 752 L 318 809 L 305 822 L 145 822 L 130 807 Z",
-    // the wing seen dead level, within the endplate's length: the elements below the endplate top, the flap rising
-    // to just above it at the trailing edge (as on the STR3); swept across the span for the camera (far-side.ts)
-    deckSide:
-      "M 132 794 L 272 786 L 276 744 L 318 744 L 318 800 L 305 822 L 145 822 L 130 807 Z",
-    flapSide: "M 276 744 L 318 744 L 318 754 L 274 754 Z",
     farFrom: { dx: 2, dy: -152, scale: 0.925 },
     deck: "M 135 640 L 305 638 L 318 752 L 318 800 L 145 822 C 118 800 100 744 104 714 C 108 700 122 668 135 640 Z",
     flap: { d: "M 262 639 L 305 638 L 318 752 L 272 752 Z", color: "#d72a2e" },

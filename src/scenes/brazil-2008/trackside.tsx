@@ -7,12 +7,7 @@
 // along the track (m), so near things slide past faster than far ones. A car at world x is drawn at
 // cam.anchor({ x: x - camX, z }).
 import { random } from "remotion";
-import {
-  carCamera,
-  MangaCar,
-  type CarSpec,
-  type CarState,
-} from "../../cars";
+import { MangaCar, type CarSpec, type CarState } from "../../cars";
 import { pinhole, type Camera } from "../../kit/camera";
 import { INK, PAPER } from "../../kit/colors";
 import { tone } from "../../kit/tone";
@@ -325,10 +320,8 @@ export const WetCar: React.FC<{
   x: number;
   z: number;
   state?: CarState;
-}> = ({ cam, car, x, z, state: given }) => {
+}> = ({ cam, car, x, z, state }) => {
   const a = cam.anchor({ x, z });
-  // the far side as this camera sees it (ART-26)
-  const state = { ...carCamera(car, cam, z, { x }), ...given };
   return (
     <g>
       <g transform={`translate(0 ${2 * a.y}) scale(1 -1)`} opacity={0.28}>

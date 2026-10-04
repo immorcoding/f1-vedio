@@ -2,12 +2,7 @@
 // driver's helmet in the cockpit — the car drawn huge so the helmet fills the panel and the livery around it says
 // which team — with a caption box or a red result stamp straddling its bottom edge. 1.2 shows the stakes, 1.4 the
 // 1989 result, 1.5 PRO's move to Ferrari, 1.8 the 1990 result; PRO always on the left, SEN on the right.
-import {
-  HELMET_LENS,
-  cameraAt,
-  MangaCar,
-  type CarSpec,
-} from "../../../cars";
+import { MangaCar, type CarSpec } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import {
   CAPTION_FONT,
@@ -75,7 +70,7 @@ export const HelmetCard: React.FC<{
           car={car}
           facing={facing}
           at={{ x: cx - dir * h.x * ppm, y: cy + h.y * ppm, pxPerMetre: ppm }}
-          state={{ ...cameraAt(car, HELMET_LENS.height, HELMET_LENS.distance), wheelAngle: wheel }}
+          state={{ wheelAngle: wheel }}
         />
       </g>
       <rect

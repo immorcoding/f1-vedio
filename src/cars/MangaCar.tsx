@@ -8,21 +8,17 @@ import { Ink } from "../kit/ink";
 import { TonePattern, ToneDefs, tone } from "../kit/tone";
 import {
   CAR_UNITS_PER_METRE,
+  drawnFarWheels,
+  endplateCopyTransform,
   isTopOnly,
   photoPxPerMetre,
   type Accent,
   type CarSpec,
   type Driver,
+  type EndplateCopy,
   type TopOnlyCar,
   type Wheel,
 } from "./spec";
-import {
-  cameraOf,
-  farEndplateTransform,
-  farSideWidths,
-  farWheelsFor,
-  sweptWing,
-} from "./far-side";
 import { TopCar } from "./TopCar";
 
 // How the car is seen: from the side (the traced view), or from above on a track map (TopCar).
@@ -65,15 +61,6 @@ export type CarState = {
   driver?: false;
   // false: the far front endplate is gone (torn off or bent away; the scene draws the damage), side view only.
   farFrontEndplate?: false;
-  // Side view: the camera the car is seen from, which places the far wheels and far endplates (far-side.ts, ART-26):
-  // degrees above the car's axle height seen from its near side (0 = a dead-level camera at axle height, the far
-  // side wholly behind the near side), metres from the camera, and where the camera's axis crosses the car (metres
-  // forward from its rear end; leave it out for far parts straight behind the near ones). A scene drawn through a
-  // pinhole camera passes `carCamera(car, cam, z)`; without it the car is seen from a low trackside camera
-  // (DEFAULT_CAR_CAMERA), its far side all but hidden.
-  camElevation?: number;
-  camDistance?: number;
-  camAxisAt?: number;
 };
 
 export type Tread = "dry" | "wet";
@@ -542,16 +529,16 @@ const pieceScreenTransform = (
   return `translate(${(pose.dx ?? 0) * ppm * k * dir} ${-(pose.dy ?? 0) * ppm * k}) rotate(${-(pose.rotate ?? 0) * dir} ${sx} ${sy})`;
 };
 
-// A wing endplate with its colour blocks; with `transform`, the far endplate drawn as the perspective copy of the
-// near one (ART-17, far-side.ts).
+// A wing endplate with its colour blocks; with `copy`, the far endplate drawn as the perspective copy of the near
+// one (ART-17).
 const Endplate: React.FC<{
   d: string;
   livery?: Accent[];
   fill: string;
   w: number;
-  transform?: string;
-}> = ({ d, livery = [], fill, w, transform }) => (
-  <g transform={transform}>
+  copy?: EndplateCopy;
+}> = ({ d, livery = [], fill, w, copy }) => (
+  <g transform={copy ? endplateCopyTransform(d, copy) : undefined}>
     <path
       d={d}
       fill={fill}
@@ -587,14 +574,9 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
   const [front, rear] = car.nearWheels;
   const pivot = { x: (front.cx + rear.cx) / 2, y: (front.cy + rear.cy) / 2 };
   const shade = car.shade ?? 1;
-  const cam = cameraOf(state);
-  const widths = farSideWidths(car);
-  // the front wing surface and its flap, swept from the side outline to the far endplate for this camera
-  const deck = sweptWing(car, cam, fw.deckSide ?? fw.deck, widths.frontWing);
-  const flap = sweptWing(car, cam, fw.flapSide ?? fw.flap.d, widths.frontWing);
   return (
     <>
-      {farWheelsFor(car, cam).map((w, i) => (
+      {drawnFarWheels(car).map((w, i) => (
         <FarWheel
           key={`f${w.cx}`}
           car={car}
@@ -617,18 +599,13 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
             livery={fw.livery}
             fill={p.wing}
             w={4}
-            transform={farEndplateTransform(
-              car,
-              cam,
-              fw.near,
-              widths.frontWing,
-            )}
+            copy={fw.farFrom}
           />
         ) : null}
-        <path d={deck} fill={p.frontDeck} />
-        <path d={flap} fill={fw.flap.color} />
+        <path d={fw.deck} fill={p.frontDeck} />
+        <path d={fw.flap.d} fill={fw.flap.color} />
         <path
-          d={deck}
+          d={fw.deck}
           fill="none"
           stroke={INK}
           strokeWidth={4}
@@ -641,12 +618,7 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
             livery={car.rearWing.livery}
             fill={p.wing}
             w={5}
-            transform={farEndplateTransform(
-              car,
-              cam,
-              car.rearWing.near,
-              widths.rearWing,
-            )}
+            copy={car.rearWing.farFrom}
           />
         ) : null}
         {car.rearWing.top ? (
