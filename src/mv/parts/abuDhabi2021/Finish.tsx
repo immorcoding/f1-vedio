@@ -1,4 +1,4 @@
-// Shot 5.6 (bars 99–100): VER takes the flag. On the cut (99.1, `abuDhabi2021.finish`) his front tyre is on the
+// Shot 5.6 (bars 100–101): VER takes the flag. On the cut (100.1, `abuDhabi2021.finish`) his front tyre is on the
 // finish line — the panel opens in slow motion with a white flash and focus lines behind him (VER stays fully solid), the chequered flag waves in the
 // inset, then the camera speeds back up to race pace and the line streams away behind him.
 import { carPoint, PIRELLI_2021, RB16B } from "../../../cars";

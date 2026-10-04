@@ -30,20 +30,15 @@ import {
   type Pose,
 } from "../kit/figure";
 import { SECONDS_PER_BEAT } from "../mv/timing";
+import { POST_TOP, RAILS } from "../mv/parts/bahrain2020/rails";
 import { FAN_LIGHT, FAN_RED, GROSJEAN, SENNA } from "./PeopleSheet";
 
 export const PEOPLE_MOTION_FRAMES = 480;
 const FPS = 60;
 const W = 640;
 const H = 360;
-// the triple guardrail of Bahrain 2020: rail bottom and top heights, m (as src/mv/parts/bahrain2020/night.tsx)
-const RAILS: [number, number][] = [
-  [0.12, 0.425],
-  [0.43, 0.735],
-  [0.74, 1.05],
-];
-const TOP = 1.05;
-const POST_TOP = 1.1;
+// the triple guardrail of Bahrain 2020: rail bottom and top heights, m (src/mv/parts/bahrain2020/rails.ts)
+const TOP = RAILS[2][1];
 
 type Person = {
   x: number; // ground point, m from the cell's world origin

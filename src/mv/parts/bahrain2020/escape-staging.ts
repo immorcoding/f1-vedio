@@ -1,7 +1,7 @@
 // Where everyone is in the 27 秒 panel and shot 3.6, frame by frame, in the trackside camera's world metres
 // (wreck-geometry.ts). GRO gets out the way drivers do, by the halo (the people module's climbOutOfCockpit): both
-// hands on it, he hauls himself up, steps out over the cockpit side through the torn top rail, down onto the bottom
-// rail's top edge and onto the track, then stumbles away with planted feet. The doctor reaches over the rail and takes
+// hands on it, he hauls himself up, steps out over the cockpit side through the torn gap in the rails, down onto the
+// floor's edge under the sidepod and onto the track, then stumbles away with planted feet. The doctor reaches over the rail and takes
 // his arm once he is out on the side of the cell, then walks a step behind him with a hand at his back; the marshal is
 // braced, spraying the cockpit. Pure TypeScript, so the picture (Escape.tsx, Timeline27.tsx) and the interpenetration
 // check (staging.ts, src/mv/overlap.ts) share it from node.
@@ -32,7 +32,6 @@ import {
   type V,
 } from "../../../kit/people/skeleton.ts";
 import {
-  BARRIER_Z,
   CELL_Z,
   COCKPIT_FLOOR,
   HALO_FOOT,
@@ -40,7 +39,7 @@ import {
   HALO_PILLAR_GRIP,
   HALO_WORLD,
   WRECK_CAM_SPEC,
-  bottomRailAt,
+  floorEdgeAt,
   cockpitRimAt,
 } from "./wreck-geometry.ts";
 
@@ -91,15 +90,15 @@ export const exitGeometry = (cam: Camera, scaleZ: number) => {
     return v((origin.x - q.x) / s, (origin.y - q.y) / s);
   };
   const cell = (x: number, y: number) => fig({ x, y, z: CELL_Z });
+  // the near foot steps down onto the floor's edge under the near sidepod (all three rails are torn open here)
   const sillX = STAND_X - 0.14;
-  const sill = bottomRailAt((sillX * BARRIER_Z) / CELL_Z);
   // the near foot steps out onto the cockpit side's top edge as drawn (the shoulder behind the halo's rear foot)
   const stepX = STAND_X + 0.07;
   const g: CockpitExit = {
     floor: cell(STAND_X, COCKPIT_FLOOR).y,
     rim: cell(stepX, cockpitRimAt(stepX)).y,
     step: cell(stepX, 0).x,
-    sill: fig({ x: (sillX * sill.z) / CELL_Z, y: sill.y, z: sill.z }),
+    sill: cell(sillX, floorEdgeAt(sillX)),
     pillar: add(fig(HALO_PILLAR_GRIP), GRIP_PILLAR),
     hoop: add(fig(HALO_HOOP_GRIP), GRIP_HOOP),
   };

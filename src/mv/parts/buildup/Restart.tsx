@@ -1,9 +1,9 @@
-// Shot 4.3 (bars 79–80): the end of the last safety-car lap. A tight side close-up, the two cars one behind the other
+// Shot 4.3 (bars 80–81): the end of the last safety-car lap. A tight side close-up, the two cars one behind the other
 // in depth: HAM fills the frame on the near line, VER's nose weaves at his gearbox from just beyond — VER on new softs
 // (red bands), HAM on old hards (white bands). Top right, the safety car's amber roof lamps blink on the beat and go
-// out on the `buildup.scLightsOut` cue (80.1); bottom right, for the first bar, why the safety car was out: Latifi's
+// out on the `buildup.scLightsOut` cue (81.1); bottom right, for the first bar, why the safety car was out: Latifi's
 // crash at turn 14 (STO-7 easter egg). HAM backs the pair up, VER closes to inches, then both floor it and the speed
-// lines build to the drop (the cut at 81.1).
+// lines build to the drop (the cut at 82.1).
 import { PIRELLI_2021, RB16B, W12 } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { Caption } from "../../../kit/lettering";
@@ -23,7 +23,7 @@ const BEAT = FRAMES_PER_BEAT / FPS;
 
 export const Restart: React.FC<{ st: ShotTime }> = ({ st }) => {
   const { t, dur } = st;
-  const off = secondsInShot(st, at(80));
+  const off = secondsInShot(st, at(81));
   const go = off + 0.9; // HAM floors it
   const a = 14;
   const camX = 22 * t + (t > go ? 0.5 * a * (t - go) * (t - go) : 0);

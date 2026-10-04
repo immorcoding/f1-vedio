@@ -1,5 +1,5 @@
-// Shot 5.7 (bars 101–104): the final points. The face-off page from 4.2 returns with the result: on the cut
-// (101.1, `abuDhabi2021.points`) the numbers slam in — VER 395.5, HAM 387.5 (facts.md) — then VER's panel widens
+// Shot 5.7 (bars 102–105): the final points. The face-off page from 4.2 returns with the result: on the cut
+// (102.1, `abuDhabi2021.points`) the numbers slam in — VER 395.5, HAM 387.5 (facts.md) — then VER's panel widens
 // and HAM's recedes under a screen of dots while the lines keep drifting.
 import { Faceoff } from "../../../scenes/abu-dhabi-2021/Faceoff";
 import { clamp01, hit, ramp, type ShotTime } from "./shotClock";

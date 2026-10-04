@@ -8,6 +8,7 @@ import { MangaCar, VF20 } from "../../../cars";
 import { pinhole, type Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import {
+  BubbleSmoke,
   Fire,
   FIRE_PALETTES,
   FireLight,
@@ -19,6 +20,7 @@ import { ToneDefs, TonePattern } from "../../../kit/tone";
 import { beatsAtFrame, FRAMES_PER_BEAT } from "../../timing.ts";
 import { ramp, shotById, type PictureProps } from "./common";
 import { BentGuardrail } from "./bent-rail";
+import { Haze } from "./haze";
 import { NightBackdrop } from "./night";
 import {
   BARRIER_Z,
@@ -37,6 +39,7 @@ import {
   RUN,
   WRECK_BEND,
   REAR_POSE,
+  REAR_SPAN,
   REAR_Z,
   WRECK_CAM_SPEC,
 } from "./wreck-geometry.ts";
@@ -62,8 +65,19 @@ export const zoomCam = (
   });
 };
 
-// The barrier as the impact left it (wreck-geometry.ts): the middle and top rails torn open along the cell, their ends
-// curled, the bottom rail pressed down and back.
+// The hot zone over the wreck for the heat haze (haze.tsx), on screen: from the cell's nose to past the torn-off rear,
+// from the ground in front of the rear piece up to the top of the fire behind the cell.
+export const heatZone = (cam: Camera, intensity = 1): ScreenRect => {
+  const left = cam.project({ x: CELL_FROM - 0.8, y: 0, z: BARRIER_Z }).x;
+  const right = cam.project({ x: REAR_SPAN.to + 1.0, y: 0, z: REAR_Z }).x;
+  const base = cam.project({ x: CELL_FROM + 2.2, y: 0, z: CELL_Z + 0.5 });
+  const top =
+    base.y - cam.pxPerMetre(CELL_Z + 0.5) * 7.5 * (0.35 + 0.65 * intensity);
+  const bottom = cam.project({ x: 0, y: -0.4, z: REAR_Z }).y;
+  return { x: left, y: top, w: right - left, h: bottom - top };
+};
+
+// The barrier as the impact left it (wreck-geometry.ts): all three rails torn open along the cell, their ends curled.
 export { RUN, WRECK_BEND, WRECK_GAPS, CELL_FROM };
 
 // The posed survival cell's own transform (MangaCar facing left, the split pose of the front piece): photo space of the
@@ -109,7 +123,7 @@ export const WreckWorld: React.FC<{
   tonePrefix: string;
   // someone in the cockpit, layered round the near halo bar and cut to the cockpit's rim here
   cockpit?: CockpitLayers;
-  // someone out over the cell's side, behind the bottom rail but clear of it on screen
+  // someone out over the cell's side, behind the bottom rail's stubs but clear of them on screen
   behindRails?: React.ReactNode;
   // close-ups: no light pool, the fire throws no glow over the whole panel
   noGlow?: boolean;
@@ -155,6 +169,18 @@ export const WreckWorld: React.FC<{
   };
   const rimClip = `rim${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const rearAt = cam.anchor({ x: REAR_ANCHOR_X, z: REAR_Z });
+  // the veil of smoke over the rear piece: from the top of the gap fire across to above the rear wing
+  const veil = Math.min(1, Math.max(0, (intensity - 0.2) / 0.5));
+  const veilFrom = cam.project({
+    x: CELL_TO + 1.0,
+    y: 1.3,
+    z: (CELL_Z + REAR_Z) / 2,
+  });
+  const veilTo = cam.project({ x: REAR_SPAN.to - 0.3, y: 1.5, z: REAR_Z });
+  const veilAngle =
+    (Math.atan2(veilTo.x - veilFrom.x, -(veilTo.y - veilFrom.y)) * 180) /
+    Math.PI;
+  const veilLength = Math.hypot(veilTo.x - veilFrom.x, veilTo.y - veilFrom.y);
   return (
     <g>
       {/* the night behind the fire, warped by the hot air rising over it */}
@@ -195,7 +221,7 @@ export const WreckWorld: React.FC<{
       {/* the wreck's front section, one drawing in the gap: survival cell, cockpit sides, headrest, far and near halo
           bars, helmet while the driver is in; with someone in the cockpit the near bar is drawn again over him below */}
       <MangaCar car={VF20} facing="left" at={cellAt} state={cellState} />
-      {/* only the bottom rail passes in front of the cell's lower edge */}
+      {/* only the bottom rail's stubs, curled toward the track, come in front of the cell */}
       <BentGuardrail
         cam={cam}
         a={RUN.a}
@@ -274,6 +300,24 @@ export const WreckWorld: React.FC<{
           compound: VF20.compound,
         }}
       />
+      {/* bubble smoke (ART-20) drifting across from the fire in the gap over the torn-off rear, partly veiling it */}
+      {veil > 0 ? (
+        <g
+          transform={`translate(${veilFrom.x} ${veilFrom.y}) rotate(${veilAngle})`}
+        >
+          <BubbleSmoke
+            w={cam.pxPerMetre(REAR_Z) * 1.3}
+            top={0}
+            rise={veilLength}
+            frame={f}
+            seed={`wreck-veil${fireSeed}`}
+            palette={p}
+            count={8}
+            size={0.9}
+            opacity={0.8 * veil}
+          />
+        </g>
+      ) : null}
       {/* debris on the asphalt */}
       {[
         [CELL_TO + 1.6, 11.6, 0.5],
@@ -344,13 +388,15 @@ export const WreckShot: React.FC<PictureProps> = ({ f, palette }) => {
       <defs>
         <ToneDefs prefix="b34" />
       </defs>
-      <WreckWorld
-        cam={cam}
-        f={f}
-        palette={palette}
-        intensity={intensity}
-        tonePrefix="b34"
-      />
+      <Haze frame={f} zone={heatZone(cam, intensity)}>
+        <WreckWorld
+          cam={cam}
+          f={f}
+          palette={palette}
+          intensity={intensity}
+          tonePrefix="b34"
+        />
+      </Haze>
       <Vignette amount={0.5 + 0.35 * hb} />
     </svg>
   );

@@ -1,6 +1,6 @@
 // Abu Dhabi 2021, lap 58, T5 hairpin: VER dives down the inside and locks his front-right, HAM holds the outside.
 // The settled scene standard (ART-7, docs/shape/references/style-b-manga-v2.png), built from the production kit and car
-// library; shot 5.3 of the treatment (bar 89).
+// library; shot 5.3 of the treatment (bar 90).
 //
 // `t` animates the panel: seconds after the lock-up. At t = 0 it draws exactly the settled frame (the library still
 // and the first frame of shot 5.3); after that the camera tracks the braking cars along the wall, VER slides past on

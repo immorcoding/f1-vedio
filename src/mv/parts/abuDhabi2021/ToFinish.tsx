@@ -1,7 +1,7 @@
-// Shot 5.5 (bars 95–98): the rest of the last lap from above, back straight to the flag, compressed into four bars.
+// Shot 5.5 (bars 96–99): the rest of the last lap from above, back straight to the flag, compressed into four bars.
 // The map turns with VER so he always drives left to right, as in the close-ups; the lap he has covered is inked in
 // behind him, HAM drops back toward the 2.2 s he finished behind (facts.md), and VER's nose reaches the finish line
-// exactly on the cut (99.1).
+// exactly on the cut (100.1).
 import { carPoint, MangaCar, PIRELLI_2021, RB16B, topAnchorAt, W12 } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";

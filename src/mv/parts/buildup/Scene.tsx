@@ -1,4 +1,4 @@
-// Picture for 蓄力 (bars 73–80): 4.1 title card, 4.2 VER/HAM face-off, 4.3 safety car in, both cars launch to the drop.
+// Picture for 蓄力 (bars 74–81): 4.1 title card, 4.2 VER/HAM face-off, 4.3 safety car in, both cars launch to the drop.
 import { AbsoluteFill } from "remotion";
 import { useSongFrame } from "../../clock";
 import type { SceneProps } from "../../scenes";

@@ -1,14 +1,15 @@
-// Shot 3.6 (bars 70–72): GRO hauls himself out of the burning cell by the halo, steps out over the cockpit side through
-// the torn top rail and down over the bottom rail; the FIA doctor (Ian Roberts, from the medical car) reaches over the
+// Shot 3.6 (bars 70–73): GRO hauls himself out of the burning cell by the halo, steps out over the cockpit side through
+// the gap torn in the rails and down onto the floor's edge under the sidepod; the FIA doctor (Ian Roberts, from the medical car) reaches over the
 // rail and takes his arm, then walks him away, a hand at his back, while a marshal turns a dry-powder extinguisher on
-// the cockpit (facts.md, easter egg). 27 秒 comes up on bar 71; the last beat of bar 72
-// is black. People from the shared people module (src/kit/figure.tsx, ART-16), no faces; staging in
+// the cockpit (facts.md, easter egg). 27s comes up on bar 71; from 72.1 the
+// scorched halo closes the part (HaloFinale.tsx). People from the shared people module (src/kit/figure.tsx, ART-16), no faces; staging in
 // escape-staging.ts.
 import type { Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import { FIRE_PALETTES } from "../../../kit/fire";
 import { CAPTION_FONT } from "../../../kit/lettering";
 import { ToneDefs } from "../../../kit/tone";
+import { at, frameAt } from "../../timing.ts";
 import { cueFrame, ramp, shotById, type PictureProps } from "./common";
 import {
   DOCTOR,
@@ -31,8 +32,9 @@ import {
   stage36,
 } from "./escape-staging.ts";
 import { useGroExit } from "./GroExit";
-import { PowderBillow } from "./powder";
-import { WRECK_CAM, WreckWorld, heartbeat, zoomCam } from "./Wreck";
+import { Haze } from "./haze";
+import { PowderJet } from "./powder";
+import { WRECK_CAM, WreckWorld, heartbeat, heatZone, zoomCam } from "./Wreck";
 
 export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   const shot = shotById("3.6");
@@ -46,7 +48,8 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   const cam: Camera = zoomCam(
     WRECK_CAM,
     { x: CLIMB_X - 0.25, y: 1.0, z: WALK_Z },
-    1.18 + 0.05 * ramp(t, 0, black - shot.from),
+    // (the creep keeps the pace it had when 3.6 cut to black on 72.4)
+    1.18 + 0.05 * ramp(t, 0, frameAt(at(72, 4)) - shot.from),
     { x: 980, y: 600 },
   );
   const { groPose, groAt, groScaleZ, layers, holds, docPose, docAt } =
@@ -79,14 +82,16 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   const aim = cam.project(AIM);
   const hb = heartbeat(f);
   const text = ramp(f, timeCue, timeCue + 8);
-  // the powder jet: a cone from the nozzle to the cockpit, billowing where it lands, redrawn on threes
-  const jx = aim.x - nozzle.x;
-  const jy = aim.y - nozzle.y;
-  const jl = Math.hypot(jx, jy);
-  const nx = -jy / jl;
-  const ny = jx / jl;
-  const spread = 0.35 * mppm;
-  const jet = `M ${nozzle.x + nx * 4} ${nozzle.y + ny * 4} L ${aim.x + nx * spread} ${aim.y + ny * spread} L ${aim.x - nx * spread} ${aim.y - ny * spread} L ${nozzle.x - nx * 4} ${nozzle.y - ny * 4} Z`;
+  // everyone at the wreck stands in its heat haze with a lighter ripple, so they still read (haze.tsx)
+  const calmAt = (at: { x: number; z: number }, k: number, s: number) => {
+    const base = g(at);
+    return { cx: base.x, cy: base.y - 0.95 * s, rx: 0.55 * s * k, ry: 1.0 * s };
+  };
+  const calm = [
+    calmAt(groAt, 1.1, cam.pxPerMetre(groScaleZ)),
+    calmAt(docAt, 1, ppm(docAt)),
+    calmAt(MARSHAL_AT, 1, mppm),
+  ];
   const figure = (
     key: string,
     at: { x: number; z: number },
@@ -123,28 +128,28 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
       <defs>
         <ToneDefs prefix="b36" />
       </defs>
-      <WreckWorld
-        cam={cam}
-        f={f}
-        palette={palette}
-        intensity={1}
-        tonePrefix="b36"
-        cockpit={gro.cockpit}
-        behindRails={gro.behindRails}
-        driver={false}
-      />
-      {/* the marshal, his powder jet into the back of the cockpit, then GRO and the doctor in front of it */}
-      {marshal}
-      <path
-        d={jet}
-        fill={PAPER}
-        stroke={INK}
-        strokeWidth={2.5}
-        strokeLinejoin="round"
-        opacity={0.9}
-      />
-      <PowderBillow x={aim.x} y={aim.y} ppm={mppm} frame={f} />
-      {people.map((p) => p.node)}
+      <Haze frame={f} zone={heatZone(cam)} calm={calm}>
+        <WreckWorld
+          cam={cam}
+          f={f}
+          palette={palette}
+          intensity={1}
+          tonePrefix="b36"
+          cockpit={gro.cockpit}
+          behindRails={gro.behindRails}
+          driver={false}
+        />
+        {/* the marshal, his powder jet into the back of the cockpit, then GRO and the doctor in front of it */}
+        {marshal}
+        <PowderJet
+          from={nozzle}
+          to={aim}
+          ppm={mppm}
+          frame={f}
+          seed="b36-powder"
+        />
+        {people.map((p) => p.node)}
+      </Haze>
       <rect width={1920} height={1080} fill={INK} opacity={0.12 * hb} />
       {text > 0 ? (
         <g

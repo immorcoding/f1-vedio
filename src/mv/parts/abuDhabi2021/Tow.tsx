@@ -1,4 +1,4 @@
-// Shot 5.4 (bars 91–94): out of T5 and down the back straight. HAM tucks into VER's slipstream, pulls out on 92.3 and
+// Shot 5.4 (bars 92–95): out of T5 and down the back straight. HAM tucks into VER's slipstream, pulls out on 93.3 and
 // draws alongside; VER edges over to cover the inside and holds; by the cut HAM has dropped back into his wake.
 // (facts.md: "Hamilton chased Verstappen on the run to Turn 9 but the Red Bull defended the inside".)
 import { PIRELLI_2021, RB16B, W12 } from "../../../cars";
@@ -14,8 +14,8 @@ const LAYOUT = trackLayout(-60, 760, { x0: 560, x1: 640, z: 700, top: 38 });
 
 export const Tow: React.FC<{ st: ShotTime }> = ({ st }) => {
   const { t, dur } = st;
-  const pullOut = secondsInShot(st, at(92, 3));
-  const alongside = secondsInShot(st, at(93, 3));
+  const pullOut = secondsInShot(st, at(93, 3));
+  const alongside = secondsInShot(st, at(94, 3));
   const camX = 70 * t + 2.2 * t * t;
   const out = ramp(t, pullOut, pullOut + 0.7);
   const gain = ramp(t, pullOut + 0.2, alongside);
