@@ -1,10 +1,10 @@
 // GRO getting out of the cockpit (escape-staging.ts, the people module's climbOutOfCockpit), layered against the
-// wreck: what is still inside shows only above the cockpit's rim and behind the halo's near side; his gloves close over
-// the halo tubes they hold; a leg on its way out over the side is in front of the hoop; what is out over the side is
-// behind the bottom rail; what has crossed it is in front. Shared by the 27 秒 panel and shot 3.6.
+// wreck: what is still inside goes into the wreck's own drawing (WreckWorld `cockpit`), behind the halo's near bar and
+// cut to the cockpit's rim there; his gloves close over the halo tubes they hold and a leg on its way out over the side
+// is in front of the hoop (the layer over the near bar); what is out over the side is behind the bottom rail; what has
+// crossed it is in front. Shared by the 27 秒 panel and shot 3.6.
 import { useId } from "react";
 import { GRO_2020 } from "../../../cars";
-import type { Camera } from "../../../kit/camera";
 import {
   Figure,
   driverOutfit,
@@ -14,7 +14,7 @@ import {
   type Outfit,
   type Pose,
 } from "../../../kit/figure";
-import { CockpitClip, NearHalo } from "./Wreck";
+import type { CockpitLayers } from "./Wreck";
 
 // Race suit of 2020 (Haas: black with a grey side band), GRO's helmet.
 export const GRO_KIT: Outfit = driverOutfit(GRO_2020.helmet, "#1f1f23", {
@@ -25,7 +25,6 @@ export const GRO_KIT: Outfit = driverOutfit(GRO_2020.helmet, "#1f1f23", {
 const PARTS: BodyPart[] = ["farLeg", "body", "nearLeg", "nearArm"];
 
 export const useGroExit = ({
-  cam,
   at,
   ppm,
   pose,
@@ -33,7 +32,6 @@ export const useGroExit = ({
   holds,
   rim,
 }: {
-  cam: Camera;
   at: { x: number; y: number }; // his ground point on screen
   ppm: number;
   pose: Pose;
@@ -64,7 +62,10 @@ export const useGroExit = ({
   const b = solve(pose);
   const handDisc = (side: "near" | "far") => {
     const a = b.arms[side];
-    const c = { x: a.wrist.x + a.handDir.x * 0.05, y: a.wrist.y + a.handDir.y * 0.05 };
+    const c = {
+      x: a.wrist.x + a.handDir.x * 0.05,
+      y: a.wrist.y + a.handDir.y * 0.05,
+    };
     return (
       <clipPath id={`${id}-h${side}`}>
         <circle cx={at.x - c.x * ppm} cy={at.y - c.y * ppm} r={0.075 * ppm} />
@@ -72,26 +73,26 @@ export const useGroExit = ({
     );
   };
   const inCockpit = inside.length + lifting.length > 0;
-  const cockpit = inCockpit ? (
-    <g>
-      <defs>
-        <CockpitClip id={`${id}-rim`} cam={cam} />
-        {handDisc("near")}
-        {handDisc("far")}
-      </defs>
-      <g clipPath={`url(#${id}-rim)`}>{fig("in", inside)}</g>
-      <NearHalo cam={cam} />
-      <g clipPath={`url(#${id}-rim)`}>
-        {fig("lift", lifting)}
-        {holds.near && layers.nearArm === "cockpit" ? (
-          <g clipPath={`url(#${id}-hnear)`}>{fig("hn", ["nearArm"])}</g>
-        ) : null}
-        {holds.far && layers.body === "cockpit" ? (
-          <g clipPath={`url(#${id}-hfar)`}>{fig("hf", ["body"])}</g>
-        ) : null}
-      </g>
-    </g>
-  ) : null;
+  const cockpit: CockpitLayers | undefined = inCockpit
+    ? {
+        behindHalo: fig("in", inside),
+        overHalo: (
+          <g>
+            <defs>
+              {handDisc("near")}
+              {handDisc("far")}
+            </defs>
+            {fig("lift", lifting)}
+            {holds.near && layers.nearArm === "cockpit" ? (
+              <g clipPath={`url(#${id}-hnear)`}>{fig("hn", ["nearArm"])}</g>
+            ) : null}
+            {holds.far && layers.body === "cockpit" ? (
+              <g clipPath={`url(#${id}-hfar)`}>{fig("hf", ["body"])}</g>
+            ) : null}
+          </g>
+        ),
+      }
+    : undefined;
   return {
     cockpit,
     behindRails: fig("out", on("out")),

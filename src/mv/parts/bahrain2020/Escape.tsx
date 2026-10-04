@@ -56,7 +56,6 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   const ppm = (p: { z: number }) => cam.pxPerMetre(p.z);
   // GRO: in the cockpit, out over its side, in front of the rails (GroExit.tsx)
   const gro = useGroExit({
-    cam,
     at: g(groAt),
     ppm: cam.pxPerMetre(groScaleZ),
     pose: groPose,

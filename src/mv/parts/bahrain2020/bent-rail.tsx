@@ -31,6 +31,9 @@ export const BentGuardrail: React.FC<{
   // draw only this part of the run (fractions), to layer the near and far stretches round a car
   from?: number;
   to?: number;
+  // draw only these rails (0 bottom, 1 middle, 2 top) and the posts or not, to layer the rails round a car in the gap
+  rails?: readonly number[];
+  posts?: boolean;
   tonePrefix: string;
 }> = ({
   cam,
@@ -41,6 +44,8 @@ export const BentGuardrail: React.FC<{
   hanging = true,
   from = 0,
   to = 1,
+  rails = [0, 1, 2],
+  posts: withPosts = true,
   tonePrefix,
 }) => {
   const len = Math.hypot(b.x - a.x, b.z - a.z);
@@ -78,6 +83,7 @@ export const BentGuardrail: React.FC<{
     (_, i) => (i * 2) / len,
   ).filter(
     (u) =>
+      withPosts &&
       u >= from &&
       u <= to &&
       !bent(u) &&
@@ -104,6 +110,7 @@ export const BentGuardrail: React.FC<{
         );
       })}
       {RAILS.map(([y0, y1], r) => {
+        if (!rails.includes(r)) return null;
         const cuts = [...(gaps[r] ?? [])].sort((p, q) => p[0] - q[0]);
         const pieces: [number, number][] = [];
         let u = from;
@@ -159,11 +166,13 @@ export const BentGuardrail: React.FC<{
                   y: y + o.dy,
                   z: g.z + ((b.z - a.z) / len) * dx * e.dir + dz,
                 });
-              const R = (k: string) => random(`${tonePrefix}-tear-${r}-${e.u}-${k}`);
+              const R = (k: string) =>
+                random(`${tonePrefix}-tear-${r}-${e.u}-${k}`);
               const n = 5;
               const teeth = Array.from({ length: n + 1 }, (_, i) => {
                 const y = y1 - ((y1 - y0) * i) / n;
-                const out = i % 2 ? 0.07 + 0.12 * R(`t${i}`) : 0.03 * R(`t${i}`);
+                const out =
+                  i % 2 ? 0.07 + 0.12 * R(`t${i}`) : 0.03 * R(`t${i}`);
                 return P(out, y, -0.04 * (i % 2));
               });
               const cap = `M ${f(P(-0.04, y1))} ${teeth.map((p) => `L ${f(p)}`).join(" ")} L ${f(P(-0.04, y0))} Z`;

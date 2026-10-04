@@ -1,7 +1,7 @@
 // Shot 3.5 (bars 66–69): the 27 seconds in four panels, one more on each bar's first beat — four different moments,
 // not four looks at the helmet (facts.md, FIA accident investigation summary):
-//   0 秒   the barrier splits: the halo drives the top rail up and back, the rail tearing open over it in sparks, the
-//          fire catching;
+//   0 秒   the barrier splits: the cell is through it, the middle and top rails torn open along it, their ends curled
+//          back and throwing sparks (the torn gap every later shot shows), the fire catching;
 //   11 秒  the FIA medical car brakes in hard and stops, the doctor out and running for the fire;
 //   (no time: not verified) a marshal turns a dry-powder extinguisher on the cockpit;
 //   27 秒  GRO, in his helmet, rises out of the cockpit through the fire, both gloves on the halo, hauling himself up.
@@ -19,17 +19,13 @@ import {
   v,
   walk,
 } from "../../../kit/figure";
-import {
-  FIRE_PALETTES,
-  type FirePaletteName,
-} from "../../../kit/fire";
+import { FIRE_PALETTES, type FirePaletteName } from "../../../kit/fire";
 import { CAPTION_FONT } from "../../../kit/lettering";
 import { random } from "remotion";
 import { ToneDefs } from "../../../kit/tone";
-import { bump, type Deflection } from "./bent-rail";
 import { cueFrame, ramp, type PictureProps } from "./common";
 import { MedicalCar } from "./MedicalCar";
-import { RAILS } from "./night";
+import { RAILS } from "./rails.ts";
 import { PowderBillow } from "./powder";
 import { FACTS } from "./shots.ts";
 import {
@@ -48,9 +44,7 @@ import {
   CELL_Z,
   HALO_HOOP_GRIP,
   HALO_WORLD,
-  WRECK_GAPS,
-  along,
-  cellPoint,
+  TEARS,
 } from "./wreck-geometry.ts";
 
 type Rect = { x: number; y: number; w: number; h: number };
@@ -140,34 +134,20 @@ const TimeLabel: React.FC<{
   );
 };
 
-// 0 s: the halo drives the top rail up and back — the rail rides up on the hoop, pushed back to it (real contact) and
-// lifted so its lower edge sits on the hoop's top — and the rail is splitting open right there: a narrow tear over the
-// hoop's top, its two lips flaring up and apart (by 3.4 the tear is wide open over the cockpit, wreck-geometry.ts).
-const HOOP_TOP = cellPoint(890, 490);
-const SPLIT = [HOOP_TOP.x - 0.07, HOOP_TOP.x + 0.09] as const;
-const S_HALO = HOOP_TOP.x - RUN.a.x;
-const PRY_GAPS: [number, number][][] = [
-  WRECK_GAPS[0],
-  WRECK_GAPS[1],
-  [[along(SPLIT[0]), along(SPLIT[1])]],
-];
-const PRY_BEND: Deflection = (s, rail) => {
-  if (rail === 2) {
-    const k = bump(s, S_HALO, 1.3);
-    // the lips: flaring up toward the split
-    const d = Math.min(
-      Math.abs(s - (SPLIT[0] - RUN.a.x)),
-      Math.abs(s - (SPLIT[1] - RUN.a.x)),
-    );
-    const q = Math.max(0, 1 - d / 0.45) ** 2;
+// 0 s: the moment the barrier has split (3.3's freeze): the same torn gap as every later shot — the middle and top
+// rails open along the cell, their jagged ends curled up and back — with sparks still flying off the torn ends.
+const LIPS = TEARS.flatMap((tear, i) =>
+  tear.map((x) => {
+    const r = i + 1;
+    const o = WRECK_BEND(x - RUN.a.x, r);
     return {
-      dx: 0,
-      dy: (HOOP_TOP.y + 0.04 - RAILS[2][0]) * k + 0.16 * q,
-      dz: 1.0 * k - 0.1 * q,
+      x: x + o.dx,
+      y: (RAILS[r][0] + RAILS[r][1]) / 2 + o.dy,
+      z: BARRIER_Z + o.dz,
     };
-  }
-  return WRECK_BEND(s, rail);
-};
+  }),
+);
+const GAP_MID = (TEARS[1][0] + TEARS[1][1]) / 2;
 
 type PanelProps = {
   r: Rect;
@@ -176,32 +156,32 @@ type PanelProps = {
   palette: FirePaletteName;
 };
 
-// 0 秒: the cell in the barrier, the top rail riding up on the halo and splitting over it; the fire just catching;
-// sparks out of the split.
+// 0 秒: the cell in the gap it tore, the middle and top rails split along it, their torn ends curled back and
+// throwing sparks; the fire just catching.
 const PanelPry: React.FC<PanelProps> = ({ r, f, age, palette }) => {
+  // framed on the gap, the halo and both torn ends of the top rail in the panel
   const cam = fitCam(
-    { x: HALO_WORLD.x + 0.1, y: HALO_WORLD.y + 0.1, z: HALO_WORLD.z },
-    3.4,
+    { x: (GAP_MID * CELL_Z) / BARRIER_Z, y: HALO_WORLD.y + 0.1, z: CELL_Z },
+    3.9,
     r,
-    0.55,
+    0.5,
     0.5,
   );
-  const touch = cam.project({
-    x: (SPLIT[0] + SPLIT[1]) / 2,
-    y: HOOP_TOP.y + 0.05,
-    z: HOOP_TOP.z,
-  });
-  const ppm = cam.pxPerMetre(HALO_WORLD.z);
-  const sparks = Array.from({ length: 14 }, (_, i) => {
-    const a0 = (i * 11) % 30;
-    const a = (age + a0) % 30;
-    const ang = -Math.PI * (0.15 + ((i * 0.37) % 1) * 0.7);
-    const sp = (0.03 + ((i * 3) % 5) * 0.008) * ppm;
-    const P = (k: number) => ({
-      x: touch.x + Math.cos(ang) * sp * k,
-      y: touch.y + Math.sin(ang) * sp * k + 0.0009 * ppm * k * k,
+  const ppm = cam.pxPerMetre(BARRIER_Z);
+  const sparks = LIPS.flatMap((lip, l) => {
+    const touch = cam.project(lip);
+    const side = l % 2 ? 1 : -1; // thrown away from the gap
+    return Array.from({ length: 7 }, (_, i) => {
+      const a0 = (i * 11 + l * 7) % 30;
+      const a = (age + a0) % 30;
+      const ang = -Math.PI * (0.5 + side * (0.12 + ((i * 0.37) % 1) * 0.3));
+      const sp = (0.03 + ((i * 3) % 5) * 0.008) * ppm;
+      const P = (k: number) => ({
+        x: touch.x + Math.cos(ang) * sp * k,
+        y: touch.y + Math.sin(ang) * sp * k + 0.0009 * ppm * k * k,
+      });
+      return { a: P(Math.max(0, a - 3)), b: P(a), op: 1 - a / 30 };
     });
-    return { a: P(Math.max(0, a - 3)), b: P(a), op: 1 - a / 30 };
   });
   return (
     <g>
@@ -213,9 +193,6 @@ const PanelPry: React.FC<PanelProps> = ({ r, f, age, palette }) => {
         intensity={0.4 + 0.3 * ramp(age, 0, 200)}
         noGlow
         clip={r}
-        bend={PRY_BEND}
-        gaps={PRY_GAPS}
-        hanging={false}
         tonePrefix="b35"
       />
       {sparks.map((s, i) => (
@@ -460,7 +437,6 @@ const PanelClimb: React.FC<PanelProps> = ({ r, f, age, palette }) => {
   const u = 0.03 + (PANEL_U - 0.03) * Math.min(1, step / 108);
   const e = exitAt(cam, u);
   const gro = useGroExit({
-    cam,
     at: cam.project({ x: CLIMB_X, y: 0, z: WALK_Z }),
     ppm: e.s,
     pose: e.pose,
@@ -557,4 +533,3 @@ export const Timeline27: React.FC<PictureProps> = ({ f, palette }) => {
     </svg>
   );
 };
-

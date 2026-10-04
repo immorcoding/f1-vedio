@@ -32,15 +32,16 @@ import {
   type V,
 } from "../../../kit/people/skeleton.ts";
 import {
+  BARRIER_Z,
   CELL_Z,
   COCKPIT_FLOOR,
-  COCKPIT_RIM,
+  HALO_FOOT,
   HALO_HOOP_GRIP,
   HALO_PILLAR_GRIP,
   HALO_WORLD,
   WRECK_CAM_SPEC,
   bottomRailAt,
-  cellPoint,
+  cockpitRimAt,
 } from "./wreck-geometry.ts";
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
@@ -52,7 +53,7 @@ const BASE: Camera = pinhole(WRECK_CAM_SPEC);
 
 // GRO's hip stands in the cockpit just behind the halo hoop's rear foot (so his legs clear the hoop going out), in
 // front of the headrest. World x on the cell's plane.
-export const STAND_X = cellPoint(1012, 556).x + 0.1;
+export const STAND_X = HALO_FOOT.x + 0.1;
 export const WALK_Z = 12.55; // GRO walks along the rails, 0.45 m in front of them
 // The world x on his walking line that shows where he stood in the cockpit (same screen x in every zoomed copy of the
 // wreck camera): his ground point for the climb and the start of the walk.
@@ -91,11 +92,13 @@ export const exitGeometry = (cam: Camera, scaleZ: number) => {
   };
   const cell = (x: number, y: number) => fig({ x, y, z: CELL_Z });
   const sillX = STAND_X - 0.14;
-  const sill = bottomRailAt((sillX * 13) / CELL_Z);
+  const sill = bottomRailAt((sillX * BARRIER_Z) / CELL_Z);
+  // the near foot steps out onto the cockpit side's top edge as drawn (the shoulder behind the halo's rear foot)
+  const stepX = STAND_X + 0.07;
   const g: CockpitExit = {
     floor: cell(STAND_X, COCKPIT_FLOOR).y,
-    rim: cell(STAND_X, COCKPIT_RIM).y,
-    step: cell(STAND_X + 0.07, 0).x,
+    rim: cell(stepX, cockpitRimAt(stepX)).y,
+    step: cell(stepX, 0).x,
     sill: fig({ x: (sillX * sill.z) / CELL_Z, y: sill.y, z: sill.z }),
     pillar: add(fig(HALO_PILLAR_GRIP), GRIP_PILLAR),
     hoop: add(fig(HALO_HOOP_GRIP), GRIP_HOOP),
@@ -128,7 +131,12 @@ export const MARSHAL_AIM = v(MARSHAL_AT.x - AIM.x - NOZZLE.x, AIM.y - NOZZLE.y);
 export const marshalPose = (t: number): Pose => spray(t / 60, NOZZLE);
 
 export type GroLayers = Record<BodyPart, ExitLayer>;
-const ALL_FRONT: GroLayers = { farLeg: "front", body: "front", nearLeg: "front", nearArm: "front" };
+const ALL_FRONT: GroLayers = {
+  farLeg: "front",
+  body: "front",
+  nearLeg: "front",
+  nearArm: "front",
+};
 
 // t = frames into shot 3.6
 export const stage36 = (t: number) => {
@@ -166,7 +174,10 @@ export const stage36 = (t: number) => {
   const gs = BASE.pxPerMetre(groScaleZ);
   const j = solve(groPose).arms.near;
   const arm = lerpV(j.shoulder, j.elbow, 0.55);
-  const armScreen = { x: groOrigin.x - arm.x * gs, y: groOrigin.y - arm.y * gs };
+  const armScreen = {
+    x: groOrigin.x - arm.x * gs,
+    y: groOrigin.y - arm.y * gs,
+  };
   // the doctor
   const docOpts: GaitOptions = { stride, lean: 10, armSwing: 12, head: 6 };
   const PH = 0.27; // his steps fall between GRO's
@@ -181,14 +192,19 @@ export const stage36 = (t: number) => {
   const ready = reachTo(v(0.5, 1.05), { grip: "open", t: time });
   const holding = reachTo(armAt, { grip: "hold", t: time });
   const take = smooth((u - 0.46) / 0.1);
-  const atRail = take <= 0 ? ready : take >= 1 ? holding : mixPose(ready, holding, take);
+  const atRail =
+    take <= 0 ? ready : take >= 1 ? holding : mixPose(ready, holding, take);
   // walking behind, the near hand on his back once it reaches
   const groHip = groFwd + groPose.hip.x;
   const back = v(groHip - 0.15 - docFwd, 1.2);
   const onBack = smooth((0.8 - back.x) / 0.2);
   const walking = mixPose(
     walk(dd, docOpts),
-    walkWithHands(dd, { near: { hand: back, grip: "flat", wrist: 25 } }, docOpts),
+    walkWithHands(
+      dd,
+      { near: { hand: back, grip: "flat", wrist: 25 } },
+      docOpts,
+    ),
     onBack,
   );
   const w = smooth((time - climbT * 0.85) / (climbT * 0.15 + 0.3));
