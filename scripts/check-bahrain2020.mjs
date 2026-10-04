@@ -20,6 +20,10 @@ else {
     problems.push(
       `facts.md does not register an escape after ${FACTS.escapeSeconds} 秒`,
     );
+  if (!new RegExp(`医疗车\\s*${FACTS.medicalCarSeconds}\\s*秒内到场`).test(section))
+    problems.push(
+      `facts.md does not register the medical car on scene within ${FACTS.medicalCarSeconds} 秒`,
+    );
   if (!/来源/.test(section)) problems.push("the Bahrain facts have no source");
 }
 const text = (id) =>
@@ -28,13 +32,18 @@ if (!text("3.3").includes(`${FACTS.impactG}G`))
   problems.push(
     `shot 3.3 text "${text("3.3")}" does not show ${FACTS.impactG}G`,
   );
+for (const n of [FACTS.medicalCarSeconds, FACTS.escapeSeconds])
+  if (!text("3.5").includes(`${n} 秒`))
+    problems.push(`shot 3.5 text "${text("3.5")}" does not show ${n} 秒`);
 if (!text("3.6").includes(`${FACTS.escapeSeconds} 秒`))
   problems.push(
     `shot 3.6 text "${text("3.6")}" does not show ${FACTS.escapeSeconds} 秒`,
   );
 
 // (3.2's cars are checked by the shared interpenetration check: npm run check:overlap, src/mv/top-views.ts)
-console.log(`impact ${FACTS.impactG}G, escape ${FACTS.escapeSeconds} 秒`);
+console.log(
+  `impact ${FACTS.impactG}G, medical car ${FACTS.medicalCarSeconds} 秒, escape ${FACTS.escapeSeconds} 秒`,
+);
 for (const p of problems) console.log(`FAIL  ${p}`);
 console.log(
   problems.length ? `${problems.length} problem(s)` : "No problems found",

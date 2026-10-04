@@ -1,29 +1,42 @@
-// Shot 3.3 (bar 61, on the music's stop): the Haas hits the triple guardrail at 29°. The first frames are the hit in the
-// panel's own inks; then the frame freezes into white paper and black line — the car and the rails as line art inside a
-// manga impact star, with 67G.
+// Shot 3.3 (bar 61, on the music's stop): the Haas hits the triple guardrail at 29°. The contact lands on the bar's
+// first beat; then an explicit slow motion of the 0.1 s that matter (MOT-5): sparks spray off the rails, the bottom and
+// top rails bend round the nose and the middle rail tears as the survival cell goes through it, the car breaks at the
+// engine bulkhead — the power unit and rear left behind on the track side — and the fuel cell bursts into a fireball,
+// carbon shards flying. On the last beats the frame freezes into white paper and black line, an impact star round the
+// nose with 67G, the fireball still burning in colour (facts.md; FIA accident investigation summary).
 import { MangaCar, VF20, carLength } from "../../../cars";
 import { pinhole } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
+import { FIRE_PALETTES, Fireball, SmokeStreaks } from "../../../kit/fire";
 import { BRUSH_FONT } from "../../../kit/lettering";
 import { focusLines } from "../../../kit/lines";
 import { ToneDefs } from "../../../kit/tone";
+import { BentGuardrail, bump, type Deflection } from "./bent-rail";
+import { BREAK_PIVOT, carPointOnScreen } from "./car-points";
 import { ramp, shotById, type PictureProps } from "./common";
-import { Guardrail, NightBackdrop } from "./night";
+import { NightBackdrop } from "./night";
 import { FACTS } from "./shots.ts";
 
 // Trackside camera, low, square to the car: the car is side-on, the barrier runs away from it at 29° (ART-9).
 const CAM = pinhole({ f: 1500, horizon: 330, cx: 960, height: 1.3 });
 const CAR_Z = 9;
-const NOSE_X = -1.6; // world x of the nose at the contact
+const NOSE_X = -1.6; // world x where the barrier crosses the car's line
 const ANGLE = (29 * Math.PI) / 180;
 const L = carLength(VF20);
 // The barrier through the contact point. The car faces left (we see its left side, the barrier on its right, behind):
 // the barrier runs toward the camera on the left and away on the right.
 const dir = { x: -Math.cos(ANGLE), z: -Math.sin(ANGLE) };
-const CONTACT = { x: NOSE_X, z: CAR_Z + 0.15 };
-const BAR_A = { x: NOSE_X + dir.x * 12, z: CAR_Z + 0.15 + dir.z * 12 };
-const BAR_B = { x: NOSE_X - dir.x * 30, z: CAR_Z + 0.15 - dir.z * 30 };
-const FREEZE = 5; // frames of motion before the freeze
+const BAR_A = { x: NOSE_X + dir.x * 12, z: CAR_Z + 0.15 + dir.z * 12 }; // near end
+const BAR_B = { x: NOSE_X - dir.x * 30, z: CAR_Z + 0.15 - dir.z * 30 }; // far end
+const RUN = Math.hypot(BAR_B.x - BAR_A.x, BAR_B.z - BAR_A.z);
+const S_CONTACT = 12; // metres from the near end to the contact
+const U_CONTACT = S_CONTACT / RUN;
+// The car's far front corner meets the rails with the nose at world x 0 (the barrier crosses z = 10 there).
+const NOSE0 = 0;
+const SLOW = 70; // frames of slow motion before the freeze
+const PIERCE = 4.2; // metres the cell travels into the barrier
+const BREAK_AT = 12; // frame the car starts to tear in two
+const BALL_AT = 15; // frame the fuel cell bursts
 
 const star = (
   cx: number,
@@ -40,37 +53,109 @@ const star = (
     return `${i ? "L" : "M"} ${cx + Math.cos(a) * r} ${cy + Math.sin(a) * r * 0.8}`;
   }).join(" ") + " Z";
 
-export const Impact: React.FC<PictureProps> = ({ f }) => {
+// Where everything is at slow-motion frame t (held from the freeze on).
+const stage = (t: number) => {
+  const tt = Math.min(t, SLOW);
+  const p = Math.min(1, tt / 60);
+  const travel = PIERCE * (1 - (1 - p) * (1 - p));
+  const split = ramp(tt, BREAK_AT, 58);
+  // the cell drives on into the rails, pitching nose-down; the rear is left behind, kicking up and turning
+  const front = { dx: 0.55 * split, rotate: -4 * split };
+  const rear = {
+    dx: -1.1 * split,
+    dy: 0.35 * Math.sin(Math.PI * Math.min(1, split * 1.3)),
+    rotate: 11 * split,
+  };
+  return { travel, split, front, rear, p };
+};
+
+// How the rails give: dragged along with the car round the contact, the top rail prised up and the bottom one pressed
+// down where the cell goes through, more the further in it is.
+const deflection =
+  (travel: number): Deflection =>
+  (s, rail) => {
+    const k = bump(s, S_CONTACT - travel * 0.5, 1.0 + travel * 0.45);
+    const d = travel * 0.5 * k;
+    return {
+      dx: -d * 0.8,
+      dz: d * 0.15,
+      dy: rail === 2 ? 0.32 * k * Math.min(1, travel) : rail === 0 ? -0.12 * k * Math.min(1, travel) : 0,
+    };
+  };
+
+export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
   const shot = shotById("3.3");
   const t = f - shot.from;
-  const frozen = t >= FREEZE;
-  // MOT-5: it arrives at 192 km/h (53 m/s, 0.9 m a frame) and the 67 G stop crushes ~2 m of it into the rails
-  // within the motion frames: u² deceleration from full speed to rest, then held
-  const u = Math.min(t, FREEZE) / FREEZE;
-  const travel = 2.1 * (1 - (1 - u) * (1 - u));
-  const at = CAM.anchor({ x: NOSE_X + L + 1.6 - travel, z: CAR_Z });
-  // the wheels still turning at road speed until the stop (53 m/s on a 0.33 m wheel ≈ 150° a frame: drawn at 37°
-  // steps, the spoke pattern's visible rate)
-  const wheelAngle = 37 * Math.min(t, FREEZE) * (1 - u * 0.5);
-  const nose = CAM.project({ x: NOSE_X - 0.1, y: 0.45, z: CAR_Z });
-  const shake = frozen ? Math.exp(-(t - FREEZE) / 10) * 14 : 22;
+  const frozen = t >= SLOW;
+  const fire = FIRE_PALETTES[palette];
+  const { travel, split, front, rear } = stage(t);
+  const at = CAM.anchor({ x: NOSE0 + L - travel, z: CAR_Z });
+  // the wheels still turning, slowed with the picture (slow motion: ~1/12 of 150° a frame), stopping as it digs in
+  const wheelAngle = 13 * Math.min(t, SLOW) * (1 - stage(t).p * 0.6);
+  const nose = CAM.project({ x: NOSE0 - travel - 0.1, y: 0.45, z: CAR_Z });
+  const hit = CAM.project({ x: NOSE0 - travel + 0.3, y: 0.6, z: CAR_Z + 0.9 });
+  const breakAt = carPointOnScreen(at, BREAK_PIVOT, {
+    dx: (front.dx + rear.dx) / 2,
+  });
+  const ppm = CAM.pxPerMetre(CAR_Z);
+  // camera: a hard jolt on the contact, then the slow motion's long shudder
+  const shake = frozen
+    ? Math.exp(-(t - SLOW) / 10) * 14
+    : 30 * Math.exp(-t / 6) + 5;
   const dx = Math.sin(t * 2.7) * shake;
   const dy = Math.cos(t * 3.1) * shake * 0.6;
-  const push = frozen ? 1 + 0.05 * ramp(t, FREEZE, shot.to - shot.from) : 1;
-  const flash = t < FREEZE ? 0 : 1 - ramp(t, FREEZE, FREEZE + 6);
-  const scene = (
-    <>
-      {/* the barrier behind the car (right of the contact, further away), the car, then the near stretch */}
-      <Guardrail cam={CAM} a={CONTACT} b={BAR_B} tonePrefix="b33" />
-      <MangaCar
-        car={VF20}
-        facing="left"
-        at={at}
-        state={{ tilt: frozen ? -2 : -1, wheelAngle }}
-      />
-      <Guardrail cam={CAM} a={BAR_A} b={CONTACT} tonePrefix="b33" />
-    </>
-  );
+  const push = frozen
+    ? 1.06 + 0.05 * ramp(t, SLOW, shot.to - shot.from)
+    : 1 + 0.06 * ramp(t, 0, SLOW);
+  const flash = t < 3 ? 1 - t / 3 : frozen ? 1 - ramp(t, SLOW, SLOW + 6) : 0;
+  const ts = Math.min(t, SLOW);
+  const deflect = deflection(travel);
+  // the middle rail fails first, then the cell is through it
+  const gapW = Math.max(0, travel - 0.4) * 0.9;
+  const gaps: [number, number][][] = [
+    [],
+    gapW > 0
+      ? [[U_CONTACT - (gapW * 0.9) / RUN, U_CONTACT + (gapW * 0.6) / RUN]]
+      : [],
+    [],
+  ];
+  // sparks off the rails: streaks thrown back and up from the contact, under gravity, every frame
+  const sparks = Array.from({ length: 46 }, (_, i) => {
+    const born = (i * 37) % 44;
+    const age = ts - born;
+    if (age < 0 || age > 16) return null;
+    const ang = -Math.PI * (0.05 + ((i * 0.618) % 1) * 0.55);
+    const v = 16 + ((i * 7) % 11) * 2.2;
+    const pos = (a: number) => ({
+      x: hit.x + Math.cos(ang) * v * a,
+      y: hit.y + Math.sin(ang) * v * a + 0.45 * a * a,
+    });
+    return { a: pos(Math.max(0, age - 2.5)), b: pos(age), w: 3 + (i % 3) };
+  }).filter((s) => s !== null);
+  // carbon shards and splinters from the nose and the break, tumbling
+  const shards = Array.from({ length: 18 }, (_, i) => i).flatMap((i) => {
+    const fromBreak = i % 3 === 0;
+    const born = fromBreak ? BREAK_AT + (i % 5) : i % 4;
+    const age = ts - born;
+    if (age < 0) return [];
+    const o = fromBreak ? breakAt : hit;
+    const ang = -Math.PI * (0.1 + ((i * 0.41) % 1) * 0.8);
+    const v = 6 + ((i * 5) % 7) * 1.4;
+    const s = (0.08 + ((i * 3) % 5) * 0.035) * ppm;
+    const y = o.y + Math.sin(ang) * v * age + 0.2 * age * age;
+    if (y > 1180) return [];
+    return [
+      {
+        x: o.x + Math.cos(ang) * v * age,
+        y,
+        s,
+        rot: i * 47 + age * (i % 2 ? 9 : -7),
+        light: i % 4 === 1,
+      },
+    ];
+  });
+  const lineArt = (children: React.ReactNode) =>
+    frozen ? <g filter="url(#b33-lineart)">{children}</g> : children;
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
@@ -145,42 +230,116 @@ export const Impact: React.FC<PictureProps> = ({ f }) => {
               strokeWidth={5}
               strokeLinejoin="miter"
             />
-            <g filter="url(#b33-lineart)">{scene}</g>
           </>
         ) : (
-          <>
-            <NightBackdrop cam={CAM} tonePrefix="b33" />
-            {scene}
-            {/* the hit: shards off the nose */}
-            {Array.from({ length: 9 }, (_, i) => {
-              const a = -Math.PI * (0.15 + (i / 9) * 0.8);
-              const r = 40 + t * 40 + (i % 3) * 30;
-              const x = nose.x + Math.cos(a) * r;
-              const y = nose.y + Math.sin(a) * r;
-              return (
-                <path
-                  key={i}
-                  d={`M ${x} ${y} L ${x + 18} ${y + 6} L ${x + 4} ${y + 20} Z`}
-                  fill={i % 2 ? INK : PAPER}
-                  stroke={INK}
-                  strokeWidth={2}
-                />
-              );
-            })}
-          </>
+          <NightBackdrop cam={CAM} tonePrefix="b33" />
         )}
+        {lineArt(
+          <>
+            {/* far stretch of the barrier (behind the car), the rear piece, the cell, then the near stretch the
+                cell goes through */}
+            <BentGuardrail
+              cam={CAM}
+              a={BAR_A}
+              b={BAR_B}
+              from={U_CONTACT - 0.4 / RUN}
+              deflect={deflect}
+              gaps={gaps}
+              tonePrefix="b33"
+            />
+            <MangaCar
+              car={VF20}
+              facing="left"
+              at={at}
+              state={{
+                wheelAngle,
+                ...(split > 0
+                  ? { split: { front, rear, show: "rear" as const } }
+                  : { tilt: -1 }),
+              }}
+            />
+            {split > 0 ? (
+              <MangaCar
+                car={VF20}
+                facing="left"
+                at={at}
+                state={{ wheelAngle, split: { front, rear, show: "front" } }}
+              />
+            ) : null}
+            <BentGuardrail
+              cam={CAM}
+              a={BAR_A}
+              b={BAR_B}
+              to={U_CONTACT - 0.4 / RUN}
+              deflect={deflect}
+              gaps={gaps}
+              tonePrefix="b33"
+            />
+          </>,
+        )}
+        {/* the fuel cell bursts at the break: a fireball in the fire's colours, ink smoke streaks after it */}
+        {ts >= BALL_AT + 10 ? (
+          <g transform={`translate(${breakAt.x} ${breakAt.y - ppm * 0.6})`}>
+            <SmokeStreaks
+              w={ppm * 2.4}
+              top={ppm * 1.4}
+              frame={ts * 4}
+              seed="b33-smoke"
+              palette={fire}
+              rise={ppm * 3.2}
+              count={5}
+              wind={-0.25}
+              opacity={frozen ? 0.6 : 0.85 * ramp(ts, BALL_AT + 10, BALL_AT + 30)}
+            />
+          </g>
+        ) : null}
+        <Fireball
+          x={breakAt.x}
+          y={breakAt.y}
+          r={ppm * 2.5}
+          age={ts - BALL_AT}
+          seed="b33-ball"
+          palette={fire}
+        />
+        {shards.map((s, i) => (
+          <path
+            key={`d${i}`}
+            d={`M ${-s.s} ${-s.s * 0.3} L ${s.s * 0.2} ${-s.s * 0.6} L ${s.s} ${s.s * 0.1} L ${-s.s * 0.1} ${s.s * 0.5} Z`}
+            transform={`translate(${s.x} ${s.y}) rotate(${s.rot})`}
+            fill={s.light ? PAPER : "#151515"}
+            stroke={s.light ? INK : PAPER}
+            strokeWidth={2}
+            strokeLinejoin="miter"
+          />
+        ))}
+        {sparks.map((s, i) => (
+          <g key={`s${i}`}>
+            <path
+              d={`M ${s.a.x} ${s.a.y} L ${s.b.x} ${s.b.y}`}
+              stroke={INK}
+              strokeWidth={s.w + 2}
+              strokeLinecap="round"
+            />
+            <path
+              d={`M ${s.a.x} ${s.a.y} L ${s.b.x} ${s.b.y}`}
+              stroke={frozen ? INK : "#fff1b8"}
+              strokeWidth={s.w}
+              strokeLinecap="round"
+            />
+          </g>
+        ))}
       </g>
       {frozen ? (
         <text
-          x={1290}
-          y={300}
+          x={1330}
+          y={250}
           fontFamily={BRUSH_FONT}
-          fontSize={240}
+          fontSize={220}
           fill={INK}
           stroke={PAPER}
           strokeWidth={18}
           paintOrder="stroke"
-          transform={`rotate(-8 1290 300) scale(1)`}
+          transform="rotate(-8 1330 250)"
         >
           {`${FACTS.impactG}G`}
         </text>

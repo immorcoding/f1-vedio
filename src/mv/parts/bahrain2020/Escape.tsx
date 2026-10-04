@@ -31,6 +31,7 @@ import {
   marshalPose,
   stage36,
 } from "./escape-staging.ts";
+import { PowderBillow } from "./powder";
 import { WRECK_CAM, WreckWorld, heartbeat, zoomCam } from "./Wreck";
 
 // Race suit of 2020 (Haas: black with a grey side band), GRO's helmet; the FIA doctor and the marshal from the cast.
@@ -75,7 +76,6 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   const hb = heartbeat(f);
   const text = ramp(f, timeCue, timeCue + 8);
   // the powder jet: a cone from the nozzle to the cockpit, billowing where it lands, redrawn on threes
-  const flick = Math.floor(f / 3);
   const jx = aim.x - nozzle.x;
   const jy = aim.y - nozzle.y;
   const jl = Math.hypot(jx, jy);
@@ -83,14 +83,6 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   const ny = jx / jl;
   const spread = 0.35 * mppm;
   const jet = `M ${nozzle.x + nx * 4} ${nozzle.y + ny * 4} L ${aim.x + nx * spread} ${aim.y + ny * spread} L ${aim.x - nx * spread} ${aim.y - ny * spread} L ${nozzle.x - nx * 4} ${nozzle.y - ny * 4} Z`;
-  const puffs = Array.from({ length: 9 }, (_, i) => {
-    const u = ((flick + i * 3) % 9) / 9;
-    return {
-      x: aim.x + Math.sin(i * 2.3 + flick * 0.7) * 0.5 * mppm,
-      y: aim.y - u * 0.9 * mppm + Math.cos(i * 1.7) * 0.15 * mppm,
-      r: (0.1 + 0.16 * u) * mppm,
-    };
-  });
   const figure = (
     key: string,
     at: { x: number; z: number },
@@ -153,18 +145,7 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
         strokeLinejoin="round"
         opacity={0.9}
       />
-      {puffs.map((p, i) => (
-        <circle
-          key={i}
-          cx={p.x}
-          cy={p.y}
-          r={p.r}
-          fill={PAPER}
-          stroke={INK}
-          strokeWidth={2.5}
-          opacity={0.92}
-        />
-      ))}
+      <PowderBillow x={aim.x} y={aim.y} ppm={mppm} frame={f} />
       <rect width={1920} height={1080} fill={INK} opacity={0.12 * hb} />
       {text > 0 ? (
         <g
