@@ -2,7 +2,7 @@
 // his front wheels level with HAM's rear wheels, 0.7 m of air between the tyres. Travel runs left to right as in
 // every side-on shot (the inside, VER's side, at the top). The camera rides with the pair at their true speed
 // (staging.ts), so the road's tyre marks and painted edge stream past under heavy speed lines; the cars shiver.
-import { MangaCar, PIRELLI_2021, RB16B, topAnchorAt, W12 } from "../../../cars";
+import { MangaCar, PIRELLI_2021, RB16B, topAnchorAt, W12, wheelAngleAt } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
 import { CAPTION_FONT } from "../../../kit/lettering";
@@ -12,7 +12,7 @@ import { PANEL } from "../../../scenes/abu-dhabi-2021/Closeup";
 import { T5_SECTION } from "../../../scenes/abu-dhabi-2021/t5-map";
 import { mapView, poseAt, TrackSection, YAS_MARINA_2021 } from "../../../tracks";
 import { ramp, type ShotTime } from "./shotClock";
-import { slicePlan } from "./staging.ts";
+import { hamSpeed, slicePlan, verSpeed } from "./staging.ts";
 
 const T = YAS_MARINA_2021;
 
@@ -75,7 +75,7 @@ export const TopSlice: React.FC<{ st: ShotTime; t0: number }> = ({ st, t0 }) => 
                   car={car}
                   view="top"
                   at={topAnchorAt(car, { x: p.x, y: p.y + shiver, pxPerMetre: ppm }, heading)}
-                  state={{ heading, compound: comp }}
+                  state={{ heading, compound: comp, wheelAngle: wheelAngleAt(car, s), speed: car === RB16B ? verSpeed(race) : hamSpeed(race) }}
                 />
                 <g transform={`translate(${tagP.x} ${tagP.y + (tag === "VER" ? -20 : 20)})`}>
                   <rect x={-62} y={-30} width={124} height={60} fill={tag === "VER" ? INK : PAPER} stroke={INK} strokeWidth={5} />

@@ -4,7 +4,7 @@
 // everything on the ground streams past at the cars' true speed (MOT-5), smeared over the distance it covers in a
 // frame. The wheels turn at a readable stylised rate under a rotational blur (the true 37 rev/s would strobe).
 // VER's front wheel is tucked up behind HAM's rear wheel, in his slipstream (0.9 m nose to gearbox).
-import { carPoint, MangaCar, PIRELLI_2021, RB16B, W12, type CarSpec } from "../../../cars";
+import { carCamera, carPoint, MangaCar, PIRELLI_2021, RB16B, W12, type CarSpec } from "../../../cars";
 import { pinhole, type Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
@@ -188,7 +188,7 @@ export const WheelLevel: React.FC<{ st: ShotTime; t0: number }> = ({ st, t0 }) =
               const rr = 0.36 * a.pxPerMetre;
               return (
                 <g key={c.car.name}>
-                  <MangaCar car={c.car} at={at} state={{ wheelAngle: c.w, compound: c.compound }} />
+                  <MangaCar car={c.car} at={at} state={{ ...carCamera(c.car, cam, c.z), wheelAngle: c.w, compound: c.compound }} />
                   <SpinBlur x={f.x} y={f.y + bounce(k)} r={rr * 0.78} seed={seed + k * 5} />
                   <SpinBlur x={r.x} y={r.y + bounce(k)} r={rr * 0.78} seed={seed + k * 5 + 2} />
                 </g>

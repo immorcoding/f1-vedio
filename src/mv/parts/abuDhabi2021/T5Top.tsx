@@ -5,7 +5,7 @@
 // the outer side of each car. VER's dive is inked on ahead of him as a dashed arrow down the inside to the apex.
 // HAM brakes on 88.4 at 4 g; VER brakes 0.15 s later, closes the gap and is a nose ahead at the turn-in on the cut
 // (90.1), his front-right just locking — where the T5 panel (shot 5.3) picks them up.
-import { MangaCar, PIRELLI_2021, RB16B, topAnchorAt, W12 } from "../../../cars";
+import { MangaCar, PIRELLI_2021, RB16B, topAnchorAt, W12, wheelAngleAt } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { CAPTION_FONT } from "../../../kit/lettering";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
@@ -16,7 +16,7 @@ import { T5_SECTION } from "../../../scenes/abu-dhabi-2021/t5-map";
 import { mapView, poseAt, samplePath, TrackSection, YAS_MARINA_2021 } from "../../../tracks";
 import { at } from "../../timing.ts";
 import { hit, ramp, secondsInShot, type ShotTime } from "./shotClock";
-import { braking, hamSpeed, T5_SCALE, t5Plan } from "./staging.ts";
+import { braking, hamSpeed, T5_SCALE, t5Plan, verSpeed } from "./staging.ts";
 
 const T = YAS_MARINA_2021;
 const S = T.corners;
@@ -123,7 +123,13 @@ export const T5Top: React.FC<{ st: ShotTime; t0: number }> = ({ st, t0 }) => {
                   car={car}
                   view="top"
                   at={topAnchorAt(car, { x: p.x, y: p.y, pxPerMetre: k }, heading)}
-                  state={{ heading, steer: who === "VER" ? -8 * lock : 0, compound: comp }}
+                  state={{
+                    heading,
+                    steer: who === "VER" ? -8 * lock : 0,
+                    compound: comp,
+                    wheelAngle: wheelAngleAt(car, s),
+                    speed: who === "VER" ? verSpeed(race) : hamSpeed(race),
+                  }}
                 />
               </g>
             );

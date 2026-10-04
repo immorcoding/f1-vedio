@@ -70,21 +70,24 @@ export const EDIT: PartEdit = {
       from: at(92),
       to: at(96),
       view: "closeup",
-      content: "出弯，HAM 在后直道借尾流反扑，VER 守住内线",
+      content:
+        "出弯，HAM 在后直道借尾流反扑，VER 守住内线（staging.ts towPlan）：92–93 小节宽侧面机位，两车整台入画，HAM 贴在尾流里，93.3 向外线摆出；94.1 切长焦机位（后退 25 m），HAM 在近处外线、大约 8%、位置更低，94.3 追到落后半个车身（座舱错开半车），并排时轮胎间隔 1 m，之后落回",
     },
     {
       id: "5.5",
       from: at(96),
       to: at(100),
       view: "top",
-      content: "俯视全图：从后直道一路到终点线，VER 领先",
+      content:
+        "固定全图（同 1.1、3.1 标题图的画法，不旋转）：VER、HAM 两个发光点沿赛道跑到终点，VER 跑过的路涂黑，光晕每拍一闪；第 99 小节整页直推向终点线（不转），100.1 VER 的点正好到线",
     },
     {
       id: "5.6",
       from: at(100),
       to: at(102),
       view: "closeup",
-      content: "VER 冲线：第 100 小节第一拍前轮压上终点线，方格旗挥下；HAM 2.2 秒后过线",
+      content:
+        "VER 冲线：第 100 小节是倒飞的摄像机看回直道（慢动作），100.1 VER 车头压上终点线、前景方格旗正好挥到底、白闪，远处小小的 HAM（2.2 秒 ≈ 150 m，真实比例）；101.1 切回侧面特写，赛速，小格里旗子挥动",
       cues: [hitCue("abuDhabi2021.finish")],
     },
     {
@@ -92,11 +95,12 @@ export const EDIT: PartEdit = {
       from: at(102),
       to: at(104),
       view: "title",
-      content: "积分翻牌定格：第 102 小节第一拍积分框（#17）VER 395.5 · HAM 387.5 砸入，第二拍 VER 的数字下金色描边",
+      content:
+        "积分定格（新构图，#23）：上下两格头盔（VER 在上、大格，HAM 在下、渐渐压上网点），第 102 小节第一拍积分框 395.5 VS 387.5 砸在斜格线上，第二拍 VER 的数字后落下网点块（领先者用网点，金色留给 5.8）",
       text: ["395.5 VS 387.5"],
       cues: [
         hitCue("abuDhabi2021.points"),
-        { id: "abuDhabi2021.pointsGold", at: at(102, 2) },
+        { id: "abuDhabi2021.pointsLead", at: at(102, 2) },
       ],
     },
     {
