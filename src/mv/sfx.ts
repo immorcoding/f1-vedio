@@ -15,6 +15,7 @@ import { proAt, realTime, senAt } from "./parts/suzuka1989/drive13.ts";
 import { launch as launch90 } from "./parts/suzuka1990/staging.ts";
 import { passLead, passRaceTime } from "./parts/brazil2008/staging.ts";
 import { CLOCK_32, PLAN_32 } from "./parts/bahrain2020/staging.ts";
+import { hamSpeed, verSpeed } from "./parts/abuDhabi2021/staging.ts";
 
 /** Engine families (scripts/lib/engine.mjs PRESETS; facts: docs/production/facts.md "引擎声"). */
 export type EngineEra = "v10-1989" | "v12-1990" | "v8-2008" | "v6h-2021";
@@ -86,13 +87,10 @@ const planSpeed =
     return (Math.hypot(b.x - a.x, b.y - a.y) * 60) / frames;
   };
 const CONTACT_32 = PLAN_32.contact / 60; // race seconds into the shot
-// ── 5.1 / 5.4: screen x of each car, as Charge.tsx and Tow.tsx place them (m along the track; the camera's centre
+// ── 5.4: screen x of each car, as Tow.tsx places them (m along the track; the camera's centre
 // sits near x = −2.5, so a car 12 m behind is at the left edge) ───────────────────────────────────────────────
 const panX = (x: number) => clamp(0.2 + 0.12 * (x + 2.5), -0.8, 0.8);
 const OUT_51 = span(at(82), at(84));
-const DUR_51 = span(at(82), at(86));
-const verX51 = (s: number) =>
-  -8.6 + 1.2 * ramp(s, 0, OUT_51) + 3.4 * ramp(s, OUT_51 + 0.4, DUR_51);
 const PULL_54 = span(at(92), at(93, 3));
 const ALONG_54 = span(at(92), at(94, 3));
 const DUR_54 = span(at(92), at(96));
@@ -268,23 +266,22 @@ export const SFX = [
     id: "abuDhabi2021.charge",
     shot: "5.1",
     from: at(82),
-    to: at(86),
+    to: at(90),
     end: "fade",
     underDb: 14,
-    note: "VER in HAM's tow up the straight to T5 (Charge.tsx), pulling out on 84.1: Honda V6 left, Mercedes V6 right",
+    note: "the run to T5 across shots 5.1–5.2 (staging.ts race clock): flat out from T4, VER in HAM's tow, out on 84.1; HAM brakes on 88.4, VER 0.15 s later, down to the turn-in on 90.1",
     cars: [
       {
         who: "VER",
         era: "v6h-2021",
-        speed: (t) =>
-          72 + 10 * (1 - Math.exp(-t / 2.5)) + 1.5 * ramp(t, OUT_51, DUR_51),
-        pan: (s) => panX(verX51(s)),
+        speed: verSpeed,
+        pan: (s) => (s < OUT_51 ? 0.15 : -0.25),
       },
       {
         who: "HAM",
         era: "v6h-2021",
-        speed: (t) => 72 + 10 * (1 - Math.exp(-t / 2.5)),
-        pan: () => panX(-2.5),
+        speed: hamSpeed,
+        pan: () => 0.25,
       },
     ],
   },

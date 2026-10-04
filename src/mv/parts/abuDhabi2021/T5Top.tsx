@@ -1,85 +1,63 @@
-// Shot 5.2 (bars 86–89): T5 from above (MOT-2). The camera opens on the whole hairpin, then swoops down onto the two
-// cars as they arrive, north to the right. HAM keeps the outside line; VER, on the inside, brakes later and draws
-// level, his line inked on as a dashed arrow. At the cut (90.1, the lock-up) VER is a nose ahead at the turn-in —
-// where the T5 panel (shot 5.3) picks them up.
+// Shot 5.2 (bars 88–89): the T5 braking zone from above (MOT-2), tight on the two cars. The camera tracks them at
+// their true speed (staging.ts) and keeps pushing in, from ~1/5 of the frame width to ~1/4 by the braking point and
+// tighter again on the 89.4 snare fill; travel runs left to right as in every side-on shot, so the inside of the
+// left-hand hairpin (VER's line) is the top of the frame and the camera side (HAM's) the bottom. VER/HAM tags ride on
+// the outer side of each car. VER's dive is inked on ahead of him as a dashed arrow down the inside to the apex.
+// HAM brakes on 88.4 at 4 g; VER brakes 0.15 s later, closes the gap and is a nose ahead at the turn-in on the cut
+// (90.1), his front-right just locking — where the T5 panel (shot 5.3) picks them up.
 import { MangaCar, PIRELLI_2021, RB16B, topAnchorAt, W12 } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { CAPTION_FONT } from "../../../kit/lettering";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
-import { speedLines } from "../../../kit/lines";
+import { focusLines, speedLines } from "../../../kit/lines";
 import { ToneDefs, tone } from "../../../kit/tone";
 import { PANEL } from "../../../scenes/abu-dhabi-2021/Closeup";
 import { T5_SECTION } from "../../../scenes/abu-dhabi-2021/t5-map";
 import { mapView, poseAt, samplePath, TrackSection, YAS_MARINA_2021 } from "../../../tracks";
-import { ramp, type ShotTime } from "./shotClock";
+import { at } from "../../timing.ts";
+import { hit, ramp, secondsInShot, type ShotTime } from "./shotClock";
+import { braking, hamSpeed, T5_SCALE, t5Plan } from "./staging.ts";
 
 const T = YAS_MARINA_2021;
 const S = T.corners;
-const V = 85; // m/s on the straight
+// Map heading of the straight into T5, which the camera holds level (screen right).
+const H0 = poseAt(T, S.t5Apex - 220).heading;
 
-// HAM along the lap: flat out, then braking at 30 m/s² to 17 m/s at the turn-in on the cut.
-const hamS = (t: number, dur: number) => {
-  const vEnd = 17;
-  const a = 30;
-  const tau = (V - vEnd) / a;
-  const tb = dur - tau;
-  const sEnd = S.t5Apex - 31;
-  const sb = sEnd - ((V + vEnd) / 2) * tau;
-  if (t <= tb) return sb - V * (tb - t);
-  const u = t - tb;
-  return sb + V * u - 0.5 * a * u * u;
-};
-
-// VER relative to HAM: just behind on the inside, losing a little on the straight, then out-braking him.
-const verGap = (t: number, dur: number) =>
-  -3 - 1 * ramp(t, 0, dur * 0.6) + 5.6 * ramp(t, dur * 0.66, dur);
-const hamLat = (t: number, dur: number) =>
-  3.5 + 1.2 * ramp(t, dur * 0.5, dur * 0.75) - 1.6 * ramp(t, dur * 0.8, dur);
-const verLat = (t: number, dur: number) =>
-  -3.6 - 0.9 * ramp(t, dur * 0.75, dur);
-
-export const T5Top: React.FC<{ st: ShotTime }> = ({ st }) => {
+export const T5Top: React.FC<{ st: ShotTime; t0: number }> = ({ st, t0 }) => {
   const { t, dur } = st;
-  const sH = hamS(t, dur);
-  const sV = sH + verGap(t, dur);
-  // wide on the hairpin at first, then down onto the cars
-  const e = Math.pow(Math.min(1, t / dur), 1.5);
-  const sMid = (sH + sV) / 2;
-  const ppmNow = 2.5 + 15 * e;
-  // look ahead toward the hairpin, but never so far that the cars leave the left third of the frame
-  const ahead = Math.min(0.5 * (S.t5Apex - sMid), 620 / ppmNow) * (1 - e) + 12 * e;
-  const centre = poseAt(T, sMid + ahead);
-  const h0 = poseAt(T, S.t5Approach + 200).heading;
-  let turn = poseAt(T, sH).heading - h0;
-  while (turn > 180) turn -= 360;
-  while (turn < -180) turn += 360;
+  const race = t0 + t;
+  const c = t5Plan(race);
+  const fill = secondsInShot(st, at(89, 4)); // the snare fill into the lock-up
+  const punch = ramp(t, fill, dur);
+  const ppm = 48 + 14 * ramp(t, 0, fill) + 18 * punch * punch;
+  const sMid = (c.ham.s + c.ver.s) / 2;
+  const centre = poseAt(T, sMid + 3, (c.ham.lat + c.ver.lat) / 2);
   const view = mapView({
     centre,
-    rotation: -h0 - 0.3 * turn,
-    pxPerMetre: ppmNow,
-    screen: { x: 900, y: 560 },
+    rotation: -H0,
+    pxPerMetre: ppm,
+    screen: { x: 940, y: 520 },
   });
-  // cars drawn larger than life on the wide map, close to life size at the end
-  const carScale = 3.2 - 1.7 * e;
   const cars = [
-    { car: RB16B, s: sV, lat: verLat(t, dur), c: PIRELLI_2021.soft },
-    { car: W12, s: sH, lat: hamLat(t, dur), c: PIRELLI_2021.hard },
+    { car: RB16B, ...c.ver, tag: "VER", comp: PIRELLI_2021.soft, who: "VER" as const },
+    { car: W12, ...c.ham, tag: "HAM", comp: PIRELLI_2021.hard, who: "HAM" as const },
   ];
-  // VER's line: from where he starts to past the apex, on the inside, inked on over the first bars; the cars drive
-  // over it.
-  const lineDraw = ramp(t, 0.4, dur * 0.45);
-  const arrowPts = samplePath(T, hamS(0, dur) + 40, S.t5Apex + 70, (s) =>
-    s < S.t5Apex ? -4.2 : -4.2 + (s - S.t5Apex) * 0.08,
-  );
+  // VER's dive: from his nose, down the inside to the apex kerb and round it
+  const vNose = c.ver.s + 5.3;
+  const apexLat = -5.2;
+  const arrowPts = samplePath(T, vNose, S.t5Apex + 30, (s) => {
+    const u = Math.min(1, Math.max(0, (s - vNose) / Math.max(10, S.t5Apex - 20 - vNose)));
+    const k = u * u * (3 - 2 * u);
+    return c.ver.lat + (apexLat - c.ver.lat) * k;
+  }, 1.5);
+  const arrowIn = ramp(t, 0.15, 0.6);
   const arrowEnd = view.project(arrowPts[arrowPts.length - 1]);
   const arrowPrev = view.project(arrowPts[arrowPts.length - 4]);
   const ah = Math.atan2(arrowEnd.y - arrowPrev.y, arrowEnd.x - arrowPrev.x);
-  const hamLine = view.path(samplePath(T, hamS(0, dur) + 40, S.t5Apex + 40, 4));
-  const label = view.project(poseAt(T, S.t5Apex, -30));
-  const labelIn = ramp(t, 0.3, 0.9);
-  const lock = ramp(t, dur - 0.35, dur);
-  const verFront = view.project(poseAt(T, sV + 1.8 * carScale, verLat(t, dur) + 0.9));
-  const fwd = (view.heading(poseAt(T, sV).heading) * Math.PI) / 180;
+  const lock = ramp(race, t0 + dur - 0.3, t0 + dur);
+  const seed = Math.floor(t * 30);
+  const flash = hit(t, fill, 0.15);
+  const speedK = hamSpeed(race) / 84;
   return (
     <svg width={1920} height={1080}>
       <defs>
@@ -88,91 +66,103 @@ export const T5Top: React.FC<{ st: ShotTime }> = ({ st }) => {
         <clipPath id="t5top-panel">
           <rect x={PANEL.x} y={PANEL.y} width={PANEL.w} height={PANEL.h} />
         </clipPath>
-        {/* VER's arrow is inked on through a growing mask */}
         <mask id="t5top-draw" maskUnits="userSpaceOnUse" x={0} y={0} width={1920} height={1080}>
           <path
             d={view.path(arrowPts)}
             fill="none"
             stroke="#fff"
-            strokeWidth={60}
+            strokeWidth={80}
             pathLength={1}
-            strokeDasharray={`${lineDraw} 1`}
+            strokeDasharray={`${arrowIn} 1`}
           />
         </mask>
       </defs>
       <rect width={1920} height={1080} fill={PAPER} />
       <g filter={inkFilter()}>
-        <g clipPath="url(#t5top-panel)">
+        <g clipPath="url(#t5top-panel)" transform={`translate(${Math.sin(t * 47) * 6 * flash} ${Math.cos(t * 43) * 6 * flash})`}>
           <rect x={0} y={0} width={1920} height={1080} fill={tone("mid")} />
-          {/* the hairpin: run-off, wall, kerbs; no stand roofs, so the corner itself reads */}
-          <TrackSection track={T} view={view} from={600} to={1900} {...T5_SECTION} stands={[]} />
-          {/* HAM's line: dots round the outside */}
-          <path
-            d={hamLine}
-            fill="none"
-            stroke={INK}
-            strokeWidth={7}
-            strokeDasharray="2 18"
-            strokeLinecap="round"
-            opacity={lineDraw}
-          />
+          <TrackSection track={T} view={view} from={sMid - 80} to={sMid + 260} {...T5_SECTION} stands={[]} />
           <g mask="url(#t5top-draw)">
-            <path d={view.path(arrowPts)} fill="none" stroke={PAPER} strokeWidth={26} strokeLinecap="round" strokeDasharray="38 18" />
-            <path d={view.path(arrowPts)} fill="none" stroke={INK} strokeWidth={14} strokeLinecap="round" strokeDasharray="38 18" />
+            <path d={view.path(arrowPts)} fill="none" stroke={PAPER} strokeWidth={30} strokeLinecap="round" strokeDasharray="44 20" />
+            <path d={view.path(arrowPts)} fill="none" stroke={INK} strokeWidth={16} strokeLinecap="round" strokeDasharray="44 20" />
           </g>
-          {lineDraw > 0.97 ? (
+          {arrowIn > 0.97 ? (
             <path
-              d={`M ${arrowEnd.x + Math.cos(ah) * 40} ${arrowEnd.y + Math.sin(ah) * 40} L ${arrowEnd.x + Math.cos(ah + 2.4) * 36} ${arrowEnd.y + Math.sin(ah + 2.4) * 36} L ${arrowEnd.x + Math.cos(ah - 2.4) * 36} ${arrowEnd.y + Math.sin(ah - 2.4) * 36} Z`}
+              d={`M ${arrowEnd.x + Math.cos(ah) * 46} ${arrowEnd.y + Math.sin(ah) * 46} L ${arrowEnd.x + Math.cos(ah + 2.4) * 42} ${arrowEnd.y + Math.sin(ah + 2.4) * 42} L ${arrowEnd.x + Math.cos(ah - 2.4) * 42} ${arrowEnd.y + Math.sin(ah - 2.4) * 42} Z`}
               fill={INK}
               stroke={PAPER}
-              strokeWidth={5}
+              strokeWidth={6}
             />
           ) : null}
-          {cars.map(({ car, s, lat, c }) => {
+          {cars.map(({ car, s, lat, comp, who }) => {
             const pose = poseAt(T, s, lat);
             const heading = view.heading(pose.heading);
-            const ppm = view.pxPerMetre * carScale;
+            const k = ppm * T5_SCALE;
             const p = view.project(pose);
+            const b = braking(race, who);
             return (
               <g key={car.name}>
-                {/* speed streaks trailing the car */}
                 <g transform={`translate(${p.x} ${p.y}) rotate(${heading})`}>
                   <path
-                    d={speedLines({ x: -9 * ppm, y: -1.3 * ppm, w: 6 * ppm, h: 2.6 * ppm, n: 9, seed: `${car.name}-${Math.floor(t * 15)}`, angle: 0, thickness: 6, length: [0.4, 1] })}
+                    d={speedLines({
+                      x: -12 * k,
+                      y: -1.3 * k,
+                      w: 9 * k,
+                      h: 2.6 * k,
+                      n: 10,
+                      seed: `${car.name}-${seed}`,
+                      angle: 0,
+                      thickness: 7,
+                      length: [0.4, 1],
+                    })}
                     fill={INK}
-                    opacity={0.8 * (1 - lock)}
+                    opacity={0.8 * (1 - 0.5 * b) * speedK}
                   />
                 </g>
                 <MangaCar
                   car={car}
                   view="top"
-                  at={topAnchorAt(car, { x: p.x, y: p.y, pxPerMetre: ppm }, heading)}
-                  state={{ heading, steer: -14 * ramp(t, dur * 0.85, dur), compound: c }}
+                  at={topAnchorAt(car, { x: p.x, y: p.y, pxPerMetre: k }, heading)}
+                  state={{ heading, steer: who === "VER" ? -8 * lock : 0, compound: comp }}
                 />
               </g>
             );
           })}
-          {/* VER's lock-up starting: smoke from the inside front tyre */}
+          {/* VER's front-right starting to lock: a few fine puffs */}
           {lock > 0
-            ? Array.from({ length: 7 }, (_, i) => (
-                <circle
-                  key={i}
-                  cx={verFront.x - i * 12 * Math.cos(fwd)}
-                  cy={verFront.y - i * 12 * Math.sin(fwd) - i * 3}
-                  r={(8 + i * 4) * lock}
-                  fill={PAPER}
-                  stroke={INK}
-                  strokeWidth={3}
-                />
-              ))
+            ? (() => {
+                const pose = poseAt(T, c.ver.s + 4.4, c.ver.lat + 0.8);
+                const q = view.project(pose);
+                const back = (view.heading(pose.heading) * Math.PI) / 180;
+                return Array.from({ length: 8 }, (_, i) => (
+                  <circle
+                    key={i}
+                    cx={q.x - Math.cos(back) * i * 14 * lock}
+                    cy={q.y - Math.sin(back) * i * 14 * lock + (i % 2) * 6}
+                    r={(5 + i * 3) * lock}
+                    fill={PAPER}
+                    stroke={INK}
+                    strokeWidth={2.5}
+                  />
+                ));
+              })()
             : null}
-          {/* turn number */}
-          <g opacity={labelIn} transform={`translate(${label.x} ${label.y}) scale(${0.6 + 0.4 * labelIn})`}>
-            <circle r={62} fill={PAPER} stroke={INK} strokeWidth={8} />
-            <text y={21} textAnchor="middle" fontFamily={CAPTION_FONT} fontWeight={700} fontSize={58} fill={INK}>
-              T5
-            </text>
-          </g>
+          {/* tags on the outer side of each car: VER above (inside), HAM below */}
+          {cars.map(({ s, lat, tag }) => {
+            const p = view.project(poseAt(T, s + 2.8, lat + (tag === "VER" ? -2.4 : 2.4) * T5_SCALE));
+            const y = p.y + (tag === "VER" ? -26 : 26);
+            return (
+              <g key={tag} transform={`translate(${p.x} ${y})`}>
+                <rect x={-58} y={-28} width={116} height={56} fill={tag === "VER" ? INK : PAPER} stroke={INK} strokeWidth={5} />
+                <text y={14} textAnchor="middle" fontFamily={CAPTION_FONT} fontWeight={700} fontSize={40} fill={tag === "VER" ? PAPER : INK}>
+                  {tag}
+                </text>
+              </g>
+            );
+          })}
+          {punch > 0 ? (
+            <path d={focusLines(960, 540, 700 - 250 * punch, 120, seed)} fill={INK} opacity={0.6 * punch} />
+          ) : null}
         </g>
         <rect x={PANEL.x} y={PANEL.y} width={PANEL.w} height={PANEL.h} fill="none" stroke={INK} strokeWidth={10} />
       </g>

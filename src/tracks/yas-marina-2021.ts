@@ -2,8 +2,8 @@
 // Centre line from OpenStreetMap (scripts/trace-track-yas.mjs), registered against the CC0 2021 layout map
 // (docs/assets/reference-register.md): same shape at the map's 1 km scale bar, finish line on its chequered flag.
 // Generated lap length 5281 m equals the official 5.281 km. Kerbs are not traced: use autoKerbs.
-import { parseLine, type Track } from "./track";
-import { YAS_2021_LINE } from "./yas-marina-2021.line";
+import { parseLine, type Track } from "./track.ts";
+import { YAS_2021_LINE } from "./yas-marina-2021.line.ts";
 
 export const YAS_MARINA_2021: Track = {
   name: "Yas Marina Circuit (2021)",

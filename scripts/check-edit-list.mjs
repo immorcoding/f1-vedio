@@ -6,7 +6,7 @@
 //   produced by the one rounding rule in src/mv/timing.ts
 // - cues sit inside their shot (the cut itself allowed); ids are unique
 // - every music hit owned by a cut part has a cue with its id at its position (stub parts skip this)
-// - every SFX cue (src/mv/sfx.ts) sits on beats inside the shot it names, and that shot has cars on screen
+// - every SFX cue (src/mv/sfx.ts) sits on beats, starts in the shot it names, and every shot under it has cars on screen
 import * as T from "../src/mv/timing.ts";
 import { PARTS } from "../src/mv/edit-list.ts";
 import { SFX } from "../src/mv/sfx.ts";
@@ -124,13 +124,18 @@ for (const c of SFX) {
     problem(where, `names no shot ${c.shot}`);
     continue;
   }
-  if (B(c.from) < B(shot.from) || B(c.to) > B(shot.to))
+  // a cue starts in the shot it names and may run on across the cuts into the following shots, as long as every
+  // shot under it shows cars
+  const all = PARTS.flatMap((p) => p.edit.shots);
+  if (B(c.from) < B(shot.from) || B(c.from) >= B(shot.to))
     problem(
       where,
-      `${L(c.from)}–${L(c.to)} runs outside shot ${shot.id} (${L(shot.from)}–${L(shot.to)})`,
+      `starts at ${L(c.from)}, outside shot ${shot.id} (${L(shot.from)}–${L(shot.to)})`,
     );
-  if (shot.view === "title" || shot.view === "black")
-    problem(where, `shot ${shot.id} is a ${shot.view} view, no cars on screen`);
+  const under = all.filter((s) => B(s.from) < B(c.to) && B(s.to) > B(c.from));
+  for (const s of under)
+    if (s.view === "title" || s.view === "black")
+      problem(where, `runs over shot ${s.id}, a ${s.view} view, no cars on screen`);
 }
 
 // report
