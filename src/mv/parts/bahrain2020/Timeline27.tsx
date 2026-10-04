@@ -1,9 +1,9 @@
-// Shot 3.5 (bars 66–69): the 28 seconds in four panels, one more on each bar's first beat — four different moments,
+// Shot 3.5 (bars 66–69): the 27 seconds in four panels, one more on each bar's first beat — four different moments,
 // not four looks at the helmet (facts.md, FIA accident investigation summary):
 //   0 秒   the halo has prised the barrier open: the cell wedged under the top rail, the fire catching;
 //   11 秒  the FIA medical car pulls up, the doctor out and running for the fire;
 //   (no time: not verified) a marshal turns a dry-powder extinguisher on the cockpit;
-//   28 秒  a gloved hand comes out of the fire and grabs the top rail.
+//   27 秒  through the flames, GRO rises out of the cockpit and climbs onto the barrier.
 // People from the shared people module (src/kit/figure, ART-16), no faces (ART-5). Each panel has a small time label in
 // a corner the subject is not in (ART-14).
 import { GRO_2020 } from "../../../cars";
@@ -16,23 +16,24 @@ import {
   driverOutfit,
   gaitDistance,
   nozzleOf,
-  reachTo,
+  climbRail,
   spray,
   v,
   walk,
   type Outfit,
 } from "../../../kit/figure";
 import {
-  Fire,
   FIRE_PALETTES,
+  strokeRibbon,
   type FirePaletteName,
 } from "../../../kit/fire";
 import { CAPTION_FONT } from "../../../kit/lettering";
+import { random } from "remotion";
 import { ToneDefs } from "../../../kit/tone";
 import { bump, type Deflection } from "./bent-rail";
 import { cueFrame, ramp, type PictureProps } from "./common";
 import { MedicalCar } from "./MedicalCar";
-import { PowderBillow } from "./powder";
+import { PowderBillow, PowderJet } from "./powder";
 import { FACTS } from "./shots.ts";
 import {
   RUN,
@@ -43,6 +44,7 @@ import {
   heartbeat,
   zoomCam,
 } from "./Wreck";
+import { CLIMB_BEHIND_Z, CLIMB_X } from "./escape-staging.ts";
 import { BARRIER_Z, HALO_WORLD } from "./wreck-geometry.ts";
 
 type Rect = { x: number; y: number; w: number; h: number };
@@ -211,22 +213,34 @@ const PanelPry: React.FC<PanelProps> = ({ r, f, age, palette }) => {
   );
 };
 
-// 11 秒: the medical car brakes to a stop in front of the burning wreck; the doctor gets out and runs for the fire.
+// 11 秒: the medical car comes in fast and brakes hard to a stop in front of the burning wreck — speed lines, the nose
+// dipping under braking and bobbing back up as it stops; the doctor gets out and runs for the fire.
 const MED_Z = 8.4;
 const MED_STOP = 1.0; // world x of its front bumper when it stops
-const MED_RUNIN = 46; // frames from the panel landing to the stop
+const MED_RUNIN = 64; // frames from the panel landing to the stop
+// the medical car's tyre contact patches, metres from its front bumper (MedicalCar.tsx: axles at 0.95 and 3.79 m
+// from the rear of a 4.75 m car)
+const FRONT_TYRE_X = 4.75 - 3.79;
+const REAR_TYRE_X = 4.75 - 0.95;
+const MED_BRAKE_D = 11; // metres it travels under braking in the panel (from ~74 km/h)
 const PanelMedical: React.FC<PanelProps> = ({ r, f, age, palette }) => {
   const cam = fitCam({ x: 1.9, y: 1.0, z: MED_Z }, 7.2, r, 0.5, 0.5);
   const u = Math.min(1, age / MED_RUNIN);
-  // braking from ~110 km/h to rest: constant deceleration, so distance left goes as (1 - u)²
-  const dist = 14 * (1 - u) * (1 - u);
+  // constant deceleration to rest: distance left goes as (1 - u)², speed as (1 - u)
+  const dist = MED_BRAKE_D * (1 - u) * (1 - u);
+  const speed = 1 - u; // of the entry speed
   const front = MED_STOP + dist;
-  const wheelAngle = -((14 - dist) / (2 * Math.PI * 0.34)) * 360;
+  const wheelAngle = -((MED_BRAKE_D - dist) / (2 * Math.PI * 0.34)) * 360;
   const after = Math.max(0, age - MED_RUNIN);
-  const pitch = u < 1 ? -1.6 : -1.6 * Math.exp(-after / 6) * Math.cos(after / 3);
+  // the nose dives as the brakes bite (over the first few frames), stays down, and rocks back past level at the stop
+  const pitch =
+    u < 1
+      ? -2.6 * Math.min(1, age / 6)
+      : -2.6 * Math.exp(-after / 7) * Math.cos(after / 3.2);
   const medAt = cam.anchor({ x: front + 4.75, z: MED_Z });
+  const mppm = medAt.pxPerMetre;
   // the doctor: out of the near side once it has stopped, running left toward the fire
-  const OUT = MED_RUNIN + 14;
+  const OUT = MED_RUNIN + 12;
   const runT = Math.max(0, age - OUT) / 60;
   const d = gaitDistance(runT, 3.2, { stride: 1.0 });
   const docAt = { x: MED_STOP + 1.6 - d, z: MED_Z - 1.3 };
@@ -242,20 +256,63 @@ const PanelMedical: React.FC<PanelProps> = ({ r, f, age, palette }) => {
         rimSide="left"
       />
     ) : null;
-  // speed lines behind the car while it is still moving
-  const lines =
-    u < 1
-      ? Array.from({ length: 7 }, (_, i) => {
-          const y = medAt.y - (0.25 + i * 0.18) * medAt.pxPerMetre;
-          const x0 = medAt.x + 10;
-          const len = (1 - u) * (220 + ((i * 53) % 120));
+  // speed: streaks across the panel behind and round the car (redrawn on twos), and long trails off its tail and
+  // roof, all thinning out as it slows
+  const tick = Math.floor(age / 2);
+  const streaks =
+    speed > 0.05
+      ? Array.from({ length: 16 }, (_, i) => {
+          const R = (k: string) => random(`b35-ms${k}${i}-${tick}`);
+          const y = medAt.y - (0.05 + R("y") * 1.6) * mppm;
+          const x0 = medAt.x - 4.75 * mppm * R("x") * 0.9;
+          const len = speed * (160 + R("l") * 360);
           return (
             <path
-              key={i}
+              key={`s${i}`}
               d={`M ${x0} ${y} L ${x0 + len} ${y}`}
+              stroke={i % 3 ? INK : PAPER}
+              strokeWidth={i % 3 ? 3 : 5}
+              strokeLinecap="round"
+              opacity={0.75 * Math.min(1, speed * 2)}
+            />
+          );
+        })
+      : null;
+  const trails =
+    speed > 0.05
+      ? [0.35, 0.8, 1.2, 1.38].map((h, i) => {
+          const y = medAt.y - h * mppm;
+          const len = speed * (260 + i * 70);
+          return (
+            <path
+              key={`t${i}`}
+              d={`M ${medAt.x + 6} ${y} L ${medAt.x + 6 + len} ${y}`}
               stroke={PAPER}
-              strokeWidth={3}
-              opacity={0.8}
+              strokeWidth={4}
+              strokeLinecap="round"
+              opacity={0.85 * speed}
+            />
+          );
+        })
+      : null;
+  // the front tyres biting: short ink-stroke tyre smoke trailing behind each wheel while it brakes hard
+  const smoke =
+    u < 1 && age > 4
+      ? [FRONT_TYRE_X, REAR_TYRE_X].map((wx, k) => {
+          const c = cam.project({ x: front + wx, y: 0.05, z: MED_Z });
+          const pts = Array.from({ length: 9 }, (_, j) => ({
+            x: c.x + j * (18 + 30 * speed),
+            y: c.y - j * j * 0.9 - Math.sin(j + age * 0.5) * 3,
+          }));
+          return (
+            <path
+              key={`m${k}`}
+              d={strokeRibbon(pts, (0.18 + 0.12 * speed) * mppm, 0.65)}
+              fill={PAPER}
+              stroke={INK}
+              strokeWidth={2}
+              strokeLinejoin="round"
+              opacity={(k ? 0.45 : 0.8) * Math.min(1, speed * 2.5)}
             />
           );
         })
@@ -271,7 +328,9 @@ const PanelMedical: React.FC<PanelProps> = ({ r, f, age, palette }) => {
         noGlow
         tonePrefix="b35"
       />
-      {lines}
+      {streaks}
+      {trails}
+      {smoke}
       <MedicalCar
         at={medAt}
         wheelAngle={wheelAngle}
@@ -303,7 +362,6 @@ const PanelExtinguisher: React.FC<PanelProps> = ({ r, f, age, palette }) => {
   // the nozzle points at the cockpit: figure frame (facing left: forward is -x in the world)
   const tipF = nozzleOf(pose).tip;
   const aim = v(MARSHAL_AT.x - tipF.x - COCKPIT.x, COCKPIT.y - tipF.y);
-  const reach = Math.hypot(aim.x, aim.y);
   const at = cam.project({ x: MARSHAL_AT.x, y: 0, z: MARSHAL_AT.z });
   const ppm = cam.pxPerMetre(MARSHAL_AT.z);
   const cock = cam.project(COCKPIT);
@@ -319,120 +377,80 @@ const PanelExtinguisher: React.FC<PanelProps> = ({ r, f, age, palette }) => {
         fireDetail={1.5}
         tonePrefix="b35"
       />
-      <PowderBillow x={cock.x} y={cock.y} ppm={ppm} frame={f} />
       <Figure
         at={at}
         pxPerMetre={ppm}
         pose={pose}
         outfit={MARSHAL}
         facing="left"
-        held={{
-          kind: "extinguisher",
-          spray: (reach / 1.05) * ramp(age, 0, 6),
-          aim,
-        }}
+        held={{ kind: "extinguisher", aim }}
         rim={FIRE_PALETTES[palette].glow ? "#ffb347" : PAPER}
         rimSide="left"
       />
+      {/* the jet: streaks racing from the nozzle into the cockpit, billowing off where it lands */}
+      <PowderJet
+        from={{ x: at.x - tipF.x * ppm, y: at.y - tipF.y * ppm }}
+        to={cock}
+        ppm={ppm}
+        frame={f}
+        power={ramp(age, 0, 6)}
+      />
+      <PowderBillow x={cock.x} y={cock.y} ppm={ppm} frame={f} />
     </g>
   );
 };
 
-// 28 秒: out of the fire, a gloved hand grabs the top rail — GRO hauling himself up. His body stays behind the rails
-// and the flames in front of them; only the arm and glove come out over the rail.
+// 27 秒: GRO out of the cockpit — at mid distance, through the flames, his silhouette rises behind the barrier, grabs
+// the top rail with both gloves and hauls himself up (the people module's climbRail, as in 3.6). Behind the rails all
+// panel; the low flames along the rails cover his legs, the big fire behind the cell backlights him, so the helmet,
+// the gloves on the rail and the shape of the climb read. No face (ART-5).
 const GRO_KIT: Outfit = driverOutfit(GRO_2020.helmet, "#1f1f23", {
   band: "#8d9099",
-  gloves: "#4a4a52",
+  gloves: "#55555e",
   boots: "#141416",
 });
-const GRO_AT = { x: HALO_WORLD.x + 0.4, z: BARRIER_Z + 0.45 };
-const PanelHand: React.FC<PanelProps> = ({ r, f, age, palette }) => {
+const RAIL_TOP = 1.29;
+const PanelClimb: React.FC<PanelProps> = ({ r, f, age, palette }) => {
   const cam = fitCam(
-    { x: GRO_AT.x - 0.35, y: 1.35, z: BARRIER_Z },
-    1.35,
+    { x: CLIMB_X + 0.2, y: 1.2, z: CLIMB_BEHIND_Z },
+    4.4,
     r,
-    0.42,
-    0.55,
+    0.5,
+    0.5,
   );
   const fire = FIRE_PALETTES[palette];
-  // he is up on the seat, rising out of the cockpit: his shoulder above the rail behind it, the arm reaching forward
-  // and down to its top edge
-  const base = cam.project({ x: GRO_AT.x, y: 0.12, z: GRO_AT.z });
-  const ppm = cam.pxPerMetre(GRO_AT.z);
-  const railTop = cam.screenY(1.31, BARRIER_Z);
-  const grab = ramp(age, 0, 14);
-  const handY = (base.y - railTop) / ppm + 0.03 + (1 - grab) * 0.2;
-  const handX = 0.48 - 0.08 * (1 - grab);
-  const pose = reachTo(v(handX, handY), {
-    grip: grab > 0.8 ? "hold" : "open",
-  });
-  // a wall of flame just behind the rails, in front of his shoulder, so the arm comes out of the fire
-  const wall = {
-    p: cam.project({ x: GRO_AT.x + 0.12, y: 0, z: BARRIER_Z + 0.2 }),
-    k: cam.pxPerMetre(BARRIER_Z + 0.2),
-  };
+  // he stands up out of the cockpit over the first beats (rising from below the rails' top), takes the rail, and
+  // starts the haul up — on threes, like everyone
+  const step = Math.floor(age / 3) * 3;
+  const rise = 1 - ramp(step, 0, 26, (x) => 1 - (1 - x) * (1 - x));
+  const u = 0.24 * ramp(step, 22, 112, (x) => x);
+  const { pose } = climbRail(u, RAIL_TOP);
+  const groAt = cam.project({ x: CLIMB_X, y: -0.45 * rise, z: CLIMB_BEHIND_Z });
   return (
     <g>
-      {/* the arm and the flames over his shoulder go behind the rails: the glove comes over the top rail and holds
-          its top edge */}
       <WreckWorld
         cam={cam}
         f={f}
-        fireSeed="t28"
+        fireSeed="t27"
         palette={palette}
-        intensity={1}
+        intensity={0.78}
         noGlow
-        fireDetail={3}
+        fireDetail={2}
         driver={false}
         behindRails={
-          <>
-            <Figure
-              at={base}
-              pxPerMetre={ppm}
-              pose={pose}
-              outfit={GRO_KIT}
-              facing="left"
-              parts={["nearArm"]}
-              shadow={false}
-              rim={fire.glow ? "#ffb347" : PAPER}
-            />
-            <Fire
-              x={wall.p.x}
-              y={wall.p.y}
-              w={0.8 * wall.k}
-              h={1.75 * wall.k}
-              frame={f + 5}
-              seed="t28-wall"
-              palette={{ ...fire, glow: null }}
-              detail={2.5}
-              smoke={false}
-            />
-          </>
+          <Figure
+            at={groAt}
+            pxPerMetre={cam.pxPerMetre(CLIMB_BEHIND_Z)}
+            pose={pose}
+            outfit={GRO_KIT}
+            facing="left"
+            shadow={false}
+            rim={fire.glow ? "#ffb347" : PAPER}
+            rimSide="right"
+          />
         }
         tonePrefix="b35"
       />
-      {/* the forearm and glove again over the flames, in a window round the hand above the rail's top edge: the hand
-          out of the fire, holding on (the shoulder stays in the flames) */}
-      <clipPath id="b35-hand">
-        <rect
-          x={base.x - (handX + 0.2) * ppm}
-          y={r.y}
-          width={0.55 * ppm}
-          height={railTop + 4 - r.y}
-        />
-      </clipPath>
-      <g clipPath="url(#b35-hand)">
-        <Figure
-          at={base}
-          pxPerMetre={ppm}
-          pose={pose}
-          outfit={GRO_KIT}
-          facing="left"
-          parts={["nearArm"]}
-          shadow={false}
-          rim={fire.glow ? "#ffb347" : PAPER}
-        />
-      </g>
       <TimeLabel r={r} corner="tl">
         {`${FACTS.escapeSeconds} 秒`}
       </TimeLabel>
@@ -444,10 +462,10 @@ const PANELS: React.FC<PanelProps>[] = [
   PanelPry,
   PanelMedical,
   PanelExtinguisher,
-  PanelHand,
+  PanelClimb,
 ];
 
-export const Timeline28: React.FC<PictureProps> = ({ f, palette }) => {
+export const Timeline27: React.FC<PictureProps> = ({ f, palette }) => {
   const cues = [1, 2, 3, 4].map((n) => cueFrame(`bahrain2020.panel${n}`));
   const hb = heartbeat(f);
   return (
@@ -507,4 +525,3 @@ export const Timeline28: React.FC<PictureProps> = ({ f, palette }) => {
     </svg>
   );
 };
-

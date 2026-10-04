@@ -1,9 +1,11 @@
-// Shot 3.3 (bar 61, on the music's stop): the Haas hits the triple guardrail at 29°. The contact lands on the bar's
+// Shot 3.3 (bar 61, on the music's stop): the Haas hits the triple guardrail, its path at 29° and the car yawed 22°
+// further (FIA), so the barrier meets the car's side at 51°. The contact lands on the bar's
 // first beat; then an explicit slow motion of the 0.1 s that matter (MOT-5): sparks spray off the rails, the bottom and
 // top rails bend round the nose and the middle rail tears as the survival cell goes through it, the car breaks at the
 // engine bulkhead — the power unit and rear left behind on the track side — and the fuel cell bursts into a fireball,
 // carbon shards flying. On the last beats the frame freezes into white paper and black line, an impact star round the
 // nose with 67G, the fireball still burning in colour (facts.md; FIA accident investigation summary).
+import { random } from "remotion";
 import { MangaCar, VF20, carLength } from "../../../cars";
 import { pinhole } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
@@ -14,22 +16,25 @@ import { ToneDefs } from "../../../kit/tone";
 import { BentGuardrail, bump, type Deflection } from "./bent-rail";
 import { BREAK_PIVOT, carPointOnScreen } from "./car-points";
 import { ramp, shotById, type PictureProps } from "./common";
-import { NightBackdrop } from "./night";
+import { NightBackdrop, RAILS } from "./night";
+import { IMPACT_ANGLE, IMPACT_YAW } from "./crash-geometry.ts";
 import { FACTS } from "./shots.ts";
 
-// Trackside camera, low, square to the car: the car is side-on, the barrier runs away from it at 29° (ART-9).
+// Trackside camera, low, square to the car: the car is side-on, the barrier runs away from it at 29° + 22° = 51° to
+// the car's long axis (path angle plus yaw, crash-geometry.ts; ART-9).
 const CAM = pinhole({ f: 1500, horizon: 330, cx: 960, height: 1.3 });
 const CAR_Z = 9;
 const NOSE_X = -1.6; // world x where the barrier crosses the car's line
-const ANGLE = (29 * Math.PI) / 180;
+const ANGLE = ((IMPACT_ANGLE + IMPACT_YAW) * Math.PI) / 180;
+const NEAR = 5.6 / Math.sin(ANGLE); // metres of barrier on the camera side of the contact, ending ~3 m from the lens
 const L = carLength(VF20);
 // The barrier through the contact point. The car faces left (we see its left side, the barrier on its right, behind):
 // the barrier runs toward the camera on the left and away on the right.
 const dir = { x: -Math.cos(ANGLE), z: -Math.sin(ANGLE) };
-const BAR_A = { x: NOSE_X + dir.x * 12, z: CAR_Z + 0.15 + dir.z * 12 }; // near end
+const BAR_A = { x: NOSE_X + dir.x * NEAR, z: CAR_Z + 0.15 + dir.z * NEAR }; // near end
 const BAR_B = { x: NOSE_X - dir.x * 30, z: CAR_Z + 0.15 - dir.z * 30 }; // far end
 const RUN = Math.hypot(BAR_B.x - BAR_A.x, BAR_B.z - BAR_A.z);
-const S_CONTACT = 12; // metres from the near end to the contact
+const S_CONTACT = NEAR; // metres from the near end to the contact
 const U_CONTACT = S_CONTACT / RUN;
 // The car's far front corner meets the rails with the nose at world x 0 (the barrier crosses z = 10 there).
 const NOSE0 = 0;
@@ -79,7 +84,12 @@ const deflection =
     return {
       dx: -d * 0.8,
       dz: d * 0.15,
-      dy: rail === 2 ? 0.32 * k * Math.min(1, travel) : rail === 0 ? -0.12 * k * Math.min(1, travel) : 0,
+      dy:
+        rail === 2
+          ? 0.32 * k * Math.min(1, travel)
+          : rail === 0
+            ? -0.12 * k * Math.min(1, travel)
+            : 0,
     };
   };
 
@@ -98,16 +108,27 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
     dx: (front.dx + rear.dx) / 2,
   });
   const ppm = CAM.pxPerMetre(CAR_Z);
-  // camera: a hard jolt on the contact, then the slow motion's long shudder
-  const shake = frozen
-    ? Math.exp(-(t - SLOW) / 10) * 14
-    : 30 * Math.exp(-t / 6) + 5;
-  const dx = Math.sin(t * 2.7) * shake;
-  const dy = Math.cos(t * 3.1) * shake * 0.6;
+  // camera: a hard, jagged jolt on the contact (a few frames, random direction each frame), then the slow motion's
+  // long shudder, and a last kick as the frame freezes
+  const jolt = 46 * Math.exp(-t / 4);
+  const shake = frozen ? Math.exp(-(t - SLOW) / 10) * 18 : jolt + 5;
+  const jx = random(`b33-jx${t}`) - 0.5;
+  const jy = random(`b33-jy${t}`) - 0.5;
+  const dx = jolt > 2 ? jx * 2 * shake : Math.sin(t * 2.7) * shake;
+  const dy = jolt > 2 ? jy * 1.4 * shake : Math.cos(t * 3.1) * shake * 0.6;
   const push = frozen
     ? 1.06 + 0.05 * ramp(t, SLOW, shot.to - shot.from)
     : 1 + 0.06 * ramp(t, 0, SLOW);
-  const flash = t < 3 ? 1 - t / 3 : frozen ? 1 - ramp(t, SLOW, SLOW + 6) : 0;
+  // white flashes: on the contact, and a short burn-out just before the freeze (the frame whites out, then the line
+  // art comes up out of it)
+  const flash =
+    t < 3
+      ? 1 - t / 3
+      : frozen
+        ? 1 - ramp(t, SLOW, SLOW + 6)
+        : t >= SLOW - 5
+          ? ramp(t, SLOW - 5, SLOW - 1, (x) => x)
+          : 0;
   const ts = Math.min(t, SLOW);
   const deflect = deflection(travel);
   // the middle rail fails first, then the cell is through it
@@ -131,6 +152,34 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
       y: hit.y + Math.sin(ang) * v * a + 0.45 * a * a,
     });
     return { a: pos(Math.max(0, age - 2.5)), b: pos(age), w: 3 + (i % 3) };
+  }).filter((s) => s !== null);
+  // the spark shower along the rail the car scrapes: from points all along the stretch between the nose and where the
+  // car first touched, on each rail's face, thrown back (right, away from the car's travel) and up in long streaks
+  const scrape = Array.from({ length: 120 }, (_, i) => {
+    const born = (i * 13) % 52;
+    const life = 10 + (i % 7);
+    const age = ts - born;
+    if (age < 0 || age > life || frozen) return null;
+    const along = S_CONTACT - (travel + 0.6) * ((i * 0.618) % 1) + 0.3;
+    const u = Math.max(0, Math.min(1, along / RUN));
+    const rail = RAILS[i % 3];
+    const o = CAM.project({
+      x: BAR_A.x + (BAR_B.x - BAR_A.x) * u,
+      y: (rail[0] + rail[1]) / 2,
+      z: BAR_A.z + (BAR_B.z - BAR_A.z) * u,
+    });
+    const ang = -Math.PI * (0.02 + ((i * 0.377) % 1) * 0.32);
+    const v = 22 + ((i * 11) % 13) * 2.4;
+    const pos = (a: number) => ({
+      x: o.x + Math.cos(ang) * v * a,
+      y: o.y + Math.sin(ang) * v * a + 0.6 * a * a,
+    });
+    return {
+      a: pos(Math.max(0, age - 4)),
+      b: pos(age),
+      w: 4.5 + (i % 4) * 1.3,
+      op: Math.min(1, 1.6 * (1 - age / life)),
+    };
   }).filter((s) => s !== null);
   // carbon shards and splinters from the nose and the break, tumbling
   const shards = Array.from({ length: 18 }, (_, i) => i).flatMap((i) => {
@@ -289,7 +338,9 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
               rise={ppm * 3.2}
               count={5}
               wind={-0.25}
-              opacity={frozen ? 0.6 : 0.85 * ramp(ts, BALL_AT + 10, BALL_AT + 30)}
+              opacity={
+                frozen ? 0.6 : 0.85 * ramp(ts, BALL_AT + 10, BALL_AT + 30)
+              }
             />
           </g>
         ) : null}
@@ -311,6 +362,28 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
             strokeWidth={2}
             strokeLinejoin="miter"
           />
+        ))}
+        {scrape.map((s, i) => (
+          <g key={`r${i}`} opacity={s.op}>
+            <path
+              d={`M ${s.a.x} ${s.a.y} L ${s.b.x} ${s.b.y}`}
+              stroke={INK}
+              strokeWidth={s.w + 4}
+              strokeLinecap="round"
+            />
+            <path
+              d={`M ${s.a.x} ${s.a.y} L ${s.b.x} ${s.b.y}`}
+              stroke="#ffa31a"
+              strokeWidth={s.w}
+              strokeLinecap="round"
+            />
+            <path
+              d={`M ${(s.a.x + s.b.x) / 2} ${(s.a.y + s.b.y) / 2} L ${s.b.x} ${s.b.y}`}
+              stroke="#fffbe6"
+              strokeWidth={s.w * 0.55}
+              strokeLinecap="round"
+            />
+          </g>
         ))}
         {sparks.map((s, i) => (
           <g key={`s${i}`}>

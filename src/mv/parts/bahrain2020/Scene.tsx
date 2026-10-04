@@ -1,6 +1,6 @@
 // Picture for 巴林 2020 (bars 57–72), treatment shots 3.1–3.6: title map, the touch on the top-view map, the impact in
 // slow motion (rails tearing, the car breaking in two, the fireball) frozen into an impact star on the music's stop, the
-// wreck and the fire under the heartbeat, the 28 seconds in four panels, GRO walking out of the fire, and the
+// wreck and the fire under the heartbeat, the 27 seconds in four panels, GRO walking out of the fire, and the
 // scorched halo as the last beat before black. Shot timing comes from shots.ts; facts on screen from docs/production/facts.md.
 import { AbsoluteFill } from "remotion";
 import type { FirePaletteName } from "../../../kit/fire";
@@ -12,7 +12,7 @@ import { Escape } from "./Escape";
 import { Impact } from "./Impact";
 import { TitleMap } from "./TitleMap";
 import { HaloFinale } from "./HaloFinale";
-import { Timeline28 } from "./Timeline28";
+import { Timeline27 } from "./Timeline27";
 import { WreckShot } from "./Wreck";
 
 const SHOTS = [
@@ -20,7 +20,7 @@ const SHOTS = [
   { id: "3.2", Picture: CrashMap },
   { id: "3.3", Picture: Impact },
   { id: "3.4", Picture: WreckShot },
-  { id: "3.5", Picture: Timeline28 },
+  { id: "3.5", Picture: Timeline27 },
   { id: "3.6", Picture: Escape },
 ].map((s) => ({ ...s, ...shotById(s.id) }));
 

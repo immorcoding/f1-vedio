@@ -1,7 +1,10 @@
 // Shot 3.2's choreography as pure data (no React), so the scene and the overlap check use the same numbers (ART-18).
 // World: metres, x along the straight in the race direction, y to the right of it (down the screen on the map).
 // Facts (docs/production/facts.md): GRO crossing from the left of the track to the right, his right rear wheel touches
-// KVY's left front wheel at 241 km/h; the Haas yaws right and hits the guardrail behind the run-off at 192 km/h, 29°.
+// KVY's left front wheel at 241 km/h; the Haas yaws right and hits the guardrail behind the run-off at 192 km/h: its
+// path at 29° to the barrier, the car itself yawed a further 22° to its direction of travel (FIA summary: "at an angle
+// of 29 degrees, with an estimated yaw of 22 degrees to the direction of travel"; yawed right, so the nose points
+// 51° into the barrier).
 import { AT01, VF20 } from "../../../cars/cars-2020.ts";
 import { carLength, carPoint } from "../../../cars/spec.ts";
 
@@ -19,7 +22,9 @@ const KVY_FA = carPoint(AT01, "frontAxle").x;
 const GRO_CG = GRO_FA;
 
 export const TRACK_HALF = 7.5; // the straight is ~15 m wide
-export const IMPACT_ANGLE = 29; // degrees, to the barrier (FIA)
+export const IMPACT_ANGLE = 29; // degrees, the path to the barrier (FIA)
+export const IMPACT_YAW = 22; // degrees, the car's heading to its path at the hit (FIA), nose turned right
+const HEADING_END = IMPACT_ANGLE + IMPACT_YAW;
 const V0 = 67; // m/s = 241 km/h at the moment of contact (FIA)
 const V_IMPACT = 53.3; // m/s = 192 km/h at the barrier (FIA)
 const KVY_Y = -0.4; // KVY just left of the middle of the track
@@ -77,7 +82,8 @@ export const planCrash = (frames: number, contact: number): CrashPlan => {
         4 * turnIn * (1 - Math.max(0, Math.min(1, (0.9 - s) / 0.3))) + turnIn,
     });
   }
-  // after the touch: the rear is kicked, the car yaws right about its middle and runs off at the impact angle
+  // after the touch: the rear is kicked, the car yaws right about its middle and runs off at the impact angle, sliding
+  // with its nose 22° right of its path
   let cx = groRearAtContact + GRO_CG * Math.cos((heading0 * Math.PI) / 180);
   let cy = CONTACT_Y + GRO_CG * Math.sin((heading0 * Math.PI) / 180);
   const after = frames - contact;
@@ -86,7 +92,7 @@ export const planCrash = (frames: number, contact: number): CrashPlan => {
     const u = i / after;
     const heading =
       heading0 +
-      (IMPACT_ANGLE - heading0) * Math.min(1, smooth(Math.min(1, u * 1.35)));
+      (HEADING_END - heading0) * Math.min(1, smooth(Math.min(1, u * 1.35)));
     const h = (heading * Math.PI) / 180;
     gro.push({
       x: cx - GRO_CG * Math.cos(h),
@@ -103,7 +109,13 @@ export const planCrash = (frames: number, contact: number): CrashPlan => {
     if (clear && clearedAt < 0) clearedAt = i;
     const w = clearedAt < 0 ? 0 : Math.min(1, (i - clearedAt) / (after * 0.25));
     // (the kick also checks his drift across: straight on until the tail is clear)
-    const path = (heading * Math.pow(u, LAG) * w * Math.PI) / 180;
+    const path =
+      (heading *
+        (IMPACT_ANGLE / HEADING_END) *
+        Math.pow(u, LAG) *
+        w *
+        Math.PI) /
+      180;
     cx += v * Math.cos(path) * dt;
     cy += v * Math.sin(path) * dt;
   }
