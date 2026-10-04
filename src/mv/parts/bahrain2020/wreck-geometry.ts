@@ -43,3 +43,34 @@ export const REAR_SPAN = {
   to: REAR_ANCHOR_X,
   z: REAR_Z,
 };
+
+// The barrier as the impact left it (3.4–3.6), shared by the picture (Wreck.tsx) and the staging (escape-staging.ts:
+// GRO's hands and seat land on the real top edge where he climbs). The barrier runs along x at BARRIER_Z; the cell
+// broke the middle rail over its length and went through it; the top rail is prised up and back over the nose, the
+// bottom one pressed down (FIA summary: the middle rail failed, the upper and lower rails deformed heavily).
+export type RailOffset = { dx: number; dy: number; dz: number };
+// A smooth bump: 1 at s = c, falling off over `width` metres either side.
+export const bump = (s: number, c: number, width: number) =>
+  Math.exp(-(((s - c) / width) ** 2));
+export const RUN = { a: { x: -30, z: BARRIER_Z }, b: { x: 30, z: BARRIER_Z } };
+export const CELL_FROM = CELL_ANCHOR_X - L - CELL_POSE.dx; // nose
+export const CELL_TO = CELL_ANCHOR_X - 2.4 - CELL_POSE.dx; // torn edge
+const S_NOSE = CELL_FROM + 1.0 - RUN.a.x;
+const S_CELL = (CELL_FROM + CELL_TO) / 2 - RUN.a.x;
+// World offset of rail r (0 bottom, 1 middle, 2 top) at s metres along the run.
+export const WRECK_BEND = (s: number, rail: number): RailOffset => {
+  if (rail === 2) {
+    const k = bump(s, S_NOSE, 0.9);
+    return { dx: 0, dy: 0.26 * k, dz: 0.45 * k };
+  }
+  const k = bump(s, S_CELL, 2.2);
+  return rail === 0
+    ? { dx: 0, dy: -0.12 * k, dz: 0.4 * k }
+    : { dx: 0, dy: 0, dz: 0.3 * k };
+};
+// The top rail's upper edge (m, night.tsx RAILS) and its depth at world x, as the wreck left it.
+export const TOP_RAIL_EDGE = 1.29;
+export const topRailAt = (x: number) => {
+  const o = WRECK_BEND(x - RUN.a.x, 2);
+  return { y: TOP_RAIL_EDGE + o.dy, z: BARRIER_Z + o.dz };
+};

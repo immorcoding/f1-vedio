@@ -15,16 +15,19 @@ import {
 import { ToneDefs, TonePattern } from "../../../kit/tone";
 import { beatsAtFrame, FRAMES_PER_BEAT } from "../../timing.ts";
 import { ramp, shotById, type PictureProps } from "./common";
-import { BentGuardrail, bump, type Deflection } from "./bent-rail";
+import { BentGuardrail, type Deflection } from "./bent-rail";
 import { NightBackdrop } from "./night";
 import {
   BARRIER_Z,
   CELL_ANCHOR_X,
+  CELL_FROM,
   CELL_POSE,
+  CELL_TO,
   CELL_Z,
   HALO_WORLD,
-  L,
   REAR_ANCHOR_X,
+  RUN,
+  WRECK_BEND,
   REAR_POSE,
   REAR_Z,
 } from "./wreck-geometry.ts";
@@ -55,31 +58,15 @@ export const zoomCam = (
   });
 };
 
-// The barrier runs along x at BARRIER_Z. The cell broke the middle rail over this stretch (fractions of the run) and
-// went through it; the top rail is prised up and back, the bottom one pressed down (FIA summary: the
-// middle rail failed, the upper and lower rails deformed heavily).
-export const RUN = { a: { x: -30, z: BARRIER_Z }, b: { x: 30, z: BARRIER_Z } };
+// The barrier, its bend and the torn middle rail (wreck-geometry.ts). The middle rail is gone over this stretch
+// (fractions of the run); the top rail is bent up over the nose, ahead of the cockpit.
+export { RUN, WRECK_BEND, CELL_FROM };
 const along = (x: number) => (x - RUN.a.x) / (RUN.b.x - RUN.a.x);
-export const CELL_FROM = CELL_ANCHOR_X - L - CELL_POSE.dx; // nose
-const CELL_TO = CELL_ANCHOR_X - 2.4 - CELL_POSE.dx; // torn edge
 const GAPS: [number, number][][] = [
   [],
   [[along(CELL_FROM + 0.9), along(CELL_TO + 0.5)]],
   [],
 ];
-// The top rail is bent up over the nose, ahead of the cockpit, so GRO's climb in 3.6 still meets it at its own height.
-const S_NOSE = CELL_FROM + 1.0 - RUN.a.x;
-const S_CELL = (CELL_FROM + CELL_TO) / 2 - RUN.a.x;
-export const WRECK_BEND: Deflection = (s, rail) => {
-  if (rail === 2) {
-    const k = bump(s, S_NOSE, 0.9);
-    return { dx: 0, dy: 0.26 * k, dz: 0.45 * k };
-  }
-  const k = bump(s, S_CELL, 2.2);
-  return rail === 0
-    ? { dx: 0, dy: -0.12 * k, dz: 0.4 * k }
-    : { dx: 0, dy: 0, dz: 0.3 * k };
-};
 
 export const WreckWorld: React.FC<{
   cam: Camera;
@@ -100,6 +87,8 @@ export const WreckWorld: React.FC<{
   driver?: false;
   // how the rails are bent (default: as they were left after the impact)
   bend?: Deflection;
+  // the low fire along the rails, scaled (a close-up keeps it down so a hand on the rail still reads)
+  frontFire?: number;
 }> = ({
   cam,
   f,
@@ -112,6 +101,7 @@ export const WreckWorld: React.FC<{
   fireDetail = 1.7,
   driver,
   bend = WRECK_BEND,
+  frontFire = 1,
 }) => {
   const p = noGlow
     ? { ...FIRE_PALETTES[palette], glow: null }
@@ -124,7 +114,7 @@ export const WreckWorld: React.FC<{
     return { x: base.x, y: base.y, w: w * ppm, h: h * ppm };
   };
   const back = fireAt(CELL_FROM + 2.2, CELL_Z + 0.5, 4.2, 7.5);
-  const front = fireAt(CELL_FROM + 2.4, BARRIER_Z - 0.3, 4.6, 1.6);
+  const front = fireAt(CELL_FROM + 2.4, BARRIER_Z - 0.3, 4.6, 1.6 * frontFire);
   const gapFire = fireAt(CELL_TO + 1.0, (CELL_Z + REAR_Z) / 2, 2.0, 3.4);
   const cellAt = cam.anchor({ x: CELL_ANCHOR_X, z: CELL_Z });
   const rearAt = cam.anchor({ x: REAR_ANCHOR_X, z: REAR_Z });
@@ -274,17 +264,10 @@ export const WreckShot: React.FC<PictureProps> = ({ f, palette }) => {
     y: 0.9 * (1 - u) + HALO_WORLD.y * u,
     z: REAR_Z + (HALO_WORLD.z - REAR_Z) * u,
   };
-  // ... and a slow hand-held breathe over it (about one breath every 1.5 s)
-  const breathe = Math.sin(t / 15);
-  const cam = zoomCam(
-    WRECK_CAM,
-    target,
-    (0.82 + 0.45 * u + 0.025 * hb) * (1 + 0.012 * breathe),
-    {
-      x: 960 + 160 * (1 - u) + 6 * Math.sin(t / 23),
-      y: 560 + 5 * breathe,
-    },
-  );
+  const cam = zoomCam(WRECK_CAM, target, 0.82 + 0.45 * u + 0.01 * hb, {
+    x: 960 + 160 * (1 - u),
+    y: 560,
+  });
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
