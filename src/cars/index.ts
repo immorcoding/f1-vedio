@@ -12,6 +12,7 @@ import type { CarSpec } from "./spec";
 export {
   MangaCar,
   CarInPhotoSpace,
+  DriverHelmet,
   type CarState,
   type CarView,
   type PiecePose,
