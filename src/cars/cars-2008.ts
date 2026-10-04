@@ -310,7 +310,7 @@ export const STR3: CarSpec = {
     { cx: 1564, cy: 635, r: 104 },
   ],
   farWheels: [
-    { cx: 467, cy: 583, r: 98 },
+    { cx: 609, cy: 583, r: 98 }, // just behind the near front wheel, like the other cars (was 467: well ahead of it)
     { cx: 1555, cy: 600, r: 98 },
   ],
   rimR: 55,
