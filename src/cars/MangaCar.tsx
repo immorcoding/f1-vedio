@@ -607,7 +607,19 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
     : null;
   return (
     <>
-      {groundShadow ? <ellipse {...groundShadow} fill={INK} /> : null}
+      {groundShadow ? (
+        // soft edge like the top views' shadows (28 % ink), a solid core under the floor
+        <g>
+          <ellipse {...groundShadow} fill={INK} opacity={0.28} />
+          <ellipse
+            cx={groundShadow.cx}
+            cy={groundShadow.cy}
+            rx={groundShadow.rx * 0.8}
+            ry={groundShadow.ry * 0.6}
+            fill={INK}
+          />
+        </g>
+      ) : null}
       {farWheels.map((w, i) => (
         <FarWheel
           key={`f${w.cx}`}
