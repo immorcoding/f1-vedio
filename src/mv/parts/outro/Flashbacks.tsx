@@ -6,15 +6,23 @@
 //   2008     the 98 · 97 score box of 2.7, its gold under-stroke landing on beat 3
 //   2020     the burnt but whole halo of 3.6 (HaloFinale), a glint on beat 3
 //   2021     VER's RB16B: on beat 3 its number turns over from 33 to 1 and the year from 2021 to 2022 (he raced as the
-//            champion's number 1 the next season: facts.md)
+//            champion's number 1 the next season: facts.md); with them the car turns into the 2022 RB18 (#24), so the
+//            car on screen under "2022" is the real 2022 car
+// HAM's two helmets rhyme (#24): his 2008 helmet stands beside the 98 · 97 box and his 2021 helmet in the 2021 panel,
+// at one place on screen, one size and one angle: the title won by one point, and the title lost.
 // Over them, on beats 2 and 4, the margin between the two rivals flashes in the shared points box: 16 → 9 → 1 → 0 → 8.
 import { Easing, random } from "remotion";
 import {
   DriverHelmet,
   MangaCar,
+  MP4_23,
   PRO_1989,
   RB16B,
+  RB18,
   SEN_1989,
+  W12,
+  type CarSpec,
+  type Driver,
 } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { ImpactStar } from "../../../kit/impact";
@@ -165,15 +173,33 @@ const Halo: React.FC<PanelProps> = ({ t, keyT }) => {
   );
 };
 
-// 2021: VER's car at speed, close on the cockpit and the number; the number turns over on beat 3
-const CAR_K = 2.0; // screen px per photo px
+// 2021: VER's car at speed, close on the cockpit and the number; the number turns over on beat 3 and the RB16B turns
+// into the RB18 with it (#24). Both cars at one scale and one anchor (the rear end, on the ground), each with its own
+// painted number where it sits on the real car; the two numbers land within a few px of each other, so the turn-over
+// reads as one number flipping.
+const CAR_K = 2.0; // screen px per RB16B photo px
 const CAR_AT = { x: -250, y: 1034 };
-const NUM = {
-  x: CAR_AT.x + (RB16B.frame.x - RB16B.numberAt.x) * CAR_K,
-  y: CAR_AT.y + (RB16B.numberAt.y - RB16B.frame.ground) * CAR_K,
-  size: (RB16B.numberAt.size ?? 46) * CAR_K, // the painted number, where and as big as on the real car
+const CAR_PPM = (CAR_K * 250) / RB16B.frame.k;
+const numberOf = (car: CarSpec) => {
+  const k = (CAR_PPM / 250) * car.frame.k; // screen px per photo px of this car
+  return {
+    x: CAR_AT.x + (car.frame.x - car.numberAt.x) * k,
+    y: CAR_AT.y + (car.numberAt.y - car.frame.ground) * k,
+    size: (car.numberAt.size ?? 46) * k, // the painted number, where and as big as on the real car
+    color: car.numberAt.color ?? PAPER,
+    k,
+  };
 };
-const NO_NUMBER = { ...RB16B, driver: { ...RB16B.driver, number: "" } };
+const NUM_2021 = numberOf(RB16B);
+const NUM_2022 = numberOf(RB18);
+const blank = (car: CarSpec) => ({
+  ...car,
+  driver: { ...car.driver, number: "" },
+});
+const RB16B_BLANK = blank(RB16B);
+const RB18_BLANK = blank(RB18);
+/** The car change: a short cross-fade, s, centred on the middle of the number's turn-over. */
+const MORPH = 0.2;
 /** 0 → 1 across the turn-over that starts `since` seconds ago; the face shows the old side until halfway. */
 const flip = (since: number, len = 0.16) =>
   Math.max(0, Math.min(1, since / len));
@@ -182,10 +208,15 @@ const flipScale = (u: number) =>
 
 const Number1: React.FC<PanelProps> = ({ t, keyT }) => {
   const u = flip(t - keyT);
-  const label = u < 0.5 ? "33" : "1";
+  const turned = u >= 0.5;
+  const label = turned ? "1" : "33";
+  const NUM = turned ? NUM_2022 : NUM_2021;
   const sy = flipScale(u);
   const burst = decay(t - keyT, 0.5);
-  const ppm = (CAR_K * 250) / RB16B.frame.k;
+  // 0 = RB16B, 1 = RB18; eased so each car holds still at its end of the change
+  const m = Easing.inOut(Easing.quad)(
+    Math.max(0, Math.min(1, (t - keyT - 0.08 + MORPH / 2) / MORPH)),
+  );
   // the background streams past to the left: streaks, each wrapping round at its own speed
   const streaks = Array.from({ length: 34 }, (_, i) => {
     const len = 160 + 360 * random(`o62l${i}`);
@@ -200,12 +231,26 @@ const Number1: React.FC<PanelProps> = ({ t, keyT }) => {
     <g>
       <rect width={PW} height={PH} fill={PAPER} />
       <path d={streaks} fill={INK} opacity={0.55} />
-      <MangaCar
-        car={NO_NUMBER}
-        facing="right"
-        at={{ x: CAR_AT.x, y: CAR_AT.y, pxPerMetre: ppm }}
-        state={{ wheelAngle: t * 40 }}
-      />
+      {m < 1 ? (
+        <g opacity={1 - m}>
+          <MangaCar
+            car={RB16B_BLANK}
+            facing="right"
+            at={{ x: CAR_AT.x, y: CAR_AT.y, pxPerMetre: CAR_PPM }}
+            state={{ wheelAngle: t * 40 }}
+          />
+        </g>
+      ) : null}
+      {m > 0 ? (
+        <g opacity={m}>
+          <MangaCar
+            car={RB18_BLANK}
+            facing="right"
+            at={{ x: CAR_AT.x, y: CAR_AT.y, pxPerMetre: CAR_PPM }}
+            state={{ wheelAngle: t * 40 }}
+          />
+        </g>
+      ) : null}
       <g
         transform={`translate(0 ${NUM.y - NUM.size * 0.35}) scale(1 ${sy}) translate(0 ${-(NUM.y - NUM.size * 0.35)})`}
       >
@@ -216,9 +261,9 @@ const Number1: React.FC<PanelProps> = ({ t, keyT }) => {
           fontFamily="Arial Black, Arial, sans-serif"
           fontWeight={900}
           fontSize={NUM.size}
-          fill={RB16B.numberAt.color ?? PAPER}
+          fill={NUM.color}
           stroke={INK}
-          strokeWidth={1.5 * CAR_K}
+          strokeWidth={1.5 * NUM.k}
           paintOrder="stroke"
           fontStyle="italic"
         >
@@ -262,6 +307,8 @@ const PANELS: {
   year: string;
   tilt: number;
   Art: React.FC<PanelProps>;
+  /** HAM's helmet of that year, for the rhyme between the 2008 and 2021 panels. */
+  ham?: Driver;
 }[] = [
   { cue: "outro.flash1989", year: "1989 · 1990", tilt: -1.2, Art: Clash },
   {
@@ -270,6 +317,7 @@ const PANELS: {
     year: "2008",
     tilt: 1.0,
     Art: Score,
+    ham: MP4_23.driver,
   },
   {
     cue: "outro.flash2020",
@@ -284,8 +332,38 @@ const PANELS: {
     year: "2021",
     tilt: 1.2,
     Art: Number1,
+    ham: W12.driver,
   },
 ];
+
+// HAM's helmet, where it stands on screen in both panels (before the push-in, which moves both alike): in the
+// panel's top-left corner, beside his 98 in 2008 (left of the score box) and in the open sky above the rear wing in
+// 2021, facing right like the cars. Each panel is tilted its own way, so the helmet is placed back through that tilt
+// and turned against it: on screen the two helmets sit exactly on top of each other.
+const HAM_HELMET = { x: PX + 140, y: PY + 100, r: 70 };
+const HamHelmet: React.FC<{ driver: Driver; tilt: number }> = ({
+  driver,
+  tilt,
+}) => {
+  const cx = PX + PW / 2;
+  const cy = PY + PH / 2;
+  const a = (-tilt * Math.PI) / 180;
+  const dx = HAM_HELMET.x - cx;
+  const dy = HAM_HELMET.y - cy;
+  const x = cx + dx * Math.cos(a) - dy * Math.sin(a);
+  const y = cy + dx * Math.sin(a) + dy * Math.cos(a);
+  return (
+    <g transform={`rotate(${-tilt} ${x} ${y})`}>
+      <DriverHelmet
+        driver={driver}
+        x={x}
+        y={y}
+        r={HAM_HELMET.r}
+        facing="right"
+      />
+    </g>
+  );
+};
 
 // The margin sequence (#17, the points motif): the gap between the two title rivals flashes in the shared points box,
 // 16 → 9 → 1 → 0 → 8 (src/mv/points.ts, facts.md), on beats 2 and 4, between the panels' own accents (beat 1 and beat
@@ -343,6 +421,7 @@ const Page: React.FC<{
           <g transform={`translate(${PX} ${PY})`}>
             <Art t={t} keyT={keyAt} />
           </g>
+          {p.ham ? <HamHelmet driver={p.ham} tilt={p.tilt} /> : null}
         </g>
         <rect
           x={PX}

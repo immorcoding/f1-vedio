@@ -3,6 +3,7 @@
 // Usage: <MangaCar car={RB16B} at={camera.anchor({ x, z })} state={{ wheelAngle, lockFront, tilt }} />
 //        <MangaCar car={RB16B} view="top" at={view.anchor(rearEnd)} state={{ heading, steer }} />
 import { RB16B, W12 } from "./cars-2021";
+import { RB18 } from "./cars-2022";
 import { AT01, VF20 } from "./cars-2020";
 import { CARS_2008 } from "./cars-2008";
 import { MP4_5_PRO, MP4_5_SEN } from "./cars-1989";
@@ -36,6 +37,7 @@ export {
   type TopOnlyCar,
 } from "./spec";
 export { PIRELLI_2021, RB16B, W12 } from "./cars-2021";
+export { RB18, VER_2022 } from "./cars-2022";
 export { FW43B } from "./fw43b";
 export { AT01, GRO_2020, KVY_2020, PIRELLI_2020, VF20 } from "./cars-2020";
 export { CARS_2008, F2008, MP4_23, STR3, TF108 } from "./cars-2008";
@@ -56,6 +58,7 @@ export {
 export const CARS = {
   W12,
   RB16B,
+  RB18,
   VF20,
   AT01,
   ...CARS_2008,
