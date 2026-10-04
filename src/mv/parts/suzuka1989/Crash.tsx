@@ -14,9 +14,13 @@ import { offsetFrom, pinhole, type Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import {
   Figure,
-  walkPose,
-  type BodyPose,
+  mixPose,
+  push,
+  stand,
+  v,
+  walk,
   type Outfit,
+  type Pose,
 } from "../../../kit/figure";
 import { ImpactStar } from "../../../kit/impact";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
@@ -261,26 +265,25 @@ const BentWing: React.FC<{
 };
 
 // ── the easter-egg panel ─────────────────────────────────────────────────────────────────────────────────────
-// Marshals of 1989: white overalls, light hoods (no faces, ART-5).
+// Marshals of 1989: white overalls with a red band, light head covering (no faces, ART-5).
 const MARSHAL: Outfit = {
+  fit: "overall",
   suit: "#ecebe6",
-  suitShade: "#bdbcb6",
-  seam: "#8a8984",
-  stripe: RED,
+  shade: "#bdbcb6",
+  band: RED,
   gloves: "#d8d7d2",
   boots: "#222222",
-  head: { kind: "hood", color: "#d9d8d2" },
+  head: { kind: "openHelmet", color: "#d9d8d2" },
 };
 
-// Pushing: leaning hard into the car, arms out straight to the rear wing, legs driving.
-const pushPose = (p: number): BodyPose => {
-  const w = walkPose(p, 1.25, 30);
-  return {
-    ...w,
-    head: -10,
-    near: { ...w.near, arm: { shoulder: 80, elbow: 6 } },
-    far: { ...w.far, arm: { shoulder: 74, elbow: 10 } },
-  };
+// A marshal `d` metres down the escape road (feet planted): pushing until the engine catches at `dFire`, then
+// letting go, a few steps falling back, and standing.
+const marshalPoseAt = (d: number, dFire: number, stopped: number): Pose => {
+  const pushing = push(d, v(0.62, 0.86), { stride: 0.8, lean: 40, pelvis: 24 });
+  if (d < dFire) return pushing;
+  const letGo = Math.min(1, (d - dFire) / 0.6);
+  const running = mixPose(pushing, walk(d, { stride: 0.8, lean: 12, armSwing: 26 }), letGo);
+  return stopped > 0 ? mixPose(running, stand({ lean: 2 }), stopped) : running;
 };
 
 // The panel's own frame (EGG.w × EGG.h px), drawn through its own camera and scaled into the box on the page.
@@ -373,10 +376,13 @@ const PushPanel: React.FC<{ t: number }> = ({ t }) => {
     { dx: -0.72, z: EGG_Z - 0.55, ph: 0 },
     { dx: -0.78, z: EGG_Z + 0.5, ph: 0.5 },
   ];
-  const marshalPose = (ph: number) =>
-    fired
-      ? walkPose(0.15 + ph * 0.2, 0.4 * Math.exp(-sinceFire / 0.3), 6)
-      : pushPose(t * 1.9 + ph);
+  const x0 = eggX(0);
+  const marshalPose = (m: (typeof marshals)[number]) =>
+    marshalPoseAt(
+      marshalX(m.dx) - x0 + m.ph,
+      xFire + m.dx - x0 + m.ph,
+      Math.min(1, Math.max(0, (sinceFire - 0.6) / 0.5)),
+    );
   const exhaust = offsetFrom(carA, 0.05, 0.42);
   // PRO's car, abandoned where the pair stopped (Prost got out, facts.md): beyond SEN, on the track side
   const proRear = { x: -5.4 - camX, z: EGG_Z + 4 };
@@ -387,7 +393,7 @@ const PushPanel: React.FC<{ t: number }> = ({ t }) => {
         key={m.z}
         at={p}
         pxPerMetre={p.pxPerMetre}
-        pose={marshalPose(m.ph)}
+        pose={marshalPose(m)}
         outfit={MARSHAL}
         facing="right"
       />

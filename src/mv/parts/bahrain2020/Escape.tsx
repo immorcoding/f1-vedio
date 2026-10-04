@@ -1,6 +1,8 @@
 // Shot 3.6 (bars 70–72): GRO climbs out over the rails beside the burning cell; the FIA doctor (Ian Roberts, from the
-// medical car) takes his arm and walks him away while a marshal turns a dry-powder extinguisher on the cockpit
-// (facts.md, easter egg). 28 秒 comes up on bar 71; the last beat of bar 72 is black. People per ART-16, no faces.
+// medical car) reaches over the rail and takes his arm, then walks him away, a hand at his back, while a marshal turns
+// a dry-powder extinguisher on the cockpit (facts.md, easter egg). 28 秒 comes up on bar 71; the last beat of bar 72
+// is black. People from the shared people module (src/kit/figure.tsx, ART-16), no faces; staging in
+// escape-staging.ts.
 import { GRO_2020 } from "../../../cars";
 import type { Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
@@ -9,60 +11,34 @@ import { Sfx } from "../../../kit/lettering";
 import { ToneDefs } from "../../../kit/tone";
 import { cueFrame, ramp, shotById, type PictureProps } from "./common";
 import {
+  DOCTOR,
   Figure,
-  solveBody,
-  type BodyPose,
+  MARSHAL,
+  driverOutfit,
+  nozzleOf,
+  type BodyPart,
+  type Held,
   type Outfit,
+  type Pose,
 } from "../../../kit/figure";
 import { FACTS } from "./shots.ts";
 import {
   AIM,
   CLIMB_X,
+  MARSHAL_AIM,
   MARSHAL_AT,
-  MARSHAL_POSE,
   WALK_Z,
+  marshalPose,
   stage36,
 } from "./escape-staging.ts";
 import { WRECK_CAM, WreckWorld, heartbeat, zoomCam } from "./Wreck";
 
-// Race suit of 2020 (Haas: black with a grey side band), GRO's helmet; the doctor's light medical overalls and
-// helmet; a marshal's overalls (orange in reality, a mid tone here: environment stays black and white, ART-8).
-const GRO_KIT: Outfit = {
-  suit: "#1f1f23",
-  suitShade: "#0f0f12",
-  seam: "#55555c",
-  stripe: "#c3c5cc",
+// Race suit of 2020 (Haas: black with a grey side band), GRO's helmet; the FIA doctor and the marshal from the cast.
+const GRO_KIT: Outfit = driverOutfit(GRO_2020.helmet, "#1f1f23", {
+  band: "#8d9099",
   gloves: "#2c2c31",
   boots: "#141416",
-  head: {
-    kind: "helmet",
-    base: GRO_2020.helmet.base,
-    stripe: GRO_2020.helmet.stripe,
-    visor: "#15132a",
-  },
-};
-const DOCTOR_KIT: Outfit = {
-  suit: "#e9e9e4",
-  suitShade: "#b9b9b3",
-  seam: "#7b7b76",
-  gloves: "#cfcfca",
-  boots: "#262626",
-  head: { kind: "helmet", base: PAPER, stripe: "#8a8a8a", visor: "#15132a" },
-};
-const MARSHAL_KIT: Outfit = {
-  suit: "#8c8c8c",
-  suitShade: "#5c5c5c",
-  seam: "#383838",
-  stripe: "#d8d8d8",
-  gloves: "#3a3a3a",
-  boots: "#1a1a1a",
-  head: {
-    kind: "helmet",
-    base: "#c4c4c4",
-    stripe: "#7a7a7a",
-    visor: "#15132a",
-  },
-};
+});
 
 export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   const shot = shotById("3.6");
@@ -85,20 +61,16 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
     1.18 + 0.05 * ramp(t, 0, black - shot.from),
     { x: 980, y: 600 },
   );
-  const { behind, groPose, groAt, docPose, docAt } = stage36(t);
+  const { groBehind, groPose, groAt, docPose, docAt } = stage36(t);
   const g = (p: { x: number; z: number }) =>
     cam.project({ x: p.x, y: 0, z: p.z });
   const ppm = (p: { z: number }) => cam.pxPerMetre(p.z);
-  // the marshal's nozzle is his near hand; his far hand holds the cylinder
+  // the marshal (on threes, like everyone): the jet leaves his nozzle for the cockpit
+  const mPose = marshalPose(Math.floor(t / 3) * 3);
   const mppm = ppm(MARSHAL_AT);
   const mBase = g(MARSHAL_AT);
-  const mBody = solveBody(MARSHAL_POSE);
-  const toScreen = (v: { x: number; y: number }) => ({
-    x: mBase.x - v.x * mppm, // facing left
-    y: mBase.y - v.y * mppm,
-  });
-  const nozzle = toScreen(mBody.nearArm.hand);
-  const grip = toScreen(mBody.farArm.hand);
+  const tipF = nozzleOf(mPose, MARSHAL_AIM).tip;
+  const nozzle = { x: mBase.x - tipF.x * mppm, y: mBase.y - tipF.y * mppm }; // facing left
   const aim = cam.project(AIM);
   const hb = heartbeat(f);
   const text = ramp(f, timeCue, timeCue + 8);
@@ -120,22 +92,41 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
     };
   });
   const figure = (
+    key: string,
     at: { x: number; z: number },
-    pose: BodyPose,
+    pose: Pose,
     outfit: Outfit,
-    facing: "left" | "right",
+    parts?: readonly BodyPart[],
+    held?: Held,
   ) => (
     <Figure
+      key={key}
       at={g(at)}
       pxPerMetre={ppm(at)}
       pose={pose}
       outfit={outfit}
-      facing={facing}
+      facing="left"
       rim={rim}
       rimSide="right"
+      parts={parts}
+      held={held}
     />
   );
-  const gro = figure(groAt, groPose, GRO_KIT, "left");
+  // GRO in two passes while he is on the rails: the parts still behind the guardrail, and the rest in front of it
+  const groFront = (["farLeg", "body", "nearLeg", "nearArm"] as BodyPart[]).filter(
+    (p) => !groBehind.includes(p),
+  );
+  const people = [
+    { z: groAt.z, node: groFront.length ? figure("gro", groAt, groPose, GRO_KIT, groFront) : null },
+    { z: docAt.z, node: figure("doc", docAt, docPose, DOCTOR) },
+    {
+      z: MARSHAL_AT.z,
+      node: figure("marshal", MARSHAL_AT, mPose, MARSHAL, undefined, {
+        kind: "extinguisher",
+        aim: MARSHAL_AIM,
+      }),
+    },
+  ].sort((a, b) => b.z - a.z);
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
@@ -147,30 +138,13 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
         palette={palette}
         intensity={1}
         tonePrefix="b36"
-        behindRails={behind ? gro : null}
+        behindRails={
+          groBehind.length ? figure("gro-behind", groAt, groPose, GRO_KIT, groBehind) : null
+        }
         driver={false}
       />
-      {/* the doctor, deeper than GRO, then GRO in front of him: GRO is the subject */}
-      {figure(docAt, docPose, DOCTOR_KIT, "left")}
-      {behind ? null : gro}
-      {/* the marshal at the cockpit, cylinder in his far hand, and the dry-powder jet */}
-      <rect
-        x={grip.x - 0.08 * mppm}
-        y={grip.y - 0.04 * mppm}
-        width={0.17 * mppm}
-        height={0.5 * mppm}
-        rx={0.06 * mppm}
-        fill="#2a2a2a"
-        stroke={INK}
-        strokeWidth={2}
-      />
-      {figure(MARSHAL_AT, MARSHAL_POSE, MARSHAL_KIT, "left")}
-      <path
-        d={`M ${grip.x} ${grip.y} Q ${(grip.x + nozzle.x) / 2} ${Math.max(grip.y, nozzle.y) + 0.25 * mppm} ${nozzle.x} ${nozzle.y}`}
-        fill="none"
-        stroke={INK}
-        strokeWidth={Math.max(3, 0.03 * mppm)}
-      />
+      {/* deepest first: the doctor at the rail / a step deeper than GRO, GRO, the marshal at the cockpit */}
+      {people.map((p) => p.node)}
       <path
         d={jet}
         fill={PAPER}
