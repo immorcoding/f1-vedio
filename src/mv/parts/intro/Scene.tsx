@@ -171,7 +171,7 @@ export type GantryProps = {
   focusFrame: number;
 };
 
-// The gantry itself, drawn on a black page: shared by the intro and the outro's bookend (6.3).
+// The gantry itself, drawn on a black page (exported; the outro no longer uses it since it ends on the chequered flag).
 export const GantryArt: React.FC<GantryProps> = ({
   draw: f,
   tone,
