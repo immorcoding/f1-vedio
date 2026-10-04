@@ -8,6 +8,7 @@ import { Ink } from "../kit/ink";
 import { TonePattern, ToneDefs, tone } from "../kit/tone";
 import {
   CAR_UNITS_PER_METRE,
+  drawnFarWheels,
   endplateCopyTransform,
   photoPxPerMetre,
   type Accent,
@@ -180,34 +181,67 @@ const NearWheel: React.FC<{
   </g>
 );
 
-const FarWheel: React.FC<{ w: Wheel; id: string }> = ({ w, id }) => (
-  <g>
-    <circle cx={w.cx} cy={w.cy} r={w.r} fill={INK} />
-    <circle
-      cx={w.cx}
-      cy={w.cy}
-      r={w.r * 0.62}
-      fill={tone("dark", id)}
-      stroke="#2c2c2c"
-      strokeWidth={3}
-    />
-    {[-0.5, -0.25, 0, 0.25, 0.5].map((t) => (
+// A far-side wheel: we see its inner face, in shadow, so no sidewall band — a dark tyre, the dark inner rim and its
+// spokes, and scuff marks round the tread. Rim, spokes, scuffs and a wet tread turn with `angle` like the near wheels.
+const FarWheel: React.FC<{
+  car: CarSpec;
+  w: Wheel;
+  angle: number;
+  tread: Tread;
+  id: string;
+}> = ({ car, w, angle, tread, id }) => {
+  const rimR = car.rimR * (w.r / car.nearWheels[0].r);
+  const spin = `rotate(${-angle} ${w.cx} ${w.cy})`;
+  return (
+    <g>
+      <circle cx={w.cx} cy={w.cy} r={w.r} fill={INK} />
+      <g transform={spin}>
+        {tread === "wet" ? (
+          <path
+            d={wetSipes(w)}
+            stroke="#474747"
+            strokeWidth={4}
+            strokeLinecap="round"
+          />
+        ) : (
+          Array.from({ length: 16 }, (_, i) => {
+            const t = (i / 16) * Math.PI * 2;
+            return (
+              <path
+                key={i}
+                d={`M ${w.cx + Math.sin(t) * w.r * 0.7} ${w.cy - Math.cos(t) * w.r * 0.7} L ${w.cx + Math.sin(t) * w.r * 0.97} ${w.cy - Math.cos(t) * w.r * 0.97}`}
+                stroke="#3a3a3a"
+                strokeWidth={3}
+              />
+            );
+          })
+        )}
+        <circle
+          cx={w.cx}
+          cy={w.cy}
+          r={rimR}
+          fill={tone("dark", id)}
+          stroke="#2c2c2c"
+          strokeWidth={3}
+        />
+        <path
+          d={spokePath(w, rimR * 0.85, car.rim === "spoked" ? 10 : 12)}
+          stroke="#4a4a4a"
+          strokeWidth={car.rim === "spoked" ? 4 : 2}
+          strokeLinecap="round"
+        />
+      </g>
+      <circle cx={w.cx} cy={w.cy} r={9} fill={INK} />
       <path
-        key={t}
-        d={`M ${w.cx + Math.sin(t) * w.r * 0.66} ${w.cy - Math.cos(t) * w.r * 0.66} L ${w.cx + Math.sin(t) * w.r * 0.97} ${w.cy - Math.cos(t) * w.r * 0.97}`}
-        stroke="#3a3a3a"
-        strokeWidth={3}
+        d={`M ${w.cx - w.r * 0.2} ${w.cy - w.r * 0.94} A ${w.r * 0.95} ${w.r * 0.95} 0 0 1 ${w.cx + w.r * 0.7} ${w.cy - w.r * 0.6}`}
+        fill="none"
+        stroke={PAPER}
+        strokeWidth={4}
+        opacity={0.8}
       />
-    ))}
-    <path
-      d={`M ${w.cx - w.r * 0.2} ${w.cy - w.r * 0.94} A ${w.r * 0.95} ${w.r * 0.95} 0 0 1 ${w.cx + w.r * 0.7} ${w.cy - w.r * 0.6}`}
-      fill="none"
-      stroke={PAPER}
-      strokeWidth={4}
-      opacity={0.8}
-    />
-  </g>
-);
+    </g>
+  );
+};
 
 // Side-view race helmet facing left (ART-13): shell with chin bar, tinted visor, livery stripes (or the driver's real
 // design), and on a modern shell the top air intake and rear spoiler; shaded with dots. Sized like a real helmet
@@ -507,8 +541,15 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
   const shade = car.shade ?? 1;
   return (
     <>
-      {car.farWheels.map((w) => (
-        <FarWheel key={`f${w.cx}`} w={w} id={id} />
+      {drawnFarWheels(car).map((w, i) => (
+        <FarWheel
+          key={`f${w.cx}`}
+          car={car}
+          w={w}
+          angle={i === 0 ? (state.lockFront ?? wheelAngle) : wheelAngle}
+          tread={tread}
+          id={id}
+        />
       ))}
 
       <g
