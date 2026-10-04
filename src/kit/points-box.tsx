@@ -1,6 +1,6 @@
 // The points box (#17): the one design for every score and margin in the film, after Brazil 2.7's "98 · 97" box that
 // the user picked. Type system D (ART-6): big numerals in Big Shoulders Black, leaned 8°, ink on a paper box with a
-// heavy ink frame and a hard ink drop shadow; the driver codes small under them in Titillium Web Bold; a "·" between
+// heavy ink frame and a hard ink drop shadow; the driver codes small under them in Titillium Web Bold; a small "VS" between
 // two scores; a gold under-stroke (an offset gold copy of the numeral) on the leader or winner.
 // Two variants from the same parts: a score (two columns, "98 · 97") and a margin (one column, "+16" over "PRO",
 // with a small unit such as "PTS" beside the numeral).
@@ -37,7 +37,7 @@ export const POINTS_SIZE = 168;
 
 // Proportions of 2.7's 430 × 250 box at a 168 px numeral, as shares of the numeral size.
 const PAD_X = 0.2;
-const DOT_GAP = 0.38;
+const DOT_GAP = 0.62; // room for the small "VS" between two scores (user 2026-10-04: "VS" instead of "·")
 const HEIGHT = 1.49;
 const BASELINE = 1.0; // numeral baseline from the top
 const CODE_BASE = 1.34; // code baseline from the top
@@ -243,7 +243,20 @@ export const PointsBox: React.FC<{
         );
       })}
       {l.dots.map((x) => (
-        <g key={x}>{numeral(x, "·", INK)}</g>
+        <text
+          key={x}
+          x={x}
+          y={base - n * 0.3}
+          textAnchor="middle"
+          fontFamily={CAPTION_FONT}
+          fontWeight={700}
+          fontStyle="italic"
+          fontSize={n * 0.26}
+          letterSpacing={n * 0.01}
+          fill={INK}
+        >
+          VS
+        </text>
       ))}
       <rect
         x={-l.w / 2}

@@ -58,7 +58,7 @@ export const EDIT: PartEdit = {
       to: at(104),
       view: "title",
       content: "积分翻牌定格：第 102 小节第一拍积分框（#17）VER 395.5 · HAM 387.5 砸入，第二拍 VER 的数字下金色描边",
-      text: ["395.5 · 387.5"],
+      text: ["395.5 VS 387.5"],
       cues: [
         hitCue("abuDhabi2021.points"),
         { id: "abuDhabi2021.pointsGold", at: at(102, 2) },

@@ -72,7 +72,7 @@ export const leader = (id: StandingId) => {
 /** One column of the points box: a big numeral, the driver code(s) under it, and whether it takes the gold stroke. */
 export type PointsColumn = { value: string; code: string; gold?: boolean };
 
-/** The two scores side by side ("98 · 97"), gold on the leader; no gold on a tie. */
+/** The two scores side by side ("98 VS 97"), gold on the leader; no gold on a tie. */
 export const scoreColumns = (id: StandingId): PointsColumn[] => {
   const s: Standing = STANDINGS[id];
   const lead = leader(id);
@@ -88,12 +88,12 @@ export const marginColumns = (id: StandingId): PointsColumn[] => {
   const s: Standing = STANDINGS[id];
   const lead = leader(id);
   return lead === null
-    ? [{ value: "0", code: `${s.a.code} · ${s.b.code}` }]
+    ? [{ value: "0", code: `${s.a.code} VS ${s.b.code}` }]
     : [{ value: `+${fmt(margin(id))}`, code: lead, gold: true }];
 };
 
-/** The text a score box shows, as the edit lists write it ("98 · 97"). */
+/** The text a score box shows, as the edit lists write it ("98 VS 97"). */
 export const scoreText = (id: StandingId) => {
   const s: Standing = STANDINGS[id];
-  return `${fmt(s.a.pts)} · ${fmt(s.b.pts)}`;
+  return `${fmt(s.a.pts)} VS ${fmt(s.b.pts)}`;
 };

@@ -22,7 +22,7 @@ export const EDIT: PartEdit = {
       view: "split",
       content:
         "分屏：VER 与 HAM 头盔面对面（HAM 一格镜像）；每小节第一拍推近一档，从整个座舱推到面罩，档间继续缓推；积分框 76.1 随分屏砸入（平分，无领先标记），78.1 闪一次",
-      text: ["369.5 · 369.5"],
+      text: ["369.5 VS 369.5"],
       cues: [
         { id: "buildup.pointsIn", at: at(76) },
         { id: "buildup.push2", at: at(77) },

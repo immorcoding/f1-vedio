@@ -27,7 +27,7 @@ export const EDIT: PartEdit = {
       text: [
         "1989 · 1990",
         "2008",
-        "98 · 97",
+        "98 VS 97",
         "HAM",
         "MAS",
         "2020",

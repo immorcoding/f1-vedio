@@ -70,7 +70,7 @@ export const EDIT: PartEdit = {
       view: "title",
       content:
         "夺冠卡（同 5.8 的语言，只用事实）：第 53 小节第一拍积分 HAM 98 · MAS 97 砸入，随后飞到角落；第 54 小节四行字逐拍砸入，旁边是 HAM 头盔特写；55–56 小节推近定格，雨中闪光",
-      text: ["98 · 97", "LEWIS HAMILTON", "2008", "WORLD", "CHAMPION"],
+      text: ["98 VS 97", "LEWIS HAMILTON", "2008", "WORLD", "CHAMPION"],
       cues: [
         hitCue("brazil2008.points"),
         { id: "brazil2008.gold98", at: at(53, 2) },

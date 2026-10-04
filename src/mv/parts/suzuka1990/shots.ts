@@ -12,7 +12,7 @@ export const EDIT: PartEdit = {
       view: "title",
       content:
         "1989 那一页（1.1 的成品：减速弯圈和放大小格、“TEAM-MATES · RIVALS”）翻过去，下一页是同一条铃鹿，圈落在 1 号弯；PRO 的头盔格落在 1.2 的左上位置，第 23 小节翻面，同一顶头盔从 McLaren 红白换到法拉利红；镜头推向发车直道",
-      text: ["SUZUKA 1990", "SUZUKA INTERNATIONAL RACING COURSE", "PRO MOVES TO FERRARI", "78 · 69", "SEN", "PRO"],
+      text: ["SUZUKA 1990", "SUZUKA INTERNATIONAL RACING COURSE", "PRO MOVES TO FERRARI", "78 VS 69", "SEN", "PRO"],
       cues: [
         { id: "suzuka1990.flip", at: at(22, 1) },
         { id: "suzuka1990.move", at: at(23, 1) },
