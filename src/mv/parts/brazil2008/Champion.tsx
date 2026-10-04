@@ -1,16 +1,19 @@
 // Shot 2.7 (bars 53–56): the title, in the language of Abu Dhabi's champion card (5.8). Facts only, no quote (STO-8):
 // - 53.1 (`brazil2008.points`): the final points slam in big, HAM 98 · MAS 97 (facts.md); on 53.2 a gold under-stroke
-//   hits HAM's 98. On 53.3 the score box flies into the bottom-left corner while two manga panels slide in: HAM's
-//   helmet, drawn alone at close-up scale (HelmetCloseup, 2008 helmet colours), and a black lettering panel.
+//   hits HAM's 98. On 53.3 the score box flies into the bottom-left corner while two manga panels slide in: a full
+//   illustration of the moment (ChampionMoment: HAM's MP4-23 on the wet pit straight, grandstand behind, the chequered
+//   line coming up) and a black lettering panel.
 // - Bar 54: "LEWIS HAMILTON" / "2008" / "WORLD" / "CHAMPION" slam in one per beat, oversize → settled in 0.12 s, gold
 //   under-stroke on the big words; every slam punches the page (shake, a kick of zoom, focus lines flaring behind the
-//   lettering and round the helmet, the visor glinting); the last hits hardest and throws a burst ring.
+//   lettering and round the car, HAM's visor glinting); the last hits hardest, throws a burst ring, and is the moment
+//   the front wheel crosses the line.
 // - Bars 55–56: the hold. Each panel keeps pushing in on its subject, accelerating into the cut; rain keeps falling (Interlagos) with
-//   gold and paper sparkles in it, glints twinkle on the helmet, the speed streaks stream up the lettering panel.
-// Colour: paper, ink and gold for the lettering, the helmet in its real colours (ART-8). No face, no logo (ART-5); the
-// lettering is clipped to its own panel so it never covers the helmet (ART-14).
+//   gold and paper sparkles in it, glints twinkle on the car and the visor, the speed streaks stream up the lettering
+//   panel.
+// Colour: paper, ink and gold for the lettering, the car in its real livery on a black-and-white Interlagos (ART-8). No
+// face, no logo (ART-5); the lettering is clipped to its own panel and the score box sits below the car, so neither
+// covers the car or the helmet (ART-14).
 import { Easing, random } from "remotion";
-import { MP4_23 } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { inkFilter } from "../../../kit/ink";
 import { focusLines, speedLines } from "../../../kit/lines";
@@ -22,7 +25,7 @@ import {
   secondsInShot,
   type ShotTime,
 } from "../abuDhabi2021/shotClock";
-import { HelmetCloseup } from "./HelmetCloseup";
+import { ChampionMoment, MOMENT_CAR, MOMENT_HELMET } from "./ChampionMoment";
 import { Page } from "./common";
 
 const ARIAL_BLACK = "Arial Black, Arial, sans-serif";
@@ -34,8 +37,7 @@ const rect = (b: Box) => ({ x: b.x, y: b.y, width: b.w, height: b.h });
 // Panels inside the page frame.
 const HELMET_PANEL: Box = { x: 44, y: 44, w: 1016, h: 992 };
 const TEXT_PANEL: Box = { x: 1084, y: 44, w: 792, h: 992 };
-// HAM's helmet, facing the lettering; the score box sits in the corner under its chin.
-const HELMET = { x: 600, y: 452, r: 310 };
+// The score box sits in the panel's bottom-left corner, on the wet track below the car.
 const SCORE_W = 430;
 const SCORE_H = 250;
 const CORNER = { x: 76, y: 768 };
@@ -56,11 +58,11 @@ const LINES = [
   { t: "CHAMPION", y: 870, fs: 118, sw: 14 },
 ];
 
-// glints twinkling on the helmet in the hold (helmet units, the helmet faces right so x is mirrored)
+// glints twinkling on the car's bodywork in the hold: page px from the middle of the car, star radius in px
 const GLINTS = [
-  { x: 0.1, y: -0.92, s: 0.13, phase: 0 },
-  { x: 0.62, y: -0.36, s: 0.09, phase: 0.4 },
-  { x: -0.45, y: -0.7, s: 0.07, phase: 0.75 },
+  { x: 250, y: -10, s: 30, phase: 0 },
+  { x: -300, y: -95, s: 26, phase: 0.4 },
+  { x: -40, y: -30, s: 22, phase: 0.75 },
 ];
 
 // decays from 1 to 0 over `len` seconds after a hit `since` seconds ago
@@ -201,6 +203,7 @@ export const Champion: React.FC<{ st: ShotTime }> = ({ st }) => {
   const sinceGold = since(at(53, 2));
   const sinceMove = since(at(53, 3));
   const holdFrom = secondsInShot(st, at(55));
+  const crossAt = secondsInShot(st, at(54, 4));
 
   // the punch of every slam: the points (53.1), the gold 98 (53.2, softer), the four lines (the last hardest)
   const linePunch = sinceLine.reduce(
@@ -294,30 +297,27 @@ export const Champion: React.FC<{ st: ShotTime }> = ({ st }) => {
           <g transform={`translate(${helmetDx} 0)`}>
             <g clipPath="url(#b27-helmet-panel)">
               <rect {...rect(HELMET_PANEL)} fill={PAPER} />
-              <g filter={inkFilter()}>
-                <rect {...rect(HELMET_PANEL)} fill={tone("light")} />
-                <path
-                  d={focusLines(
-                    HELMET.x,
-                    HELMET.y,
-                    HELMET.r + 90 - 50 * linePunch,
-                    120,
-                    3 + (flicker % 5),
-                  )}
-                  fill={INK}
-                  opacity={0.75 + 0.2 * Math.min(1, linePunch)}
+              <g
+                transform={`translate(${MOMENT_CAR.x} ${MOMENT_CAR.y}) scale(${helmetKick}) translate(${-MOMENT_CAR.x} ${-MOMENT_CAR.y})`}
+              >
+                <ChampionMoment t={t} crossAt={crossAt} punch={linePunch} />
+                {/* the visor glints on every slam */}
+                <Glint
+                  x={MOMENT_HELMET.x + MOMENT_HELMET.r * 0.45}
+                  y={MOMENT_HELMET.y - MOMENT_HELMET.r * 0.1}
+                  r={MOMENT_HELMET.r * 1.5}
+                  s={Math.max(visorGlint, 0.6 * glintPulse(0.2))}
                 />
+                {GLINTS.map((g) => (
+                  <Glint
+                    key={g.phase}
+                    x={MOMENT_CAR.x + g.x}
+                    y={MOMENT_CAR.y + g.y}
+                    r={g.s}
+                    s={glintPulse(g.phase)}
+                  />
+                ))}
               </g>
-              <Rain
-                x={HELMET_PANEL.x}
-                y={HELMET_PANEL.y}
-                w={HELMET_PANEL.w}
-                h={HELMET_PANEL.h}
-                t={t + 0.2}
-                n={90}
-                opacity={0.45}
-                seed="b27-helmet-rain"
-              />
               {sparkle > 0 ? (
                 <g opacity={sparkle}>
                   <Sparkles box={HELMET_PANEL} t={t} n={22} seed="b27-sp-h" />
@@ -325,38 +325,15 @@ export const Champion: React.FC<{ st: ShotTime }> = ({ st }) => {
               ) : null}
               {finalBurst > 0 ? (
                 <circle
-                  cx={HELMET.x}
-                  cy={HELMET.y}
-                  r={HELMET.r + 40 + 800 * (1 - finalBurst)}
+                  cx={MOMENT_HELMET.x}
+                  cy={MOMENT_HELMET.y}
+                  r={120 + 800 * (1 - finalBurst)}
                   fill="none"
                   stroke={INK}
                   strokeWidth={30 * finalBurst}
                   opacity={finalBurst}
                 />
               ) : null}
-              <g
-                transform={`translate(${HELMET.x} ${HELMET.y}) scale(${helmetKick}) translate(${-HELMET.x} ${-HELMET.y})`}
-              >
-                <g filter={inkFilter()}>
-                  <HelmetCloseup
-                    car={MP4_23}
-                    x={HELMET.x}
-                    y={HELMET.y}
-                    r={HELMET.r}
-                    flip
-                    glint={visorGlint}
-                  />
-                </g>
-                {GLINTS.map((g) => (
-                  <Glint
-                    key={g.phase}
-                    x={HELMET.x - g.x * HELMET.r}
-                    y={HELMET.y + g.y * HELMET.r}
-                    r={g.s * HELMET.r}
-                    s={glintPulse(g.phase)}
-                  />
-                ))}
-              </g>
             </g>
             <rect
               {...rect(HELMET_PANEL)}
