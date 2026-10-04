@@ -6,6 +6,7 @@
 // interpenetration (ART-18).
 import { Easing, random } from "remotion";
 import {
+  carCamera,
   carPoint,
   F641_PRO,
   MangaCar,
@@ -216,6 +217,15 @@ export const CrashStage: React.FC<{
   const moving = 1 - s / SLIDE_TOTAL;
   const senA = anchorLeft(CAM_17, camX, MP4_5B_SEN, c.sen.x, c.sen.z - camZ);
   const proA = anchorLeft(CAM_17, camX, F641_PRO, c.pro.x, c.pro.z - camZ);
+  // each car's far side from the panel's camera (ART-26), the axis crossing it where the camera looks
+  const senCam = carCamera(MP4_5B_SEN, CAM_17, c.sen.z - camZ, {
+    x: c.sen.x + midM(MP4_5B_SEN) - camX,
+    facing: "left",
+  });
+  const proCam = carCamera(F641_PRO, CAM_17, c.pro.z - camZ, {
+    x: c.pro.x + midM(F641_PRO) - camX,
+    facing: "left",
+  });
   const wheel = (s / TYRE_R) * 57.3;
   // into the gravel: each car's dust starts as it crosses into the trap
   const inGravel = (z: number) =>
@@ -259,7 +269,7 @@ export const CrashStage: React.FC<{
           car={F641_PRO}
           facing="left"
           at={proA}
-          state={{ wheelAngle: wheel, tilt: bump(c.pro.z) }}
+          state={{ ...proCam, wheelAngle: wheel, tilt: bump(c.pro.z) }}
         />
       </g>
       <TrailDust
@@ -293,6 +303,7 @@ export const CrashStage: React.FC<{
           facing="left"
           at={senA}
           state={{
+            ...senCam,
             wheelAngle: wheel,
             lockFront: 30,
             tilt: -bump(c.sen.z) * 0.8,

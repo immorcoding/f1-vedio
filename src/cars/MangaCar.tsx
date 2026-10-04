@@ -21,6 +21,7 @@ import {
   farEndplateTransform,
   farSideWidths,
   farWheelsFor,
+  sweptWing,
 } from "./far-side";
 import { TopCar } from "./TopCar";
 
@@ -588,6 +589,9 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
   const shade = car.shade ?? 1;
   const cam = cameraOf(state);
   const widths = farSideWidths(car);
+  // the front wing surface and its flap, swept from the side outline to the far endplate for this camera
+  const deck = sweptWing(car, cam, fw.deckSide ?? fw.deck, widths.frontWing);
+  const flap = sweptWing(car, cam, fw.flapSide ?? fw.flap.d, widths.frontWing);
   return (
     <>
       {farWheelsFor(car, cam).map((w, i) => (
@@ -621,10 +625,10 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
             )}
           />
         ) : null}
-        <path d={fw.deck} fill={p.frontDeck} />
-        <path d={fw.flap.d} fill={fw.flap.color} />
+        <path d={deck} fill={p.frontDeck} />
+        <path d={flap} fill={fw.flap.color} />
         <path
-          d={fw.deck}
+          d={deck}
           fill="none"
           stroke={INK}
           strokeWidth={4}

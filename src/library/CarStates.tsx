@@ -1,6 +1,12 @@
 // State check: one car under each MangaCar state parameter, animated so rolling and locked wheels can be told apart.
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { CARS, MangaCar, type CarId, type CarState } from "../cars";
+import {
+  photoCameraState,
+  CARS,
+  MangaCar,
+  type CarId,
+  type CarState,
+} from "../cars";
 import { INK, PAPER } from "../kit/colors";
 import { CAPTION_FONT } from "../kit/lettering";
 
@@ -50,7 +56,10 @@ export const CarStates: React.FC<{ car: CarId }> = ({ car }) => {
               <MangaCar
                 car={CARS[car]}
                 at={{ x: x + 70, y: y + 450, pxPerMetre: 145 }}
-                state={cell.state(frame)}
+                state={{
+                  ...photoCameraState(CARS[car]),
+                  ...cell.state(frame),
+                }}
               />
             </g>
           );

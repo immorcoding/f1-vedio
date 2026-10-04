@@ -3,10 +3,18 @@
 // under a screen of tone that thickens over the two bars. The racing is over, so there are no speed lines; the
 // music drops its drums here (102–103), and the page holds still apart from a slow push-in on VER (MOT-6, MOT-8).
 // On the cut (102.1, `abuDhabi2021.points`) the points box slams onto the gutter: 395.5 VS 387.5 (facts.md). On
-// 102.2 (`abuDhabi2021.pointsLead`) the leader's screentone block lands behind VER's 395.5. It is tone, not gold: the
-// gold is kept for the champion card that follows (5.8, ART-8). The helmets sit at opposite ends of the diagonal so
+// 102.2 (`abuDhabi2021.pointsGold`) VER's 395.5 takes the gold stroke: by now he is the world champion, so it is a
+// champion's score like Brazil's 98 on 2.7 (the user, 2026-10-04). The helmets sit at opposite ends of the diagonal so
 // the box covers neither (ART-14).
-import { MangaCar, PIRELLI_2021, RB16B, W12, type CarSpec } from "../../../cars";
+import {
+  HELMET_LENS,
+  cameraAt,
+  MangaCar,
+  PIRELLI_2021,
+  RB16B,
+  W12,
+  type CarSpec,
+} from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
 import { CAPTION_FONT, useLettering } from "../../../kit/lettering";
@@ -44,7 +52,7 @@ const HelmetPanel: React.FC<{
     <g clipPath={`url(#${id})`}>
       <rect x={0} y={0} width={1920} height={1080} fill={INK} />
       <path d={focusLines(helmet.x, helmet.y, 300, 120, Math.floor(t * 6) + (tag === "VER" ? 0 : 40))} fill={PAPER} opacity={0.45 - 0.3 * dim} />
-      <MangaCar car={car} at={helmetAnchor(car, helmet.x, helmet.y, ppm)} state={{ wheelAngle: 0, compound }} />
+      <MangaCar car={car} at={helmetAnchor(car, helmet.x, helmet.y, ppm)} state={{ ...cameraAt(car, HELMET_LENS.height, HELMET_LENS.distance), wheelAngle: 0, compound }} />
       {dim > 0 ? <rect x={0} y={0} width={1920} height={1080} fill={tone("dark")} opacity={dim} /> : null}
       <g transform={`translate(${tagAt.x} ${tagAt.y}) rotate(-4)`}>
         <rect x={-70} y={-34} width={140} height={68} fill={tag === "VER" ? INK : PAPER} stroke={PAPER} strokeWidth={6} />
@@ -61,7 +69,7 @@ const HelmetPanel: React.FC<{
 export const Points: React.FC<{ st: ShotTime }> = ({ st }) => {
   useLettering();
   const { t, dur } = st;
-  const lead = secondsInShot(st, cueAt(EDIT, "abuDhabi2021.pointsLead"));
+  const gold = secondsInShot(st, cueAt(EDIT, "abuDhabi2021.pointsGold"));
   const slam = hit(t, 0, 0.2);
   // a slow push on VER that quickens into the cut; HAM's panel greys over the two bars
   const push = 0.05 * (t / dur) + 0.05 * ramp(t, dur - 0.6, dur);
@@ -101,7 +109,13 @@ export const Points: React.FC<{ st: ShotTime }> = ({ st }) => {
           tagAt={{ x: 1720, y: 975 }}
         />
         <g transform={`translate(${BOX.x} ${BOX.y}) rotate(-3.7)`}>
-          <PointsBox columns={scoreColumns("abuDhabiFinal")} size={BOX.size} since={t} goldSince={t - lead} />
+          <PointsBox
+            accent="gold"
+            columns={scoreColumns("abuDhabiFinal")}
+            size={BOX.size}
+            since={t}
+            goldSince={t - gold}
+          />
         </g>
       </g>
       {slam > 0.5 ? <rect width={1920} height={1080} fill={PAPER} opacity={0.6 * hit(t, 0, 0.08)} /> : null}

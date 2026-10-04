@@ -12,7 +12,7 @@
 // into white paper and black line, an impact star round the nose with 67G, the fireball still burning in colour
 // (facts.md; FIA accident investigation summary).
 import { random } from "remotion";
-import { MangaCar, VF20, carLength } from "../../../cars";
+import { carCamera, MangaCar, VF20, carLength } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { BubbleSmoke, FIRE_PALETTES, Fireball } from "../../../kit/fire";
 import { BigText } from "../../../kit/lettering";
@@ -139,6 +139,8 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
   const { travel, split, front, rear, p } = stage(t);
   const A = anchorAt(travel, front.dx);
   const at = CAM.anchor({ x: A.x, z: A.z });
+  // the far side from the impact camera, 3.2 m up (ART-26)
+  const camState = carCamera(VF20, CAM, A.z, { x: A.x, facing: "left" });
   // the wheels still turning, slowed with the picture (slow motion: ~1/12 of 150° a frame), stopping as it digs in
   const wheelAngle = 13 * Math.min(t, SLOW) * (1 - p * 0.6);
   const noseX = A.x - L - front.dx;
@@ -355,6 +357,7 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
                 facing="left"
                 at={at}
                 state={{
+                  ...camState,
                   wheelAngle,
                   ...(split > 0
                     ? { split: { front, rear, show: "rear" as const } }
@@ -366,7 +369,11 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
                   car={VF20}
                   facing="left"
                   at={at}
-                  state={{ wheelAngle, split: { front, rear, show: "front" } }}
+                  state={{
+                    ...camState,
+                    wheelAngle,
+                    split: { front, rear, show: "front" },
+                  }}
                 />
               ) : null}
               <BentGuardrail

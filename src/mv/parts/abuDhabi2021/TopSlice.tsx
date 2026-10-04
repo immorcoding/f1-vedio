@@ -12,6 +12,7 @@ import { PANEL } from "../../../scenes/abu-dhabi-2021/Closeup";
 import { T5_SECTION } from "../../../scenes/abu-dhabi-2021/t5-map";
 import { mapView, poseAt, TrackSection, YAS_MARINA_2021 } from "../../../tracks";
 import { ramp, type ShotTime } from "./shotClock";
+import { rollAt, TopShadow } from "./TopShadow";
 import { hamSpeed, slicePlan, verSpeed } from "./staging.ts";
 
 const T = YAS_MARINA_2021;
@@ -71,6 +72,13 @@ export const TopSlice: React.FC<{ st: ShotTime; t0: number }> = ({ st, t0 }) => 
             const tagP = view.project(poseAt(T, s + 2.4, lat + (tag === "VER" ? -1.9 : 1.9)));
             return (
               <g key={tag}>
+                <TopShadow
+                  car={car}
+                  at={{ x: p.x, y: p.y + shiver }}
+                  heading={heading}
+                  ppm={ppm}
+                  roll={rollAt(T, s, car === RB16B ? verSpeed(race) : hamSpeed(race))}
+                />
                 <MangaCar
                   car={car}
                   view="top"
