@@ -11,7 +11,7 @@ export const EDIT: PartEdit = {
       to: at(75),
       view: "title",
       content:
-        "Yas Marina 夜景：酒店网格天篷一格格亮起，2021 赛道全图墨线画出",
+        "Yas Marina 夜景：起跑直道发车格通向 Yas 酒店，看台与照明灯塔；酒店网格天篷一格格亮起，2021 赛道全图在小格里画出",
       text: ["2021 · 阿布扎比"],
       cues: [{ id: "buildup.hotelLit", at: at(74) }],
     },
