@@ -32,10 +32,10 @@ const RUNOFF = 17; // the right-hand wall and debris fence
 const HOTEL_Z = 166;
 const HOTEL_M = 0.5;
 // The main grandstand: front wall at x = front, seat rows climbing to x = back, from z0 to z1.
-const STAND = { front: 20, back: 40, z0: 6, z1: 102, rows: 23 };
+const STAND = { front: 20, back: 40, z0: 16, z1: 102, rows: 23 };
 // Its canopy: a fabric roof on cantilever arms every `bay` m, the lip out over the front rows, rising to the back beam
 // over the hospitality level. The lip scallops back and up between arm tips.
-const ROOF = { lipX: 18.5, lipY: 20.5, backX: 42, backY: 23.5, bay: 12, inX: 1.4, upY: 1.2 };
+const ROOF = { lipX: 24, lipY: 19, backX: 42, backY: 23.5, bay: 12, inX: 1.4, upY: 1.2 };
 const HOSP = { x: 40.5, y0: 16.3, y1: 22.7 };
 
 // Night screentone: paper dots on ink (the page's ToneDefs are ink on paper). Put once in <defs>.
