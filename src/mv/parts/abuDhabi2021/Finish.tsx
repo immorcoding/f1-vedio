@@ -54,7 +54,8 @@ export const Finish: React.FC<{ st: ShotTime }> = ({ st }) => {
           car: RB16B,
           x: VER_X,
           z: VER_Z,
-          state: { wheelAngle: camX * 170, compound: PIRELLI_2021.soft },
+          // the 2.9 m camera looks down ~13°: the HIGH look (ART-26)
+          state: { wheelAngle: camX * 170, compound: PIRELLI_2021.soft, farSide: "high" },
         },
       ]}
       between={

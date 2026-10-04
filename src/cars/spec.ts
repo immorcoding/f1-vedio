@@ -32,6 +32,24 @@ export type FarSideLook = {
   // the front wing surface and its flap seen side-on, in place of the traced (from above) `deck` and `flap.d`
   frontDeck?: string;
   frontFlap?: string;
+  // The body as a camera at `body.elevation` sees it, re-projected from the trace photo's higher camera (seenFrom.ts).
+  // Leave it out to draw the body as traced.
+  body?: BodyView;
+};
+
+// The LOW look (ART-26): the trace photos look down 8–22° on the car, so every part further from the
+// camera than the near wheels is drawn higher than it is: the nose and the engine cover (on the centre line, ~0.8 m
+// behind the near wheel plane) by 0.8·sin(e), the sidepod undercut and floor edge by less. BodyView re-projects the
+// body for a lower camera (seenFrom.ts). Heights are photo px; the depth of a body point (m behind the near wheel
+// plane) is read from its height: FLOOR_DEPTH at `floorY` and below, POD_DEPTH at `podY`, the centre line (0.8 m)
+// from 0.65 m up, and the whole nose ahead of the front axle (blending into the body by `noseTo`), its depth and tip
+// set by the same real dimensions on every car (seenFrom.ts).
+export type BodyView = {
+  photoElevation: number; // deg, the trace photo's camera (out/review/v2-far-side/perspective.md)
+  elevation: number; // deg, the camera the look is drawn for
+  floorY: number; // photo y of the floor edge, mid-car
+  podY: number; // photo y of the sidepod's lower line, mid-car
+  noseTo: number; // photo x where the nose has blended into the body
 };
 // Which look a scene asks for (CarState.farSide): "low" for a trackside camera near the cars' height (the default),
 // "high" for a camera looking down on the car, as the trace photos and Bahrain's 3.2 m wreck cam do.
@@ -136,6 +154,8 @@ export type CarSpec = {
   farWheels: [Wheel, Wheel];
   // The far side per camera look (FarSideLook); a car without one is drawn as traced from any camera.
   farSide?: Partial<Record<FarSideCamera, FarSideLook>>;
+  // Draw the far wheels at their traced x instead of their near wheels' x (drawnFarWheels); only the approved STR3.
+  keepFarWheelX?: true;
   rimR: number;
   rim: "spoked" | "dark";
   rimAccent?: string;
@@ -266,15 +286,24 @@ export const photoPxPerMetre = (car: CarSpec) =>
 // the traced height, the same proportion on every car. Where a car's nose or body is taller than that, it hides the
 // far wheel, as on a real side-on view.
 export const FAR_WHEEL_LIFT = 0.5;
+// Every far wheel is drawn at its near wheel's x, in every look (user review 2026-10-04): a traced horizontal offset
+// comes from the photo's yaw, not from the car, so it is dropped. `keepFarWheelX` keeps the traced x (the approved STR3).
 export const drawnFarWheels = (
   car: CarSpec,
   camera: FarSideCamera = "low",
-): [Wheel, Wheel] =>
-  car.farSide?.[camera]?.wheels ??
-  (car.farWheels.map((w, i) => {
-    const near = car.nearWheels[i];
-    return { ...w, cy: near.cy - (near.cy - w.cy) * FAR_WHEEL_LIFT };
-  }) as [Wheel, Wheel]);
+): [Wheel, Wheel] => {
+  const wheels =
+    car.farSide?.[camera]?.wheels ??
+    (car.farWheels.map((w, i) => {
+      const near = car.nearWheels[i];
+      return { ...w, cy: near.cy - (near.cy - w.cy) * FAR_WHEEL_LIFT };
+    }) as [Wheel, Wheel]);
+  if (car.keepFarWheelX) return wheels;
+  return wheels.map((w, i) => ({ ...w, cx: car.nearWheels[i].cx })) as [
+    Wheel,
+    Wheel,
+  ];
+};
 
 // Named points on the car, in metres from the car's origin (rear end, on the ground): x forward, y up.
 export type CarLandmark =
