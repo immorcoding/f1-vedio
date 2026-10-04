@@ -9,7 +9,7 @@ import { random } from "remotion";
 import { MangaCar, VF20, carLength } from "../../../cars";
 import { pinhole } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
-import { FIRE_PALETTES, Fireball, SmokeStreaks } from "../../../kit/fire";
+import { BubbleSmoke, FIRE_PALETTES, Fireball } from "../../../kit/fire";
 import { BRUSH_FONT } from "../../../kit/lettering";
 import { focusLines } from "../../../kit/lines";
 import { ToneDefs } from "../../../kit/tone";
@@ -326,21 +326,18 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
             />
           </>,
         )}
-        {/* the fuel cell bursts at the break: a fireball in the fire's colours, ink smoke streaks after it */}
-        {ts >= BALL_AT + 10 ? (
+        {/* the fuel cell bursts at the break: a fireball in the fire's colours, bubble smoke rising after it in the
+            night; on the paper of the freeze a dark bubble-smoke burst goes behind it instead (ART-20) */}
+        {ts >= BALL_AT + 10 && !frozen ? (
           <g transform={`translate(${breakAt.x} ${breakAt.y - ppm * 0.6})`}>
-            <SmokeStreaks
+            <BubbleSmoke
               w={ppm * 2.4}
               top={ppm * 1.4}
-              frame={ts * 4}
+              rise={ppm * 3.2}
+              frame={ts}
               seed="b33-smoke"
               palette={fire}
-              rise={ppm * 3.2}
-              count={5}
-              wind={-0.25}
-              opacity={
-                frozen ? 0.6 : 0.85 * ramp(ts, BALL_AT + 10, BALL_AT + 30)
-              }
+              opacity={0.85 * ramp(ts, BALL_AT + 10, BALL_AT + 30)}
             />
           </g>
         ) : null}
@@ -351,6 +348,7 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
           age={ts - BALL_AT}
           seed="b33-ball"
           palette={fire}
+          backing={frozen}
         />
         {shards.map((s, i) => (
           <path

@@ -59,7 +59,7 @@ export const Cars2020States: React.FC = () => (
   </AbsoluteFill>
 );
 
-// Fire in one palette: three consecutive steps of the same fire (it changes every 3 frames) on the night page, and a
+// Fire in one palette: the same fire at frames 0, 20 and 40 (style B flows every frame) on the night page, and a
 // small fire on paper.
 export const FireSheet: React.FC<{ palette: FirePaletteName }> = ({
   palette,
@@ -69,7 +69,7 @@ export const FireSheet: React.FC<{ palette: FirePaletteName }> = ({
     <AbsoluteFill style={{ backgroundColor: PAPER }}>
       <svg width={1920} height={1080}>
         <rect x={0} y={0} width={1920} height={760} fill={INK} />
-        {[0, 3, 6].map((f, i) => (
+        {[0, 20, 40].map((f, i) => (
           <Fire
             key={f}
             x={330 + i * 630}
@@ -107,7 +107,7 @@ export const FireSheet: React.FC<{ palette: FirePaletteName }> = ({
           fontSize={30}
           fill={INK}
         >
-          上排：同一团火的第 0、3、6 帧（每 3 帧换一次形）
+          上排：同一团火的第 0、20、40 帧（B 型火焰，每帧平滑流动）
         </text>
       </svg>
     </AbsoluteFill>

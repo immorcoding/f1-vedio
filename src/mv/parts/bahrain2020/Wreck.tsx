@@ -9,8 +9,10 @@ import { INK, PAPER } from "../../../kit/colors";
 import {
   Fire,
   FIRE_PALETTES,
+  FireLight,
   HeatShimmer,
   type FirePaletteName,
+  type ScreenRect,
 } from "../../../kit/fire";
 import { ToneDefs, TonePattern } from "../../../kit/tone";
 import { beatsAtFrame, FRAMES_PER_BEAT } from "../../timing.ts";
@@ -81,8 +83,8 @@ export const WreckWorld: React.FC<{
   noGlow?: boolean;
   // varies the flames (the close-up panels each catch a different moment of the fire)
   fireSeed?: string;
-  // close-ups: more, finer flame tongues (the fire is drawn this many times more finely)
-  fireDetail?: number;
+  // the screen rectangle the picture is shown in (a panel): the fire's filters are cut to it
+  clip?: ScreenRect;
   // false once GRO is out: the cockpit is empty
   driver?: false;
   // how the rails are bent (default: as they were left after the impact)
@@ -98,7 +100,7 @@ export const WreckWorld: React.FC<{
   behindRails,
   noGlow = false,
   fireSeed = "",
-  fireDetail = 1.7,
+  clip,
   driver,
   bend = WRECK_BEND,
   frontFire = 1,
@@ -124,22 +126,14 @@ export const WreckWorld: React.FC<{
       <HeatShimmer
         frame={f}
         cx={back.x}
-        cy={back.y - back.h * intensity * 1.05}
-        rx={back.w * 0.95}
-        ry={back.h * 0.75}
-        scale={Math.max(8, cam.pxPerMetre(CELL_Z) * 0.09)}
+        cy={back.y - back.h * intensity * 1.0}
+        rx={back.w * 0.9}
+        ry={back.h * 0.7}
+        scale={Math.max(8, cam.pxPerMetre(CELL_Z) * 0.08)}
+        clip={clip}
       >
         <NightBackdrop cam={cam} tonePrefix={tonePrefix} />
       </HeatShimmer>
-      {/* the fire's light on the asphalt */}
-      <ellipse
-        cx={back.x}
-        cy={cam.screenY(0, BARRIER_Z - 1)}
-        rx={back.w * 1.4}
-        ry={cam.pxPerMetre(BARRIER_Z) * 2.4}
-        fill={p.glow ?? PAPER}
-        opacity={(p.glow ? 0.35 : 0.12) * intensity}
-      />
       <Fire
         x={back.x}
         y={back.y}
@@ -147,9 +141,11 @@ export const WreckWorld: React.FC<{
         h={back.h}
         frame={f}
         seed={`wreck-back${fireSeed}`}
-        detail={fireDetail}
+        tongues={6}
+        embers={14}
         palette={p}
         intensity={intensity}
+        clip={clip}
       />
       <MangaCar
         car={VF20}
@@ -166,33 +162,46 @@ export const WreckWorld: React.FC<{
         deflect={bend}
         tonePrefix={tonePrefix}
       />
-      {/* the low fire along the rails: three smaller fires, so close-ups keep fine tongues */}
-      {[-1, 0, 1].map((k) => (
-        <Fire
-          key={k}
-          x={front.x + k * front.w * 0.34}
-          y={front.y}
-          w={front.w * 0.4}
-          h={front.h * (k === 0 ? 1 : 0.75)}
-          frame={f + 1 + k}
-          seed={`wreck-front${k}${fireSeed}`}
-          detail={fireDetail}
-          palette={noLight}
-          intensity={intensity}
-          smoke={false}
+      {/* the fire's light on the rails and the asphalt (not in the close-ups: it would wash the panel out) */}
+      {noGlow ? null : (
+        <FireLight
+          cx={back.x}
+          cy={cam.screenY(0.6, BARRIER_Z)}
+          rx={back.w * 1.6}
+          ry={cam.pxPerMetre(BARRIER_Z) * 2.2}
+          frame={f}
+          palette={p}
+          amount={intensity}
         />
-      ))}
+      )}
+      {/* the low fire along the rails */}
+      <Fire
+        x={front.x}
+        y={front.y}
+        w={front.w}
+        h={front.h}
+        frame={f + 7}
+        seed={`wreck-front${fireSeed}`}
+        tongues={7}
+        embers={6}
+        palette={noLight}
+        intensity={intensity}
+        smoke={false}
+        clip={clip}
+      />
       <Fire
         x={gapFire.x}
         y={gapFire.y}
         w={gapFire.w}
         h={gapFire.h}
-        frame={f + 2}
+        frame={f + 13}
         seed={`wreck-gap${fireSeed}`}
-        detail={fireDetail}
+        tongues={4}
+        embers={4}
         palette={noLight}
         intensity={intensity * 0.9}
         smoke={false}
+        clip={clip}
       />
       <MangaCar
         car={VF20}
@@ -309,12 +318,16 @@ export const HaloScorch: React.FC<{ cam: Camera; f: number }> = ({
   };
   const halo = VF20.halo ?? "";
   const haloFar = VF20.haloFar ?? "";
-  const step = Math.floor(f / 3);
-  const embers = Array.from({ length: 6 }, (_, i) => ({
-    x: 780 + ((i * 97 + step * 13) % 240),
-    y: 500 + ((i * 53 + step * 7) % 70),
-    r: 2 + (i % 3),
-  }));
+  // the last embers on the tube: soft glowing points (fire style B, no outline) drifting slowly up and burning out
+  const embers = Array.from({ length: 6 }, (_, i) => {
+    const u = (f * 0.006 + i * 0.37) % 1;
+    return {
+      x: 780 + ((i * 97) % 240) + Math.sin(f * 0.03 + i * 1.7) * 6,
+      y: 570 - u * 70,
+      r: 2 + (i % 3),
+      op: Math.min(1, u / 0.15) * (1 - u),
+    };
+  });
   return (
     <g
       transform={`translate(${at.x} ${at.y}) scale(${k} ${k}) translate(${-VF20.frame.x} ${-VF20.frame.ground}) translate(${-CELL_POSE.dx * ppmPhoto} 0) rotate(${CELL_POSE.rotate} ${pivot.x} ${pivot.y})`}
@@ -361,15 +374,11 @@ export const HaloScorch: React.FC<{ cam: Camera; f: number }> = ({
         transform="translate(0 -5)"
       />
       {embers.map((e, i) => (
-        <circle
-          key={i}
-          cx={e.x}
-          cy={e.y}
-          r={e.r}
-          fill="#ffb347"
-          stroke={INK}
-          strokeWidth={0.8}
-        />
+        <g key={i} opacity={e.op}>
+          <circle cx={e.x} cy={e.y} r={e.r * 3} fill="#ffb43c" opacity={0.25} />
+          <circle cx={e.x} cy={e.y} r={e.r} fill="#ffb43c" />
+          <circle cx={e.x} cy={e.y} r={e.r * 0.5} fill="#fff3c4" />
+        </g>
       ))}
     </g>
   );

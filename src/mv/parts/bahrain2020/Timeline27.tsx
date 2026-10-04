@@ -187,7 +187,7 @@ const PanelPry: React.FC<PanelProps> = ({ r, f, age, palette }) => {
         palette={palette}
         intensity={0.4 + 0.3 * ramp(age, 0, 200)}
         noGlow
-        fireDetail={2}
+        clip={r}
         bend={PRY_BEND}
         tonePrefix="b35"
       />
@@ -340,6 +340,7 @@ const PanelMedical: React.FC<PanelProps> = ({ r, f, age, palette }) => {
         palette={palette}
         intensity={1}
         noGlow
+        clip={r}
         tonePrefix="b35"
       />
       {streaks}
@@ -389,7 +390,7 @@ const PanelExtinguisher: React.FC<PanelProps> = ({ r, f, age, palette }) => {
         palette={palette}
         intensity={0.9}
         noGlow
-        fireDetail={1.5}
+        clip={r}
         tonePrefix="b35"
       />
       <PowderBillow x={cock.x} y={cock.y} ppm={ppm} frame={f} />
@@ -540,7 +541,7 @@ const PanelHand: React.FC<PanelProps> = ({ r, f, age, palette }) => {
         palette={palette}
         intensity={1}
         noGlow
-        fireDetail={3}
+        clip={r}
         driver={false}
         bend={bend}
         frontFire={0.45}
