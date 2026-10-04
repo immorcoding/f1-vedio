@@ -125,17 +125,23 @@ export const VF20: CarSpec = {
     flap: { d: "M 364 617 L 404 616 L 416 762 L 380 762 Z", color: HAAS_RED },
   },
   rearWing: {
-    // near endplate as in the photo: its lower edge sweeps forward and down from the rear tip to meet the rear crash
-    // structure and diffuser at the body's rear edge (user review 2026-10-04: it floated)
-    near: "M 1688 520 L 1892 516 L 1838 622 L 1812 642 L 1774 656 L 1746 674 L 1702 688 L 1688 600 Z",
+    // near endplate, retraced (user review 2026-10-04: the shape was off). The outline comes from Alberto-g-rovi's
+    // "Romain Grosjean-Haas VF-20 (1)" (2020 Barcelona test, sharp and evenly lit, about 40° off side-on): rectified
+    // through the near rear tyre (its outline is a 0.75:1 ellipse, the endplate's plane is parallel to it), scaled by
+    // the tyre diameter, and placed by the top edge and rear tip of the trace photo, where they stand against the sky.
+    // The top steps down by ~3 cm a third of the way from the rear; the front edge leans forward and sweeps down to the
+    // tyre's top (the trace photo shows the same edge as a highlight in its shadow). The lower edge, hidden behind the
+    // tyre in that photo, still sweeps forward and down to the rear crash structure and diffuser at the body's rear
+    // edge (user review 2026-10-04: it floated).
+    near: "M 1704 509 L 1796 508 L 1799 517 L 1892 516 L 1872 564 L 1847 627 L 1812 642 L 1774 656 L 1746 674 L 1702 688 L 1640 678 L 1633 638 L 1656 599 L 1683 533 Z",
     // far endplate (HIGH; LOW hides it): the near one's copy (uniform scale), lifted above it, its bounding-box centre x on
     // the near one's (no sideways perspective offset; user review 2026-10-04).
-    // Centre x 1790; dx = (1 - 0.79) * 204 / 2; lifted 62 px: the W12/RB16B lift (69/65 px) at this trace's scale
+    // Centre x 1762.5; dx = (1 - 0.79) * 259 / 2; lifted 62 px: the W12/RB16B lift (69/65 px) at this trace's scale
     // (tyre radius 97 px against their 105–106 px), so it peeks just above the near one as on those two (user review
     // 2026-10-04: 82 px stood too high).
     // Both endplates stay black: the outer face is black with the BlueDEF logo on every 2020 VF-20 reference (Barcelona
     // test side and rear-three-quarter shots, Tuscan GP race shot); the red sits on the wing planes.
-    farFrom: { dx: 21, dy: -62, scale: 0.79 },
+    farFrom: { dx: 27, dy: -62, scale: 0.79 },
     elements: [],
     // Main plane and DRS flap side-on, the W12's profiles moved to this car: the same metres behind the rear axle (the
     // wing box is 150–500 mm behind it, 1708–1809 px from the wheel centre at 1665; 2020 Technical Regulations,
