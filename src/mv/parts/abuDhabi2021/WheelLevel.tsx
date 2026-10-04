@@ -188,7 +188,8 @@ export const WheelLevel: React.FC<{ st: ShotTime; t0: number }> = ({ st, t0 }) =
               const rr = 0.36 * a.pxPerMetre;
               return (
                 <g key={c.car.name}>
-                  <MangaCar car={c.car} at={at} state={{ wheelAngle: c.w, compound: c.compound }} />
+                  {/* wheel-level camera: the LOW look (ART-26) */}
+                  <MangaCar car={c.car} at={at} state={{ wheelAngle: c.w, compound: c.compound, farSide: "low" }} />
                   <SpinBlur x={f.x} y={f.y + bounce(k)} r={rr * 0.78} seed={seed + k * 5} />
                   <SpinBlur x={r.x} y={r.y + bounce(k)} r={rr * 0.78} seed={seed + k * 5 + 2} />
                 </g>

@@ -96,7 +96,7 @@ const Panel: React.FC<{
           <MangaCar
             car={car}
             at={a}
-            state={{ wheelAngle: wheel, compound: car.compound }}
+            state={{ wheelAngle: wheel, compound: car.compound, farSide: "low" }} // helmet long lens: the LOW look (ART-26)
           />
         </g>
         {dim > 0 ? (

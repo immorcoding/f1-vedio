@@ -57,12 +57,13 @@ export const Charge: React.FC<{ st: ShotTime; t0: number }> = ({ st, t0 }) => {
         {
           car: RB16B,
           ...plan.ver,
-          state: { wheelAngle: wheel, compound: PIRELLI_2021.soft },
+          // the 1.1 m tracking camera looks down ~4°: the LOW look (ART-26)
+          state: { wheelAngle: wheel, compound: PIRELLI_2021.soft, farSide: "low" },
         },
         {
           car: W12,
           ...plan.ham,
-          state: { wheelAngle: wheel + 17, compound: PIRELLI_2021.hard },
+          state: { wheelAngle: wheel + 17, compound: PIRELLI_2021.hard, farSide: "low" },
         },
       ]}
       between={

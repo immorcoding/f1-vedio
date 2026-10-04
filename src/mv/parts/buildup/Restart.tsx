@@ -83,13 +83,14 @@ export const Restart: React.FC<{ st: ShotTime }> = ({ st }) => {
           car: RB16B,
           x: verX,
           z: 12.2 + weave,
-          state: { wheelAngle: wheel, compound: PIRELLI_2021.soft, tilt: 0.6 * launch },
+          // the 2.9 m camera looks down ~12°: the HIGH look (ART-26)
+          state: { wheelAngle: wheel, compound: PIRELLI_2021.soft, tilt: 0.6 * launch, farSide: "high" },
         },
         {
           car: W12,
           x: hamX,
           z: 10,
-          state: { wheelAngle: wheel + 30, compound: PIRELLI_2021.hard, tilt: 0.6 * launch },
+          state: { wheelAngle: wheel + 30, compound: PIRELLI_2021.hard, tilt: 0.6 * launch, farSide: "high" },
         },
       ]}
     >

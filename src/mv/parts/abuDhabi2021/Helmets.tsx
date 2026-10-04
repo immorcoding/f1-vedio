@@ -62,7 +62,8 @@ const Strip: React.FC<{
         />
         <path d={focusLines(helmet.x + 40, helmet.y, 260, 110, seed)} fill={PAPER} opacity={0.35} />
         <g transform={`translate(0 ${Math.sin(t * 41) * 3})`}>
-          <MangaCar car={car} at={a} state={{ wheelAngle: t * 1200, compound }} />
+          {/* helmet long lens, ~1.8° up: the LOW look (ART-26) */}
+          <MangaCar car={car} at={a} state={{ wheelAngle: t * 1200, compound, farSide: "low" }} />
         </g>
         <g transform={`translate(${tagAt.x} ${tagAt.y}) rotate(-4)`}>
           <rect x={-70} y={-34} width={140} height={68} fill={tag === "VER" ? INK : PAPER} stroke={PAPER} strokeWidth={6} />

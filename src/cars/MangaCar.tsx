@@ -20,6 +20,7 @@ import {
   type TopOnlyCar,
   type Wheel,
 } from "./spec";
+import { specSeenFrom } from "./seenFrom";
 import { TopCar } from "./TopCar";
 
 // How the car is seen: from the side (the traced view), or from above on a track map (TopCar).
@@ -391,9 +392,10 @@ export const DriverHelmet: React.FC<{
 // The car drawn in its reference photo's own pixel space, facing left as in the photo. MangaCar flips and places it;
 // the Art check still draws it straight onto the photo's frame.
 export const CarInPhotoSpace: React.FC<{ car: CarSpec; state?: CarState }> = ({
-  car,
+  car: traced,
   state = {},
 }) => {
+  const car = specSeenFrom(traced, state.farSide ?? "low");
   const id = svgId(useId());
   const defs = (
     <defs>
@@ -867,6 +869,8 @@ export const MangaCar: React.FC<{
   if (view === "top" || isTopOnly(car)) {
     return <TopCar car={car} at={at} state={state} />;
   }
+  // the body as this shot's camera sees it (FarSideLook.body); the number below follows it
+  car = specSeenFrom(car, state.farSide ?? "low");
   const scale = at.pxPerMetre / CAR_UNITS_PER_METRE;
   // Photo px → screen px.
   const k = car.frame.k * scale;

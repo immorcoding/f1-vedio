@@ -51,15 +51,24 @@ export const W12: CarSpec = {
   // near ones, the far front endplate a sliver over the near one, the wing seen side-on, its elements rising from the
   // endplate to the nose (ART-26).
   farSide: {
+    // HIGH camera: the car as traced (the photo camera looks down ~18°, like the MV's 2.6–3.2 m cameras); the far
+    // wheels at 80% of the traced lift (user review 2026-10-04: still peeking, a little lower), x at the near wheels.
+    high: {
+      wheels: [
+        { cx: 452, cy: 622, r: 95 },
+        { cx: 1585, cy: 621, r: 98 },
+      ],
+    },
     low: {
       wheels: [
         { cx: 469, cy: 732, r: 101 },
         { cx: 1636, cy: 735, r: 102 },
       ],
       frontEndplate: { dx: 4, dy: -8, scale: 0.95 },
-      frontDeck:
-        "M 148 772 L 230 750 L 300 730 L 336 716 L 336 806 L 317 825 L 162 825 L 147 810 Z",
-      frontFlap: "M 262 738 L 336 716 L 336 727 L 266 748 Z",
+      // LOW camera: the body re-projected from the photo's 17.7° to a 4° trackside camera
+      // (seenFrom.ts): the nose drops onto the wing, the floor to the ground, the undercut closes up, the top comes
+      // down; the front wing is drawn side-on from the endplate to the nose.
+      body: { photoElevation: 17.7, elevation: 4, floorY: 803, podY: 755, noseTo: 620 },
     },
   },
   rimR: 56,
@@ -69,7 +78,7 @@ export const W12: CarSpec = {
   body:
     "M 127 697 C 200 675 300 645 420 612 C 500 590 560 566 610 556 L 705 552 L 730 566 L 930 566 L 1000 548 L 1030 530 L 1034 468 " +
     "C 1060 458 1100 458 1140 460 L 1340 461 C 1420 470 1520 492 1600 520 L 1640 560 L 1690 610 L 1712 640 L 1700 690 L 1560 760 L 1540 800 " +
-    "L 620 800 L 600 790 L 598 700 C 520 704 440 709 360 711 C 260 713 180 716 132 717 Z",
+    "L 620 800 L 600 790 L 598 700 C 520 706 440 716 360 724 C 280 729 200 730 150 726 L 132 717 Z",
   regions: {
     cover:
       "M 1034 468 C 1060 458 1100 458 1140 460 L 1340 461 C 1420 470 1520 492 1600 520 L 1640 560 L 1600 650 C 1560 630 1500 615 1420 600 C 1300 575 1150 545 1030 530 Z",
@@ -172,15 +181,24 @@ export const RB16B: CarSpec = {
   // near ones, the far front endplate a sliver over the near one, the wing seen side-on, its elements rising from the
   // endplate to the nose (ART-26).
   farSide: {
+    // HIGH camera: the car as traced (the photo camera looks down ~16°, like the MV's 2.6–3.2 m cameras); the far
+    // wheels at 80% of the traced lift (user review 2026-10-04: still peeking, a little lower), x at the near wheels.
+    high: {
+      wheels: [
+        { cx: 450, cy: 618, r: 96 },
+        { cx: 1565, cy: 617, r: 98 },
+      ],
+    },
     low: {
       wheels: [
         { cx: 452, cy: 720, r: 101 },
         { cx: 1588, cy: 717, r: 102 },
       ],
       frontEndplate: { dx: 4, dy: -8, scale: 0.95 },
-      frontDeck:
-        "M 132 768 L 210 748 L 280 732 L 324 722 L 324 800 L 305 822 L 145 822 L 130 807 Z",
-      frontFlap: "M 250 739 L 324 722 L 324 733 L 254 749 Z",
+      // LOW camera: the body re-projected from the photo's 16.1° to a 4° trackside camera
+      // (seenFrom.ts): the nose drops onto the wing, the floor to the ground, the undercut closes up, the top comes
+      // down; the front wing is drawn side-on from the endplate to the nose.
+      body: { photoElevation: 16.1, elevation: 4, floorY: 782, podY: 730, noseTo: 600 },
     },
   },
   rimR: 56,
@@ -189,7 +207,7 @@ export const RB16B: CarSpec = {
   body:
     "M 152 712 C 220 690 300 650 420 600 C 470 580 520 560 560 554 L 700 552 L 718 566 L 930 568 L 1000 552 L 1022 540 L 1022 444 " +
     "C 1060 440 1120 440 1200 441 L 1335 437 L 1420 460 L 1555 510 L 1600 560 L 1650 600 L 1690 640 L 1700 690 L 1520 745 L 1490 770 " +
-    "L 600 785 L 585 780 L 582 690 C 480 700 380 718 300 722 C 240 724 190 726 158 726 Z",
+    "L 600 785 L 585 780 L 582 690 C 480 704 380 726 300 734 C 240 739 190 737 162 731 L 158 726 Z",
   regions: {
     cover:
       "M 1022 444 C 1060 440 1120 440 1200 441 L 1335 437 L 1420 460 L 1555 510 L 1600 560 L 1600 650 C 1560 625 1500 600 1420 585 C 1300 560 1150 548 1022 540 Z",

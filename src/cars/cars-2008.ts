@@ -313,6 +313,7 @@ export const STR3: CarSpec = {
     { cx: 609, cy: 583, r: 98 }, // just behind the near front wheel, like the other cars (was 467: well ahead of it)
     { cx: 1555, cy: 600, r: 98 },
   ],
+  keepFarWheelX: true, // approved as it is: hidden just behind the near wheels
   rimR: 55,
   rim: "dark",
   rimAccent: "#b8893a",
