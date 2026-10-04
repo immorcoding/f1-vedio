@@ -126,11 +126,11 @@ export const VF20: CarSpec = {
   },
   rearWing: {
     near: "M 1688 520 L 1892 516 L 1834 626 L 1800 640 L 1700 640 L 1688 600 Z",
-    // far endplate: the near one's copy, nearly all behind it; a sliver shows along the top and rear edges (ART-17)
-    farFrom: { dx: 16, dy: -6, scale: 0.95 },
-    // the wing elements (mainplane and flap) between the endplates, seen from above as a curved band
-    top: "M 1688 520 L 1592 470 C 1588 452 1590 432 1600 419 C 1660 414 1730 414 1780 416 L 1792 444 L 1800 520 Z",
-    elements: ["M 1596 462 C 1660 460 1740 462 1796 470"],
+    // far endplate (HIGH; LOW hides it): the near one's copy, lifted where the photo shows it: the dark piece above the
+    // near endplate is its upper part (user review 2026-10-04). Top front corner 1688 520 → ~1608 419, rear tip
+    // 1892 516 → ~1779 416. No separate wing-top block; the wing planes between the endplates come later.
+    farFrom: { dx: -80, dy: -100, scale: 0.84 },
+    elements: [],
     pylon: "M 1606 468 L 1632 468 L 1642 612 L 1616 614 Z",
     beam: "M 1700 626 L 1830 626",
   },

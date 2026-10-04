@@ -112,10 +112,10 @@ export const W12: CarSpec = {
     near: "M 1695 525 L 1820 526 L 1821 540 L 1838 540 L 1838 552 L 1877 552 L 1847 600 L 1845 673 L 1640 678 Z",
     // far endplate (HIGH; LOW hides it): the near one's copy, lifted where the photo shows it. The tall dark piece above
     // the near endplate, with the curved top and the same steps at the rear, is the far endplate's upper part (user
-    // review 2026-10-04): top front corner 1695 525 → ~1667 440, rear tip 1877 552 → ~1840 466. Its lower part is
-    // behind the near endplate and the engine cover. No separate wing-top block: from this camera the wing planes
-    // between the endplates are hidden behind the far endplate's inner face.
-    farFrom: { dx: -25, dy: -85, scale: 0.95 },
+    // review 2026-10-04): top front corner 1695 525 → ~1667 441, rear tip 1877 552 → ~1835 465; scaled 0.89 (user:
+    // 0.95 read too big). Its lower part is behind the near endplate and the engine cover. No separate wing-top block:
+    // from this camera the wing planes between the endplates are hidden behind the far endplate's inner face.
+    farFrom: { dx: -16, dy: -84, scale: 0.89 },
     elements: [],
     pylon: "M 1640 500 L 1682 500 L 1690 612 L 1650 616 Z",
     beam: "M 1690 600 L 1840 600",
@@ -237,18 +237,20 @@ export const RB16B: CarSpec = {
   rearWing: {
     // near endplate as in the photo: higher at the front, a step down at the rear, curved lower edge
     near: "M 1630 493 L 1743 493 L 1750 506 L 1773 520 L 1827 520 L 1790 603 L 1787 643 L 1760 655 L 1700 662 L 1650 650 L 1610 612 L 1603 597 Z",
-    // red endplate panel, on both endplates (ART-17)
+    // red endplate panel, on both endplates (ART-17); its front edge on the endplate's front edge (1630 493 → 1603 597),
+    // as in the photo (user review 2026-10-04)
     livery: [
       {
-        d: "M 1640 526 L 1825 524 L 1793 603 L 1604 598 Z",
+        d: "M 1621.4 526 L 1825 524 L 1793 603 L 1602.7 598 Z",
         color: "#d72a2e",
       },
     ],
-    // far endplate: the near one's copy, nearly all behind it; a sliver shows along the top and rear edges (ART-17)
-    farFrom: { dx: 17, dy: -6, scale: 0.95 },
-    // the wing elements (mainplane and flap) between the endplates, seen from above as a curved band
-    top: "M 1630 493 C 1616 470 1615 440 1624 418 C 1660 410 1705 410 1725 412 L 1742 424 L 1748 493 Z",
-    elements: ["M 1622 452 C 1670 448 1710 448 1746 452"],
+    // far endplate (HIGH; LOW hides it): the near one's copy, red panel included, lifted where the photo shows it: the
+    // tall dark piece above the near endplate is its upper part (user review 2026-10-04). Top front corner 1630 493 →
+    // ~1627 414, rear tip 1827 520 → ~1802 438. No separate wing-top block; the wing planes between the endplates come
+    // later.
+    farFrom: { dx: 0, dy: -79, scale: 0.89 },
+    elements: [],
     pylon: "M 1595 455 L 1640 455 L 1645 610 L 1600 612 Z",
     beam: "M 1612 615 L 1788 615",
   },
