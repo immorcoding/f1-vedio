@@ -33,7 +33,8 @@ export const down = (deg: number, l = 1): V => ({
 });
 export const angleOf = (d: V) => Math.atan2(d.x, -d.y) / RAD; // inverse of down()
 
-// Bone lengths, m (stature 1.78 m: hip joint 0.92, knee 0.50, ankle 0.08, shoulder joint 1.45).
+// Bone lengths, m (stature 1.78 m standing straight: hip joint 0.92, knee 0.50, ankle 0.08, waist 1.07, shoulder
+// joint 1.46, base of the neck 1.51, chin 1.55, top of the skull 1.78).
 export const BONES = {
   thigh: 0.43,
   shin: 0.42,
@@ -46,6 +47,10 @@ export const BONES = {
   waist: 0.15, // hip joint to waist, along the pelvis
   shoulder: v(-0.005, 0.335), // shoulder joint in the ribcage frame (origin at the waist)
   neck: v(-0.02, 0.385), // base of the neck in the ribcage frame
+  // the ribcage frame's vertical unit, m: its shapes (here and in figure.tsx) are drawn on a 0.385 m waist-to-neck
+  // scale, and a 1.78 m body's waist-to-neck is 0.445 m
+  chestY: 1.155,
+  headUp: 0.15, // the head's centre above the base of the neck (upright), m
 };
 export const LEG = BONES.thigh + BONES.shin;
 
@@ -140,7 +145,7 @@ export const solve = (pose: Pose): Body => {
   const hip = pose.hip;
   const inPelvis = (p: V) => add(hip, lean(p, pelvis));
   const waist = inPelvis(v(0, BONES.waist));
-  const inChest = (p: V) => add(waist, lean(p, chest));
+  const inChest = (p: V) => add(waist, lean(v(p.x, p.y * BONES.chestY), chest));
   const shoulder = inChest(BONES.shoulder);
   const neck = inChest(BONES.neck);
   const leg = (h: V, f: FootPose): LegJ => {

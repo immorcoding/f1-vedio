@@ -136,11 +136,12 @@ const TimeLabel: React.FC<{
 };
 
 const S_HALO = HALO_WORLD.x - RUN.a.x;
-// 0 s: the halo has pushed the top rail up and back — the rail rides on the halo, the cell wedged under it.
+// 0 s: the halo has pushed the top rail up and back — the rail rides on the halo, the cell wedged under it: pushed
+// back onto the cell and lifted so its lower edge sits just over the hoop's top.
 const PRY_BEND: Deflection = (s, rail) => {
   if (rail === 2) {
     const k = bump(s, S_HALO - 0.15, 1.3);
-    return { dx: 0, dy: 0.2 * k, dz: 1.0 * k };
+    return { dx: 0, dy: (HALO_TOP.y + 0.045 - RAILS[2][0]) * k, dz: 1.0 * k };
   }
   return WRECK_BEND(s, rail);
 };

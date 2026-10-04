@@ -38,11 +38,12 @@ const W = 640;
 const H = 360;
 // the triple guardrail of Bahrain 2020: rail bottom and top heights, m (as src/mv/parts/bahrain2020/night.tsx)
 const RAILS: [number, number][] = [
-  [0.25, 0.55],
-  [0.62, 0.92],
-  [0.99, 1.29],
+  [0.12, 0.425],
+  [0.43, 0.735],
+  [0.74, 1.05],
 ];
-const TOP = 1.29;
+const TOP = 1.05;
+const POST_TOP = 1.1;
 
 type Person = {
   x: number; // ground point, m from the cell's world origin
@@ -124,7 +125,7 @@ export const PeopleMotion: React.FC = () => {
   const rail = (
     <g>
       {[-3, -1, 1, 3].map((x) => (
-        <rect key={x} x={W / 2 + x * s2 - 4} y={railY - 1.36 * s2} width={8} height={1.36 * s2} fill="#1a1a1a" />
+        <rect key={x} x={W / 2 + x * s2 - 4} y={railY - POST_TOP * s2} width={8} height={POST_TOP * s2} fill="#1a1a1a" />
       ))}
       {RAILS.map(([a, b]) => (
         <rect key={a} x={0} y={railY - b * s2} width={W} height={(b - a) * s2} fill={PAPER} stroke={INK} strokeWidth={3} />
