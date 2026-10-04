@@ -10,13 +10,13 @@
 
 ## Project shape
 
-Current standards, one file per area. Before work that touches an area, read its file and raise any Proposed items with the user.
+Current standards, one file per area, rules grouped under titles. Before work that touches an area, read its file (once split, its index and the title files your work touches) and raise any Proposed items with the user.
 Levels: **exploring** is a bet (follow it, note friction); **provisional** is likely to hold (ask before breaking it); **settled** is proven (enforced).
 Add a dated line to the area's Signals when a rule decides part of your change, gets in your way or is broken by code, and when the user corrects you. Decisions that should bind the project go through the `shape-your-project` skill.
 Area files change only on `main` (the writer branch); on any other branch, write those lines and any drafts to `docs/shape/inbox/<branch>.md` instead.
 
 - [Story & facts](docs/shape/story-and-facts.md): 3–3.5 分钟手绘 MV，4 个名场面，事实必须核实
-- [Art direction](docs/shape/art-direction.md): 代码绘制的漫画风，环境黑白、赛车真实涂装
+- [Art direction](docs/shape/art-direction.md)（索引，规则在 `art-direction.<title>.md`）: 代码绘制的漫画风，环境黑白、赛车真实涂装
 - [Motion & timing](docs/shape/motion-and-timing.md): 1080p60，俯视加特写的混合视角
 - [Audio](docs/shape/audio.md): 代码合成的电子风 BGM 是 MV 的骨架
 
