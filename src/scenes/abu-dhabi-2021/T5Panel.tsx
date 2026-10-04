@@ -5,7 +5,7 @@
 // `t` animates the panel: seconds after the lock-up. At t = 0 it draws exactly the settled frame (the library still
 // and the first frame of shot 5.3); after that the camera tracks the braking cars along the wall, VER slides past on
 // the inside trailing smoke, HAM's wheels turn, and the focus lines and lettering shiver.
-import { AbsoluteFill } from "remotion";
+import { AbsoluteFill, random } from "remotion";
 import { MangaCar, PIRELLI_2021, RB16B, W12, carPoint } from "../../cars";
 import { offsetFrom, pinhole } from "../../kit/camera";
 import { INK, PAPER } from "../../kit/colors";
@@ -72,6 +72,159 @@ export const Puffs: React.FC<{
     })}
   </g>
 );
+
+// Lock-up smoke off VER's locked front tyre (ART-20 bubble smoke, made fine): many small puffs of varied size, born
+// at the contact patch at a steady rate, thrown back and slowing, lifting a little, swelling, then breaking into
+// smaller bubbles that drift apart and shrink away; and a scatter of rubber-dust specks flung back off the tread,
+// falling and fading. Screen px at VER's distance. Every particle is born on a fixed clock that started before t = 0,
+// so the settled frame (t = 0) already shows the full trail.
+const SMOKE = {
+  rate: 84, // puffs per second
+  life: [1.0, 1.7], // s
+  back: [950, 1500], // initial speed back along the trail, px/s
+  drag: 0.42, // s
+  rise: [10, 42], // px/s
+  r0: [3, 10], // px at birth
+  grow: [10, 26], // px per s of age
+};
+const DUST = {
+  rate: 150, // specks per second
+  life: [0.35, 1.0],
+  back: [550, 1700],
+  drag: 0.32,
+};
+const PRE = 1.8; // s of trail already laid down at t = 0
+
+const rnd = (i: number, k: string) => random(`t5-smoke-${k}-${i}`);
+const lerp = ([a, b]: number[], u: number) => a + (b - a) * u;
+
+type Bubble = { cx: number; cy: number; r: number; age: number };
+
+export const LockupSmoke: React.FC<{ x: number; y: number; t: number }> = ({
+  x,
+  y,
+  t,
+}) => {
+  const bubbles: Bubble[] = [];
+  for (
+    let i = Math.floor(-PRE * SMOKE.rate);
+    i <= Math.floor(t * SMOKE.rate);
+    i++
+  ) {
+    const age = t - i / SMOKE.rate;
+    const life = lerp(SMOKE.life, rnd(i, "life"));
+    if (age < 0 || age > life) continue;
+    const u = age / life;
+    const back =
+      lerp(SMOKE.back, rnd(i, "back")) *
+      SMOKE.drag *
+      (1 - Math.exp(-age / SMOKE.drag));
+    // each puff leaves on its own slight angle, so the trail thickens as it ages
+    const fan = (rnd(i, "fan") - 0.62) * 0.16;
+    const cx = x - 12 - back + Math.sin(i * 2.3 + t * 7) * 2 * u;
+    const cy =
+      y -
+      7 -
+      lerp(SMOKE.rise, rnd(i, "rise")) * age +
+      back * fan +
+      (rnd(i, "y0") - 0.5) * 8;
+    const r =
+      (lerp(SMOKE.r0, rnd(i, "r0") ** 1.5) +
+        lerp(SMOKE.grow, rnd(i, "grow")) * age) *
+      Math.min(1, 0.4 + age / 0.05);
+    if (u < 0.62) {
+      bubbles.push({ cx, cy, r, age });
+      continue;
+    }
+    // breaking up: three smaller bubbles drifting apart, shrinking to nothing
+    const k = (u - 0.62) / 0.38;
+    const spin = rnd(i, "spin") * Math.PI * 2;
+    for (let j = 0; j < 3; j++) {
+      const a = spin + (j / 3) * Math.PI * 2;
+      const d = r * (0.45 + 0.9 * k);
+      bubbles.push({
+        cx: cx + Math.cos(a) * d,
+        cy: cy + Math.sin(a) * d * 0.7,
+        r: r * (0.62 - 0.12 * j) * (1 - k),
+        age,
+      });
+    }
+  }
+  // oldest first, so the fresh puffs at the tyre sit in front
+  bubbles.sort((a, b) => b.age - a.age);
+
+  const specks: {
+    x: number;
+    y: number;
+    r: number;
+    o: number;
+    c: string;
+    len: number;
+  }[] = [];
+  for (let i = Math.floor(-DUST.rate); i <= Math.floor(t * DUST.rate); i++) {
+    const age = t - i / DUST.rate;
+    const life = lerp(DUST.life, rnd(i, "dlife"));
+    if (age < 0 || age > life) continue;
+    const v = lerp(DUST.back, rnd(i, "dback"));
+    const back = v * DUST.drag * (1 - Math.exp(-age / DUST.drag));
+    const up = (rnd(i, "dup") - 0.35) * 320; // px/s, mostly upward
+    specks.push({
+      x: x - 8 - back,
+      y: y - 6 - up * age + 380 * age * age + (rnd(i, "dy0") - 0.5) * 22,
+      r: 1.1 + 2.6 * rnd(i, "dr") ** 2,
+      o: Math.min(1, 1.6 * (1 - age / life)),
+      c: rnd(i, "dark") < 0.75 ? INK : "#5e5e5e",
+      // fresh specks still flying fast read as short dashes
+      len: v * Math.exp(-age / DUST.drag) * 0.014,
+    });
+  }
+
+  return (
+    <g>
+      {bubbles.map((p, i) => (
+        <g key={`p${i}`}>
+          <circle
+            cx={p.cx}
+            cy={p.cy}
+            r={p.r}
+            fill={PAPER}
+            stroke={INK}
+            strokeWidth={Math.min(2.2, 0.8 + p.r * 0.07)}
+          />
+          {p.r > 7 ? (
+            <path
+              d={`M ${p.cx - p.r * 0.2} ${p.cy + p.r * 0.88} A ${p.r} ${p.r} 0 0 0 ${p.cx + p.r * 0.93} ${p.cy + p.r * 0.2}`}
+              fill="none"
+              stroke={tone("mid")}
+              strokeWidth={p.r * 0.32}
+            />
+          ) : null}
+        </g>
+      ))}
+      {specks.map((s, i) =>
+        s.len > 2.5 ? (
+          <path
+            key={`d${i}`}
+            d={`M ${s.x} ${s.y} l ${-s.len} ${s.len * 0.05}`}
+            stroke={s.c}
+            strokeWidth={s.r * 1.2}
+            strokeLinecap="round"
+            opacity={s.o}
+          />
+        ) : (
+          <circle
+            key={`d${i}`}
+            cx={s.x}
+            cy={s.y}
+            r={s.r}
+            fill={s.c}
+            opacity={s.o}
+          />
+        ),
+      )}
+    </g>
+  );
+};
 
 const insetSpokes = (cx: number, cy: number, r: number, n = 10) =>
   Array.from({ length: n }, (_, i) => {
@@ -237,14 +390,7 @@ export const T5Panel: React.FC<{ t?: number }> = ({ t = 0 }) => {
                 at={VER}
                 state={{ wheelAngle: 18 + m.wheel, lockFront: 18 }}
               />
-              <Puffs
-                x={VER_LOCKUP.x - 40}
-                y={VER_LOCKUP.y - 12}
-                n={13 + Math.floor(t * 3)}
-                step={26}
-                grow={3.4}
-                t={t}
-              />
+              <LockupSmoke x={VER_LOCKUP.x} y={VER_LOCKUP.y} t={t} />
               <MangaCar
                 car={W12}
                 at={HAM}
