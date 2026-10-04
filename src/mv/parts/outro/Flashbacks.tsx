@@ -173,7 +173,7 @@ const CAR_AT = { x: -250, y: 1034 };
 const NUM = {
   x: CAR_AT.x + (RB16B.frame.x - RB16B.numberAt.x) * CAR_K,
   y: CAR_AT.y + (RB16B.numberAt.y - RB16B.frame.ground) * CAR_K,
-  size: (RB16B.numberAt.size ?? 46) * CAR_K * 1.7, // larger than the livery's, so the egg reads
+  size: (RB16B.numberAt.size ?? 46) * CAR_K, // the painted number, where and as big as on the real car
 };
 const NO_NUMBER = { ...RB16B, driver: { ...RB16B.driver, number: "" } };
 /** 0 → 1 across the turn-over that starts `since` seconds ago; the face shows the old side until halfway. */
@@ -218,9 +218,9 @@ const Number1: React.FC<PanelProps> = ({ t, beat }) => {
           fontFamily="Arial Black, Arial, sans-serif"
           fontWeight={900}
           fontSize={NUM.size}
-          fill={PAPER}
+          fill={RB16B.numberAt.color ?? PAPER}
           stroke={INK}
-          strokeWidth={3 * CAR_K}
+          strokeWidth={1.5 * CAR_K}
           paintOrder="stroke"
           fontStyle="italic"
         >

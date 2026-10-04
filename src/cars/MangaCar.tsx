@@ -889,15 +889,26 @@ export const MangaCar: React.FC<{
             fontFamily="Arial Black, Arial, sans-serif"
             fontWeight={900}
             fontSize={(car.numberAt.size ?? 46) * k}
-            fill={PAPER}
+            fill={car.numberAt.color ?? PAPER}
             stroke={INK}
-            strokeWidth={3 * k}
+            strokeWidth={(car.numberAt.color ? 1.5 : 3) * k}
             paintOrder="stroke"
             fontStyle="italic"
             transform={
-              state.tilt
-                ? `rotate(${-state.tilt * dir} ${pivot.x} ${pivot.y})`
-                : undefined
+              [
+                state.tilt
+                  ? `rotate(${-state.tilt * dir} ${pivot.x} ${pivot.y})`
+                  : "",
+                // the photo faces left: mirrored (facing right) a clockwise turn becomes anticlockwise
+                car.numberAt.angle
+                  ? `rotate(${-dir * car.numberAt.angle} ${num.x} ${num.y})`
+                  : "",
+                car.numberAt.squash
+                  ? `translate(${num.x} ${num.y}) scale(1 ${car.numberAt.squash}) translate(${-num.x} ${-num.y})`
+                  : "",
+              ]
+                .join(" ")
+                .trim() || undefined
             }
           >
             {car.driver.number}
