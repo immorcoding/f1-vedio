@@ -1,12 +1,19 @@
 // Shot 4.1's picture: Yas Marina at night through one pinhole camera (ART-9), standing on the start/finish straight
 // and looking down it. The grid boxes run away to the Yas hotel, whose link bridge spans the far end; the pit wall and
-// pit building on the left, the main grandstand (tensile sail roof, packed crowd) on the right, floodlight towers
-// throwing light cones onto the asphalt. Black and white only (ART-8).
+// pit building on the left, the main grandstand (cantilevered tensile canopy, packed crowd) on the right, floodlight
+// towers behind the pit building and beyond the stand throwing light cones onto the asphalt. Black and white only
+// (ART-8).
+//
+// Everything is built in world metres and projected through CAM, so every line that runs along the straight (walls,
+// fence rails, the canopy's lip and back beam, the pit building, the painted lines) meets the same vanishing point,
+// and every object is drawn at its real size for its distance. Walls and fences start in front of the frame's near
+// edge and run without a break to the hotel's podium, which closes the straight.
 //
 // References (docs/assets/reference-register.md): the straight between the pit building and the main grandstand at
-// night, its sail roofs lit from below (references/yas-marina/main-straight-night-2009.jpg); floodlight towers and
-// the lit hotel from the circuit (yas-hotel-fireworks-2015.jpg, circuit-by-night-2010.jpg). The hotel is drawn by
-// YasHotel. Composite for the title card: the camera compresses the lap so the hotel closes the straight.
+// night, the stand's canopy cantilevered over the seats on arms, its underside lit by lamps along the lip
+// (references/yas-marina/main-straight-night-2009.jpg); floodlight towers behind the debris fence and the lit hotel
+// (yas-hotel-fireworks-2015.jpg, circuit-by-night-2010.jpg). The hotel is drawn by YasHotel. Composite for the title
+// card: the camera compresses the lap so the hotel closes the straight.
 import { pinhole } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import { tone } from "../../../kit/tone";
@@ -14,13 +21,22 @@ import { YasHotel } from "../../../scenes/abu-dhabi-2021/YasHotel";
 
 export const CAM = pinhole({ f: 1100, horizon: 690, cx: 935, height: 4.5 });
 
-// Track coordinates relative to the camera, m: x across (right +), z down the straight.
+// Track coordinates relative to the camera, m: x across (right +), y up, z down the straight.
+const Z_NEAR = 3; // everything along the straight starts here, in front of the frame's near edge
 const TRACK = { left: -4, right: 12 };
 const PIT_WALL = -5.5;
 const PIT_FRONT = -22;
-const RUNOFF = 17;
-const STAND = { front: 20, back: 40, z0: 14, z1: 58, rows: 23 };
-const HOTEL_Z = 149;
+const RUNOFF = 17; // the right-hand wall and debris fence
+// The hotel's facade plane. Its photo is traced at HOTEL_M metres per photo px, so the opening under the link bridge
+// (photo x 272..305) spans the straight (x −4..12.5).
+const HOTEL_Z = 166;
+const HOTEL_M = 0.5;
+// The main grandstand: front wall at x = front, seat rows climbing to x = back, from z0 to z1.
+const STAND = { front: 20, back: 40, z0: 6, z1: 102, rows: 23 };
+// Its canopy: a fabric roof on cantilever arms every `bay` m, the lip out over the front rows, rising to the back beam
+// over the hospitality level. The lip scallops back and up between arm tips.
+const ROOF = { lipX: 18.5, lipY: 20.5, backX: 42, backY: 23.5, bay: 12, inX: 1.4, upY: 1.2 };
+const HOSP = { x: 40.5, y0: 16.3, y1: 22.7 };
 
 // Night screentone: paper dots on ink (the page's ToneDefs are ink on paper). Put once in <defs>.
 export const NightToneDefs: React.FC = () => (
@@ -75,17 +91,58 @@ const hash = (a: number, b: number) => {
   return h - Math.floor(h);
 };
 
+type Pt = { x: number; y: number };
 const S = (x: number, y: number, z: number) => CAM.project({ x, y, z });
-const quad = (pts: { x: number; y: number }[]) =>
-  `M ${pts.map((p) => `${p.x} ${p.y}`).join(" L ")} Z`;
+const quad = (pts: Pt[]) => `M ${pts.map((p) => `${p.x} ${p.y}`).join(" L ")} Z`;
 // A wall face along the straight at track x, from height y0 to y1, depths z0..z1.
 const face = (x: number, y0: number, y1: number, z0: number, z1: number) =>
   quad([S(x, y0, z0), S(x, y0, z1), S(x, y1, z1), S(x, y1, z0)]);
 // A ground strip between track x0..x1, depths z0..z1.
 const strip = (x0: number, x1: number, z0: number, z1: number) =>
   quad([S(x0, 0, z0), S(x1, 0, z0), S(x1, 0, z1), S(x0, 0, z1)]);
-const line = (a: { x: number; y: number }, b: { x: number; y: number }) =>
-  `M ${a.x} ${a.y} L ${b.x} ${b.y}`;
+const line = (a: Pt, b: Pt) => `M ${a.x} ${a.y} L ${b.x} ${b.y}`;
+// A stroke width of `m` metres at depth z, kept readable far off and not absurd up close.
+const wAt = (m: number, z: number, min = 1) => Math.max(min, Math.min(40, m * CAM.pxPerMetre(z)));
+
+// A concrete wall with its debris fence along the straight at track x, unbroken from Z_NEAR to the hotel: wall face
+// and cap, chain-link mesh (a fine diamond net up close, a translucent sheet beyond), posts every 3 m, two mid rails
+// and the top rail. Rails and cap are thin faces, so they taper with distance like the wall itself.
+const WALL_H = 1.2;
+const FENCE_H = 4;
+const WallFence: React.FC<{ x: number }> = ({ x }) => {
+  const z0 = Z_NEAR;
+  const z1 = HOTEL_Z;
+  const mesh: string[] = [];
+  const rise = FENCE_H - WALL_H;
+  for (let z = z0; z < 70; z += 0.45) {
+    mesh.push(line(S(x, WALL_H, z), S(x, FENCE_H, z + rise)));
+    mesh.push(line(S(x, FENCE_H, z), S(x, WALL_H, z + rise)));
+  }
+  const posts: React.ReactNode[] = [];
+  for (let z = z0 + 1; z < z1; z += 3) {
+    posts.push(
+      <path
+        key={z}
+        d={line(S(x, WALL_H, z), S(x, FENCE_H + 0.1, z))}
+        stroke="#a8a8a8"
+        strokeWidth={wAt(0.09, z, 1.4)}
+      />,
+    );
+  }
+  return (
+    <g>
+      <path d={face(x, 0, WALL_H, z0, z1)} fill={nt("light")} stroke={INK} strokeWidth={2} />
+      <path d={face(x, WALL_H - 0.08, WALL_H, z0, z1)} fill={PAPER} />
+      <path d={face(x, WALL_H, FENCE_H, z0, z1)} fill="#bdbdbd" opacity={0.1} />
+      <path d={mesh.join(" ")} stroke="#9a9a9a" strokeWidth={0.8} opacity={0.4} fill="none" />
+      {posts}
+      {[2.2, 3.1].map((y) => (
+        <path key={y} d={face(x, y - 0.03, y + 0.03, z0, z1)} fill="#8a8a8a" />
+      ))}
+      <path d={face(x, FENCE_H - 0.05, FENCE_H + 0.05, z0, z1)} fill="#b4b4b4" />
+    </g>
+  );
+};
 
 // Crowd: one seated spectator per seat on each visible row. Seat rows climb from the front wall to the back.
 type Fan = { x: number; y: number; r: number; shade: number; seed: number };
@@ -115,13 +172,155 @@ const FANS: Fan[] = (() => {
   return out;
 })();
 
-// Floodlight towers: track x, depth, height.
+// Floodlight towers: track x, depth, height. On the left they stand in the paddock behind the pit building (which
+// hides their feet); on the right just behind the debris fence, beyond the grandstand's end (so they don't pierce its
+// canopy).
 const TOWERS = [
-  { x: -8, z: 80, h: 30, aim: 0 },
-  { x: -8, z: 128, h: 30, aim: 1 },
-  { x: 16, z: 80, h: 30, aim: 9 },
-  { x: 16, z: 126, h: 30, aim: 8 },
+  { x: -30, z: 80, h: 32, aim: 0 },
+  { x: -30, z: 124, h: 32, aim: 1 },
+  { x: 19, z: 118, h: 30, aim: 9 },
+  { x: 19, z: 156, h: 30, aim: 8 },
 ];
+type Tower = (typeof TOWERS)[number];
+
+const Mast: React.FC<{ w: Tower }> = ({ w }) => {
+  const top = S(w.x, w.h, w.z);
+  const base = S(w.x, 0, w.z);
+  const px = CAM.pxPerMetre(w.z);
+  return (
+    <path
+      d={`M ${base.x - px * 0.5} ${base.y} L ${top.x - px * 0.25} ${top.y} L ${top.x + px * 0.25} ${top.y} L ${base.x + px * 0.5} ${base.y} Z`}
+      fill="#3a3a3a"
+      stroke={PAPER}
+      strokeWidth={1}
+      strokeOpacity={0.5}
+    />
+  );
+};
+
+// The lamp bank and its light: cone onto the straight, pool on the asphalt, glow.
+const Lamp: React.FC<{ w: Tower; t: number }> = ({ w, t }) => {
+  const top = S(w.x, w.h, w.z);
+  const px = CAM.pxPerMetre(w.z);
+  const half = 2.2 * px;
+  const g0 = S(w.aim - 5, 0, w.z - 16);
+  const g1 = S(w.aim + 5, 0, w.z + 4);
+  return (
+    <g>
+      <path
+        d={`M ${top.x - half * 0.9} ${top.y + px * 1.6} L ${top.x + half * 0.9} ${top.y + px * 1.6} L ${g1.x} ${g1.y} L ${g0.x} ${g0.y} Z`}
+        fill="url(#nt-cone)"
+      />
+      <ellipse
+        cx={(g0.x + g1.x) / 2}
+        cy={(g0.y + g1.y) / 2}
+        rx={Math.abs(g1.x - g0.x) * 0.75}
+        ry={Math.abs(g1.y - g0.y) * 0.7}
+        fill="url(#nt-pool)"
+      />
+      <rect x={top.x - half} y={top.y - px * 0.2} width={half * 2} height={px * 1.8} fill={PAPER} stroke={INK} strokeWidth={1.5} />
+      {[-0.5, 0, 0.5].map((u) => (
+        <path key={u} d={`M ${top.x + u * half * 1.4} ${top.y - px * 0.2} L ${top.x + u * half * 1.4} ${top.y + px * 1.6}`} stroke={INK} strokeWidth={1} />
+      ))}
+      <path d={`M ${top.x - half} ${top.y + px * 0.7} L ${top.x + half} ${top.y + px * 0.7}`} stroke={INK} strokeWidth={1} />
+      <circle cx={top.x} cy={top.y + px * 0.8} r={half * 2.6} fill="url(#nt-glow)" opacity={0.85 + 0.15 * Math.sin(t * 13 + w.z)} />
+    </g>
+  );
+};
+
+// The grandstand canopy, seen from below: per bay, the lit fabric underside between the scalloped lip and the back
+// beam, seams fanning back from the lip, the cantilever arm at each bay line (a plate in the cross-section plane), the
+// back beam's fascia and the lamps under the lip. All in world metres, so the lip and back beam run to the vanishing
+// point.
+const ARMS: number[] = (() => {
+  const out: number[] = [];
+  for (let z = STAND.z0; z <= STAND.z1 + 0.01; z += ROOF.bay) out.push(z);
+  return out;
+})();
+const Canopy: React.FC = () => {
+  const { lipX, lipY, backX, backY, inX, upY } = ROOF;
+  // the lip between two arms as a quadratic: its control point sits at twice the mid-span offset
+  const ctrl = (zm: number) => S(lipX + 2 * inX, lipY + 2 * upY, zm);
+  const lipPt = (za: number, zb: number, s: number) => {
+    const zm = (za + zb) / 2;
+    // the same quadratic, evaluated in world space (close enough to the projected curve for seam ends)
+    const a = (1 - s) * (1 - s);
+    const b = 2 * s * (1 - s);
+    const c = s * s;
+    return {
+      x: lipX + b * 2 * inX,
+      y: lipY + b * 2 * upY,
+      z: a * za + b * zm + c * zb,
+    };
+  };
+  const bays = ARMS.slice(0, -1).map((za, i) => [za, ARMS[i + 1]] as const);
+  const lipD = bays
+    .map(([za, zb], i) => {
+      const a = S(lipX, lipY, za);
+      const b = S(lipX, lipY, zb);
+      const c = ctrl((za + zb) / 2);
+      return `${i === 0 ? `M ${a.x} ${a.y} ` : ""}Q ${c.x} ${c.y} ${b.x} ${b.y}`;
+    })
+    .join(" ");
+  const backFar = S(backX, backY, STAND.z1);
+  const backNear = S(backX, backY, STAND.z0);
+  const seams: string[] = [];
+  bays.forEach(([za, zb]) => {
+    const zm = (za + zb) / 2;
+    const hub = S(backX, backY, zm);
+    for (const s of [0.25, 0.5, 0.75]) {
+      const p = lipPt(za, zb, s);
+      seams.push(line(S(p.x, p.y, p.z), hub));
+    }
+  });
+  return (
+    <g>
+      {/* hospitality level under the back of the canopy: dark glazing, some boxes lit */}
+      <path d={face(HOSP.x, HOSP.y0, HOSP.y1, STAND.z0, STAND.z1)} fill="#1a1a1a" />
+      {Array.from({ length: Math.floor((STAND.z1 - STAND.z0) / 4) }, (_, i) => {
+        const z = STAND.z0 + i * 4;
+        return hash(i, 9) > 0.35 ? (
+          <path key={i} d={face(HOSP.x, 17.6, 21.4, z + 0.4, z + 3.6)} fill={PAPER} opacity={0.3 + 0.3 * hash(i, 10)} />
+        ) : null;
+      })}
+      <path d={face(HOSP.x, 17.2, 17.4, STAND.z0, STAND.z1)} fill="#8a8a8a" />
+      {/* the fabric underside, lit from below */}
+      <path
+        d={`${lipD} L ${backFar.x} ${backFar.y} L ${backNear.x} ${backNear.y} Z`}
+        fill={tone("light")}
+        stroke={INK}
+        strokeWidth={2.5}
+        strokeLinejoin="round"
+      />
+      <path d={seams.join(" ")} stroke="#8c8c8c" strokeWidth={1.3} fill="none" />
+      {/* back beam fascia */}
+      <path d={face(backX, backY - 0.9, backY, STAND.z0, STAND.z1)} fill="#4a4a4a" stroke={INK} strokeWidth={1.5} />
+      {/* cantilever arms */}
+      {ARMS.map((z) => (
+        <path
+          key={z}
+          d={quad([S(lipX, lipY, z), S(backX, backY, z), S(backX, backY - 1.1, z), S(lipX, lipY - 0.45, z)])}
+          fill="#5a5a5a"
+          stroke={INK}
+          strokeWidth={1.5}
+          strokeLinejoin="round"
+        />
+      ))}
+      <path d={lipD} fill="none" stroke={PAPER} strokeWidth={3} />
+      {/* lamps under the lip: one at each arm, one mid-bay */}
+      {[...ARMS, ...bays.map(([a, b]) => (a + b) / 2)].map((z) => {
+        const p = S(lipX + 0.9, lipY - 0.6, z);
+        const px = CAM.pxPerMetre(z);
+        return (
+          <g key={`l${z}`}>
+            <circle cx={p.x} cy={p.y} r={1.6 * px} fill="url(#nt-glow)" />
+            <rect x={p.x - 0.35 * px} y={p.y - 0.12 * px} width={0.7 * px} height={0.24 * px} fill={PAPER} />
+          </g>
+        );
+      })}
+    </g>
+  );
+};
 
 /**
  * The scene. `t` seconds into the shot drives the haze drift, the crowd's camera flashes and the twinkle; `lit` 0..1
@@ -134,7 +333,7 @@ export const YasNight: React.FC<{
   flashes: number;
 }> = ({ t, frame, lit, flashes }) => {
   const H = CAM.horizon;
-  const hotelScale = 3.3;
+  const hotelScale = HOTEL_M * CAM.pxPerMetre(HOTEL_Z);
   // photo x 288 (the bridge's middle) sits over the track's centre at the hotel's distance
   const bridge = CAM.screenX((TRACK.left + TRACK.right) / 2, HOTEL_Z);
   const hotelX = bridge - 288 * hotelScale;
@@ -152,13 +351,9 @@ export const YasNight: React.FC<{
     slots.push(<path key={i} d={`${bar} ${tl} ${tr}`} fill={PAPER} opacity={0.92} />);
   }
 
-  // pit wall fence posts and pit garage bays
-  const posts: string[] = [];
-  for (let z = 13; z < 240; z += 4) posts.push(line(S(PIT_WALL, 1.2, z), S(PIT_WALL, 4, z)));
-  const rPosts: string[] = [];
-  for (let z = 13; z < 240; z += 4) rPosts.push(line(S(RUNOFF, 1.2, z), S(RUNOFF, 4, z)));
+  // pit garage bays along the pit building, up to the hotel
   const bays: React.ReactNode[] = [];
-  for (let z = 22; z < 220; z += 7) {
+  for (let z = 4; z + 6.2 < HOTEL_Z; z += 7) {
     const on = hash(z, 3) > 0.25;
     const z0 = z + 0.6;
     const z1 = z + 6.2;
@@ -177,41 +372,9 @@ export const YasNight: React.FC<{
       </g>,
     );
   }
-
-  // the roof: a fabric canopy over the stand, its underside lit from below and facing the camera; ribs every 5.5 m run
-  // back from the lip, which sags a little between them, with a lamp at each rib
-  const ribs: number[] = [];
-  for (let z = STAND.z1; z > STAND.z0 - 0.1; z -= 5.5) ribs.push(z);
-  ribs.reverse();
-  const LIP = { x: 21, h: 18, sag: 0.12 };
-  const BACK = { x: 40, h: 22.5 };
-  const lipD = ribs
-    .map((z, i) => {
-      const p = S(LIP.x, LIP.h, z);
-      if (i === 0) return `M ${p.x} ${p.y}`;
-      const c = S(LIP.x, LIP.h + LIP.sag * 2, (z + ribs[i - 1]) / 2);
-      return `Q ${c.x} ${c.y} ${p.x} ${p.y}`;
-    })
-    .join(" ");
-  const backFar = S(BACK.x, BACK.h, STAND.z1);
-  const backNear = S(BACK.x, BACK.h, STAND.z0);
-  const roof = (
-    <g>
-      <path d={`${lipD} L ${backFar.x} ${backFar.y} L ${backNear.x} ${backNear.y} Z`} fill={tone("light")} stroke={INK} strokeWidth={2.5} strokeLinejoin="round" />
-      {/* the lit strip just behind the lip */}
-      <path
-        d={quad([S(LIP.x, LIP.h, STAND.z0), S(LIP.x, LIP.h, STAND.z1), S(24, 18.7, STAND.z1), S(24, 18.7, STAND.z0)])}
-        fill={PAPER}
-        opacity={0.85}
-      />
-      <path d={ribs.map((z) => line(S(LIP.x, LIP.h, z), S(BACK.x, BACK.h, z))).join(" ")} stroke={INK} strokeWidth={2} />
-      <path d={lipD} fill="none" stroke={PAPER} strokeWidth={3} />
-      {ribs.map((z) => {
-        const p = S(LIP.x + 0.2, LIP.h - 0.3, z);
-        return <circle key={z} cx={p.x} cy={p.y} r={0.9 * CAM.pxPerMetre(z)} fill="url(#nt-glow)" />;
-      })}
-    </g>
-  );
+  // pit lane: the dashed line between the fast lane and the working lane, dashes foreshortened on the ground
+  const dashes: string[] = [];
+  for (let z = Z_NEAR; z + 3 < HOTEL_Z; z += 6) dashes.push(strip(-11.1, -10.9, z, z + 3));
 
   // camera flashes in the crowd this frame
   const pops: React.ReactNode[] = [];
@@ -254,104 +417,66 @@ export const YasNight: React.FC<{
 
       {/* ground: the far straight running on under the hotel's bridge */}
       <rect x={-200} y={H} width={2320} height={1080 - H + 200} fill="#121212" />
-      <path d={strip(TRACK.left, TRACK.right, 12, 2000)} fill={nt("dark")} />
+      <path d={strip(TRACK.left, TRACK.right, Z_NEAR, 2000)} fill={nt("dark")} />
 
       <YasHotel x={hotelX} ground={hotelGround} scale={hotelScale} lit={lit} t={t} id="yas41" />
 
-      {/* left: pit building (garage bays lit), pit lane, pit wall with debris fence */}
-      <path d={face(PIT_FRONT, 0, 7, 12, 260)} fill={nt("mid")} />
-      <path d={face(PIT_FRONT, 4.4, 6.4, 12, 260)} fill={INK} />
+      {/* floodlight masts (furthest first); the pit building and the right-hand fence cover their feet */}
+      {TOWERS.map((w) => (
+        <Mast key={`${w.x}-${w.z}`} w={w} />
+      ))}
+
+      {/* left: pit building (garage bays lit), pit lane, pit wall with debris fence — all running to the hotel */}
+      <path d={face(PIT_FRONT, 0, 7, Z_NEAR, HOTEL_Z)} fill={nt("mid")} />
+      <path d={face(PIT_FRONT, 4.4, 6.4, Z_NEAR, HOTEL_Z)} fill={INK} />
       {bays}
       {/* upper level: hospitality glazing, some rooms lit, mullions every 2 m */}
-      <path d={face(PIT_FRONT, 4.7, 6, 12, 260)} fill={nt("mid")} />
-      {Array.from({ length: 30 }, (_, i) => {
-        const z = 22 + i * 7;
+      <path d={face(PIT_FRONT, 4.7, 6, Z_NEAR, HOTEL_Z)} fill={nt("mid")} />
+      {Array.from({ length: Math.floor((HOTEL_Z - 8) / 7) }, (_, i) => {
+        const z = 4 + i * 7;
         return hash(i, 4) > 0.45 ? <path key={i} d={face(PIT_FRONT, 4.8, 5.9, z + 0.3, z + 4.3)} fill={PAPER} opacity={0.35} /> : null;
       })}
       <path
-        d={Array.from({ length: 124 }, (_, i) => line(S(PIT_FRONT, 4.7, 12 + i * 2), S(PIT_FRONT, 6, 12 + i * 2))).join(" ")}
+        d={Array.from({ length: Math.floor((HOTEL_Z - Z_NEAR) / 2) }, (_, i) =>
+          line(S(PIT_FRONT, 4.7, Z_NEAR + i * 2), S(PIT_FRONT, 6, Z_NEAR + i * 2)),
+        ).join(" ")}
         stroke={INK}
         strokeWidth={1.5}
       />
-      <path d={line(S(PIT_FRONT, 7, 12), S(PIT_FRONT, 7, 260))} stroke={PAPER} strokeWidth={3} />
-      <path d={strip(PIT_FRONT, PIT_WALL, 12, 260)} fill="#161616" />
-      <path d={line(S(-11, 0, 12), S(-11, 0, 260))} stroke={PAPER} strokeWidth={2} opacity={0.5} strokeDasharray="30 26" />
-      <path d={face(PIT_WALL, 0, 1.2, 12, 260)} fill={nt("light")} stroke={INK} strokeWidth={2} />
-      <path d={line(S(PIT_WALL, 1.2, 12), S(PIT_WALL, 1.2, 260))} stroke={PAPER} strokeWidth={3} />
-      <path d={posts.join(" ")} stroke="#9a9a9a" strokeWidth={2} />
-      <path
-        d={[2.2, 3.1, 4].map((y) => line(S(PIT_WALL, y, 12), S(PIT_WALL, y, 260))).join(" ")}
-        stroke="#8a8a8a"
-        strokeWidth={1.3}
-      />
+      <path d={face(PIT_FRONT, 6.92, 7.08, Z_NEAR, HOTEL_Z)} fill={PAPER} />
+      <path d={strip(PIT_FRONT, PIT_WALL, Z_NEAR, HOTEL_Z)} fill="#161616" />
+      <path d={dashes.join(" ")} fill={PAPER} opacity={0.5} />
+      <WallFence x={PIT_WALL} />
 
       {/* the straight: asphalt, white edge lines, start line and the grid boxes */}
-      <path d={strip(TRACK.left, TRACK.right, 12, HOTEL_Z)} fill={nt("dark")} />
+      <path d={strip(TRACK.left, TRACK.right, Z_NEAR, HOTEL_Z)} fill={nt("dark")} />
       {/* rubbered-in lines where the grid's two files run */}
-      <path d={`${strip(-0.5, 1.3, 12, 1500)} ${strip(6.7, 8.5, 12, 1500)}`} fill={INK} opacity={0.45} />
-      <path d={strip(TRACK.left, TRACK.left + 0.25, 12, 1500)} fill={PAPER} />
-      <path d={strip(TRACK.right - 0.25, TRACK.right, 12, 1500)} fill={PAPER} />
+      <path d={`${strip(-0.5, 1.3, Z_NEAR, 1500)} ${strip(6.7, 8.5, Z_NEAR, 1500)}`} fill={INK} opacity={0.45} />
+      <path d={strip(TRACK.left, TRACK.left + 0.25, Z_NEAR, 1500)} fill={PAPER} />
+      <path d={strip(TRACK.right - 0.25, TRACK.right, Z_NEAR, 1500)} fill={PAPER} />
       <path d={strip(TRACK.left, TRACK.right, 14, 14.5)} fill={PAPER} />
       {slots}
-      {/* right: painted run-off, wall and debris fence */}
-      <path d={strip(TRACK.right, RUNOFF, 12, 400)} fill={nt("mid")} />
-      <path d={strip(TRACK.right + 1.2, TRACK.right + 1.5, 12, 400)} fill={PAPER} opacity={0.8} />
-      <path d={face(RUNOFF, 0, 1.2, 12, 400)} fill={nt("light")} stroke={INK} strokeWidth={2} />
-      <path d={line(S(RUNOFF, 1.2, 12), S(RUNOFF, 1.2, 400))} stroke={PAPER} strokeWidth={3} />
-      <path d={rPosts.join(" ")} stroke="#9a9a9a" strokeWidth={2} />
-      <path
-        d={[2.2, 3.1, 4].map((y) => line(S(RUNOFF, y, 12), S(RUNOFF, y, 400))).join(" ")}
-        stroke="#8a8a8a"
-        strokeWidth={1.3}
-      />
+      {/* right: painted run-off up to the wall, the strip of ground behind it */}
+      <path d={strip(TRACK.right, RUNOFF, Z_NEAR, HOTEL_Z)} fill={nt("mid")} />
+      <path d={strip(TRACK.right + 1.2, TRACK.right + 1.5, Z_NEAR, HOTEL_Z)} fill={PAPER} opacity={0.8} />
+      <path d={strip(RUNOFF, STAND.front, Z_NEAR, HOTEL_Z)} fill="#1a1a1a" />
 
-      {/* floodlight towers: lattice mast, lamp bank, light cone onto the straight */}
-      {TOWERS.map((w) => {
-        const top = S(w.x, w.h, w.z);
-        const base = S(w.x, 0, w.z);
-        const px = CAM.pxPerMetre(w.z);
-        const half = 2.2 * px;
-        const g0 = S(w.aim - 5, 0, w.z - 16);
-        const g1 = S(w.aim + 5, 0, w.z + 4);
-        return (
-          <g key={`${w.x}-${w.z}`}>
-            <path
-              d={`M ${top.x - half * 0.9} ${top.y + px * 1.6} L ${top.x + half * 0.9} ${top.y + px * 1.6} L ${g1.x} ${g1.y} L ${g0.x} ${g0.y} Z`}
-              fill="url(#nt-cone)"
-            />
-            <ellipse
-              cx={(g0.x + g1.x) / 2}
-              cy={(g0.y + g1.y) / 2}
-              rx={Math.abs(g1.x - g0.x) * 0.75}
-              ry={Math.abs(g1.y - g0.y) * 0.7}
-              fill="url(#nt-pool)"
-            />
-            <path
-              d={`M ${base.x - px * 0.5} ${base.y} L ${top.x - px * 0.25} ${top.y} L ${top.x + px * 0.25} ${top.y} L ${base.x + px * 0.5} ${base.y} Z`}
-              fill="#3a3a3a"
-              stroke={PAPER}
-              strokeWidth={1}
-              strokeOpacity={0.5}
-            />
-            <rect x={top.x - half} y={top.y - px * 0.2} width={half * 2} height={px * 1.8} fill={PAPER} stroke={INK} strokeWidth={1.5} />
-            {[-0.5, 0, 0.5].map((u) => (
-              <path key={u} d={`M ${top.x + u * half * 1.4} ${top.y - px * 0.2} L ${top.x + u * half * 1.4} ${top.y + px * 1.6}`} stroke={INK} strokeWidth={1} />
-            ))}
-            <path d={`M ${top.x - half} ${top.y + px * 0.7} L ${top.x + half} ${top.y + px * 0.7}`} stroke={INK} strokeWidth={1} />
-            <circle cx={top.x} cy={top.y + px * 0.8} r={half * 2.6} fill="url(#nt-glow)" opacity={0.85 + 0.15 * Math.sin(t * 13 + w.z)} />
-          </g>
-        );
-      })}
-
-      {/* right: the main grandstand — front wall, seat rows packed with fans, sail roof */}
+      {/* right: the main grandstand — front wall, seat rows packed with fans, the canopy over them */}
       <path d={face(STAND.front, 0, 2.5, STAND.z0, STAND.z1)} fill={nt("light")} stroke={INK} strokeWidth={2} />
       <path
-        d={Array.from({ length: 8 }, (_, i) => line(S(STAND.front, 0, 16 + i * 6), S(STAND.front, 2.5, 16 + i * 6))).join(" ")}
+        d={Array.from({ length: Math.floor((STAND.z1 - STAND.z0) / 6) + 1 }, (_, i) =>
+          line(S(STAND.front, 0, STAND.z0 + i * 6), S(STAND.front, 2.5, STAND.z0 + i * 6)),
+        ).join(" ")}
         stroke={INK}
         strokeWidth={2}
       />
       <path
-        d={quad([S(STAND.front, 2.5, STAND.z1), S(STAND.back, 2.5 + STAND.rows * 0.6, STAND.z1), S(STAND.back, 2.5 + STAND.rows * 0.6, STAND.z0), S(STAND.front, 2.5, STAND.z0)])}
+        d={quad([
+          S(STAND.front, 2.5, STAND.z1),
+          S(STAND.back, row(STAND.rows).y, STAND.z1),
+          S(STAND.back, row(STAND.rows).y, STAND.z0),
+          S(STAND.front, 2.5, STAND.z0),
+        ])}
         fill={nt("mid")}
       />
       {Array.from({ length: STAND.rows }, (_, k) => {
@@ -370,13 +495,21 @@ export const YasNight: React.FC<{
       })}
       {/* the stand's far end: its raked profile */}
       <path
-        d={`M ${S(STAND.front, 0, STAND.z1).x} ${S(STAND.front, 0, STAND.z1).y} L ${S(STAND.front, 2.5, STAND.z1).x} ${S(STAND.front, 2.5, STAND.z1).y} L ${S(STAND.back, 16.3, STAND.z1).x} ${S(STAND.back, 16.3, STAND.z1).y}`}
+        d={`M ${S(STAND.front, 0, STAND.z1).x} ${S(STAND.front, 0, STAND.z1).y} L ${S(STAND.front, 2.5, STAND.z1).x} ${S(STAND.front, 2.5, STAND.z1).y} L ${S(STAND.back, row(STAND.rows).y, STAND.z1).x} ${S(STAND.back, row(STAND.rows).y, STAND.z1).y}`}
         stroke={PAPER}
         strokeWidth={2.5}
         fill="none"
       />
-      {roof}
+      <Canopy />
       {pops}
+
+      {/* right: track-edge wall and debris fence, in front of the stand */}
+      <WallFence x={RUNOFF} />
+
+      {/* floodlights: lamp banks, cones and pools */}
+      {TOWERS.map((w) => (
+        <Lamp key={`${w.x}-${w.z}`} w={w} t={t} />
+      ))}
 
       {/* drifting light haze around the floodlights and over the straight */}
       <g filter="url(#nt-blur)">
