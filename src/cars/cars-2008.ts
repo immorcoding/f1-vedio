@@ -373,10 +373,10 @@ export const STR3: CarSpec = {
     y: 525,
     size: 46,
     color: "#e3242b",
-    // upright, painted long along the nose top and seen edge-on: stretched lengthwise, flattened
-    angle: -4,
-    squash: 0.6,
-    stretch: 1.8,
+    // turned a quarter anticlockwise on screen, then drawn long along the nose (x) and flat (y)
+    angle: 86,
+    squash: 0.45,
+    stretch: 3.2,
   },
   tyreGrooves: 4,
 };

@@ -899,12 +899,13 @@ export const MangaCar: React.FC<{
                 state.tilt
                   ? `rotate(${-state.tilt * dir} ${pivot.x} ${pivot.y})`
                   : "",
+                // squash/stretch act on the screen axes, after the turn
+                car.numberAt.squash || car.numberAt.stretch
+                  ? `translate(${num.x} ${num.y}) scale(${car.numberAt.stretch ?? 1} ${car.numberAt.squash ?? 1}) translate(${-num.x} ${-num.y})`
+                  : "",
                 // the photo faces left: mirrored (facing right) a clockwise turn becomes anticlockwise
                 car.numberAt.angle
                   ? `rotate(${-dir * car.numberAt.angle} ${num.x} ${num.y})`
-                  : "",
-                car.numberAt.squash || car.numberAt.stretch
-                  ? `translate(${num.x} ${num.y}) scale(${car.numberAt.stretch ?? 1} ${car.numberAt.squash ?? 1}) translate(${-num.x} ${-num.y})`
                   : "",
               ]
                 .join(" ")
