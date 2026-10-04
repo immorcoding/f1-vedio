@@ -4,6 +4,8 @@
 // Run: npm run music  (or: node scripts/make-music.mjs [outDir])
 //
 // Original, code-synthesised electronic track: 128 BPM, 4/4, 113 bars, D minor throughout.
+// Under it, the SFX layer (#15): era engine sounds at the cues of src/mv/sfx.ts (scripts/lib/engine.mjs), on their
+// own bus, mixed in before the master. `--stems` also writes the engines alone and sfx-report.json.
 // Every time comes from src/mv/timing.ts. Deterministic: seeded noise, no clocks, fixed order.
 //
 // Final arrangement (ticket #10). Tempo, bars, sections and hits are untouched (timing.ts);
@@ -17,11 +19,14 @@
 //   buildup  74-81  riser, snare roll, half-time then quarter kick, one-eighth gap before the drop
 //   abuDhabi 82-105 strongest: heavy kick + sub, 16th bass, supersaw lead, stabs, open hats, snare
 //   outro    106-113 layers leave in order: arp/drums, bass, kick; ends on the intro pad and pings
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import * as T from "../src/mv/timing.ts";
 import { integratedLoudness, limit } from "./lib/audio.mjs";
 import { buildBeatMap, formatBeatMap } from "./lib/beat-map.mjs";
+import { driveline, synthEngine } from "./lib/engine.mjs";
+import { SFX } from "../src/mv/sfx.ts";
 
 const SR = T.SAMPLE_RATE;
 const N = T.sampleAt(T.SONG_END);
@@ -305,8 +310,7 @@ for (const k of kicks) {
       for (const beat of [1, 3]) {
         if (bar === 61 && beat === 1) continue; // the impact owns that downbeat
         if (bar === BRIDGE && beat === 3) continue;
-        const fade =
-          bar === BRIDGE ? 0.45 : bar === 72 && beat === 3 ? 0.6 : 1;
+        const fade = bar === BRIDGE ? 0.45 : bar === 72 && beat === 3 ? 0.6 : 1;
         thump(S(bar, beat), 90, 48, 0.12, 0.5 * fade);
         thump(S(bar, beat) + BEAT / 4, 80, 45, 0.09, 0.3 * fade);
       }
@@ -857,9 +861,7 @@ for (const k of kicks) {
   for (let n = a; n < end; n++) {
     const rise = n < top ? (n - a) / (top - a) : 1;
     const env =
-      n < top
-        ? Math.pow(rise, 1.7)
-        : Math.pow(1 - (n - top) / (end - top), 2);
+      n < top ? Math.pow(rise, 1.7) : Math.pow(1 - (n - top) / (end - top), 2);
     const fc = 300 + 2600 * rise * rise;
     const t = n / SR;
     let pad = 0;
@@ -1059,6 +1061,115 @@ for (const [a, b] of GATES)
   }
 }
 
+// -- SFX: the engines (src/mv/sfx.ts), on their own bus, mixed under the music ---------------
+// Each cue drives its cars by road speed (scripts/lib/engine.mjs). Its level is set against the music it plays over:
+// in every bar of the cue the engines sit at least `underDb` under the music's RMS in that bar, then pump with the kick's sidechain so the
+// music's transients stay on top. "cut" cues stop dead on their end beat (Bahrain's 61.1 goes with the music's stop).
+const SL = new Float64Array(N);
+const SR_ = new Float64Array(N);
+const sfxCues = [];
+{
+  const rmsOf = (a, b, chans) => {
+    let e = 0;
+    for (let n = a; n < b; n++) for (const c of chans) e += c[n] * c[n];
+    return Math.sqrt(e / Math.max(1, (b - a) * chans.length));
+  };
+  SFX.forEach((cue, ci) => {
+    const a = S(cue.from.bar, cue.from.beat);
+    const b = S(cue.to.bar, cue.to.beat);
+    const len = b - a;
+    const cl = new Float64Array(len);
+    const cr = new Float64Array(len);
+    cue.cars.forEach((car, k) => {
+      const seed = 1000 * (ci + 1) + k;
+      const drv = driveline(
+        car.era,
+        { speed: car.speed, time: cue.time, launch: car.launch },
+        len,
+        SR,
+        seed,
+      );
+      const y = synthEngine(drv, SR, seed);
+      const g = Math.pow(10, (car.db ?? 0) / 20);
+      for (let i = 0; i < len; i++) {
+        const p = Math.max(-1, Math.min(1, car.pan(i / SR)));
+        const th = ((p + 1) * Math.PI) / 4;
+        cl[i] += y[i] * g * Math.cos(th) * Math.SQRT2;
+        cr[i] += y[i] * g * Math.sin(th) * Math.SQRT2;
+      }
+    });
+    if (cue.muffle) {
+      const lpL = lowpass(0.7);
+      const lpR = lowpass(0.7);
+      for (let i = 0; i < len; i++) {
+        cl[i] = lpL(cl[i], cue.muffle);
+        cr[i] = lpR(cr[i], cue.muffle);
+      }
+    }
+    // edges: 5 ms in; a 2 ms ramp onto a cut, a quarter-beat fade otherwise
+    const tail =
+      cue.end === "cut" ? Math.round(SR * 0.002) : Math.round(BEAT / 4);
+    for (let i = 0; i < len; i++) {
+      const env = Math.min(1, i / (SR * 0.005), (len - i) / tail);
+      cl[i] *= env;
+      cr[i] *= env;
+    }
+    // the loudest bar of the cue, against the music in that bar, sets the level: every bar sits at least underDb under
+    let gain = Infinity;
+    for (
+      let bar = cue.from.bar;
+      bar < cue.to.bar + (cue.to.beat > 1 ? 1 : 0);
+      bar++
+    ) {
+      const x0 = Math.max(a, S(bar));
+      const x1 = Math.min(b, S(bar + 1));
+      if (x1 - x0 < BEAT) continue;
+      const own = rmsOf(x0 - a, x1 - a, [cl, cr]);
+      if (own > 0)
+        gain = Math.min(
+          gain,
+          (rmsOf(x0, x1, [L, R]) * Math.pow(10, -cue.underDb / 20)) / own,
+        );
+    }
+    if (!Number.isFinite(gain)) gain = 0;
+    for (let i = 0; i < len; i++) {
+      const pump = 0.55 + 0.45 * duck[a + i];
+      SL[a + i] += cl[i] * gain * pump;
+      SR_[a + i] += cr[i] * gain * pump;
+    }
+    sfxCues.push({ cue, a, b, gainDb: 20 * Math.log10(gain) });
+  });
+  for (let n = 0; n < N; n++) {
+    L[n] += SL[n];
+    R[n] += SR_[n];
+  }
+}
+
+// Per-bar RMS of the music and of the engines, measured on their buses before the master (the master's gain is added
+// below); the SFX report and check-audio's "engines under the music" test read it.
+const barEnergy = (() => {
+  const rows = [];
+  for (let bar = 1; bar <= T.BARS; bar++) {
+    const a = S(bar);
+    const b = S(bar + 1);
+    let m = 0;
+    let x = 0;
+    for (let n = a; n < b; n++) {
+      const ml = L[n] - SL[n];
+      const mr = R[n] - SR_[n];
+      m += ml * ml + mr * mr;
+      x += SL[n] * SL[n] + SR_[n] * SR_[n];
+    }
+    rows.push({ bar, music: m / (2 * (b - a)), sfx: x / (2 * (b - a)) });
+  }
+  return rows;
+})();
+const sfxHash = crypto
+  .createHash("sha256")
+  .update(new Uint8Array(SL.buffer))
+  .update(new Uint8Array(SR_.buffer))
+  .digest("hex");
+
 // -- master: loudness to target, peak limit, hard silence at the very end ------------------
 for (let i = 0; i < SR * 0.01; i++) {
   const g = i / (SR * 0.01);
@@ -1090,33 +1201,79 @@ for (let pass = 0; pass < 4; pass++) {
 const finalLufs = integratedLoudness(L, R, SR);
 
 // -- write ---------------------------------------------------------------------------------
-const outDir = process.argv[2]
-  ? path.resolve(process.argv[2])
+// node scripts/make-music.mjs [outDir] [--stems]
+// --stems also writes the engines alone (sfx.wav, at the master's gain) and sfx-report.json: every cue with its
+// bar/beat, time and level, the per-bar RMS of music and engines, and a hash of the SFX bus (check-audio reads it).
+const args = process.argv.slice(2);
+const stems = args.includes("--stems");
+const dirArg = args.find((a) => !a.startsWith("--"));
+const outDir = dirArg
+  ? path.resolve(dirArg)
   : path.join(import.meta.dirname, "..", "public", "music");
 fs.mkdirSync(outDir, { recursive: true });
-const wav = Buffer.alloc(44 + N * 4);
-wav.write("RIFF", 0);
-wav.writeUInt32LE(36 + N * 4, 4);
-wav.write("WAVEfmt ", 8);
-wav.writeUInt32LE(16, 16);
-wav.writeUInt16LE(1, 20);
-wav.writeUInt16LE(2, 22);
-wav.writeUInt32LE(SR, 24);
-wav.writeUInt32LE(SR * 4, 28);
-wav.writeUInt16LE(4, 32);
-wav.writeUInt16LE(16, 34);
-wav.write("data", 36);
-wav.writeUInt32LE(N * 4, 40);
 const q = (x) => Math.round(Math.max(-1, Math.min(1, x)) * 32767);
-for (let n = 0; n < N; n++) {
-  wav.writeInt16LE(q(L[n]), 44 + n * 4);
-  wav.writeInt16LE(q(R[n]), 46 + n * 4);
-}
-fs.writeFileSync(path.join(outDir, "mv.wav"), wav);
+const writeWav = (file, A, B, g = 1) => {
+  const wav = Buffer.alloc(44 + N * 4);
+  wav.write("RIFF", 0);
+  wav.writeUInt32LE(36 + N * 4, 4);
+  wav.write("WAVEfmt ", 8);
+  wav.writeUInt32LE(16, 16);
+  wav.writeUInt16LE(1, 20);
+  wav.writeUInt16LE(2, 22);
+  wav.writeUInt32LE(SR, 24);
+  wav.writeUInt32LE(SR * 4, 28);
+  wav.writeUInt16LE(4, 32);
+  wav.writeUInt16LE(16, 34);
+  wav.write("data", 36);
+  wav.writeUInt32LE(N * 4, 40);
+  for (let n = 0; n < N; n++) {
+    wav.writeInt16LE(q(A[n] * g), 44 + n * 4);
+    wav.writeInt16LE(q(B[n] * g), 46 + n * 4);
+  }
+  fs.writeFileSync(file, wav);
+};
+writeWav(path.join(outDir, "mv.wav"), L, R);
 fs.writeFileSync(
   path.join(outDir, "beat-map.json"),
   formatBeatMap(buildBeatMap()),
 );
+if (stems) {
+  const master = Math.pow(10, gainDb / 20);
+  writeWav(path.join(outDir, "sfx.wav"), SL, SR_, master);
+  const dB = (e) =>
+    e > 0 ? Number((10 * Math.log10(e) + gainDb).toFixed(2)) : null;
+  const pos = (p) => ({
+    pos: T.posLabel(p),
+    seconds: T.secondsAt(p),
+    frame: T.frameAt(p),
+  });
+  const report = {
+    note: "Engines (SFX bus) vs music, RMS dBFS per bar at the master's gain, measured before the limiter.",
+    sfxHash,
+    masterGainDb: Number(gainDb.toFixed(3)),
+    cues: sfxCues.map(({ cue, gainDb: g }) => ({
+      id: cue.id,
+      shot: cue.shot,
+      from: pos(cue.from),
+      to: pos(cue.to),
+      end: cue.end,
+      underDb: cue.underDb,
+      muffle: cue.muffle ?? null,
+      cars: cue.cars.map((c) => `${c.who} ${c.era}`),
+      levelDb: Number(g.toFixed(2)),
+      note: cue.note,
+    })),
+    bars: barEnergy.map((r) => ({
+      bar: r.bar,
+      music: dB(r.music),
+      sfx: dB(r.sfx),
+    })),
+  };
+  fs.writeFileSync(
+    path.join(outDir, "sfx-report.json"),
+    JSON.stringify(report, null, 2) + "\n",
+  );
+}
 console.log(
-  `wrote ${path.join(outDir, "mv.wav")} (${T.DURATION_SECONDS}s, gain ${gainDb.toFixed(2)} dB, ${finalLufs.toFixed(2)} LUFS by the internal meter)`,
+  `wrote ${path.join(outDir, "mv.wav")} (${T.DURATION_SECONDS}s, gain ${gainDb.toFixed(2)} dB, ${finalLufs.toFixed(2)} LUFS by the internal meter; ${SFX.length} SFX cues, bus ${sfxHash.slice(0, 12)})`,
 );
