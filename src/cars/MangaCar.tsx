@@ -54,6 +54,8 @@ export type CarState = {
   tread?: Tread;
   // false: an empty cockpit — no helmet, no HANS (the driver has got out).
   driver?: false;
+  // false: the far front endplate is gone (torn off or bent away; the scene draws the damage), side view only.
+  farFrontEndplate?: false;
 };
 
 export type Tread = "dry" | "wet";
@@ -586,7 +588,7 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
         }
       >
         {/* far side: far front endplate and wing surface, far rear endplate and rear wing top, airbox camera */}
-        {fw.farFrom ? (
+        {fw.farFrom && state.farFrontEndplate !== false ? (
           <Endplate
             d={fw.near}
             livery={fw.livery}

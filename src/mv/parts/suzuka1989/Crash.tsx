@@ -1,9 +1,11 @@
 // Shot 1.4 (bars 19–21): the crash, side-on from SEN's side of the track (1.3 seen from the inside of the chicane).
-// On 19.1 the picture freezes on the touch: the impact star sits on the contact point — PRO's right front wheel coming
-// down on SEN's front wing — with "咔！", focus lines and the first debris hanging in the air. Then it runs on: the two
-// McLarens, locked together exactly as they met at the end of 1.3 (staging.ts), slide on with their front wheels
-// locked, laying black marks and tyre smoke, debris skittering down the road, and stop at the mouth of the chicane's
-// escape road — PRO turned across SEN's nose, SEN's wing bent up under PRO's wheel. On 20.1 the result lands on the
+// On 19.1 the picture freezes on the touch: the impact star sits on the contact point — SEN's nose run into PRO's
+// right front wheel, on SEN's far side — with "CRASH!", focus lines, the far half of SEN's wing folding up and back and
+// the first pieces just breaking away (wreck14.ts, WingDamage.tsx). Then it runs on: the two McLarens, locked together
+// exactly as they met at the end of 1.3 (staging.ts), slide on with their front wheels locked, laying black marks and
+// tyre smoke, while the broken pieces — keeping the cars' speed — tumble ahead, land and skid away down the road; the
+// pair stops at the mouth of the chicane's escape road — PRO turned across SEN's nose, the far half of SEN's wing
+// folded up beside PRO's wheel, his nose tip crumpled. On 20.1 the result lands on the
 // page: the stopped pair stays as the background, dimmed, and the two helmet cards of 1.2 drop back in at the same
 // places — PRO left, SEN right — and are stamped in red, each on its own beat: SEN "取消成绩" (disqualified) on 20.3,
 // PRO "1989 冠军" (the title is his) on 21.1. Bar 21 holds the result while the page keeps pushing in, to the cut on
@@ -11,7 +13,7 @@
 import { Easing, random } from "remotion";
 import { carPoint, MangaCar, MP4_5_PRO, MP4_5_SEN } from "../../../cars";
 import type { CarSpec, CarState } from "../../../cars";
-import { offsetFrom, pinhole, type Camera } from "../../../kit/camera";
+import { pinhole, type Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import { ImpactStar } from "../../../kit/impact";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
@@ -27,11 +29,14 @@ import {
   type TracksideLayout,
 } from "../../../scenes/suzuka-1989/trackside";
 import { Foreground } from "./Foreground";
+import { CrumpledNose, DebrisPiece, debrisState, FarWingHalf } from "./WingDamage";
+import { bendAt, debrisTime, PIECES } from "./wreck14";
 import { CARD_PRO, CARD_SEN, RESULT_DIM, StampedCard } from "./Helmets";
 import { FarVerge, RoadFlow } from "./Motion";
 import { cueFrame, ramp, shotById, type PictureProps } from "./common";
 import {
   CONTACT_14,
+  V0,
   FREEZE_14,
   HIT,
   MID_WHEELBASE,
@@ -46,7 +51,6 @@ import {
   Z_SEN_14,
 } from "./staging";
 
-const RED = "#ee3a24";
 
 // The main panel's camera: 2.2 m up, close, f = 1700 px (ART-9).
 const CAM = pinhole({ f: 1700, horizon: 380, cx: 960, height: 2.2 });
@@ -58,7 +62,6 @@ const LAYOUT: TracksideLayout = {
 
 const FRONT_AXLE = carPoint(MP4_5_SEN, "frontAxle").x; // m from the rear end
 const REAR_AXLE = carPoint(MP4_5_SEN, "rearAxle").x;
-const NOSE = carPoint(MP4_5_SEN, "nose").x;
 
 // ── a car seen side-on but yawed toward the camera ────────────────────────────────────────────────────────────
 // The side view is a flat silhouette, so a car turned by `yaw` degrees (nose toward the camera) is drawn through the
@@ -157,87 +160,8 @@ const smokeAt = (
   return out;
 };
 
-// ── debris: pieces of front wing and nose thrown from the contact point ─────────────────────────────────────────
-const DEBRIS = Array.from({ length: 26 }, (_, i) => {
-  const r = (k: string) => random(`s89-debris-${i}-${k}`);
-  const colour = i % 3 === 0 ? INK : i % 3 === 1 ? PAPER : RED;
-  const size = 0.05 + 0.14 * r("size");
-  const n = 3 + Math.floor(r("n") * 2);
-  const shape = Array.from({ length: n }, (_, k) => {
-    const a = (k / n) * Math.PI * 2 + r(`a${k}`) * 0.9;
-    const rr = 0.5 + 0.6 * r(`r${k}`);
-    return { x: Math.cos(a) * rr, y: Math.sin(a) * rr };
-  });
-  return {
-    colour,
-    size,
-    shape,
-    // with the cars' speed, thrown up and out, some toward the camera
-    vx: 9 + 12 * r("vx"),
-    vy: 1 + 3.5 * r("vy"),
-    vz: -3 + 5 * r("vz"),
-    spin: (r("spin") - 0.5) * 1400,
-  };
-});
-// Debris clock: crawls through the freeze (the picture hangs on the touch), then real time.
-const debrisTime = (f: number) => {
-  const d = f - HIT;
-  return d < FREEZE_14
-    ? (d * 0.08) / 60
-    : (FREEZE_14 * 0.08 + d - FREEZE_14) / 60;
-};
-const debrisAt = (p: (typeof DEBRIS)[number], t: number) => {
-  const y0 = 0.35;
-  // flight until it lands, then it skids to a stop
-  const land = (p.vy + Math.sqrt(p.vy * p.vy + 2 * 9.81 * y0)) / 9.81;
-  const tf = Math.min(t, land);
-  let x = CONTACT_14.x + p.vx * tf;
-  let z = CONTACT_14.z + p.vz * tf;
-  const y = Math.max(0, y0 + p.vy * tf - 4.9 * tf * tf);
-  if (t > land) {
-    const skid = 0.25 * (1 - Math.exp(-(t - land) / 0.25));
-    x += p.vx * skid;
-    z += p.vz * skid;
-  }
-  return { x, y, z, angle: p.spin * tf };
-};
+// ── debris and the broken wing: wreck14.ts (physics), WingDamage.tsx (drawing) ───────────────────────────────────
 
-// SEN's broken front wing: the left half bent up and back where PRO's wheel came down on it, the nose tip crumpled
-// (metres from the car's rear end, x forward, y up).
-const BentWing: React.FC<{
-  at: { x: number; y: number; pxPerMetre: number };
-}> = ({ at }) => {
-  const P = (x: number, y: number) => {
-    const p = offsetFrom(at, x, y);
-    return `${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
-  };
-  const w = Math.max(2, 0.012 * at.pxPerMetre);
-  return (
-    <g>
-      {/* the bent half of the wing (all white on the 1989 car, ART-12), folded up behind the nose */}
-      <path
-        d={`M ${P(NOSE - 0.46, 0.17)} L ${P(NOSE - 0.1, 0.2)} L ${P(NOSE - 0.02, 0.5)} L ${P(NOSE - 0.3, 0.55)} Z`}
-        fill={PAPER}
-        stroke={INK}
-        strokeWidth={w * 1.4}
-        strokeLinejoin="round"
-      />
-      {/* torn root: a jagged black band where it snapped */}
-      <path
-        d={`M ${P(NOSE - 0.46, 0.17)} L ${P(NOSE - 0.39, 0.23)} L ${P(NOSE - 0.32, 0.17)} L ${P(NOSE - 0.24, 0.24)} L ${P(NOSE - 0.17, 0.17)} L ${P(NOSE - 0.1, 0.2)}`}
-        fill="none"
-        stroke={INK}
-        strokeWidth={w * 2}
-        strokeLinejoin="miter"
-      />
-      {/* the crumpled nose tip */}
-      <path
-        d={`M ${P(NOSE - 0.22, 0.06)} L ${P(NOSE - 0.1, 0.14)} L ${P(NOSE - 0.16, 0.2)} L ${P(NOSE + 0.01, 0.17)} L ${P(NOSE - 0.04, 0.08)} L ${P(NOSE + 0.02, 0.03)} Z`}
-        fill={INK}
-      />
-    </g>
-  );
-};
 
 // The result from 20.1 (facts.md: SEN disqualified for missing the chicane; PRO the 1989 champion).
 export const RESULT_STAMPS = { pro: "1989 CHAMPION", sen: "DISQUALIFIED" } as const;
@@ -317,25 +241,19 @@ export const Crash: React.FC<PictureProps> = ({ f }) => {
       />
     );
   };
+  // the broken pieces (wreck14.ts): each keeps the cars' speed plus its kick, tumbles, lands and skids
   const tDeb = debrisTime(f);
-  const pieces = DEBRIS.map((p, i) => ({ p, i, s: debrisAt(p, tDeb) }));
-  const piece = ({ p, i, s }: (typeof pieces)[number]) => {
-    const q = CAM.project({ x: s.x - camX, y: s.y, z: s.z });
-    const k = p.size * CAM.pxPerMetre(s.z);
-    const pts = p.shape
-      .map((v) => `${(q.x + v.x * k).toFixed(1)} ${(q.y + v.y * k).toFixed(1)}`)
-      .join(" L ");
-    return (
-      <path
-        key={`deb-${i}`}
-        d={`M ${pts} Z`}
-        fill={p.colour}
-        stroke={INK}
-        strokeWidth={2}
-        transform={`rotate(${s.angle.toFixed(1)} ${q.x.toFixed(1)} ${q.y.toFixed(1)})`}
-      />
-    );
-  };
+  const pieces = PIECES.map((p) => ({
+    p,
+    s: debrisState(p, tDeb, V0, senRear.x, Z_SEN_14, camX),
+  }));
+  const piece = ({ p, s }: (typeof pieces)[number]) => (
+    <DebrisPiece key={p.name} p={p} cam={CAM} at={s} />
+  );
+  // beyond SEN's centreline a piece is behind his car, nearer it is in front
+  const behindSen = (z: number) => z > Z_SEN_14 + 0.15;
+  const senTilt = freeze ? -1.5 : -1.5 * (1 - ramp(ts, 0, 1.2));
+  const bend = bendAt(f);
   const contactBurst = 1 - ramp(d, FREEZE_14, FREEZE_14 + 40);
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
@@ -397,20 +315,23 @@ export const Crash: React.FC<PictureProps> = ({ f }) => {
                 yaw={PRO_YAW_14}
                 state={{ lockFront: 20, wheelAngle: 20 }}
               />
-              {pieces.filter(({ s }) => s.z > Z_SEN_14 + 1.1).map(piece)}
+              {pieces.filter(({ s }) => behindSen(s.z)).map(piece)}
               {/* SEN's smoke rises behind his own body and trails out behind the car */}
               <Cloud puffs={puffsNear} />
+              {/* the far half of SEN's wing, folded up and back beside PRO's wheel */}
+              <FarWingHalf at={senA} tilt={senTilt} bend={bend} />
               <MangaCar
                 car={MP4_5_SEN}
                 at={senA}
                 state={{
                   lockFront: 40,
                   wheelAngle: 40,
-                  tilt: freeze ? -1.5 : -1.5 * (1 - ramp(ts, 0, 1.2)),
+                  tilt: senTilt,
+                  farFrontEndplate: false,
                 }}
               />
-              <BentWing at={senA} />
-              {pieces.filter(({ s }) => s.z <= Z_SEN_14 + 1.1).map(piece)}
+              <CrumpledNose at={senA} tilt={senTilt} f={f} />
+              {pieces.filter(({ s }) => !behindSen(s.z)).map(piece)}
               {/* dust burst at the contact while the picture hangs */}
               {contactBurst > 0 ? (
                 <Cloud
