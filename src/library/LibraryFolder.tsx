@@ -11,6 +11,7 @@ import { CarSheet, SHEETS } from "./CarSheet";
 import { CAR_STATES_FRAMES, CarStates } from "./CarStates";
 import { KitSheet } from "./KitSheet";
 import { PeopleHands } from "./PeopleHands";
+import { PEOPLE_MOTION_FRAMES, PeopleMotion } from "./PeopleMotion";
 import { PeopleSheet } from "./PeopleSheet";
 import { SuzukaTracksideSheet } from "./SceneSheets";
 import {
@@ -30,6 +31,13 @@ export const LibraryFolder: React.FC = () => (
     <Still id="Kit-Sheet" component={KitSheet} {...SIZE} />
     <Still id="People-Sheet" component={PeopleSheet} {...SIZE} />
     <Still id="People-Hands" component={PeopleHands} {...SIZE} />
+    <Composition
+      id="People-Motion"
+      component={PeopleMotion}
+      durationInFrames={PEOPLE_MOTION_FRAMES}
+      fps={60}
+      {...SIZE}
+    />
     {YEARS.map((year) => (
       <Still
         key={year}

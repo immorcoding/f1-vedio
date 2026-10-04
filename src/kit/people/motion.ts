@@ -11,6 +11,7 @@ import {
   flatFoot,
   lerpV,
   mixPose,
+  solve,
   v,
   type ArmPose,
   type FootPose,
@@ -265,11 +266,11 @@ const withArms = (p: Pose, near: ArmPose, far?: ArmPose): Pose => ({
 // Watching a screen with the arms folded (the near forearm across the chest, the far hand tucked under it).
 export const armsFolded = (o: { t?: number; head?: number } = {}): Pose => {
   const s = stand({ t: o.t, lean: -4, head: o.head ?? -6 });
-  const C = (x: number, y: number) => v(s.hip.x + x, s.hip.y + y);
+  // the forearms run across the body, toward and away from the camera, so they show short
   return withArms(
     s,
-    { hand: C(0.19, 0.42), grip: "fist", wrist: 10, elbowOut: 1 },
-    { hand: C(0.15, 0.36), grip: "fist", wrist: 0, elbowOut: 1 },
+    { shoulder: 16, elbow: 96, fore: 0.38, grip: "fist", wrist: 20 },
+    { shoulder: 20, elbow: 92, fore: 0.6, grip: "fist", wrist: 0 },
   );
 };
 
@@ -476,9 +477,10 @@ export const highFive = (u: number, gap = 0.9): Pose => {
   };
 };
 
-// A hug with someone facing you, hips `gap` m apart (about 0.4): u 0..1 — arms open, wrap round the other's back,
+// A hug with someone facing you, hips `gap` m apart (HUG_GAP: chests just touching): u 0..1 — arms open, wrap round the other's back,
 // a squeeze that bounces.
-export const hug = (u: number, gap = 0.42, t = 0): Pose => {
+export const HUG_GAP = 0.54;
+export const hug = (u: number, gap = HUG_GAP, t = 0): Pose => {
   const x = clamp01(u);
   const wrap = smooth(x / 0.4);
   const squeeze = Math.sin(TAU * t * 1.1) * 0.5 + 0.5;
@@ -487,13 +489,26 @@ export const hug = (u: number, gap = 0.42, t = 0): Pose => {
   return {
     hip: v(0.03 * wrap, 0.9 - 0.02 * squeeze * wrap),
     pelvis: 6,
-    chest: 6 + 8 * wrap + 2 * squeeze * wrap,
-    head: 18 * wrap,
+    chest: 4 + 6 * wrap + 2 * squeeze * wrap,
+    head: -4 * wrap,
     feet: { near: flatFoot(0.18), far: footFrom(v(-0.14, 0), BONES.ball, 14) },
     arms: {
-      near: { hand: lerpV(open(1.45), round(0.1, 1.36), wrap), grip: "flat", wrist: 30, elbowOut: -1 },
-      far: { hand: lerpV(open(1.3), round(0.06, 1.22), wrap), grip: "flat", wrist: 30, elbowOut: -1 },
+      near: { hand: lerpV(open(1.45), round(0.04, 1.34), wrap), grip: "flat", wrist: 30, elbowOut: -1 },
+      far: { hand: lerpV(open(1.3), round(0.0, 1.2), wrap), grip: "flat", wrist: 30, elbowOut: -1 },
     },
+  };
+};
+
+// A pose moved forward by dx (hip, feet and IK hands), e.g. to hand over between poses with different ground points.
+export const shiftPose = (p: Pose, dx: number): Pose => {
+  const arm = (a: ArmPose): ArmPose =>
+    "hand" in a ? { ...a, hand: v(a.hand.x + dx, a.hand.y) } : a;
+  const foot = (f: FootPose): FootPose => ({ ...f, ankle: v(f.ankle.x + dx, f.ankle.y) });
+  return {
+    ...p,
+    hip: v(p.hip.x + dx, p.hip.y),
+    feet: { near: foot(p.feet.near), far: foot(p.feet.far) },
+    arms: { near: arm(p.arms.near), far: arm(p.arms.far) },
   };
 };
 
@@ -556,19 +571,9 @@ const CLIMB_KEYS = (top: number): { u: number; pose: Pose }[] => {
       },
     },
     {
-      // both feet down, bent over, steadying himself
+      // both feet down: the first frame of the stumble away (so the walk picks up without a jump)
       u: 1,
-      pose: {
-        hip: v(CLIMB_FORWARD, 0.87),
-        pelvis: 14,
-        chest: 20,
-        head: 14,
-        feet: { near: flatFoot(CLIMB_FORWARD + 0.12), far: footFrom(v(CLIMB_FORWARD - 0.12, 0), BONES.ball, 10) },
-        arms: {
-          near: { hand: v(CLIMB_FORWARD + 0.24, 0.98), grip: "open", wrist: 8 },
-          far: { hand: v(CLIMB_FORWARD + 0.14, 0.92), grip: "open", wrist: 8 },
-        },
-      },
+      pose: shiftPose(stumble(0), CLIMB_FORWARD),
     },
   ];
 };
@@ -590,4 +595,75 @@ export const climbRail = (
   const behind: BodyPart[] =
     x < 0.3 ? ["farLeg", "body", "nearLeg", "nearArm"] : x < 0.5 ? ["farLeg", "body"] : x < 0.74 ? ["farLeg"] : [];
   return { pose, behind };
+};
+
+// ── Duet: helped out over the rail ───────────────────────────────────────────────────────────────────────────────
+// A driver climbs over the rail (climbRail) while a doctor on the near side reaches over and holds his near upper arm;
+// then the driver stumbles away and the doctor walks a step behind him, a hand at his back. Both face the same way.
+// `t` seconds from the start of the climb. Positions are the ground points' distance forward (m) from the climb spot;
+// `cross` is how far each has come toward their walking depth (driver: 0 behind the rail, 0.5 on it, 1 walking a
+// step in front of it; doctor: 0 at the rail, 1 walking a step deeper than the driver) for the caller to turn into
+// depth. Feet stay planted: each pose and its position come from the same walked distance.
+export type Placed = { pose: Pose; x: number; cross: number };
+export const ESCAPE = {
+  climb: 1.6, // s over the rail
+  speed: 0.7, // m/s walking away
+  docStart: -0.55, // the doctor's spot at the rail, forward of the climb spot
+  gap: 0.62, // the doctor walks this far behind
+};
+export const assistedEscape = (
+  t: number,
+  o: Partial<typeof ESCAPE> & { top?: number } = {},
+): { gro: Placed & { behind: BodyPart[] }; doc: Placed } => {
+  const E = { ...ESCAPE, ...o };
+  const stride = STUMBLE.stride ?? 0.5;
+  const walkT = Math.max(0, t - E.climb);
+  const d = gaitDistance(walkT, E.speed, { stride, uneven: 0.4 });
+  // the driver
+  let gro: Placed & { behind: BodyPart[] };
+  if (t < E.climb) {
+    const u = Math.max(0, t) / E.climb;
+    const c = climbRail(u, o.top);
+    gro = {
+      pose: c.pose,
+      x: 0,
+      cross: u < 0.25 ? 0 : smooth((u - 0.25) / 0.75),
+      behind: c.behind,
+    };
+  } else {
+    gro = { pose: stumble(d), x: CLIMB_FORWARD + d, cross: 1, behind: [] };
+  }
+  const groHip = gro.x + gro.pose.hip.x;
+  // the doctor: holding the driver's near upper arm while he climbs
+  const docOpts: GaitOptions = { stride, lean: 10, armSwing: 12, head: 6 };
+  const PH = 0.27; // his steps fall between the driver's
+  const catchUp = CLIMB_FORWARD - E.gap - E.docStart; // how far he has to come to walk a step behind
+  const dd = d + catchUp * smooth(walkT / 1.1) + PH;
+  const docX = E.docStart + dd - PH;
+  const armAt = (() => {
+    const j = solve(gro.pose).arms.near;
+    const p = lerpV(j.shoulder, j.elbow, 0.55);
+    return v(gro.x + p.x - E.docStart, p.y);
+  })();
+  const holding = reachTo(armAt, { grip: "hold", t });
+  // walking behind, the near hand on his back once it reaches
+  const back = v(groHip - 0.15 - docX, 1.2);
+  const onBack = smooth((0.8 - back.x) / 0.2);
+  const walking = mixPose(
+    walk(dd, docOpts),
+    walkWithHands(dd, { near: { hand: back, grip: "flat", wrist: 25 } }, docOpts),
+    onBack,
+  );
+  const w = smooth((t - E.climb * 0.8) / (E.climb * 0.2 + 0.3));
+  const doc: Placed = {
+    pose:
+      w <= 0
+        ? holding
+        : w >= 1
+          ? walking
+          : mixPose(shiftPose(holding, E.docStart - docX), walking, w),
+    x: docX,
+    cross: smooth(walkT / 1.1),
+  };
+  return { gro, doc };
 };
