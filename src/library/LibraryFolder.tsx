@@ -10,6 +10,7 @@ import { BahrainGeometry } from "./BahrainGeometry";
 import { CarCheck } from "./CarCheck";
 import { FarSideCheck, type FarSideCheckProps } from "./FarSideCheck";
 import { CAR_LOOKS_SIZE, CarLooksCheck } from "./CarLooksCheck";
+import { REAR_WING_LOW_SIZE, RearWingLowCheck } from "./RearWingLowCheck";
 import { CarSheet, SHEETS } from "./CarSheet";
 import { CAR_STATES_FRAMES, CarStates } from "./CarStates";
 import { KitSheet } from "./KitSheet";
@@ -126,6 +127,7 @@ export const LibraryFolder: React.FC = () => (
         {...SIZE}
       />
       <Still id="Check-Car-Looks" component={CarLooksCheck} {...CAR_LOOKS_SIZE} />
+      <Still id="Check-Rear-Wing-Low" component={RearWingLowCheck} {...REAR_WING_LOW_SIZE} />
       {(Object.keys(CARS) as CarId[]).map((car) => (
         <Still
           key={`trace-${car}`}
