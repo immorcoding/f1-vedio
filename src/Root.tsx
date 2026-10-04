@@ -9,6 +9,7 @@ import { StyleB } from "./prototype/styles/StyleB";
 import { StyleC } from "./prototype/styles/StyleC";
 import { TraceCheck } from "./prototype/styles/TraceCheck";
 import { CarSheet2021 } from "./prototype/styles/CarSheet2021";
+import { GoldAccentFolder } from "./prototype/GoldAccent";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -23,6 +24,7 @@ export const RemotionRoot: React.FC = () => {
       </Folder>
       {/* PROTOTYPE — race-moment look and style studies for review; remove once the look is settled. */}
       <Folder name="Prototype">
+        <GoldAccentFolder />
         <Composition id="Proto-AbuDhabi2021" component={AbuDhabi2021} durationInFrames={ABU_DHABI_2021_FRAMES} fps={60} width={1920} height={1080} />
         <Still id="Style-A-InkWatercolor" component={StyleA} width={1920} height={1080} />
         <Still id="Style-B-Manga" component={StyleB} width={1920} height={1080} />
