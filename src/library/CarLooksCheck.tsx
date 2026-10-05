@@ -15,7 +15,7 @@ const PPM = 80;
 const ZOOM = 3;
 const CORNER = { w: 1.35, h: 0.8 }; // m of the front corner in a blow-up: from the front end back, from the ground up
 const MODERN: CarId[] = ["RB16B", "W12", "AT01", "VF20"];
-const OTHERS: CarId[] = ["MP4-23", "F2008", "STR3", "TF108", "MP45-PRO", "F641-PRO", "MP45B-SEN", "RB18"];
+const OTHERS: CarId[] = ["MP4-23", "F2008", "STR3", "TF108", "MP45-PRO", "F641-PRO", "MP45B-SEN"];
 
 // The car as drawn before this check's change: far wheels at their traced x, and the 2021 cars' HIGH far wheels at
 // the full traced lift.

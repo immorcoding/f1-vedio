@@ -175,26 +175,31 @@ const Halo: React.FC<PanelProps> = ({ t, keyT }) => {
 };
 
 // 2021: VER's car at speed, close on the cockpit and the number; the number turns over on beat 3 and the RB16B turns
-// into the RB18 with it (#24). Both cars at one scale and one anchor (the rear end, on the ground), each with its own
-// painted number where it sits on the real car; the two numbers land within a few px of each other, so the turn-over
-// reads as one number flipping.
+// into the RB18 with it (#24). Both cars at one scale on one ground line, each with its own painted number where it
+// sits on the real car. The RB18's 1 sits about 0.1 m nearer its rear end than the RB16B's 33 (both checked on the
+// photos), so the RB18 is placed that much further forward (RB18_AT): the two numbers land on one spot and the
+// turn-over reads as one number flipping.
 const CAR_K = 2.0; // screen px per RB16B photo px
 const CAR_AT = { x: -250, y: 1034 };
 const CAR_PPM = (CAR_K * 250) / RB16B.frame.k;
-const numberOf = (car: CarSpec) => {
+const numberOf = (car: CarSpec, anchor = CAR_AT) => {
   const k = (CAR_PPM / 250) * car.frame.k; // screen px per photo px of this car
   // the panel draws the car in its default (LOW) look, whose body is re-projected lower: take the number from that look
   const at = specSeenFrom(car, "low").numberAt;
   return {
-    x: CAR_AT.x + (car.frame.x - at.x) * k,
-    y: CAR_AT.y + (at.y - car.frame.ground) * k,
+    x: anchor.x + (car.frame.x - at.x) * k,
+    y: anchor.y + (at.y - car.frame.ground) * k,
     size: (at.size ?? 46) * k, // the painted number, where and as big as on the real car
     color: at.color ?? PAPER,
     k,
   };
 };
 const NUM_2021 = numberOf(RB16B);
-const NUM_2022 = numberOf(RB18);
+const RB18_AT = {
+  x: CAR_AT.x + NUM_2021.x - numberOf(RB18).x,
+  y: CAR_AT.y,
+};
+const NUM_2022 = numberOf(RB18, RB18_AT);
 const blank = (car: CarSpec) => ({
   ...car,
   driver: { ...car.driver, number: "" },
@@ -249,7 +254,7 @@ const Number1: React.FC<PanelProps> = ({ t, keyT }) => {
           <MangaCar
             car={RB18_BLANK}
             facing="right"
-            at={{ x: CAR_AT.x, y: CAR_AT.y, pxPerMetre: CAR_PPM }}
+            at={{ x: RB18_AT.x, y: RB18_AT.y, pxPerMetre: CAR_PPM }}
             state={{ wheelAngle: t * 40 }}
           />
         </g>

@@ -93,4 +93,13 @@ export const SHEETS = {
     ],
     topPxPerMetre: 62,
   },
+  // VER's two Red Bulls, the RB16B (2021, the settled reference) above the RB18 (2022), at the 2021 sheet's 275 px per
+  // metre and one rear-end x, so the 2022 car's size and shape read against the 2021 one.
+  2022: {
+    rows: [
+      { car: "RB16B", x: 180, ground: 490 },
+      { car: "RB18", x: 180, ground: 1010 },
+    ],
+    pxPerMetre: 275,
+  },
 } satisfies Record<number, CarSheetProps>;

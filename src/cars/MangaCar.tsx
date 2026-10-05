@@ -90,6 +90,58 @@ const wetSipes = (w: Wheel) =>
     return `M ${w.cx + Math.cos(a) * (w.r - 1)} ${w.cy + Math.sin(a) * (w.r - 1)} L ${w.cx + Math.cos(b) * (w.r - 15)} ${w.cy + Math.sin(b) * (w.r - 15)}`;
   }).join(" ");
 
+// Bolt-hole dots round a flat wheel cover, so a covered wheel still shows it turning.
+const coverDots = (w: Wheel, r: number, n: number, dot: number) =>
+  Array.from({ length: n }, (_, i) => {
+    const a = (i / n) * Math.PI * 2 + 0.3;
+    const x = w.cx + Math.cos(a) * r;
+    const y = w.cy + Math.sin(a) * r;
+    return `M ${x - dot} ${y} A ${dot} ${dot} 0 1 0 ${x + dot} ${y} A ${dot} ${dot} 0 1 0 ${x - dot} ${y} Z`;
+  }).join(" ");
+
+// The Pirelli logo arcs on the tyre shoulder (2022 18-inch tyres): four short arcs in the compound colour.
+const logoArcs = (w: Wheel) =>
+  Array.from({ length: 4 }, (_, i) => {
+    const r = w.r - 15;
+    const a0 = (i / 4) * Math.PI * 2 + 0.5;
+    const a1 = a0 + 0.62;
+    return `M ${w.cx + Math.cos(a0) * r} ${w.cy + Math.sin(a0) * r} A ${r} ${r} 0 0 1 ${w.cx + Math.cos(a1) * r} ${w.cy + Math.sin(a1) * r}`;
+  }).join(" ");
+
+// the glossy black of a wheel cover (the photo's covers are black, the red tyre band rings them)
+const COVER = "#1f1f24";
+
+// The 2022 wheel (rim "covered"), drawn inside the wheel's turning group: the flat cover over the 18-inch rim, its bolt
+// holes, and the logo arcs on the shoulder. No spokes: the cover hides them (2022 Technical Regulations, Art. 3.13.7).
+const CoveredRim: React.FC<{
+  w: Wheel;
+  rimR: number;
+  compound?: string;
+  fill: string;
+}> = ({ w, rimR, compound, fill }) => (
+  <>
+    {compound ? (
+      <path
+        d={logoArcs(w)}
+        fill="none"
+        stroke={compound}
+        strokeWidth={7}
+        strokeLinecap="round"
+      />
+    ) : null}
+    <circle
+      cx={w.cx}
+      cy={w.cy}
+      r={rimR}
+      fill={COVER}
+      stroke={INK}
+      strokeWidth={4}
+    />
+    <circle cx={w.cx} cy={w.cy} r={rimR} fill={fill} opacity={0.35} />
+    <path d={coverDots(w, rimR * 0.72, 8, 3.2)} fill="#55555c" />
+  </>
+);
+
 const NearWheel: React.FC<{
   car: CarSpec;
   w: Wheel;
@@ -121,14 +173,21 @@ const NearWheel: React.FC<{
       <circle
         cx={w.cx}
         cy={w.cy}
-        r={w.r - 24}
+        r={car.rim === "covered" ? car.rimR + 6 : w.r - 24}
         fill="none"
         stroke={compound}
         strokeWidth={6}
       />
     ) : null}
     <g transform={`rotate(${-angle} ${w.cx} ${w.cy})`}>
-      {car.rim === "spoked" ? (
+      {car.rim === "covered" ? (
+        <CoveredRim
+          w={w}
+          rimR={car.rimR}
+          compound={compound}
+          fill={tone("dark", id)}
+        />
+      ) : car.rim === "spoked" ? (
         <>
           <circle
             cx={w.cx}
@@ -178,6 +237,26 @@ const NearWheel: React.FC<{
         fill="none"
         stroke={car.rimAccent}
         strokeWidth={5}
+      />
+    ) : null}
+    {car.rim === "covered" ? (
+      <path
+        d={`M ${w.cx - car.rimR * 0.62} ${w.cy - car.rimR * 0.38} A ${car.rimR * 0.72} ${car.rimR * 0.72} 0 0 1 ${w.cx - car.rimR * 0.1} ${w.cy - car.rimR * 0.71}`}
+        fill="none"
+        stroke={PAPER}
+        strokeWidth={4}
+        strokeLinecap="round"
+        opacity={0.7}
+      />
+    ) : null}
+    {car.rim === "covered" && car.hubAccent ? (
+      <circle
+        cx={w.cx}
+        cy={w.cy}
+        r={19}
+        fill="none"
+        stroke={car.hubAccent}
+        strokeWidth={4}
       />
     ) : null}
     <circle
@@ -241,12 +320,16 @@ const FarWheel: React.FC<{
           stroke="#2c2c2c"
           strokeWidth={3}
         />
-        <path
-          d={spokePath(w, rimR * 0.85, car.rim === "spoked" ? 10 : 12)}
-          stroke="#4a4a4a"
-          strokeWidth={car.rim === "spoked" ? 4 : 2}
-          strokeLinecap="round"
-        />
+        {car.rim === "covered" ? (
+          <path d={coverDots(w, rimR * 0.72, 8, 3)} fill="#3a3a3a" />
+        ) : (
+          <path
+            d={spokePath(w, rimR * 0.85, car.rim === "spoked" ? 10 : 12)}
+            stroke="#4a4a4a"
+            strokeWidth={car.rim === "spoked" ? 4 : 2}
+            strokeLinecap="round"
+          />
+        )}
       </g>
       <circle cx={w.cx} cy={w.cy} r={9} fill={INK} />
       <path
