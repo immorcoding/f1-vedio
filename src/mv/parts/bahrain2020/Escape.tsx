@@ -6,7 +6,7 @@
 // escape-staging.ts.
 import type { Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
-import { FIRE_PALETTES } from "../../../kit/fire";
+import { Fire, FIRE_PALETTES } from "../../../kit/fire";
 import { CAPTION_FONT } from "../../../kit/lettering";
 import { ToneDefs } from "../../../kit/tone";
 import { at, frameAt } from "../../timing.ts";
@@ -188,10 +188,31 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   const take = ramp(f, timeCue, frameAt(at(71, 4)));
   const frontFire = FRONT_FIRE * (1 + 0.5 * take);
   const backFire = BACK_FIRE * (1 + 0.6 * take);
+  // the fire over the car, behind GRO (WreckWorld `subjectOverFires`)
   const nearFires: NearFire[] = [
-    { ...COVER_FIRE, seed: "cover" },
-    { ...ENGULF, h: ENGULF.h * take, seed: "engulf", tongues: 9 },
+    { ...ENGULF, h: ENGULF.h * take, seed: "engulf", tongues: 9, phase: 11 },
   ];
+  // the near fire in front of the cockpit, in front of GRO: it partly covers him in the cockpit and as he walks out
+  const cover = (() => {
+    const base = cam.project({ x: COVER_FIRE.x, y: 0, z: COVER_FIRE.z });
+    const s = cam.pxPerMetre(COVER_FIRE.z);
+    return (
+      <Fire
+        key="cover"
+        x={base.x}
+        y={base.y}
+        w={COVER_FIRE.w * s}
+        h={COVER_FIRE.h * s}
+        frame={f + 23}
+        seed="wreck-cover"
+        tongues={5}
+        embers={5}
+        palette={{ ...fire, glow: null }}
+        intensity={fireLevel}
+        smoke={false}
+      />
+    );
+  })();
   // the doctor, a step off GRO's plane, is out of focus (depth of field, below); GRO and the marshal stand in the
   // heat haze with a light ripple, GRO's the lightest so he is the sharp one (haze.tsx)
   const calmAt = (at: { x: number; z: number }, k: number, s: number) => {
@@ -234,20 +255,17 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
       })}
     </g>
   );
-  // GRO and the doctor, deepest first; both are in front of the jet where they stand (it crosses behind them into
-  // the cell), and neither overlaps the marshal
+  // in front of the wreck, back to front (the user's order, review 2026-10-05): GRO, the near fire in front of the
+  // cockpit, the doctor, then the marshal nearest the camera; all are in front of the jet where they stand (it
+  // crosses behind them into the cell)
   const people = [
-    { z: groAt.z, node: gro.front },
-    {
-      z: docAt.z,
-      node: (
-        <g key="doc" filter="url(#b36-defocus)">
-          {figure("doc", docAt, docPose, DOCTOR)}
-        </g>
-      ),
-    },
-    { z: MARSHAL_AT.z, node: marshal },
-  ].sort((a, b) => b.z - a.z);
+    gro.front,
+    cover,
+    <g key="doc" filter="url(#b36-defocus)">
+      {figure("doc", docAt, docPose, DOCTOR)}
+    </g>,
+    marshal,
+  ];
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
@@ -279,6 +297,7 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
             backFire={backFire}
             gapFireBack={GAP_FIRE_BACK}
             debrisUnderFire
+            subjectOverFires
           />
           {/* the marshal's powder jet into the front of the cockpit, then everyone, deepest first (it crosses
               behind GRO and the doctor into the cell) */}
@@ -291,7 +310,7 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
             seed="b36-powder"
           />
           </g>
-          {people.map((p) => p.node)}
+          {people}
         </Haze>
       </Flip>
       <rect width={1920} height={1080} fill={INK} opacity={0.12 * hb} />

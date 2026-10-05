@@ -102,6 +102,8 @@ export type NearFire = {
   h: number;
   seed: string;
   tongues?: number;
+  // frames the flames run ahead (default: by its place in the list)
+  phase?: number;
 };
 
 // The barrier as the impact left it (wreck-geometry.ts): all three rails torn open along the cell, their ends curled.
@@ -180,6 +182,8 @@ export const WreckWorld: React.FC<{
   gapFireBack?: number;
   // the small debris drawn under the fires in front of the cell, which swallow it
   debrisUnderFire?: boolean;
+  // someone in or out of the cockpit drawn over the fires round the car, the car and the fire in the gap
+  subjectOverFires?: boolean;
 }> = ({
   cam,
   f,
@@ -201,6 +205,7 @@ export const WreckWorld: React.FC<{
   backFire = 1,
   gapFireBack = 0,
   debrisUnderFire = false,
+  subjectOverFires = false,
 }) => {
   const p = noGlow
     ? { ...FIRE_PALETTES[palette], glow: null }
@@ -300,6 +305,81 @@ export const WreckWorld: React.FC<{
         );
       })}
     </g>
+  );
+  // someone in the cockpit or out over its side (GRO); with `subjectOverFires` he is drawn over the fires round
+  // the car, the car and the fire in the gap (3.6: the user's order, front to back: doctor, the near fire in front
+  // of the cockpit, GRO, the fire in the gap, the car, the fire behind it; user review 2026-10-05)
+  const subject = (
+    <>
+      {/* someone in the cockpit, between the far parts and the near halo bar and cut to the rim, then the near bar
+            over him: drawn after the fire's light so he stays solid (as he is once out) */}
+      {cockpit ? (
+        <>
+          <defs>
+            <CockpitClip id={rimClip} cam={cam} />
+            <NearBarClip id={`${rimClip}-bar`} cam={cam} />
+          </defs>
+          <g clipPath={`url(#${rimClip})`}>{cockpit.behindHalo}</g>
+          <g clipPath={`url(#${rimClip}-bar)`}>
+            {rec(
+              <MangaCar
+                car={VF20}
+                facing="left"
+                at={cellAt}
+                state={cellState}
+              />,
+            )}
+          </g>
+          <g clipPath={`url(#${rimClip})`}>{cockpit.overHalo}</g>
+        </>
+      ) : null}
+      {/* someone out over the cell's side, behind the low fire (nothing of him overlaps the bottom rail until he
+            crosses it) */}
+      {behindRails}
+    </>
+  );
+  const gapFireNode = (
+    <>
+      {burntOut ? null : (
+        <Fire
+          x={gapFire.x}
+          y={gapFire.y}
+          w={gapFire.w}
+          h={gapFire.h}
+          frame={f + 13}
+          seed={`wreck-gap${fireSeed}`}
+          tongues={4}
+          embers={4}
+          palette={noLight}
+          intensity={intensity * 0.9}
+          smoke={false}
+          clip={clip}
+        />
+      )}
+    </>
+  );
+  const rearNode = (
+    <>
+      {/* the torn-off rear on the track side, turned end for end (wreck-geometry.ts REAR_REST): scorched and in
+            shadow, a muted grey-brown silhouette with a faint rim of firelight on the side facing the fire */}
+      <defs>
+        <RearShadowFilter id={rearShade} rim={p.glow ? p.smokeRim : null} />
+      </defs>
+      {rec(
+        <g filter={`url(#${rearShade})`}>
+          <MangaCar
+            car={VF20}
+            facing="right"
+            at={rearAt}
+            state={{
+              farSide: "high",
+              split: { rear: REAR_POSE, show: "rear" },
+              compound: VF20.compound,
+            }}
+          />
+        </g>,
+      )}
+    </>
   );
   return (
     <g>
@@ -402,31 +482,7 @@ export const WreckWorld: React.FC<{
           amount={intensity}
         />
       )}
-      {/* someone in the cockpit, between the far parts and the near halo bar and cut to the rim, then the near bar
-          over him: drawn after the fire's light so he stays solid (as he is once out) */}
-      {cockpit ? (
-        <>
-          <defs>
-            <CockpitClip id={rimClip} cam={cam} />
-            <NearBarClip id={`${rimClip}-bar`} cam={cam} />
-          </defs>
-          <g clipPath={`url(#${rimClip})`}>{cockpit.behindHalo}</g>
-          <g clipPath={`url(#${rimClip}-bar)`}>
-            {rec(
-              <MangaCar
-                car={VF20}
-                facing="left"
-                at={cellAt}
-                state={cellState}
-              />,
-            )}
-          </g>
-          <g clipPath={`url(#${rimClip})`}>{cockpit.overHalo}</g>
-        </>
-      ) : null}
-      {/* someone out over the cell's side, behind the low fire (nothing of him overlaps the bottom rail until he
-          crosses it) */}
-      {behindRails}
+      {subjectOverFires ? null : subject}
       {debrisUnderFire ? debris : null}
       {/* the low fire along the rails; once it is out, embers and a few small flames */}
       {burntOut ? (
@@ -467,7 +523,7 @@ export const WreckWorld: React.FC<{
                 y={c.y}
                 w={c.w}
                 h={c.h}
-                frame={f + 23 + 11 * i}
+                frame={f + 23 + (n.phase ?? 11 * i)}
                 seed={`wreck-${n.seed}${fireSeed}`}
                 tongues={n.tongues ?? 5}
                 embers={5}
@@ -478,40 +534,17 @@ export const WreckWorld: React.FC<{
               />
             );
           })}
-      {burntOut ? null : (
-        <Fire
-          x={gapFire.x}
-          y={gapFire.y}
-          w={gapFire.w}
-          h={gapFire.h}
-          frame={f + 13}
-          seed={`wreck-gap${fireSeed}`}
-          tongues={4}
-          embers={4}
-          palette={noLight}
-          intensity={intensity * 0.9}
-          smoke={false}
-          clip={clip}
-        />
-      )}
-      {/* the torn-off rear on the track side, turned end for end (wreck-geometry.ts REAR_REST): scorched and in
-          shadow, a muted grey-brown silhouette with a faint rim of firelight on the side facing the fire */}
-      <defs>
-        <RearShadowFilter id={rearShade} rim={p.glow ? p.smokeRim : null} />
-      </defs>
-      {rec(
-        <g filter={`url(#${rearShade})`}>
-          <MangaCar
-            car={VF20}
-            facing="right"
-            at={rearAt}
-            state={{
-              farSide: "high",
-              split: { rear: REAR_POSE, show: "rear" },
-              compound: VF20.compound,
-            }}
-          />
-        </g>,
+      {subjectOverFires ? (
+        <>
+          {rearNode}
+          {gapFireNode}
+          {subject}
+        </>
+      ) : (
+        <>
+          {gapFireNode}
+          {rearNode}
+        </>
       )}
       {debrisUnderFire ? null : debris}
       {/* bubble smoke (ART-20) drifting across from the fire in the gap over the torn-off rear, partly veiling it */}
@@ -581,7 +614,12 @@ export const Vignette: React.FC<{ amount: number }> = ({ amount }) => (
 // cell in the barrier, drifting along the rails, with a small kick on each heartbeat.
 export const wreckShotCam = (f: number) => {
   const shot = shotById("3.4");
-  const u = ramp(f - shot.from, 0, shot.to - shot.from, (x) => x * x * (3 - 2 * x));
+  const u = ramp(
+    f - shot.from,
+    0,
+    shot.to - shot.from,
+    (x) => x * x * (3 - 2 * x),
+  );
   // (in the camera's own, unflipped picture: the screen is flipped, so the rear piece starts at the left edge)
   const start = { x: REAR_ANCHOR_X + 0.9, y: 0.9, z: REAR_Z };
   const target = {
