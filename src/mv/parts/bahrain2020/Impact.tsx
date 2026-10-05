@@ -4,12 +4,12 @@
 // the pose the wreck has in every later shot. Filmed from the wreck camera's spot (square to the car's flank, 3.2 m up,
 // a little wider), so the rails cross in front of the nose at the angle they keep after the cut; the picture is
 // flipped like the wreck's, so the car runs left → right as in 3.2. The contact lands on the bar's first beat; then an
-// explicit slow motion of the 0.1 s that matter (MOT-5): sparks spray from the frame it touches, off the far front
-// corner where it meets the rails and on along them, behind the car (ground.ts scrapeAt); the
+// explicit slow motion of the 0.1 s that matter (MOT-5): a big spark burst lands on the frame it touches, on the far
+// front corner where it meets the rails, and rides along with it (ground.ts scrapeAt), drawn over everything; the
 // middle rail splits back from the first touch as the nose slides on through it, the top and bottom rails bend back
 // and split along the survival cell — their torn ends curling up and back, the gap every later shot shows
 // (wreck-geometry.ts TEARS, tornCurl) — the car breaks at the engine bulkhead — the power unit and rear left behind on
-// the track side — and the fuel cell bursts into a fireball, carbon shards flying. On the last beats the frame freezes
+// the track side — and the fuel cell bursts into a fireball. On the last beats the frame freezes
 // into white paper and black line, an impact star round the nose with 67G, the fireball still burning in colour
 // (facts.md; FIA accident investigation summary). The ground comes from the same model (ground.ts): the run-off, the
 // track's white edge line and the barrier's foot run to one vanishing point, the tyre marks along the 29° path to
@@ -20,7 +20,7 @@ import { INK, PAPER } from "../../../kit/colors";
 import { BubbleSmoke, FIRE_PALETTES, Fireball } from "../../../kit/fire";
 import { BigText } from "../../../kit/lettering";
 import { focusLines } from "../../../kit/lines";
-import { Sparks, sparksAt } from "../../../kit/sparks";
+import { SparkBurst } from "../../../kit/sparks";
 import { ToneDefs, TonePattern, tone } from "../../../kit/tone";
 import { BentGuardrail, bump, type Deflection } from "./bent-rail";
 import { BREAK_PIVOT, carPointOnScreen } from "./car-points";
@@ -221,13 +221,10 @@ const Shrubs: React.FC<{ cam: Camera }> = ({ cam }) => (
   </>
 );
 
-// ── Sparks (review-2 #1, rebuilt on the user's review): the kit's spark shower (src/kit/sparks.tsx) off the far
-// side where it scrapes the rails (ground.ts scrapeAt), thrown on along the rails the way the car slides ─────────────
-// A spark is behind the car until it is this much nearer the camera than the car's depth (the drawn car's near side,
-// with a margin for the bodywork and the rails it is passing): it never covers the near side of the car.
-const SPARK_CLEAR = 2.6;
-const SPARKS_UNTIL = 58; // the last frame of the slide that strikes sparks
-const SPARK_HEIGHT = 0.6; // where the far front corner meets the rails, m
+// ── The impact flash (user review of #26, round 3): one big spark burst on the contact point, no spark shower ────────
+const BURST_HEIGHT = 0.6; // where the far front corner meets the rails, m
+const BURST_R = 150; // px at full size
+const BURST_FADE_BY = BALL_AT + 6; // gone as the fireball grows
 
 const star = (
   cx: number,
@@ -330,32 +327,12 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
   });
   // the stretch of the barrier down the run from where it crosses the car's plane is nearer than the car: in front
   const splitU = along((A.z - CELL_Z) / RUN_DIR_V.z);
-  // sparks off the far side where it scrapes the rails, from the contact frame on (kit/sparks.tsx), in the camera's
-  // world V: behind the car's middle they go behind it; none in the freeze
-  const pieces = frozen
-    ? []
-    : sparksAt({
-        seed: "b33-sparks",
-        t: ts,
-        until: SPARKS_UNTIL,
-        contact: (tb) => {
-          const p = toView(scrapeAt(stage(tb).travel));
-          return { x: p.x, y: SPARK_HEIGHT, z: p.z };
-        },
-        along: { x: RUN_DIR_V.x, y: 0, z: RUN_DIR_V.z },
-        away: { x: TRACKWARD_V.x, y: 0, z: TRACKWARD_V.z },
-        speed: [0.45, 0.75],
-        gravity: 0.03,
-        live: 10,
-        life: [6, 10],
-        burst: 4,
-        project: (p) => CAM.project(p),
-      });
-  const sparksBehind = pieces.filter((s) => s.depth > A.z - SPARK_CLEAR);
-  const sparksFront = pieces.filter((s) => s.depth <= A.z - SPARK_CLEAR);
+  // the impact flash sits where the far front corner scrapes the rails (ground.ts scrapeAt), in the camera's world V
+  const scrape = toView(scrapeAt(travel));
+  const burstAt = CAM.project({ x: scrape.x, y: BURST_HEIGHT, z: scrape.z });
   // the tyres on the ground as drawn: the front ones on the front piece, the rear ones on the piece left behind
   const tyres = tyresOnGround(CAM, at, A.z, -front.dx, -rear.dx);
-  // the car (the rear piece, then the cell once it splits), drawn once in the picture and once as the sparks' mask
+  // the car: the rear piece, then the cell once it splits
   const car = (
     <>
       <MangaCar
@@ -440,17 +417,6 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
             <feMergeNode in="outline" />
           </feMerge>
         </filter>
-        {/* the car's silhouette, to keep the sparks behind it */}
-        <filter id="b33-black">
-          <feColorMatrix
-            type="matrix"
-            values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
-          />
-        </filter>
-        <mask id="b33-car-mask">
-          <rect x={-2000} y={-2000} width={6000} height={5000} fill="#fff" />
-          <g filter="url(#b33-black)">{car}</g>
-        </mask>
       </defs>
       <g
         transform={`translate(${960 + dx} ${540 + dy}) scale(${push}) translate(-960 -540)`}
@@ -545,11 +511,6 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
                 gaps={gaps}
                 tonePrefix="b33"
               />
-              {/* sparks fly on the track side of the rails, so in front of them; those behind the car's near side
-                  are cut out where the car stands in front of them */}
-              <g mask="url(#b33-car-mask)">
-                <Sparks pieces={sparksBehind} palette={fire} />
-              </g>
             </>,
           )}
           {/* the fuel cell bursts at the break: a fireball in the fire's colours, bubble smoke rising after it in
@@ -576,7 +537,6 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
             palette={fire}
             backing={frozen}
           />
-          <Sparks pieces={sparksFront} palette={fire} />
         </Flip>
       </g>
       {frozen ? (
@@ -588,6 +548,25 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
         </g>
       ) : null}
       <rect width={1920} height={1080} fill={PAPER} opacity={flash} />
+      {/* the impact flash on the contact point: the top layer, over the car's nose, the rails and the white flash,
+          so it lands on the contact frame; it moves with the scrape point and is gone as the fireball grows */}
+      {frozen ? null : (
+        <g
+          transform={`translate(${960 + dx} ${540 + dy}) scale(${push}) translate(-960 -540)`}
+        >
+          <Flip>
+            <SparkBurst
+              x={burstAt.x}
+              y={burstAt.y}
+              r={BURST_R}
+              t={ts}
+              fadeBy={BURST_FADE_BY}
+              seed="b33-burst"
+              palette={fire}
+            />
+          </Flip>
+        </g>
+      )}
     </svg>
   );
 };
