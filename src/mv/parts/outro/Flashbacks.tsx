@@ -24,6 +24,7 @@ import {
   type CarSpec,
   type Driver,
 } from "../../../cars";
+import { specSeenFrom } from "../../../cars/seenFrom";
 import { INK, PAPER } from "../../../kit/colors";
 import { ImpactStar } from "../../../kit/impact";
 import { Caption, captionSize, useLettering } from "../../../kit/lettering";
@@ -182,11 +183,13 @@ const CAR_AT = { x: -250, y: 1034 };
 const CAR_PPM = (CAR_K * 250) / RB16B.frame.k;
 const numberOf = (car: CarSpec) => {
   const k = (CAR_PPM / 250) * car.frame.k; // screen px per photo px of this car
+  // the panel draws the car in its default (LOW) look, whose body is re-projected lower: take the number from that look
+  const at = specSeenFrom(car, "low").numberAt;
   return {
-    x: CAR_AT.x + (car.frame.x - car.numberAt.x) * k,
-    y: CAR_AT.y + (car.numberAt.y - car.frame.ground) * k,
-    size: (car.numberAt.size ?? 46) * k, // the painted number, where and as big as on the real car
-    color: car.numberAt.color ?? PAPER,
+    x: CAR_AT.x + (car.frame.x - at.x) * k,
+    y: CAR_AT.y + (at.y - car.frame.ground) * k,
+    size: (at.size ?? 46) * k, // the painted number, where and as big as on the real car
+    color: at.color ?? PAPER,
     k,
   };
 };
