@@ -74,6 +74,52 @@ export const pass25 = (t: number) => {
   return { tau, camX, glo: { x: glo, z: 16 }, ham: { x: ham, z: 10 } };
 };
 
+// ── 2.5, bars 49–50: real time, from above (review-2 #4) ─────────────────────────────────────────────────────
+// On 49.1 the picture cuts from the side-on slow motion to the plan (MOT-2): out of Junção and up the hill, HAM ahead
+// on the inside, GLO still on the outside line, twitching on slicks. Same clocks as the side shot — race time from
+// passRaceTime (which eases back to 1× over 0.4 s, as the engine sound does) and the lead from passLead — so HAM
+// leads by ~6 m on the cut and ~24 m by 51.1. Lap distances s (centre of each car), lateral offsets in m to the
+// driver's right (Junção is a left-hander: the inside is negative), yaw in degrees on top of the track heading.
+const PULL_FROM = PASS_SLOW_UNTIL;
+/** GLO's lap distance on the cut (49.1): just past the Junção apex (interlagos-2008.ts: apex 3440, exit 3499). */
+const PULL_GLO_S = 3452;
+const smooth01 = (x: number) => {
+  const c = Math.min(1, Math.max(0, x));
+  return c * c * (3 - 2 * c);
+};
+type PlanPose = { s: number; lat: number; yaw: number; speed: number };
+export const pullAway25 = (t: number): { glo: PlanPose; ham: PlanPose } => {
+  const tau = passRaceTime(t) - passRaceTime(PULL_FROM); // race seconds since 49.1
+  const gloS = (x: number) => PULL_GLO_S + PASS_GLO_SPEED * x;
+  // HAM's lead in race time: passLead runs on shot time, so map τ back (both clocks run at 1× after the ease)
+  const lead = (x: number) =>
+    0.5 + PASS_GAIN * (passRaceTime(PULL_FROM) + x);
+  const hamS = (x: number) => gloS(x) + lead(x);
+  // HAM unwinds from the inside (−3.2 m, where 2.4 left him) to the racing line up the hill; GLO keeps the outside
+  const hamLat = (x: number) => -3.2 + 1.8 * smooth01(x / 2.6);
+  const gloLat = (x: number) => 1.6 + 0.35 * Math.sin(x * 3.1);
+  const d = 0.02;
+  const pose = (
+    s: (x: number) => number,
+    lat: (x: number) => number,
+    wobble: number,
+  ): PlanPose => {
+    const ds = s(tau + d) - s(tau - d);
+    const dl = lat(tau + d) - lat(tau - d);
+    return {
+      s: s(tau),
+      lat: lat(tau),
+      // heading along the velocity: the change of line turns the car (MOT-5)
+      yaw: (Math.atan2(dl, ds) * 180) / Math.PI + wobble,
+      speed: ds / (2 * d),
+    };
+  };
+  return {
+    glo: pose(gloS, gloLat, 7 * Math.sin(tau * 3.1 + 0.6)),
+    ham: pose(hamS, hamLat, 0),
+  };
+};
+
 // A side-on car (rear end at x, distance z) as a footprint on the plan.
 const sideOn = (id: string, c: { x: number; z: number }): Footprint => ({
   id,
@@ -122,7 +168,26 @@ export const SAMPLERS: TopViewSampler[] = [
     shot: "2.5",
     ...SHOT_25,
     poses: (f) => {
-      const c = pass25(seconds(f, SHOT_25.from));
+      const t = seconds(f, SHOT_25.from);
+      if (t >= PASS_SLOW_UNTIL) {
+        // bars 49–50: the plan view
+        const c = pullAway25(t);
+        return (["GLO", "HAM"] as const).map((id) => {
+          const q = id === "GLO" ? c.glo : c.ham;
+          const p = poseAt(INTERLAGOS_2008, q.s, q.lat);
+          const heading = p.heading + q.yaw;
+          const a = (heading * Math.PI) / 180;
+          return {
+            id,
+            x: p.x + Math.cos(a) * CAR_2008.centreAhead,
+            y: p.y + Math.sin(a) * CAR_2008.centreAhead,
+            heading,
+            length: CAR_2008.length,
+            width: CAR_2008.width,
+          };
+        });
+      }
+      const c = pass25(t);
       return [sideOn("GLO", c.glo), sideOn("HAM", c.ham)];
     },
   },

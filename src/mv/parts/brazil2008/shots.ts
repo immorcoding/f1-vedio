@@ -45,7 +45,7 @@ export const EDIT: PartEdit = {
       to: at(51),
       view: "closeup",
       content:
-        "Junção 出弯冲上坡：第 47 小节第一拍 HAM 的车头追平 GLO（WHOOSH，慢动作），47.3 车头领先、名次牌 6 → 5；慢动作留满 47–48 小节，49.1 回到实时，HAM 拉开、GLO 落出画面",
+        "Junção 出弯冲上坡：第 47 小节第一拍 HAM 的车头追平 GLO（WHOOSH，慢动作），47.3 车头领先、名次牌 6 → 5；慢动作留满 47–48 小节；49.1 回到实时并切到俯视（镜头内的切点）：Junção 出弯上坡，镜头跟 HAM，GLO 在外线打滑、从画面右侧往左落后（差距约 6 → 24 m）",
       text: ["WHOOSH!", "5 HAM", "6 GLO"],
       cues: [
         hitCue("brazil2008.pass"),
