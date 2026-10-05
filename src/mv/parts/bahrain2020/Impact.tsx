@@ -20,7 +20,7 @@ import { INK, PAPER } from "../../../kit/colors";
 import { BubbleSmoke, FIRE_PALETTES, Fireball } from "../../../kit/fire";
 import { BigText } from "../../../kit/lettering";
 import { focusLines } from "../../../kit/lines";
-import { ToneDefs, tone } from "../../../kit/tone";
+import { ToneDefs, TonePattern, tone } from "../../../kit/tone";
 import { BentGuardrail, bump, type Deflection } from "./bent-rail";
 import { BREAK_PIVOT, carPointOnScreen } from "./car-points";
 import { ramp, shotById, type PictureProps } from "./common";
@@ -47,7 +47,15 @@ import {
   tornCurl,
   type P2,
 } from "./wreck-geometry.ts";
-import { EDGE_LINE, TRACK_EDGE_Y, TRACK_FAR_Y, scrapeAt } from "./ground.ts";
+import {
+  BARRIER_FAR_X,
+  EDGE_LINE,
+  SERVICE_STRIP,
+  SHRUBS,
+  TRACK_EDGE_Y,
+  TRACK_FAR_Y,
+  scrapeAt,
+} from "./ground.ts";
 import { FACTS } from "./shots.ts";
 import type { Camera } from "../../../kit/camera";
 
@@ -167,6 +175,69 @@ const tyreMark = (cam: Camera, p: { x: number; z: number }) => {
     { x: p.x - n.x, z: p.z - n.z },
   ])} Z`;
 };
+
+// The run-off's tone: one step darker than 3.2's mid tone, lighter than the night's dark (user review of #26).
+const RUNOFF_TONE_R = 2.25;
+// The infield's shrubs behind the barrier (ground.ts SHRUBS), dark against the dark ground with the floodlights
+// catching their tops: a few overlapping round clumps, no outline. Only those in front of the grandstands
+// (floodlit-night.tsx stands from 118 m), farthest first.
+const SHRUB_MAX_Z = 110;
+const Shrubs: React.FC<{ cam: Camera }> = ({ cam }) => (
+  <>
+    {SHRUBS.map((s) => ({ s, v: toView(s.at) }))
+      .filter(({ v }) => v.z > 3 && v.z < SHRUB_MAX_Z)
+      .sort((a, b) => b.v.z - a.v.z)
+      .map(({ s, v }) => {
+        const base = cam.project({ x: v.x, z: v.z });
+        if (base.x < -300 || base.x > 2220) return null;
+        const k = cam.pxPerMetre(v.z);
+        const w = s.w * k;
+        const h = s.h * k;
+        const r = (j: number) => 0.75 + 0.5 * ((s.seed * (j + 3) * 0.618) % 1);
+        const clumps = [
+          {
+            x: -0.28 * w,
+            y: -0.38 * h,
+            rx: 0.3 * w * r(1),
+            ry: 0.4 * h * r(1),
+          },
+          {
+            x: 0.26 * w,
+            y: -0.42 * h,
+            rx: 0.3 * w * r(2),
+            ry: 0.42 * h * r(2),
+          },
+          { x: 0, y: -0.6 * h, rx: 0.34 * w * r(3), ry: 0.42 * h * r(3) },
+        ];
+        return (
+          <g key={s.seed} transform={`translate(${base.x} ${base.y})`}>
+            <g opacity={0.7}>
+              {clumps.map((c, j) => (
+                <ellipse
+                  key={j}
+                  cx={c.x}
+                  cy={c.y - Math.max(1, 0.07 * h)}
+                  rx={c.rx}
+                  ry={c.ry}
+                  fill="#6e6e6e"
+                />
+              ))}
+              {clumps.map((c, j) => (
+                <ellipse
+                  key={`d${j}`}
+                  cx={c.x}
+                  cy={c.y}
+                  rx={c.rx}
+                  ry={c.ry}
+                  fill="#1e1e1e"
+                />
+              ))}
+            </g>
+          </g>
+        );
+      })}
+  </>
+);
 
 // ── Sparks (review-2 #1): off the far side where it scrapes the rails ────────────────────────────────────────────────
 // They start on the contact frame at the right front-wing corner (IMPACT_POINT), then come off wherever the car's far
@@ -400,6 +471,7 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
         <ToneDefs prefix="b33" />
+        <TonePattern id="b33-runoff" r={RUNOFF_TONE_R} paper />
         {/* line art: the drawing's edges and silhouette in black on white, every fill gone */}
         <filter id="b33-lineart" x="-5%" y="-5%" width="110%" height="110%">
           <feColorMatrix
@@ -475,7 +547,13 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
           ) : (
             <>
               <FloodlitNight cam={CAM} tonePrefix="b33" id="b33-night" />
-              <path d={band(CAM, TRACK_EDGE_Y, 0)} fill={tone("mid", "b33")} />
+              <path d={band(CAM, TRACK_EDGE_Y, 0)} fill="url(#b33-runoff)" />
+              {/* the paved strip behind the barrier, then the infield desert and its trees */}
+              <path
+                d={band(CAM, SERVICE_STRIP.from, SERVICE_STRIP.to)}
+                fill="url(#b33-runoff)"
+              />
+              <Shrubs cam={CAM} />
               <path
                 d={band(CAM, TRACK_FAR_Y, TRACK_EDGE_Y)}
                 fill={tone("light", "b33")}
@@ -509,7 +587,14 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
           {lineArt(
             <>
               {/* the barrier up the run (behind the car), the rear piece, the cell, then the stretch down the run
-                  that the nose goes through, in front of it */}
+                  that the nose goes through, in front of it; first the barrier on up the run past the model's
+                  RUN, out to the vanishing point */}
+              <BentGuardrail
+                cam={CAM}
+                a={toView({ x: BARRIER_FAR_X, y: 0 })}
+                b={RUN.a}
+                tonePrefix="b33"
+              />
               <BentGuardrail
                 cam={CAM}
                 a={RUN.a}
