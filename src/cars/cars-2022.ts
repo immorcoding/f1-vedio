@@ -101,7 +101,7 @@ export const RB18: CarSpec = {
       // inside the endplate (the generic side-on deck would stick out ahead of its curved top as a thin plank); only
       // the red flap shows, rising over the endplate's top at the back as the flaps turn up into it.
       frontDeck: "M 190 690 L 270 690 L 270 720 L 190 720 Z",
-      frontFlap: "M 212 674 L 277 657 L 277 674 Z",
+      frontFlap: "M 212 671 L 277 655 L 277 671 Z",
       // LOW camera: the body re-projected from the photo's 13.3° (the far wheels' traced lift over a 1.6 m track) to a
       // 4° trackside camera (seenFrom.ts).
       body: { photoElevation: 13.3, elevation: 4, floorY: 790, podY: 745, noseTo: 580 },
@@ -128,21 +128,24 @@ export const RB18: CarSpec = {
     chassis:
       "M 400 600 L 510 556 L 600 541 L 760 530 L 1068 526 L 1060 594 C 1000 586 900 580 800 588 L 752 600 L 758 662 L 576 652 L 576 702 L 400 704 Z",
   },
+  // no glint along the sidepod: on the photo that light streak is a reflection, and drawn thick it read as a white
+  // livery stripe (user review 2026-10-05)
   glints: [
-    "M 820 590 C 900 588 980 592 1060 600 L 1058 607 C 980 600 900 596 820 597 Z",
     "M 1100 440 L 1160 438 L 1150 446 L 1104 448 Z",
   ],
   floor: "M 590 788 L 1495 778 L 1492 790 L 595 798 Z",
   frontWing: {
-    // The 2022 near endplate (ART-12, ART-17): low, its leading edge sweeping back towards the ground, the top rising
-    // at the back where the flaps turn up into it (photo: the "ESSO" panel, 180–277 px, top 669). The far one is its
-    // copy, its top where the photo shows the far endplate's (the "A1" panel, top 540), without the photo's yaw.
-    near: "M 73 703 C 100 688 140 672 182 669 L 277 671 L 279 797 L 130 795 C 110 770 88 735 73 703 Z",
+    // The 2022 near endplate (ART-12, ART-17), a quarter-rounded block (user review 2026-10-05): flat top at the
+    // photo's "ESSO" panel top (669), straight vertical rear edge facing the front wheel (279), flat bottom (797), the
+    // front-top corner rounded down to a short vertical front edge near the bottom (86). The far one is its copy, its
+    // top where the photo shows the far endplate's (the "A1" panel, top 540), without the photo's yaw.
+    near: "M 86 797 L 86 752 C 88 702 128 669 186 669 L 279 669 L 279 797 Z",
+    // dx = (1 - 0.92) * 193 / 2: bounding-box centre x on the near one's
     farFrom: { dx: 8, dy: -129, scale: 0.92 },
     // the wing surface between the endplates as the camera sees it from above, behind the nose; the red flap along its
     // trailing edge, rising from the near endplate's top to the far one's (the red lettering on the RB18's wing)
-    deck: "M 73 703 C 74 660 78 610 81 571 L 150 545 L 269 542 L 271 658 L 279 671 L 279 797 L 130 795 C 110 770 88 735 73 703 Z",
-    flap: { d: "M 236 543 L 269 542 L 279 671 L 244 671 Z", color: "#d72a2e" },
+    deck: "M 86 797 L 86 752 C 88 700 92 640 94 616 C 96 570 130 540 186 540 L 272 540 L 272 658 L 279 669 L 279 797 Z",
+    flap: { d: "M 239 541 L 272 540 L 279 669 L 246 669 Z", color: "#d72a2e" },
   },
   rearWing: {
     // The 2022 one-piece rear wing seen from the side (ART-17): the endplate body (photo: the red panel's top at 546,
@@ -195,7 +198,7 @@ export const RB18: CarSpec = {
   // the T-camera on top of the airbox (black on VER's car)
   tcam: "M 1100 436 L 1098 400 L 1150 398 L 1153 436 Z",
   antenna: "M 725 530 L 725 494",
-  rainLight: "M 1826 614 L 1842 614 L 1842 628 L 1826 628 Z",
+  // no rain light: drawn as a red square on the rear endplate's foot it read as a stray mark (user review 2026-10-05)
   // the red 1 on the engine cover, checked on both photos: x 1480–1522, caps 502–548 in the rectified photo
   numberAt: { x: 1500, y: 548, size: 64, color: "#e5333f" },
   top: { marks: { noseTip: "#fdb746", podStripe: "#e3262b" } },
