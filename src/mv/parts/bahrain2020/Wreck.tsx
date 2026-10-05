@@ -28,6 +28,7 @@ import {
   DyingFire,
   RailShadeFilter,
   RearShadowFilter,
+  RecedeFilter,
 } from "./scorch";
 import {
   CELL_ANCHOR_X,
@@ -91,6 +92,18 @@ export const heatZone = (cam: Camera, intensity = 1): ScreenRect => {
     base.y - cam.pxPerMetre(CELL_Z + 0.5) * 7.5 * (0.35 + 0.65 * intensity);
   const bottom = cam.project({ x: 0, y: -0.4, z: REAR_Z }).y;
   return { x: left, y: top, w: right - left, h: bottom - top };
+};
+
+// A fire in front of the cell (WreckWorld `nearFires`), V metres.
+export type NearFire = {
+  x: number;
+  z: number;
+  w: number;
+  h: number;
+  seed: string;
+  tongues?: number;
+  // frames the flames run ahead (default: by its place in the list)
+  phase?: number;
 };
 
 // The barrier as the impact left it (wreck-geometry.ts): all three rails torn open along the cell, their ends curled.
@@ -157,6 +170,22 @@ export const WreckWorld: React.FC<{
   burntOut?: boolean;
   // 0–1: the smoke drifting over the torn-off rear parts and thins away, so the rear reads (3.4 around 64.1)
   veilOpen?: number;
+  // 0–1: the wreck recedes, darker, so GRO (drawn crisp in `cockpit`, `behindRails` or over it) is
+  // the subject (user review 2026-10-05; ART-23); the fire is the light and stays as it is
+  recede?: number;
+  // fires between the camera and the cell, in the same layer as the low fire (in front of someone in the cockpit or
+  // out over its side, behind someone who has stepped down in front of the rails): ground point, size in V metres
+  nearFires?: readonly NearFire[];
+  // the big fire behind the cell, scaled
+  backFire?: number;
+  // metres the fire in the gap stands further back from the camera, toward the barrier
+  gapFireBack?: number;
+  // the small debris drawn under the fires in front of the cell, which swallow it
+  debrisUnderFire?: boolean;
+  // someone in or out of the cockpit drawn over the fires round the car, the car and the fire in the gap
+  subjectOverFires?: boolean;
+  // the fires behind the subject fade out into the ground at their base (no bright line or pool at the root)
+  softFireBase?: boolean;
 }> = ({
   cam,
   f,
@@ -173,6 +202,13 @@ export const WreckWorld: React.FC<{
   shimmer,
   burntOut = false,
   veilOpen = 0,
+  recede = 0,
+  nearFires = [],
+  backFire = 1,
+  gapFireBack = 0,
+  debrisUnderFire = false,
+  subjectOverFires = false,
+  softFireBase = false,
 }) => {
   const p = noGlow
     ? { ...FIRE_PALETTES[palette], glow: null }
@@ -184,14 +220,24 @@ export const WreckWorld: React.FC<{
     const ppm = cam.pxPerMetre(z);
     return { x: base.x, y: base.y, w: w * ppm, h: h * ppm };
   };
-  const back = fireAt(FIRES.back.x, FIRES.back.z, FIRES.back.w, FIRES.back.h);
+  const back = fireAt(
+    FIRES.back.x,
+    FIRES.back.z,
+    FIRES.back.w,
+    FIRES.back.h * backFire,
+  );
   const front = fireAt(
     FIRES.front.x,
     FIRES.front.z,
     FIRES.front.w,
     FIRES.front.h * frontFire,
   );
-  const gapFire = fireAt(FIRES.gap.x, FIRES.gap.z, FIRES.gap.w, FIRES.gap.h);
+  const gapFire = fireAt(
+    FIRES.gap.x,
+    FIRES.gap.z + gapFireBack,
+    FIRES.gap.w,
+    FIRES.gap.h,
+  );
   const cellAt = cam.anchor({ x: CELL_ANCHOR_X, z: CELL_Z });
   // the wreck cam is 3.2 m up, looking down on the car: the VF-20's high far side (ART-26)
   const cellState = {
@@ -203,6 +249,10 @@ export const WreckWorld: React.FC<{
   const rearShade = `${rimClip}-rear`;
   const charId = `${rimClip}-char`;
   const railShade = `${rimClip}-rails`;
+  const recedeId = `${rimClip}-recede`;
+  // the wreck's parts, receded when GRO is the subject
+  const rec = (node: React.ReactNode) =>
+    recede > 0 ? <g filter={`url(#${recedeId})`}>{node}</g> : node;
   const cellK = (VF20.frame.k * cellAt.pxPerMetre) / 250;
   const rearAt = cam.anchor({ x: REAR_ANCHOR_X, z: REAR_Z });
   // the veil of smoke over the rear piece: from the top of the gap fire across to above the rear wing
@@ -233,8 +283,203 @@ export const WreckWorld: React.FC<{
     veilLowTo.x - veilLow.x,
     veilLowTo.y - veilLow.y,
   );
+  // debris on the asphalt: three small, dark, low-contrast scraps lying flat, drawn under the smoke drifting off the
+  // gap fire so they sink into it — scattered wreckage, not graphic shapes (user review 2026-10-04); with
+  // `debrisUnderFire` they go under the fires, which swallow them (user review 2026-10-05)
+  const debris = (
+    <g>
+      {[
+        [CELL_TO + 0.9, CELL_Z - 1.3, 0.2],
+        [CELL_TO - 0.4, CELL_Z - 0.8, 0.12],
+        [REAR_SPAN.to + 0.6, REAR_Z - 0.6, 0.16],
+      ].map(([x, z, s]) => {
+        const c = cam.project({ x, y: 0, z });
+        const k = cam.pxPerMetre(z) * s;
+        return (
+          <path
+            key={`${x}${z}`}
+            d={`M ${c.x - k} ${c.y} L ${c.x - k * 0.3} ${c.y - k * 0.32} L ${c.x + k} ${c.y - k * 0.08} L ${c.x + k * 0.35} ${c.y + k * 0.12} Z`}
+            fill="#2b2724"
+            stroke="#3b3531"
+            strokeWidth={1}
+            strokeLinejoin="round"
+            opacity={0.8}
+          />
+        );
+      })}
+    </g>
+  );
+  // someone in the cockpit or out over its side (GRO); with `subjectOverFires` he is drawn over the fires round
+  // the car, the car and the fire in the gap (3.6: the user's order, front to back: doctor, the near fire in front
+  // of the cockpit, GRO, the fire in the gap, the car, the fire behind it; user review 2026-10-05)
+  const subject = (
+    <>
+      {/* someone in the cockpit, between the far parts and the near halo bar and cut to the rim, then the near bar
+            over him: drawn after the fire's light so he stays solid (as he is once out) */}
+      {cockpit ? (
+        <>
+          <defs>
+            <CockpitClip id={rimClip} cam={cam} />
+            <NearBarClip id={`${rimClip}-bar`} cam={cam} />
+          </defs>
+          <g clipPath={`url(#${rimClip})`}>{cockpit.behindHalo}</g>
+          <g clipPath={`url(#${rimClip}-bar)`}>
+            {rec(
+              <MangaCar
+                car={VF20}
+                facing="left"
+                at={cellAt}
+                state={cellState}
+              />,
+            )}
+          </g>
+          <g clipPath={`url(#${rimClip})`}>{cockpit.overHalo}</g>
+        </>
+      ) : null}
+      {/* someone out over the cell's side, behind the low fire (nothing of him overlaps the bottom rail until he
+            crosses it) */}
+      {behindRails}
+    </>
+  );
+  // a fire's base faded into the ground (`softFireBase`): its bottom `fade` px go from full to nothing at the base
+  // A fire's base faded into the ground (`softFireBase`): over its bottom `m` metres the flame's own colours go
+  // warm (its red outer band turned to orange, so no pink smudge shows where the red thins out over the ground) and
+  // its alpha falls to nothing at the base. Two copies of the fire, crossfaded by two masks: as drawn above the
+  // fade, the warm copy inside it.
+  const soft = (
+    key: string,
+    y: number,
+    ppm: number,
+    m: number,
+    node: React.ReactNode,
+  ) => {
+    if (!softFireBase) return node;
+    const fade = m * ppm;
+    const id = `${rimClip}-soft-${key}`;
+    const grad = (name: string, stops: [number, number][]) => (
+      <linearGradient
+        id={`${id}-${name}`}
+        gradientUnits="userSpaceOnUse"
+        x1={0}
+        x2={0}
+        y1={y - fade}
+        y2={y}
+      >
+        {stops.map(([o, a]) => (
+          <stop key={o} offset={o} stopColor="#fff" stopOpacity={a} />
+        ))}
+      </linearGradient>
+    );
+    const mask = (name: string) => (
+      <mask
+        id={`${id}-m${name}`}
+        maskUnits="userSpaceOnUse"
+        x={-200}
+        y={-200}
+        width={2320}
+        height={1480}
+      >
+        <rect
+          x={-200}
+          y={-200}
+          width={2320}
+          height={1480}
+          fill={`url(#${id}-${name})`}
+        />
+      </mask>
+    );
+    return (
+      <g key={key}>
+        <defs>
+          {grad("a", [
+            [0, 1],
+            [0.45, 0],
+          ])}
+          {grad("b", [
+            [0, 0],
+            [0.45, 1],
+            [1, 0],
+          ])}
+          {mask("a")}
+          {mask("b")}
+          <filter
+            id={`${id}-warm`}
+            x={-200}
+            y={-200}
+            width={2320}
+            height={1480}
+            filterUnits="userSpaceOnUse"
+            colorInterpolationFilters="sRGB"
+          >
+            <feColorMatrix
+              type="matrix"
+              values="1 0 0 0 0  0.3 0.55 0 0 0  0 0 0.4 0 0  0 0 0 0.85 0"
+            />
+          </filter>
+        </defs>
+        <g mask={`url(#${id}-ma)`}>{node}</g>
+        <g mask={`url(#${id}-mb)`}>
+          <g filter={`url(#${id}-warm)`}>{node}</g>
+        </g>
+      </g>
+    );
+  };
+  const gapFireNode = (
+    <>
+      {burntOut
+        ? null
+        : soft(
+            "gap",
+            gapFire.y,
+            gapFire.w / FIRES.gap.w,
+            0.18,
+            <Fire
+              x={gapFire.x}
+              y={gapFire.y}
+              w={gapFire.w}
+              h={gapFire.h * (softFireBase ? 1.15 : 1)}
+              frame={f + 13}
+              seed={`wreck-gap${fireSeed}`}
+              tongues={4}
+              embers={4}
+              palette={noLight}
+              intensity={intensity * (softFireBase ? 1 : 0.9)}
+              smoke={false}
+              clip={clip}
+            />,
+          )}
+    </>
+  );
+  const rearNode = (
+    <>
+      {/* the torn-off rear on the track side, turned end for end (wreck-geometry.ts REAR_REST): scorched and in
+            shadow, a muted grey-brown silhouette with a faint rim of firelight on the side facing the fire */}
+      <defs>
+        <RearShadowFilter id={rearShade} rim={p.glow ? p.smokeRim : null} />
+      </defs>
+      {rec(
+        <g filter={`url(#${rearShade})`}>
+          <MangaCar
+            car={VF20}
+            facing="right"
+            at={rearAt}
+            state={{
+              farSide: "high",
+              split: { rear: REAR_POSE, show: "rear" },
+              compound: VF20.compound,
+            }}
+          />
+        </g>,
+      )}
+    </>
+  );
   return (
     <g>
+      {recede > 0 ? (
+        <defs>
+          <RecedeFilter id={recedeId} amount={recede} />
+        </defs>
+      ) : null}
       {/* the night behind the fire, warped by the hot air rising over it */}
       <HeatShimmer
         frame={f}
@@ -303,7 +548,7 @@ export const WreckWorld: React.FC<{
           <CharMarks transform={cellTransform(cam)} k={cellK} />
         </>
       ) : (
-        <MangaCar car={VF20} facing="left" at={cellAt} state={cellState} />
+        rec(<MangaCar car={VF20} facing="left" at={cellAt} state={cellState} />)
       )}
       {/* the barrier on down the run from the gap, toward the camera in front of the nose (the cell went through it) */}
       <g filter={burntOut ? `url(#${railShade})` : undefined}>
@@ -329,24 +574,8 @@ export const WreckWorld: React.FC<{
           amount={intensity}
         />
       )}
-      {/* someone in the cockpit, between the far parts and the near halo bar and cut to the rim, then the near bar
-          over him: drawn after the fire's light so he stays solid (as he is once out) */}
-      {cockpit ? (
-        <>
-          <defs>
-            <CockpitClip id={rimClip} cam={cam} />
-            <NearBarClip id={`${rimClip}-bar`} cam={cam} />
-          </defs>
-          <g clipPath={`url(#${rimClip})`}>{cockpit.behindHalo}</g>
-          <g clipPath={`url(#${rimClip}-bar)`}>
-            <MangaCar car={VF20} facing="left" at={cellAt} state={cellState} />
-          </g>
-          <g clipPath={`url(#${rimClip})`}>{cockpit.overHalo}</g>
-        </>
-      ) : null}
-      {/* someone out over the cell's side, behind the low fire (nothing of him overlaps the bottom rail until he
-          crosses it) */}
-      {behindRails}
+      {subjectOverFires ? null : subject}
+      {debrisUnderFire ? debris : null}
       {/* the low fire along the rails; once it is out, embers and a few small flames */}
       {burntOut ? (
         <DyingFire
@@ -358,76 +587,68 @@ export const WreckWorld: React.FC<{
           seed={`wreck-dying${fireSeed}`}
         />
       ) : null}
-      {burntOut ? null : (
-        <Fire
-          x={front.x}
-          y={front.y}
-          w={front.w}
-          h={front.h}
-          frame={f + 7}
-          seed={`wreck-front${fireSeed}`}
-          tongues={7}
-          embers={6}
-          palette={noLight}
-          intensity={intensity}
-          smoke={false}
-          clip={clip}
-        />
+      {burntOut
+        ? null
+        : soft(
+            "front",
+            front.y,
+            front.w / FIRES.front.w,
+            0.22,
+            <Fire
+              x={front.x}
+              y={front.y}
+              w={front.w}
+              h={front.h}
+              frame={f + 7}
+              seed={`wreck-front${fireSeed}`}
+              tongues={7}
+              embers={6}
+              palette={noLight}
+              intensity={intensity}
+              smoke={false}
+              clip={clip}
+            />,
+          )}
+      {burntOut
+        ? null
+        : nearFires.map((n, i) => {
+            if (n.h <= 0) return null;
+            const c = fireAt(n.x, n.z, n.w, n.h);
+            return soft(
+              n.seed,
+              c.y,
+              c.w / n.w,
+              0.22,
+              <Fire
+                key={n.seed}
+                x={c.x}
+                y={c.y}
+                w={c.w}
+                h={c.h}
+                frame={f + 23 + (n.phase ?? 11 * i)}
+                seed={`wreck-${n.seed}${fireSeed}`}
+                tongues={n.tongues ?? 5}
+                embers={5}
+                palette={noLight}
+                intensity={intensity}
+                smoke={false}
+                clip={clip}
+              />,
+            );
+          })}
+      {subjectOverFires ? (
+        <>
+          {rearNode}
+          {gapFireNode}
+          {subject}
+        </>
+      ) : (
+        <>
+          {gapFireNode}
+          {rearNode}
+        </>
       )}
-      {burntOut ? null : (
-        <Fire
-          x={gapFire.x}
-          y={gapFire.y}
-          w={gapFire.w}
-          h={gapFire.h}
-          frame={f + 13}
-          seed={`wreck-gap${fireSeed}`}
-          tongues={4}
-          embers={4}
-          palette={noLight}
-          intensity={intensity * 0.9}
-          smoke={false}
-          clip={clip}
-        />
-      )}
-      {/* the torn-off rear on the track side, turned end for end (wreck-geometry.ts REAR_REST): scorched and in
-          shadow, a muted grey-brown silhouette with a faint rim of firelight on the side facing the fire */}
-      <defs>
-        <RearShadowFilter id={rearShade} rim={p.glow ? p.smokeRim : null} />
-      </defs>
-      <g filter={`url(#${rearShade})`}>
-        <MangaCar
-          car={VF20}
-          facing="right"
-          at={rearAt}
-          state={{
-            farSide: "high",
-            split: { rear: REAR_POSE, show: "rear" },
-            compound: VF20.compound,
-          }}
-        />
-      </g>
-      {/* debris on the asphalt: three small, dark, low-contrast scraps lying flat, drawn under the smoke drifting off
-          the gap fire so they sink into it — scattered wreckage, not graphic shapes (user review 2026-10-04) */}
-      {[
-        [CELL_TO + 0.9, CELL_Z - 1.3, 0.2],
-        [CELL_TO - 0.4, CELL_Z - 0.8, 0.12],
-        [REAR_SPAN.to + 0.6, REAR_Z - 0.6, 0.16],
-      ].map(([x, z, s]) => {
-        const c = cam.project({ x, y: 0, z });
-        const k = cam.pxPerMetre(z) * s;
-        return (
-          <path
-            key={`${x}${z}`}
-            d={`M ${c.x - k} ${c.y} L ${c.x - k * 0.3} ${c.y - k * 0.32} L ${c.x + k} ${c.y - k * 0.08} L ${c.x + k * 0.35} ${c.y + k * 0.12} Z`}
-            fill="#2b2724"
-            stroke="#3b3531"
-            strokeWidth={1}
-            strokeLinejoin="round"
-            opacity={0.8}
-          />
-        );
-      })}
+      {debrisUnderFire ? null : debris}
       {/* bubble smoke (ART-20) drifting across from the fire in the gap over the torn-off rear, partly veiling it */}
       {veil > 0 ? (
         <g
@@ -495,7 +716,12 @@ export const Vignette: React.FC<{ amount: number }> = ({ amount }) => (
 // cell in the barrier, drifting along the rails, with a small kick on each heartbeat.
 export const wreckShotCam = (f: number) => {
   const shot = shotById("3.4");
-  const u = ramp(f - shot.from, 0, shot.to - shot.from, (x) => x * x * (3 - 2 * x));
+  const u = ramp(
+    f - shot.from,
+    0,
+    shot.to - shot.from,
+    (x) => x * x * (3 - 2 * x),
+  );
   // (in the camera's own, unflipped picture: the screen is flipped, so the rear piece starts at the left edge)
   const start = { x: REAR_ANCHOR_X + 0.9, y: 0.9, z: REAR_Z };
   const target = {

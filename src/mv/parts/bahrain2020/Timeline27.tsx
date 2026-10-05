@@ -6,7 +6,7 @@
 //   (no time: not verified) a marshal turns a dry-powder extinguisher on the cockpit;
 //   27 秒  GRO, in his helmet, rises out of the cockpit through the fire, both gloves on the halo, hauling himself up.
 // People from the shared people module (src/kit/figure, ART-16), no faces (ART-5). Each panel has a small time label in
-// a corner the subject is not in (ART-14).
+// a corner the subject is not in (ART-14), the top-left: the page's top-right corner holds the stopwatch.
 import { pinhole, type Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import {
@@ -29,6 +29,7 @@ import { MedicalCar } from "./MedicalCar";
 import { NightBackdrop } from "./night";
 import { Haze } from "./haze";
 import { PowderJet } from "./powder";
+import { DefocusFilter } from "./scorch";
 import { FACTS } from "./shots.ts";
 import {
   Flip,
@@ -159,8 +160,14 @@ const PanelPry: React.FC<PanelProps> = ({ r, f, age, palette }) => {
     });
   });
   const intensity = 0.4 + 0.3 * ramp(age, 0, 200);
+  // out of focus, as 3.4 ends (65.3): at 0 秒 nobody knows yet whether he is alive (user review 2026-10-05); the
+  // panel stays soft on the page, the 27 秒 panel is the one in focus
   return (
     <g>
+      <defs>
+        <DefocusFilter id="b35-p0-defocus" blur={3.2} dim={0.92} />
+      </defs>
+      <g filter="url(#b35-p0-defocus)">
       <Flip cx={r.x + r.w / 2}>
         <Haze frame={f} zone={heatZone(cam, intensity)} clip={r}>
           <WreckWorld
@@ -191,6 +198,7 @@ const PanelPry: React.FC<PanelProps> = ({ r, f, age, palette }) => {
           ))}
         </Haze>
       </Flip>
+      </g>
       <TimeLabel r={r} corner="tl">
         0s
       </TimeLabel>
@@ -456,7 +464,8 @@ const PanelMedical: React.FC<PanelProps> = ({ r, f, age, palette }) => {
         {streaks}
         {trails}
       </Flip>
-      <TimeLabel r={r} corner="tr">
+      {/* top-left like the other panels: the top-right corner of the page is the stopwatch's (Stopwatch.tsx) */}
+      <TimeLabel r={r} corner="tl">
         {`${FACTS.medicalCarSeconds}s`}
       </TimeLabel>
     </g>
@@ -497,6 +506,7 @@ const PanelExtinguisher: React.FC<PanelProps> = ({ r, f, age, palette }) => {
             noGlow
             clip={r}
             tonePrefix="b35"
+            recede={0.5}
           />
           <PowderJet
             from={nozzle}
@@ -568,6 +578,7 @@ const PanelClimb: React.FC<PanelProps> = ({ r, f, age, palette }) => {
             cockpit={gro.cockpit}
             frontFire={0.45}
             tonePrefix="b35"
+            recede={0.85}
           />
         </Haze>
       </Flip>
