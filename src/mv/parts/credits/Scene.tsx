@@ -81,20 +81,29 @@ const BS_K = 1.12; // TitleText's Big Shoulders scale (kit/lettering.tsx)
 const layout = () => {
   const checks = Math.round(titleWidth(OUTRO_TITLE, 150) / SQ);
   const stripW = checks * SQ;
-  const x0 = 960 - stripW / 2;
+  // set left of centre, so the open banner has room past the words for its free end to spring back (bar 5 beat 3)
+  const x0 = 960 - stripW / 2 - 122;
   // the names span the strip, a little under the prototype's 172 px title
   const per = measure(NAMES, TITLE_FONT, 900, 100 * BS_K, 0.01) / 100;
   const size = Math.min(140, stripW / per);
   const namesW = per * size;
   const left = x0 - 90;
-  // where the banner's roll stops: past the words and the strip
-  const end = x0 + Math.max(stripW, namesW + 30) + 60;
-  return { checks, stripW, x0, size, namesW, left, end };
+  // where the banner is fully open: well past the words and the strip
+  const end = x0 + Math.max(stripW, namesW) + 200;
+  // the right end of the words (the 8° lean pushes the tops of the letters right)
+  const textRight = x0 + 8 + namesW + Math.tan((8 * Math.PI) / 180) * 0.72 * size;
+  // how far the free end springs back when Clawd lets go: ~10–12 % of the width, but never onto the letters (its
+  // overshoot is ~17 %, and the curl and a margin stay clear of the last letter)
+  const spring = Math.min(0.12 * (end - left), (end - textRight - CURL_R - 25) / 1.17);
+  return { checks, stripW, x0, size, namesW, left, end, textRight, spring };
 };
 
 /** The scroll's radius, px: tight when rolled up, thinning to nothing as the paper unwinds (u: 0 rolled … 1 open). */
-const ROLL_R0 = 34;
-const rollR = (u: number) => ROLL_R0 * Math.sqrt(Math.max(0, 1 - u));
+const ROLL_R0 = 46;
+/** The loose curl the free end rolls into once released, px. */
+const CURL_R = 15;
+/** The paper's back (the outside of the roll and of the curl): plain, a light grey, no print. */
+const PAPER_BACK = "#d4d2cb";
 
 // ── Clawd's hops ─────────────────────────────────────────────────────────────────────────────────────────────────────
 const CONTACT = 0.2; // share of a beat on the ground after each landing (the squash and the push-off)
@@ -160,8 +169,9 @@ const Gag: React.FC<{ f: number }> = ({ f }) => {
   const t = f / FPS;
   const handBack = clawdHands(PW, { step: 0, planted: 1, stretch: 1, startle: 0, look: 0, reach: 1 }).back.x;
   // Clawd's x at each landing: the walk lays the banner open from its left end to its end, then it stays
-  const xEnd = L.end - handBack;
-  const xStart = L.left + 2 * ROLL_R0 - handBack;
+  // the back hand runs from just right of the full roll to just past the open banner's end
+  const xEnd = L.end + 12 - handBack;
+  const xStart = L.left + 2 * ROLL_R0 + 12 - handBack;
   const xs = LANDINGS.map((_, k) => lerp(xStart, xEnd, Math.min(1, k / WALK_LANDINGS)));
 
   // ── the car ──
@@ -201,9 +211,9 @@ const Gag: React.FC<{ f: number }> = ({ f }) => {
   const frontHand = toWorld(hands.front);
   // the paper's open end follows the back hand (the roll sits between them); the roll thins as the paper unwinds
   const walked = f < LANDINGS[0] ? 0 : 1;
-  const edge = walked ? Math.min(L.end, Math.max(L.left, backHand.x - 2 * ROLL_R0)) : L.left;
-  const unrolled = (edge - L.left) / (L.end - L.left);
-  const r = rollR(unrolled);
+  const unrolled = walked ? clamp01((body.x - xStart) / (xEnd - xStart)) : 0;
+  const edge = lerp(L.left, L.end, unrolled);
+  const r = ROLL_R0 * (1 - unrolled);
 
   // ── the flag Clawd carries: pole forward from its front hand, cloth trailing back over its head; the gust snaps it ──
   const flagAngle = 12 + 6 * Math.sin(t * 6) - 22 * gust;
@@ -303,98 +313,16 @@ const Gag: React.FC<{ f: number }> = ({ f }) => {
             <circle cx={L.left - 13} cy={BANNER.top - 52} r={14} fill={INK} />
             <ellipse cx={L.left - 13} cy={GROUND - 28} rx={30} ry={8} fill={INK} opacity={0.4} />
           </g>
-          {/* the paper banner and its chequered strip, one piece, unrolling behind Clawd (the outro's banner: ink shadow,
-              ink rules; the end title's strip along the bottom) */}
-          <defs>
-            <clipPath id={clipId}>
-              <rect x={-400} y={0} width={Math.max(0, edge + 400)} height={1080} />
-            </clipPath>
-          </defs>
-          {edge > L.left + 2 ? (
-            <g>
-              <rect x={L.left} y={BANNER.top + 18} width={edge - L.left} height={BANNER.bottom - BANNER.top} fill={INK} />
-              <rect x={L.left} y={BANNER.top} width={edge - L.left} height={BANNER.bottom - BANNER.top} fill={PAPER} />
-              <path
-                d={`M ${L.left} ${BANNER.top + 14} H ${edge} M ${L.left} ${BANNER.bottom - 14} H ${edge}`}
-                stroke={INK}
-                strokeWidth={4}
-              />
-              <path
-                d={`M ${edge} ${BANNER.top} H ${L.left} V ${BANNER.bottom} H ${edge}${r < 2 ? " Z" : ""}`}
-                fill="none"
-                stroke={INK}
-                strokeWidth={10}
-              />
-              <g clipPath={`url(#${clipId})`}>
-                <text
-                  x={L.x0 + 4}
-                  y={namesBase - capH - 30}
-                  fontFamily={CAPTION_FONT}
-                  fontWeight={600}
-                  fontSize={30}
-                  letterSpacing="0.25em"
-                  fill={INK}
-                >
-                  {MADE_BY}
-                </text>
-                <g transform={lean(L.x0 + 8, namesBase)}>
-                  <text
-                    x={L.x0 + 8}
-                    y={namesBase}
-                    fontFamily={TITLE_FONT}
-                    fontWeight={900}
-                    fontSize={L.size * BS_K}
-                    letterSpacing="0.01em"
-                    fill={INK}
-                  >
-                    {NAMES}
-                  </text>
-                </g>
-                <CircuitTag x={L.x0} y={STRIP_Y} text="" strip={1} name={0} size={STRIP} checks={L.checks} colour={INK} />
-              </g>
-            </g>
-          ) : null}
-          {/* the roll: paper wound round itself with the strip's checks wound in along its bottom; it thins as the paper
-              unwinds and is gone once the banner is fully open (a clean edge) */}
-          {r >= 2 ? (
-            <g>
-              <rect x={edge} y={BANNER.top - 12} width={2 * r} height={BANNER.bottom - BANNER.top + 24} fill={PAPER} stroke={INK} strokeWidth={6} />
-              {Array.from({ length: 3 }, (_, k) =>
-                [0, 1].map((row) =>
-                  (k + row) % 2 === 0 ? (
-                    <rect
-                      key={`${k}-${row}`}
-                      x={edge + (k * 2 * r) / 3}
-                      y={STRIP_Y + row * SQ}
-                      width={(2 * r) / 3}
-                      height={SQ}
-                      fill={INK}
-                    />
-                  ) : null,
-                ),
-              )}
-              <path
-                d={`M ${edge + r * 0.55} ${BANNER.top - 4} V ${BANNER.bottom + 4} M ${edge + r * 1.3} ${BANNER.top - 4} V ${BANNER.bottom + 4}`}
-                stroke={INK}
-                strokeWidth={2.5}
-                opacity={0.55}
-              />
-              <rect x={edge + r * 1.45} y={BANNER.top - 8} width={r * 0.35} height={BANNER.bottom - BANNER.top + 16} fill={INK} opacity={0.18} />
-              <ellipse cx={edge + r} cy={BANNER.top - 12} rx={r} ry={Math.max(2, r * 0.3)} fill={PAPER} stroke={INK} strokeWidth={5} />
-              <ellipse cx={edge + r} cy={BANNER.top - 12} rx={r * 0.35} ry={Math.max(1, r * 0.1)} fill="none" stroke={INK} strokeWidth={2.5} />
-            </g>
-          ) : null}
-
-          {/* the cord from the roll to Clawd's back hand */}
-          {holding && walked ? (
-            <path
-              d={`M ${edge + r} ${BANNER.bottom + 14} Q ${(edge + r + backHand.x) / 2 - 10} ${(BANNER.bottom + backHand.y) / 2 + 30} ${backHand.x} ${backHand.y}`}
-              stroke={INK}
-              strokeWidth={5}
-              fill="none"
-              strokeLinecap="round"
-            />
-          ) : null}
+          <Banner
+            L={L}
+            edge={edge}
+            r={r}
+            rt={jt}
+            hand={holding && walked ? backHand : null}
+            clipId={clipId}
+            namesBase={namesBase}
+            capH={capH}
+          />
 
           {/* wind off the car, curling round Clawd */}
           {gust > 0.08
@@ -527,6 +455,167 @@ const Gag: React.FC<{ f: number }> = ({ f }) => {
         </g>
       }
     />
+  );
+};
+
+// The banner: one sheet of paper, printed on its front (the words and the chequered strip), plain on its back.
+//  - Rolled up on the post, then unrolling as Clawd pulls the cord: the roll's outside is the paper's back (grey, no
+//    print), thinning to nothing at the open end.
+//  - Released on the jump (`rt` frames since bar 5 beat 3): the cord goes slack and falls; the free end springs back
+//    towards the post with a small overshoot over ~6 frames, curls into a loose roll (its back outward) and droops;
+//    the whole sheet sags a fraction of a degree about the post. The words stay clear (layout's `spring`).
+type Layout = ReturnType<typeof layout>;
+const Banner: React.FC<{
+  L: Layout;
+  edge: number;
+  r: number;
+  rt: number;
+  hand: { x: number; y: number } | null;
+  clipId: string;
+  namesBase: number;
+  capH: number;
+}> = ({ L, edge: openEdge, r, rt, hand, clipId, namesBase, capH }) => {
+  const released = rt >= 0;
+  const T = BANNER.top;
+  const B = BANNER.bottom;
+  // the spring-back: a damped oscillation, ~17 % overshoot at frame 4, settled by frame 6–7
+  const sb = released ? 1 - Math.exp(-rt / 2.2) * Math.cos(rt * 0.75) : 0;
+  const edge = released ? L.end - L.spring * sb : openEdge;
+  const rc = released ? CURL_R * smooth(rt / 6) : 0;
+  const sag = released ? 18 * smooth(rt / 8) : 0;
+  const tilt = released ? 0.45 * smooth(rt / 10) : 0;
+  // the droop: only past the words, rising to `sag` at the free end
+  const xs = Math.min(edge - 1, L.textRight + 12);
+  const dy = (x: number) => (x <= xs ? 0 : sag * ((x - xs) / (edge - xs)) ** 2);
+  const run = (y: number, from: number, to: number) => {
+    const pts: string[] = [];
+    const n = 8;
+    for (let i = 0; i <= n; i++) {
+      const x = lerp(from, to, i / n);
+      pts.push(`${x.toFixed(1)} ${(y + dy(x)).toFixed(1)}`);
+    }
+    return pts;
+  };
+  const sheet = (dx = 0, dyAll = 0) => {
+    const top = run(T + dyAll, xs, edge);
+    const bot = run(B + dyAll, xs, edge).reverse();
+    return `M ${L.left + dx} ${T + dyAll} L ${top.join(" L ")} L ${bot.join(" L ")} L ${L.left + dx} ${B + dyAll} Z`;
+  };
+  const rule = (y: number) => `M ${L.left} ${y} L ${run(y, xs, edge).join(" L ")}`;
+  const open = edge > L.left + 2;
+  return (
+    <g transform={`rotate(${tilt} ${L.left} ${T})`}>
+      <defs>
+        <clipPath id={clipId}>
+          <rect x={-400} y={0} width={Math.max(0, edge - rc + 400)} height={1080} />
+        </clipPath>
+      </defs>
+      {open ? (
+        <g>
+          <path d={sheet(0, 18)} fill={INK} />
+          <path d={sheet()} fill={PAPER} />
+          <path d={`${rule(T + 14)} ${rule(B - 14)}`} fill="none" stroke={INK} strokeWidth={4} />
+          <path d={sheet()} fill="none" stroke={INK} strokeWidth={10} strokeLinejoin="round" />
+          <g clipPath={`url(#${clipId})`}>
+            <text
+              x={L.x0 + 4}
+              y={namesBase - capH - 30}
+              fontFamily={CAPTION_FONT}
+              fontWeight={600}
+              fontSize={30}
+              letterSpacing="0.25em"
+              fill={INK}
+            >
+              {MADE_BY}
+            </text>
+            <g transform={lean(L.x0 + 8, namesBase)}>
+              <text
+                x={L.x0 + 8}
+                y={namesBase}
+                fontFamily={TITLE_FONT}
+                fontWeight={900}
+                fontSize={L.size * BS_K}
+                letterSpacing="0.01em"
+                fill={INK}
+              >
+                {NAMES}
+              </text>
+            </g>
+            <CircuitTag x={L.x0} y={STRIP_Y} text="" strip={1} name={0} size={STRIP} checks={L.checks} colour={INK} />
+          </g>
+        </g>
+      ) : null}
+      {/* the roll: the outside turn is the paper's back, plain grey; the paper leaves it on its front side */}
+      {r >= 2 ? <PaperRoll x={edge} r={r} top={T - 12} bottom={B + 12} /> : null}
+      {/* the curl at the released free end, back outward, riding the droop */}
+      {rc >= 1.5 ? <PaperRoll x={edge - rc} r={rc} top={T + dy(edge) - 6} bottom={B + dy(edge) + 6} /> : null}
+      {/* fwip: a little snap line off the free end as it lets go */}
+      {released && rt < 7 ? (
+        <path
+          d={`M ${edge + 14} ${T + 40} q 34 30 8 70 q -22 34 12 74`}
+          fill="none"
+          stroke={INK}
+          strokeWidth={5}
+          strokeLinecap="round"
+          opacity={1 - rt / 7}
+        />
+      ) : null}
+      {/* the cord: taut to Clawd's back hand; once released it goes slack and falls to the ground */}
+      {hand ? (
+        <path
+          d={`M ${edge + 2 * r} ${B + 14} Q ${(edge + 2 * r + hand.x) / 2 - 10} ${(B + hand.y) / 2 + 30} ${hand.x} ${hand.y}`}
+          stroke={INK}
+          strokeWidth={5}
+          fill="none"
+          strokeLinecap="round"
+        />
+      ) : released ? (
+        (() => {
+          const sx0 = edge;
+          const sy0 = B + dy(edge) + 12;
+          const ex = L.end + 40 + Math.min(30, 3 * rt);
+          const ey = Math.min(GROUND - 16, B + 120 + 0.9 * rt * rt);
+          const slack = 30 + Math.min(60, 6 * rt);
+          return (
+            <path
+              d={`M ${sx0} ${sy0} Q ${(sx0 + ex) / 2 + 6} ${Math.max(sy0, ey) + slack} ${ex} ${ey}`}
+              stroke={INK}
+              strokeWidth={5}
+              fill="none"
+              strokeLinecap="round"
+            />
+          );
+        })()
+      ) : null}
+    </g>
+  );
+};
+
+// A roll of the banner's paper seen from the side, standing upright: the outside is the paper's plain back (grey, ink
+// outline, no print), the top end shows the wound spiral. (x is its left side; it is 2r wide.)
+const PaperRoll: React.FC<{ x: number; r: number; top: number; bottom: number }> = ({ x, r, top, bottom }) => {
+  const ry = Math.max(2, r * 0.32);
+  const spiral = (() => {
+    const pts: string[] = [];
+    const turns = Math.max(1.5, r / 12);
+    for (let i = 0; i <= 48; i++) {
+      const a = (i / 48) * turns * 2 * Math.PI;
+      const k = 1 - i / 52;
+      pts.push(`${(x + r + Math.cos(a) * r * k).toFixed(1)} ${(top + Math.sin(a) * ry * k).toFixed(1)}`);
+    }
+    return `M ${pts.join(" L ")}`;
+  })();
+  return (
+    <g>
+      <rect x={x} y={top} width={2 * r} height={bottom - top} fill={PAPER_BACK} stroke={INK} strokeWidth={5} />
+      {/* shading: the far side of the cylinder in a darker band, a paper-light glint near the left */}
+      <rect x={x + r * 1.35} y={top + 2} width={r * 0.55} height={bottom - top - 4} fill={INK} opacity={0.14} />
+      <rect x={x + r * 0.3} y={top + 6} width={Math.max(1.5, r * 0.14)} height={bottom - top - 12} fill={PAPER} opacity={0.7} />
+      <ellipse cx={x + r} cy={bottom} rx={r} ry={ry} fill={PAPER_BACK} stroke={INK} strokeWidth={5} />
+      <rect x={x + 2.5} y={bottom - ry - 2} width={2 * r - 5} height={ry + 2} fill={PAPER_BACK} />
+      <ellipse cx={x + r} cy={top} rx={r} ry={ry} fill={PAPER} stroke={INK} strokeWidth={5} />
+      <path d={spiral} fill="none" stroke={INK} strokeWidth={2.2} opacity={0.75} />
+    </g>
   );
 };
 
