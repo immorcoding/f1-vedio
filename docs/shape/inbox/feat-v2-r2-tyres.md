@@ -11,3 +11,5 @@
 ## story-and-facts
 
 - 2026-10-05 · cite · STO-5 · 5.1e 新增画面文字 "VER · NEW" / "HAM · OLD"：车手缩写加一个词，事实见 facts.md 第 71、85 行（VER 新软胎、HAM 旧硬胎）。
+- 2026-10-05 · correction · ART-14 · 用户嫌 HAM 那格全是黑车配黑底、比 VER 那格重：HAM 机位放松一点（590 px/m，VER 680），夜色背景提一档（#2e2e2e，VER 仍是墨黑）；白胎圈和青色轮辋照样跳出来。
+- 2026-10-05 · cite · STO-5 · 说明框定为 "VER · NEW SOFTS" / "HAM · OLD HARDS"：复数和 4.3 的 FRESH SOFTS vs OLD HARDS 一字对上，比单数 "NEW SOFT" 读起来更像一句已经见过的话；40 px 的 Caption 里放得下，不压车轮。

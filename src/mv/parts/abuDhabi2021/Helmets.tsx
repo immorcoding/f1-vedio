@@ -54,7 +54,13 @@ const Strip: React.FC<{
   from: "left" | "right";
   caption: string;
   captionAt: { x: number; y: number };
+  // px per metre of this panel and its night: HAM's black W12 sits a little looser on a night one step lighter, so the
+  // two panels weigh the same (user review)
+  ppm: number;
+  night: string;
 }> = ({
+  ppm,
+  night,
   id,
   poly,
   car,
@@ -71,7 +77,7 @@ const Strip: React.FC<{
   const jolt = hit(since, 0, 0.25);
   const sx = slide + Math.sin(t * 59) * (2 + 10 * jolt);
   const sy = Math.cos(t * 51) * (2 + 6 * jolt);
-  const a = frontWheelAnchor(car, wheel.x, wheel.y, PPM * (1 + 0.04 * since));
+  const a = frontWheelAnchor(car, wheel.x, wheel.y, ppm * (1 + 0.04 * since));
   const seed = Math.floor(t * 30);
   return (
     <g transform={`translate(${sx} ${sy})`}>
@@ -81,7 +87,7 @@ const Strip: React.FC<{
         </clipPath>
       </defs>
       <g clipPath={`url(#${id})`}>
-        <rect x={-200} y={-200} width={2400} height={1500} fill={INK} />
+        <rect x={-200} y={-200} width={2400} height={1500} fill={night} />
         <path
           d={speedLines({
             x: -300,
@@ -139,20 +145,24 @@ export const Helmets: React.FC<{ st: ShotTime }> = ({ st }) => {
           t={t}
           since={t}
           from="left"
-          caption="VER · NEW"
+          caption="VER · NEW SOFTS"
           captionAt={{ x: 80, y: 70 }}
+          ppm={PPM}
+          night={INK}
         />
         <Strip
           id="hl-ham"
           poly={bottom}
           car={W12}
           compound={PIRELLI_2021.hard}
-          wheel={{ x: 930, y: 838 }}
+          wheel={{ x: 960, y: 862 }}
           t={t}
           since={t - hamIn}
           from="right"
-          caption="HAM · OLD"
-          captionAt={{ x: 1570, y: 560 }}
+          caption="HAM · OLD HARDS"
+          captionAt={{ x: 1460, y: 560 }}
+          ppm={590}
+          night="#2e2e2e"
         />
       </g>
     </svg>

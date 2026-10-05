@@ -44,7 +44,7 @@ export const EDIT: PartEdit = {
       to: at(88),
       view: "panel",
       content:
-        "前轮小格（#34，呼应 4.3 的 FRESH SOFTS vs OLD HARDS）：真车侧视（LOW 机位）裁到前轮，车鼻、前翼、前悬挂围着它，车轮高速转动、胎圈是车自己的配方色；87.1 VER（RB16B，新软胎红圈）一格从左砸入上半，87.3 HAM（W12，旧硬胎白圈）一格从右砸入下半，两格斜切，夜色速度线流过；每格一个小说明框 VER · NEW / HAM · OLD，不压车轮",
+        "前轮小格（#34，呼应 4.3 的 FRESH SOFTS vs OLD HARDS）：真车侧视（LOW 机位）裁到前轮，车鼻、前翼、前悬挂围着它，车轮高速转动、胎圈是车自己的配方色；87.1 VER（RB16B，新软胎红圈）一格从左砸入上半，87.3 HAM（W12，旧硬胎白圈）一格从右砸入下半，两格斜切，夜色速度线流过；每格一个小说明框 VER · NEW SOFTS / HAM · OLD HARDS，不压车轮；HAM 那格机位稍松、夜色背景浅一档，两格分量相当",
       cues: [
         { id: "abuDhabi2021.helmetVer", at: at(87) },
         { id: "abuDhabi2021.helmetHam", at: at(87, 3) },
