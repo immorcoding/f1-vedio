@@ -176,6 +176,10 @@ export const WreckWorld: React.FC<{
   nearFires?: readonly NearFire[];
   // the big fire behind the cell, scaled
   backFire?: number;
+  // metres the fire in the gap stands further back from the camera, toward the barrier
+  gapFireBack?: number;
+  // the small debris drawn under the fires in front of the cell, which swallow it
+  debrisUnderFire?: boolean;
 }> = ({
   cam,
   f,
@@ -195,6 +199,8 @@ export const WreckWorld: React.FC<{
   recede = 0,
   nearFires = [],
   backFire = 1,
+  gapFireBack = 0,
+  debrisUnderFire = false,
 }) => {
   const p = noGlow
     ? { ...FIRE_PALETTES[palette], glow: null }
@@ -218,7 +224,12 @@ export const WreckWorld: React.FC<{
     FIRES.front.w,
     FIRES.front.h * frontFire,
   );
-  const gapFire = fireAt(FIRES.gap.x, FIRES.gap.z, FIRES.gap.w, FIRES.gap.h);
+  const gapFire = fireAt(
+    FIRES.gap.x,
+    FIRES.gap.z + gapFireBack,
+    FIRES.gap.w,
+    FIRES.gap.h,
+  );
   const cellAt = cam.anchor({ x: CELL_ANCHOR_X, z: CELL_Z });
   // the wreck cam is 3.2 m up, looking down on the car: the VF-20's high far side (ART-26)
   const cellState = {
@@ -263,6 +274,32 @@ export const WreckWorld: React.FC<{
   const veilLowLength = Math.hypot(
     veilLowTo.x - veilLow.x,
     veilLowTo.y - veilLow.y,
+  );
+  // debris on the asphalt: three small, dark, low-contrast scraps lying flat, drawn under the smoke drifting off the
+  // gap fire so they sink into it — scattered wreckage, not graphic shapes (user review 2026-10-04); with
+  // `debrisUnderFire` they go under the fires, which swallow them (user review 2026-10-05)
+  const debris = (
+    <g>
+      {[
+        [CELL_TO + 0.9, CELL_Z - 1.3, 0.2],
+        [CELL_TO - 0.4, CELL_Z - 0.8, 0.12],
+        [REAR_SPAN.to + 0.6, REAR_Z - 0.6, 0.16],
+      ].map(([x, z, s]) => {
+        const c = cam.project({ x, y: 0, z });
+        const k = cam.pxPerMetre(z) * s;
+        return (
+          <path
+            key={`${x}${z}`}
+            d={`M ${c.x - k} ${c.y} L ${c.x - k * 0.3} ${c.y - k * 0.32} L ${c.x + k} ${c.y - k * 0.08} L ${c.x + k * 0.35} ${c.y + k * 0.12} Z`}
+            fill="#2b2724"
+            stroke="#3b3531"
+            strokeWidth={1}
+            strokeLinejoin="round"
+            opacity={0.8}
+          />
+        );
+      })}
+    </g>
   );
   return (
     <g>
@@ -390,6 +427,7 @@ export const WreckWorld: React.FC<{
       {/* someone out over the cell's side, behind the low fire (nothing of him overlaps the bottom rail until he
           crosses it) */}
       {behindRails}
+      {debrisUnderFire ? debris : null}
       {/* the low fire along the rails; once it is out, embers and a few small flames */}
       {burntOut ? (
         <DyingFire
@@ -475,27 +513,7 @@ export const WreckWorld: React.FC<{
           />
         </g>,
       )}
-      {/* debris on the asphalt: three small, dark, low-contrast scraps lying flat, drawn under the smoke drifting off
-          the gap fire so they sink into it — scattered wreckage, not graphic shapes (user review 2026-10-04) */}
-      {[
-        [CELL_TO + 0.9, CELL_Z - 1.3, 0.2],
-        [CELL_TO - 0.4, CELL_Z - 0.8, 0.12],
-        [REAR_SPAN.to + 0.6, REAR_Z - 0.6, 0.16],
-      ].map(([x, z, s]) => {
-        const c = cam.project({ x, y: 0, z });
-        const k = cam.pxPerMetre(z) * s;
-        return (
-          <path
-            key={`${x}${z}`}
-            d={`M ${c.x - k} ${c.y} L ${c.x - k * 0.3} ${c.y - k * 0.32} L ${c.x + k} ${c.y - k * 0.08} L ${c.x + k * 0.35} ${c.y + k * 0.12} Z`}
-            fill="#2b2724"
-            stroke="#3b3531"
-            strokeWidth={1}
-            strokeLinejoin="round"
-            opacity={0.8}
-          />
-        );
-      })}
+      {debrisUnderFire ? null : debris}
       {/* bubble smoke (ART-20) drifting across from the fire in the gap over the torn-off rear, partly veiling it */}
       {veil > 0 ? (
         <g

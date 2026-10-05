@@ -73,6 +73,8 @@ const PATH_X = (() => {
 // clear (71.1, in front of the rails, everything of him drawn over the fire) the fire takes the car: over 71.1–71.4
 // it grows round the cell until only the top of the halo and the roll hoop show: he got out just in time.
 const BACK_FIRE = 0.32;
+// the fire in the gap (lower left) stands back toward the barrier, clear of GRO's feet on his way out (70.4–72.1)
+const GAP_FIRE_BACK = 0.8;
 const FRONT_FIRE = 0.8;
 const COVER_FIRE = { x: CLIMB_X - 0.3, z: WALK_Z + 0.75, w: 2.2, h: 1.7 };
 // the fire over the cell once he is out: across the whole cell, just in front of it
@@ -275,6 +277,8 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
             recede={RECEDE}
             nearFires={nearFires}
             backFire={backFire}
+            gapFireBack={GAP_FIRE_BACK}
+            debrisUnderFire
           />
           {/* the marshal's powder jet into the front of the cockpit, then everyone, deepest first (it crosses
               behind GRO and the doctor into the cell) */}
