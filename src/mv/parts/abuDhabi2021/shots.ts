@@ -41,7 +41,7 @@ export const EDIT: PartEdit = {
       from: at(87),
       to: at(88),
       view: "panel",
-      content: "头盔小格：87.1 VER 一格从左砸入上半，87.3 HAM 一格从右砸入下半，两格斜切，夜色速度线流过",
+      content: "轮胎小格（#34，呼应 4.3 的 FRESH SOFTS vs OLD HARDS）：侧面车轮特写，用车自己的车轮画法；87.1 VER 一格从左砸入上半（RB16B 车轮、新软胎红圈、胎面干净、高速转动带残影），87.3 HAM 一格从右砸入下半（W12 车轮、青色轮圈、旧硬胎白圈、胎面磨损起粒：灰色网点加几道擦痕），两格斜切，夜色速度线流过",
       cues: [
         { id: "abuDhabi2021.helmetVer", at: at(87) },
         { id: "abuDhabi2021.helmetHam", at: at(87, 3) },

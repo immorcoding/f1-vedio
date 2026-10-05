@@ -393,6 +393,37 @@ export const DriverHelmet: React.FC<{
   );
 };
 
+// One of a car's near wheels on its own (5.1e's tyre close-ups): the car's own wheel drawing — tyre, sidewall band,
+// rim and rim accent — at the trace size and scaled to radius `r`, centred on (x, y). `angle` and `compound` as in
+// CarState (wheelAngle, compound).
+export const CarWheel: React.FC<{
+  car: CarSpec;
+  x: number;
+  y: number;
+  r: number;
+  angle?: number;
+  compound?: string;
+}> = ({ car, x, y, r, angle = 0, compound }) => {
+  const id = svgId(useId());
+  const w0 = car.nearWheels[0];
+  const s = r / w0.r;
+  return (
+    <g transform={`translate(${x} ${y}) scale(${s})`}>
+      <defs>
+        <ToneDefs prefix={id} />
+      </defs>
+      <NearWheel
+        car={car}
+        w={{ ...w0, cx: 0, cy: 0 }}
+        angle={angle}
+        compound={compound ?? car.compound}
+        tread="dry"
+        id={id}
+      />
+    </g>
+  );
+};
+
 // The car drawn in its reference photo's own pixel space, facing left as in the photo. MangaCar flips and places it;
 // the Art check still draws it straight onto the photo's frame.
 export const CarInPhotoSpace: React.FC<{ car: CarSpec; state?: CarState }> = ({
@@ -659,9 +690,7 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
         {car.rearWing.farFrom ? (
           <Endplate
             d={car.rearWing.near}
-            livery={
-              car.rearWing.farLivery === false ? [] : car.rearWing.livery
-            }
+            livery={car.rearWing.farLivery === false ? [] : car.rearWing.livery}
             fill={p.wing}
             w={5}
             copy={car.rearWing.farFrom}
@@ -687,9 +716,7 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
             fill={p.rearTop}
           />
         ) : null}
-        {car.rearWing.pylon ? (
-          <path d={car.rearWing.pylon} fill={INK} />
-        ) : null}
+        {car.rearWing.pylon ? <path d={car.rearWing.pylon} fill={INK} /> : null}
         {car.rearWing.elements.map((d) => (
           <Ink key={d} d={d} w={5} />
         ))}
