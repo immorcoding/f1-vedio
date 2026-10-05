@@ -1,4 +1,5 @@
 import { Composition, Folder, Still } from "remotion";
+import { CoverFolder } from "./cover/CoverFolder";
 import { LibraryFolder } from "./library/LibraryFolder";
 import { MV, PartPreview, partPreviewFrames } from "./mv/MV";
 import { PARTS } from "./mv/edit-list";
@@ -14,6 +15,7 @@ export const RemotionRoot: React.FC = () => {
   return (
     <>
       <LibraryFolder />
+      <CoverFolder />
       <Composition id="MV" component={MV} durationInFrames={TOTAL_FRAMES} fps={FPS} width={1920} height={1080} />
       {/* One window per part (its bars plus one bar after), for review and standalone renders. */}
       <Folder name="MV-parts">
