@@ -1,9 +1,10 @@
 // Synthesises the MV score (AUD-1..3) and writes the beat map next to it.
-//   public/music/mv.wav        48 kHz, 16-bit stereo, exactly 210 s
+//   public/music/mv.wav        48 kHz, 16-bit stereo, the song's length (timing.ts)
 //   public/music/beat-map.json every section, bar line, beat and hit with its second, sample and frame
 // Run: npm run music  (or: node scripts/make-music.mjs [outDir])
 //
-// Original, code-synthesised electronic track: 128 BPM, 4/4, 113 bars, D minor throughout.
+// Original, code-synthesised electronic track: 128 BPM, 4/4, 119 bars (the film's 113 and the post-credits stinger),
+// D minor throughout.
 // Under it, the SFX layer (#15): era engine sounds at the cues of src/mv/sfx.ts (scripts/lib/engine.mjs), on their
 // own bus, mixed in before the master. `--stems` also writes the engines alone and sfx-report.json.
 // Optional (#33, OFF until the user picks it from the A/B): a synthesised grandstand crowd in Brazil, 39.1 to 47.1,
@@ -22,6 +23,8 @@
 //   buildup  74-81  riser, snare roll, half-time then quarter kick, one-eighth gap before the drop
 //   abuDhabi 82-105 strongest: heavy kick + sub, 16th bass, supersaw lead, stabs, open hats, snare
 //   outro    106-113 layers leave in order: arp/drums, bass, kick; ends on the intro pad and pings
+//   credits  114-119 the post-credits stinger: a beat of silence, light kick and hat on the hops, the RB18 pass-by
+//                    (SFX, above the music), boing and choke, a last Dm chord on the black
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -1023,6 +1026,9 @@ for (const [a, b] of GATES)
   };
   for (const [id, pos] of Object.entries(T.HITS)) {
     const n = T.sampleAt(pos);
+    // the stinger's hits have their own small sounds (below), and must not draw on this block's noise: that would
+    // change every crash after them
+    if (/^credits\./.test(id)) continue;
     if (/^intro\.light\d$/.test(id)) {
       const k = Number(id.slice(-1)); // 1-5, each one heavier
       thud(n, 0.35 + 0.05 * k);
@@ -1055,6 +1061,99 @@ for (const [a, b] of GATES)
     crash(S(bar), bar === 98 ? 0.2 : 0.12, 1.4);
 }
 
+// -- the post-credits stinger (bars 114-119, src/mv/parts/credits/shots.ts) ----------------------------------------
+// A playful coda after the film's black, not the outro's pad: ticks under the strip wiping back in (114.2), a light
+// kick on every one of Clawd's landings (115.1 … 118.1) with a closed hat between, a two-note "?!" blip on the
+// double-take (118.2), a boing and a choked cymbal on the jump (118.3, credits.jump), a cloth swish as the flag falls
+// over the camera (118.4), and one clean last note on the black (119.1, credits.end) that rings out by the song's end.
+// The RB18's Doppler pass is an SFX cue (src/mv/sfx.ts "credits.pass"). Its own seeded noise, so nothing earlier in
+// the song changes.
+{
+  const C = T.SECTIONS.find((s) => s.id === "credits").from.bar; // 114
+  const cs = (k, beat = 1) => S(C + k - 1, beat);
+  const rng = mulberry32(1140);
+  const noise = () => rng() * 2 - 1;
+  const tick = (n, gain, decay, pan, fc = 8000) => {
+    const hp = highpass1(fc);
+    addEvent(n, Math.round(SR * decay * 6), (i) => {
+      const v = hp(noise()) * Math.exp(-i / (SR * decay)) * gain;
+      return [v * (1 - pan), v * (1 + pan)];
+    });
+  };
+  const kick = (n, gain) =>
+    addEvent(n, Math.round(SR * 0.3), (i) => {
+      const t = i / SR;
+      const ph = 2 * Math.PI * (58 * t + ((150 - 58) * (1 - Math.exp(-t * 40))) / 40);
+      const click = i < 72 ? (1 - i / 72) * 0.15 : 0;
+      return (Math.tanh(1.3 * Math.sin(ph)) * Math.exp(-t / 0.09) + click) * gain;
+    });
+  const bell = (n, note, gain, decay, pan = 0) => {
+    const f = midi(note);
+    addEvent(n, Math.round(SR * decay * 7), (i) => {
+      const t = i / SR;
+      const v =
+        (Math.sin(2 * Math.PI * f * t) +
+          0.3 * Math.sin(2 * Math.PI * 2 * f * t) * Math.exp(-t / (decay * 0.4)) +
+          0.12 * Math.sin(2 * Math.PI * 3.01 * f * t) * Math.exp(-t / (decay * 0.2))) *
+        Math.exp(-t / decay) *
+        Math.min(1, i / 40) *
+        gain;
+      return [v * (1 - pan * 0.5), v * (1 + pan * 0.5)];
+    });
+  };
+  // 114.2: the strip wipes back in (14 frames): a run of soft ticks, one per sixteenth
+  for (let k = 0; k < 4; k++) tick(cs(1, 2) + (k * BEAT) / 4, 0.03 + 0.008 * k, 0.012, -0.4 + 0.25 * k, 9000);
+  // the hops: a light kick on each landing (13), a closed hat on each off-beat between them
+  for (let b = 0; b < 13; b++) {
+    const n = cs(2) + b * BEAT;
+    kick(n, 0.3);
+    if (b < 12) tick(n + BEAT / 2, 0.06, 0.02, 0.15);
+  }
+  // 118.2: the double-take, a quick rising "?!" (A5 → D6)
+  bell(cs(5, 2), 81, 0.05, 0.08, 0.3);
+  bell(cs(5, 2) + Math.round(BEAT / 4), 86, 0.06, 0.12, 0.3);
+  // 118.3: the jump. A boing (a sine on a spring: pitch rising with a wobble) and a crash cymbal choked after 0.12 s
+  {
+    const n = cs(5, 3);
+    let ph = 0;
+    addEvent(n, Math.round(SR * 0.7), (i) => {
+      const t = i / SR;
+      const f = 190 * (1 + 0.9 * (1 - Math.exp(-t / 0.18))) * (1 + 0.22 * Math.exp(-t / 0.3) * Math.sin(2 * Math.PI * 11 * t));
+      ph += (2 * Math.PI * f) / SR;
+      return (Math.sin(ph) + 0.25 * Math.sin(2 * ph)) * Math.exp(-t / 0.22) * Math.min(1, i / 24) * 0.24;
+    });
+    const hp = highpass1(4000);
+    const hpR = highpass1(4000);
+    const choke = Math.round(SR * 0.12);
+    addEvent(n, choke + Math.round(SR * 0.01), (i) => {
+      const env = Math.min(1, i / 12) * Math.exp(-i / (SR * 0.5)) * Math.min(1, (choke + SR * 0.01 - i) / (SR * 0.01));
+      return [hp(noise()) * env * 0.22, hpR(noise()) * env * 0.22];
+    });
+    kick(n, 0.5);
+  }
+  // 118.4: the flag falls over the camera: a swish of filtered noise swelling and falling in pitch, gone before 119.1
+  {
+    const n = cs(5, 4);
+    const len = Math.round(BEAT * 0.9);
+    const lp = lowpass(1.2);
+    const lpR = lowpass(1.2);
+    addEvent(n, len, (i) => {
+      const u = i / len;
+      const env = Math.sin(Math.PI * Math.min(1, u * 1.15)) ** 2 * (u < 0.87 ? 1 : 0);
+      const fc = 5000 - 3800 * u;
+      return [lp(noise(), fc) * env * 0.16, lpR(noise(), fc) * env * 0.16];
+    });
+  }
+  // 119.1: the last note on the black: a clean D-minor bell chord (D4, A4, D5, F5) that rings out by the end
+  for (const [note, g] of [
+    [62, 0.07],
+    [69, 0.045],
+    [74, 0.04],
+    [77, 0.025],
+  ])
+    bell(cs(6), note, g, 0.42);
+}
+
 // -- ping-pong delay (dotted eighth) on the send bus ---------------------------------------
 {
   const d = Math.round(BEAT * 0.75);
@@ -1082,6 +1181,29 @@ for (const [a, b] of GATES)
 // Each cue drives its cars by road speed (scripts/lib/engine.mjs). Its level is set against the music it plays over:
 // in every bar of the cue the engines sit at least `underDb` under the music's RMS in that bar, then pump with the kick's sidechain so the
 // music's transients stay on top. "cut" cues stop dead on their end beat (Bahrain's 61.1 goes with the music's stop).
+// A pass-by from the roadside (sfx.ts `doppler`): the car passes the listener `distance` m away at second `at`, at
+// `speed` m/s. Each output sample hears the engine as it was emitted at τ, where t = τ + r(τ)/c (solved by fixed-point
+// iteration, which converges while speed < c); the level follows 1/r, and a burst of air noise rides the closest
+// moment. Returns a new buffer the length of the engine's.
+const SOUND = 343; // m/s
+const dopplerPass = (y, { at: tp, distance: d, speed: v }, seed) => {
+  const out = new Float64Array(y.length);
+  const rng = mulberry32(seed * 31 + 7);
+  const lp = lowpass(0.9);
+  const r = (tau) => Math.hypot(v * (tau - tp), d);
+  for (let i = 0; i < y.length; i++) {
+    const t = i / SR;
+    let tau = t - r(t) / SOUND;
+    for (let k = 0; k < 6; k++) tau = t - r(tau) / SOUND;
+    const x = tau * SR;
+    const j = Math.floor(x);
+    const s = j >= 0 && j + 1 < y.length ? y[j] + (y[j + 1] - y[j]) * (x - j) : 0;
+    const near = d / r(tau);
+    const air = lp(rng() * 2 - 1, 900 + 2500 * near) * near ** 4 * 0.6;
+    out[i] = s * near ** 1.3 + air;
+  }
+  return out;
+};
 const SL = new Float64Array(N);
 const SR_ = new Float64Array(N);
 const sfxCues = [];
@@ -1106,7 +1228,8 @@ const sfxCues = [];
         SR,
         seed,
       );
-      const y = synthEngine(drv, SR, seed);
+      let y = synthEngine(drv, SR, seed);
+      if (car.doppler) y = dopplerPass(y, car.doppler, seed);
       const g = Math.pow(10, (car.db ?? 0) / 20);
       for (let i = 0; i < len; i++) {
         const p = Math.max(-1, Math.min(1, car.pan(i / SR)));
@@ -1149,6 +1272,26 @@ const sfxCues = [];
         );
     }
     if (!Number.isFinite(gain)) gain = 0;
+    // the AUD-7 exception (sfx.ts `aboveMusic`): the music ducks under the cue, following its envelope, so the master
+    // limiter doesn't pump the music around it
+    if (cue.aboveMusic) {
+      const env = new Float64Array(len);
+      let e = 0;
+      let peak = 0;
+      const att = 1 - Math.exp(-1 / (SR * 0.01));
+      const rel = 1 - Math.exp(-1 / (SR * 0.2));
+      for (let i = 0; i < len; i++) {
+        const v = Math.max(Math.abs(cl[i]), Math.abs(cr[i]));
+        e += (v - e) * (v > e ? att : rel);
+        env[i] = e;
+        peak = Math.max(peak, e);
+      }
+      for (let i = 0; i < len; i++) {
+        const k = 1 - cue.aboveMusic.duck * (peak > 0 ? env[i] / peak : 0);
+        L[a + i] *= k;
+        R[a + i] *= k;
+      }
+    }
     for (let i = 0; i < len; i++) {
       const pump = 0.55 + 0.45 * duck[a + i];
       SL[a + i] += cl[i] * gain * pump;
@@ -1279,8 +1422,11 @@ for (let i = 0; i < SR * 0.01; i++) {
   R[N - 1 - i] *= g;
 }
 let gainDb = 0;
+// The film (up to the stinger) sets the master gain, so adding the post-credits stinger leaves the film's level as it
+// was; the whole file still lands within the check's −14 ± 1 LUFS (check-audio measures all of it).
+const FILM_END = S(T.SECTIONS.find((s) => s.id === "credits").from.bar);
 for (let pass = 0; pass < 4; pass++) {
-  const lufs = integratedLoudness(L, R, SR);
+  const lufs = integratedLoudness(L.subarray(0, FILM_END), R.subarray(0, FILM_END), SR);
   const step = TARGET_LUFS - lufs;
   if (process.env.MUSIC_DEBUG) {
     let pk = 0;

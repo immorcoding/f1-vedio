@@ -3,10 +3,10 @@
   "beatsPerBar": 4,
   "fps": 60,
   "sampleRate": 48000,
-  "bars": 113,
+  "bars": 119,
   "framesPerBar": 112.5,
-  "durationSeconds": 211.875,
-  "totalFrames": 12713,
+  "durationSeconds": 223.125,
+  "totalFrames": 13388,
   "frameRounding": "frame = floor(seconds × fps + 0.5): nearest frame, exact halves round up (src/mv/timing.ts toFrame)",
   "sections": [
     {"id":"intro","name":"前奏","from":{"bar":1,"beat":1,"seconds":0,"sample":0,"frame":0},"to":{"bar":9,"beat":1,"seconds":15,"sample":720000,"frame":900}},
@@ -15,7 +15,8 @@
     {"id":"bahrain","name":"巴林 2020","from":{"bar":57,"beat":1,"seconds":105,"sample":5040000,"frame":6300},"to":{"bar":74,"beat":1,"seconds":136.875,"sample":6570000,"frame":8213}},
     {"id":"buildup","name":"蓄力","from":{"bar":74,"beat":1,"seconds":136.875,"sample":6570000,"frame":8213},"to":{"bar":82,"beat":1,"seconds":151.875,"sample":7290000,"frame":9113}},
     {"id":"abuDhabi","name":"阿布扎比 2021","from":{"bar":82,"beat":1,"seconds":151.875,"sample":7290000,"frame":9113},"to":{"bar":106,"beat":1,"seconds":196.875,"sample":9450000,"frame":11813}},
-    {"id":"outro","name":"尾奏","from":{"bar":106,"beat":1,"seconds":196.875,"sample":9450000,"frame":11813},"to":{"bar":114,"beat":1,"seconds":211.875,"sample":10170000,"frame":12713}}
+    {"id":"outro","name":"尾奏","from":{"bar":106,"beat":1,"seconds":196.875,"sample":9450000,"frame":11813},"to":{"bar":114,"beat":1,"seconds":211.875,"sample":10170000,"frame":12713}},
+    {"id":"credits","name":"片尾彩蛋","from":{"bar":114,"beat":1,"seconds":211.875,"sample":10170000,"frame":12713},"to":{"bar":120,"beat":1,"seconds":223.125,"sample":10710000,"frame":13388}}
   ],
   "hits": [
     {"id":"intro.light1","bar":5,"beat":1,"seconds":7.5,"sample":360000,"frame":450},
@@ -32,7 +33,9 @@
     {"id":"buildup.drop","bar":82,"beat":1,"seconds":151.875,"sample":7290000,"frame":9113},
     {"id":"abuDhabi2021.lockup","bar":90,"beat":1,"seconds":166.875,"sample":8010000,"frame":10013},
     {"id":"abuDhabi2021.finish","bar":100,"beat":1,"seconds":185.625,"sample":8910000,"frame":11138},
-    {"id":"abuDhabi2021.points","bar":102,"beat":1,"seconds":189.375,"sample":9090000,"frame":11363}
+    {"id":"abuDhabi2021.points","bar":102,"beat":1,"seconds":189.375,"sample":9090000,"frame":11363},
+    {"id":"credits.jump","bar":118,"beat":3,"seconds":220.3125,"sample":10575000,"frame":13219},
+    {"id":"credits.end","bar":119,"beat":1,"seconds":221.25,"sample":10620000,"frame":13275}
   ],
   "beats": [
     {"bar":1,"beat":1,"seconds":0,"sample":0,"frame":0},
@@ -487,6 +490,30 @@
     {"bar":113,"beat":2,"seconds":210.46875,"sample":10102500,"frame":12628},
     {"bar":113,"beat":3,"seconds":210.9375,"sample":10125000,"frame":12656},
     {"bar":113,"beat":4,"seconds":211.40625,"sample":10147500,"frame":12684},
-    {"bar":114,"beat":1,"seconds":211.875,"sample":10170000,"frame":12713}
+    {"bar":114,"beat":1,"seconds":211.875,"sample":10170000,"frame":12713},
+    {"bar":114,"beat":2,"seconds":212.34375,"sample":10192500,"frame":12741},
+    {"bar":114,"beat":3,"seconds":212.8125,"sample":10215000,"frame":12769},
+    {"bar":114,"beat":4,"seconds":213.28125,"sample":10237500,"frame":12797},
+    {"bar":115,"beat":1,"seconds":213.75,"sample":10260000,"frame":12825},
+    {"bar":115,"beat":2,"seconds":214.21875,"sample":10282500,"frame":12853},
+    {"bar":115,"beat":3,"seconds":214.6875,"sample":10305000,"frame":12881},
+    {"bar":115,"beat":4,"seconds":215.15625,"sample":10327500,"frame":12909},
+    {"bar":116,"beat":1,"seconds":215.625,"sample":10350000,"frame":12938},
+    {"bar":116,"beat":2,"seconds":216.09375,"sample":10372500,"frame":12966},
+    {"bar":116,"beat":3,"seconds":216.5625,"sample":10395000,"frame":12994},
+    {"bar":116,"beat":4,"seconds":217.03125,"sample":10417500,"frame":13022},
+    {"bar":117,"beat":1,"seconds":217.5,"sample":10440000,"frame":13050},
+    {"bar":117,"beat":2,"seconds":217.96875,"sample":10462500,"frame":13078},
+    {"bar":117,"beat":3,"seconds":218.4375,"sample":10485000,"frame":13106},
+    {"bar":117,"beat":4,"seconds":218.90625,"sample":10507500,"frame":13134},
+    {"bar":118,"beat":1,"seconds":219.375,"sample":10530000,"frame":13163},
+    {"bar":118,"beat":2,"seconds":219.84375,"sample":10552500,"frame":13191},
+    {"bar":118,"beat":3,"seconds":220.3125,"sample":10575000,"frame":13219},
+    {"bar":118,"beat":4,"seconds":220.78125,"sample":10597500,"frame":13247},
+    {"bar":119,"beat":1,"seconds":221.25,"sample":10620000,"frame":13275},
+    {"bar":119,"beat":2,"seconds":221.71875,"sample":10642500,"frame":13303},
+    {"bar":119,"beat":3,"seconds":222.1875,"sample":10665000,"frame":13331},
+    {"bar":119,"beat":4,"seconds":222.65625,"sample":10687500,"frame":13359},
+    {"bar":120,"beat":1,"seconds":223.125,"sample":10710000,"frame":13388}
   ]
 }
