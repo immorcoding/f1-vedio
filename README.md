@@ -155,14 +155,13 @@ What scripts can't check, we checked by eye on frame grids, one cell at a time.
 
 ### Skills we used
 
-| Skill | What for |
-|---|---|
-| `director` | Pre-production: picking the moments, research, the shot list |
-| `shape-your-project` | Keeping the rulebook above |
-| `to-spec`, `to-tickets` | Turning ideas and review notes into GitHub tickets |
-| `supermatt:prototype` | Throwaway prototypes for anything we weren't sure about: art style, fire, fonts, car models, the stinger |
-| `remotion-*` ([remotion-dev/skills](https://github.com/remotion-dev/skills)) | How to write and render with Remotion |
-| Claude Code sub-agents | One branch per ticket, several working at once |
+| Skill set | Where it's from | What for |
+|---|---|---|
+| **SuperMatt**, the full set | [svyatov/supermatt](https://github.com/svyatov/supermatt) (built on [mattpocock/skills](https://github.com/mattpocock/skills), [obra/superpowers](https://github.com/obra/superpowers) and [EveryInc/compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin)) | The whole set was installed and drives the workflow. The ones this project leaned on most: `to-spec` and `to-tickets` turned ideas and review notes into GitHub tickets, and `prototype` built throwaway prototypes for anything we weren't sure about (art style, fire, fonts, car models, the stinger). The issue-tracker, triage-label and domain-doc setup in `docs/agents/` comes from it too |
+| `director` | [s1dashu/director](https://github.com/s1dashu/director) | Pre-production: picking the moments, research, the shot list |
+| `shape-your-project` | [immorcoding/skills](https://github.com/immorcoding/skills) (Immor's own) | Keeping the rulebook above |
+| `remotion-*` | [remotion-dev/skills](https://github.com/remotion-dev/skills) | How to write and render with Remotion |
+| Claude Code sub-agents | [Claude Code](https://www.anthropic.com/claude-code) | One branch per ticket, several working at once |
 
 There's also a hook Immor added: rendering may only use 4 CPU cores. A multi-core render once brought the whole machine down and restarted the session.
 

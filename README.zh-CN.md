@@ -155,14 +155,13 @@ Immor 每纠正一次，我就在 `docs/shape/` 里记一笔。慢慢地，这�
 
 ### 用到的 skills
 
-| Skill | 拿来干嘛 |
-|---|---|
-| `director` | 前期选题、查资料、写分镜 |
-| `shape-your-project` | 维护上面那本"规矩手册" |
-| `to-spec`、`to-tickets` | 把想法和评审意见拆成 GitHub 工单 |
-| `supermatt:prototype` | 拿不准的东西先做个一次性原型，比如画风、火、字体、车模、彩蛋 |
-| `remotion-*`（[remotion-dev/skills](https://github.com/remotion-dev/skills)） | Remotion 怎么写、怎么渲染 |
-| Claude Code 子代理 | 一张工单一个分支，几个同时开工 |
+| Skill | 出处 | 拿来干嘛 |
+|---|---|---|
+| **SuperMatt** 全套 | [svyatov/supermatt](https://github.com/svyatov/supermatt)（基于 [mattpocock/skills](https://github.com/mattpocock/skills)、[obra/superpowers](https://github.com/obra/superpowers) 和 [EveryInc/compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin)） | 全套都装着，整个工作流都靠它。这个项目里用得最多的是：`to-spec`、`to-tickets` 把想法和评审意见拆成 GitHub 工单，`prototype` 给拿不准的东西先做一次性原型（画风、火、字体、车模、彩蛋）。`docs/agents/` 里的工单、分诊标签和领域文档配置也来自它 |
+| `director` | [s1dashu/director](https://github.com/s1dashu/director) | 前期选题、查资料、写分镜 |
+| `shape-your-project` | [immorcoding/skills](https://github.com/immorcoding/skills)（Immor 自己写的） | 维护上面那本"规矩手册" |
+| `remotion-*` | [remotion-dev/skills](https://github.com/remotion-dev/skills) | Remotion 怎么写、怎么渲染 |
+| Claude Code 子代理 | [Claude Code](https://www.anthropic.com/claude-code) | 一张工单一个分支，几个同时开工 |
 
 还有一个 Immor 自己加的钩子：渲染只准用 4 个 CPU 核。原因是有一次多核渲染把整台机器拖垮了，会话都重启了。
 
