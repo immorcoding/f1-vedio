@@ -8,7 +8,7 @@
 // `abuDhabi2021.pointsGold`): VER's 395.5 takes the gold stroke, a champion's score like Brazil's 98 on 2.7 (the
 // user, 2026-10-04; ART-8). 102.3 (kick, `abuDhabi2021.hamPanel`): HAM's panel slams up from below. 102.4 and 103.2
 // (snares): VER punches in a step; on 103.2 HAM's tone darkens a step. 103.3 (kick) is left quiet for HAM's panel
-// (#32): on its kick the ghost of a championship trophy engraved "8" flashes up in the empty space ahead of HAM, the
+// (#32): on its kick the ghost of a championship trophy engraved "8" flashes up, translucent, in the empty space above HAM, the
 // record eighth title he is losing (facts.md; no caption, the 8 is the only text), and fades into the tone before
 // 103.4 (`abuDhabi2021.hamGhost`). 103.4 (snare, `abuDhabi2021.verPush`): the last punch on VER and the tone swallows
 // HAM, and the push keeps accelerating into the cut to 5.8 (MOT-8). The helmets sit at opposite ends of the diagonal
@@ -112,11 +112,11 @@ const Cup: React.FC<{ id: string }> = ({ id }) => {
       </g>
       <text
         x={0}
-        y={-146}
+        y={-153}
         textAnchor="middle"
         fontFamily={TITLE_FONT}
         fontWeight={900}
-        fontSize={92}
+        fontSize={62}
         fill={INK}
         stroke={PAPER}
         strokeWidth={3}
@@ -135,12 +135,12 @@ const TrophyGhost: React.FC<{ x: number; y: number; h: number; a: number; drift:
   const k = (h / 250) * (1 + 0.04 * drift);
   return a <= 0 ? null : (
     <g opacity={a}>
-      <ellipse cx={x} cy={y - h * 0.55} rx={h * 0.62} ry={h * 0.62} fill={PAPER} opacity={0.12} />
-      <ellipse cx={x} cy={y - h * 0.55} rx={h * 0.45} ry={h * 0.5} fill={PAPER} opacity={0.14} />
-      <g opacity={0.28} transform={`translate(${x + h * (0.06 + 0.1 * drift)} ${y - h * 0.03}) scale(${k * 1.02})`}>
+      <ellipse cx={x} cy={y - h * 0.55} rx={h * 0.62} ry={h * 0.62} fill={PAPER} opacity={0.06} />
+      <ellipse cx={x} cy={y - h * 0.55} rx={h * 0.45} ry={h * 0.5} fill={PAPER} opacity={0.07} />
+      <g opacity={0.13} transform={`translate(${x + h * (0.06 + 0.1 * drift)} ${y - h * 0.03}) scale(${k * 1.02})`}>
         <Cup id="pt-cup-echo" />
       </g>
-      <g opacity={0.8} transform={`translate(${x} ${y}) scale(${k})`}>
+      <g opacity={0.4} transform={`translate(${x} ${y}) scale(${k})`}>
         <Cup id="pt-cup" />
       </g>
     </g>
@@ -181,9 +181,9 @@ export const Points: React.FC<{ st: ShotTime }> = ({ st }) => {
   const sx = Math.sin(t * 41) * shake;
   const sy = Math.cos(t * 37) * shake * 0.75;
   const flash = 0.25 * hit(sinceKick, 0, 0.1);
-  // the ghost: in over 3 frames on 103.3, gone by the 103.4 snare (the tone swallows HAM there)
-  const ghostA =
-    t < ghostIn - 0.001 ? 0 : Math.min(1, (t - ghostIn + 1 / 60) / 0.05) * (1 - Math.min(1, Math.max(0, (t - (last - 0.14)) / 0.14)));
+  // the ghost: already there (translucent) on the 103.3 kick, then a steady fade, gone two frames before the 103.4
+  // snare (the tone swallows HAM there)
+  const ghostA = t < ghostIn - 0.001 ? 0 : Math.max(0, 1 - (t - ghostIn) / (last - ghostIn - 2 / 60));
   const ghostDrift = Math.max(0, Math.min(1, (t - ghostIn) / (last - ghostIn)));
   return (
     <svg width={1920} height={1080}>
@@ -221,7 +221,7 @@ export const Points: React.FC<{ st: ShotTime }> = ({ st }) => {
               tag="HAM"
               tagAt={{ x: 1720, y: 975 }}
             >
-              <TrophyGhost x={1180} y={1030} h={240} a={ghostA} drift={ghostDrift} />
+              <TrophyGhost x={300} y={895} h={216} a={ghostA} drift={ghostDrift} />
             </HelmetPanel>
           </g>
         )}
