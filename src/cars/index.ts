@@ -14,7 +14,6 @@ import type { CarSpec, TopOnlyCar } from "./spec";
 export {
   MangaCar,
   CarInPhotoSpace,
-  CarWheel,
   DriverHelmet,
   type CarState,
   type CarView,

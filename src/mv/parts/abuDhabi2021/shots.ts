@@ -19,7 +19,8 @@ export const EDIT: PartEdit = {
       from: at(83),
       to: at(84),
       view: "closeup",
-      content: "轮上视角：镜头贴地、在车轮高度，VER 的前轮紧跟 HAM 的后轮（尾流里 0.9 m），轮胎飞转，T4 出口的路肩和路面成片流过",
+      content:
+        "轮上视角：镜头贴地、在车轮高度，VER 的前轮紧跟 HAM 的后轮（尾流里 0.9 m），轮胎飞转，T4 出口的路肩和路面成片流过",
     },
     {
       id: "5.1c",
@@ -34,14 +35,16 @@ export const EDIT: PartEdit = {
       from: at(86),
       to: at(87),
       view: "top",
-      content: "俯视切片：正上方贴近两车，VER 的前轮与 HAM 的后轮并排、轮胎间隔 0.7 m，VER/HAM 标签，路面按真实速度流过",
+      content:
+        "俯视切片：正上方贴近两车，VER 的前轮与 HAM 的后轮并排、轮胎间隔 0.7 m，VER/HAM 标签，路面按真实速度流过",
     },
     {
       id: "5.1e",
       from: at(87),
       to: at(88),
       view: "panel",
-      content: "轮胎小格（#34，呼应 4.3 的 FRESH SOFTS vs OLD HARDS）：侧面车轮特写，用车自己的车轮画法；87.1 VER 一格从左砸入上半（RB16B 车轮、新软胎红圈、胎面干净、高速转动带残影），87.3 HAM 一格从右砸入下半（W12 车轮、青色轮圈、旧硬胎白圈、胎面磨损起粒：灰色网点加几道擦痕），两格斜切，夜色速度线流过",
+      content:
+        "前轮小格（#34，呼应 4.3 的 FRESH SOFTS vs OLD HARDS）：真车侧视（LOW 机位）裁到前轮，车鼻、前翼、前悬挂围着它，车轮高速转动、胎圈是车自己的配方色；87.1 VER（RB16B，新软胎红圈）一格从左砸入上半，87.3 HAM（W12，旧硬胎白圈）一格从右砸入下半，两格斜切，夜色速度线流过；每格一个小说明框 VER · NEW / HAM · OLD，不压车轮",
       cues: [
         { id: "abuDhabi2021.helmetVer", at: at(87) },
         { id: "abuDhabi2021.helmetHam", at: at(87, 3) },
@@ -110,7 +113,8 @@ export const EDIT: PartEdit = {
       from: at(104),
       to: at(106),
       view: "title",
-      content: "夺冠照片卡（ART-19）：VER 领奖台彩色照片铺满，车队无线电原话逐拍砸入（STO-8）",
+      content:
+        "夺冠照片卡（ART-19）：VER 领奖台彩色照片铺满，车队无线电原话逐拍砸入（STO-8）",
       text: ["MAX VERSTAPPEN, YOU ARE THE WORLD CHAMPION!"],
     },
   ],

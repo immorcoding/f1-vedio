@@ -6,3 +6,8 @@
 - 2026-10-05 · cite · ART-13 · 车轮用 `src/cars/MangaCar.tsx` 新导出的 `CarWheel`（车自己的 `NearWheel`：胎、Pirelli 胎圈、轮辋、轮辋色边，按描线尺寸缩放，同 `DriverHelmet` 的做法），胎圈颜色取 `PIRELLI_2021`。
 - 2026-10-05 · cite · ART-11 · 旧硬胎的磨损只用两样：胎面一圈灰色网点（起粒）和九道随轮转动的浅灰擦痕；新软胎靠两层渐隐残影把辐条抹开、表现高速转动。夜色背景上黑胎的外缘会消失，所以加一圈纸色细边。
 - 2026-10-05 · friction · MOT-4 · 镜头和提示仍叫 `Helmets.tsx`、`abuDhabi2021.helmetVer/helmetHam`（沿用被替换的头盔格），没改名，免得动剪辑表的提示 id；以后可以统一改成 tyre。
+- 2026-10-05 · correction · ART-13 · 用户又否决了单独画的车轮（"不要单独的轮胎"）：5.1e 改成真车侧视（MangaCar，LOW 机位）裁到前轮，车鼻、前翼、前悬挂围着它，胎圈用车自己的配方色；新旧只靠小说明框 "VER · NEW" / "HAM · OLD"（ART-6 Caption，放在不压车轮的角上，ART-14），不画磨损。前一版的 `CarWheel` 导出已不用，删掉了。
+
+## story-and-facts
+
+- 2026-10-05 · cite · STO-5 · 5.1e 新增画面文字 "VER · NEW" / "HAM · OLD"：车手缩写加一个词，事实见 facts.md 第 71、85 行（VER 新软胎、HAM 旧硬胎）。
