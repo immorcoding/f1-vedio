@@ -58,12 +58,12 @@ const PATH_X = (() => {
   }
   return max;
 })();
-// the low fire along the rails in front of the cell, scaled: high enough (about 3 m) to hide GRO in the cockpit and
-// on its side from this camera, 3.2 m up
+// the low fire along the rails in front of the cell, scaled: it stays up (about 2 m) while he climbs out
 const FRONT_FIRE = 1.3;
-// and a fire right in front of the cockpit's side, where he climbs out and over it: ~3 m high, so he is behind it
-// until he steps down in front of the rails
-const COVER_FIRE = { x: CLIMB_X - 0.3, z: WALK_Z + 0.75, w: 3.4, h: 3.6 };
+// and a fire right in front of the cockpit's side, where he climbs out and over it: ~2.3 m high, so his body is in
+// it while his helmet and shoulders read over and through the flames, until he steps down in front of the rails and
+// walks out of it (user review 2026-10-05: he never disappears for long)
+const COVER_FIRE = { x: CLIMB_X - 0.3, z: WALK_Z + 0.75, w: 2.8, h: 2.3 };
 // how far the wreck recedes behind GRO (WreckWorld `recede`)
 const RECEDE = 0.75;
 
@@ -198,10 +198,15 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
       held={held}
     />
   );
-  const marshal = figure("marshal", MARSHAL_AT, mPose, MARSHAL, undefined, {
-    kind: "extinguisher",
-    aim: MARSHAL_AIM,
-  });
+  // the marshal, like the doctor, a little out of focus: GRO is the only one sharp (user review 2026-10-05)
+  const marshal = (
+    <g key="marshal" filter="url(#b36-defocus)">
+      {figure("marshal", MARSHAL_AT, mPose, MARSHAL, undefined, {
+        kind: "extinguisher",
+        aim: MARSHAL_AIM,
+      })}
+    </g>
+  );
   // GRO and the doctor, deepest first; both are in front of the jet where they stand (it crosses behind them into
   // the cell), and neither overlaps the marshal
   const people = [
@@ -209,7 +214,7 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
     {
       z: docAt.z,
       node: (
-        <g key="doc" filter="url(#b36-doc-defocus)">
+        <g key="doc" filter="url(#b36-defocus)">
           {figure("doc", docAt, docPose, DOCTOR)}
         </g>
       ),
@@ -220,8 +225,9 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
         <ToneDefs prefix="b36" />
-        {/* the doctor out of focus (depth of field): GRO is the one in focus */}
-        <DefocusFilter id="b36-doc-defocus" blur={4.5} dim={0.8} />
+        {/* the doctor and the marshal gently out of focus (depth of field): GRO is the one in focus; kept light so
+            it looks like a lens, not a smear (user review 2026-10-05: "don't blur too much") */}
+        <DefocusFilter id="b36-defocus" blur={2} dim={0.92} />
       </defs>
       <Flip>
         <Haze
@@ -246,6 +252,7 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
           />
           {/* the marshal's powder jet into the front of the cockpit, then everyone, deepest first (it crosses
               behind GRO and the doctor into the cell) */}
+          <g filter="url(#b36-defocus)">
           <PowderJet
             from={nozzle}
             to={aim}
@@ -253,6 +260,7 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
             frame={f}
             seed="b36-powder"
           />
+          </g>
           {people.map((p) => p.node)}
         </Haze>
       </Flip>
