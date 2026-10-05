@@ -69,6 +69,8 @@ export const Tow: React.FC<{ st: ShotTime }> = ({ st }) => {
       speed={long ? 0.6 + 0.3 * lunge : 0.9}
       tilt={long ? -1.5 + 1.5 * lunge : -2}
       hotelGlow={long ? 0 : 1}
+      // the crowd and the floodlight beams smeared over one frame of camera travel, so they stream instead of strobing
+      smear={(70 + 4.4 * t) / 60}
       shake={{ x: Math.sin(t * 59) * (3 + jolt), y: Math.cos(t * 47) * (2 + jolt * 0.6) }}
       under={long ? <path d={cam.groundQuad(1, 6, -40, 40)} fill={tone("light")} /> : null}
       cars={[
