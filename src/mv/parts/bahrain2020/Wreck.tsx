@@ -342,43 +342,85 @@ export const WreckWorld: React.FC<{
     </>
   );
   // a fire's base faded into the ground (`softFireBase`): its bottom `fade` px go from full to nothing at the base
-  const soft = (key: string, y: number, ppm: number, node: React.ReactNode) => {
+  // A fire's base faded into the ground (`softFireBase`): over its bottom `m` metres the flame's own colours go
+  // warm (its red outer band turned to orange, so no pink smudge shows where the red thins out over the ground) and
+  // its alpha falls to nothing at the base. Two copies of the fire, crossfaded by two masks: as drawn above the
+  // fade, the warm copy inside it.
+  const soft = (
+    key: string,
+    y: number,
+    ppm: number,
+    m: number,
+    node: React.ReactNode,
+  ) => {
     if (!softFireBase) return node;
-    const fade = 0.45 * ppm;
+    const fade = m * ppm;
     const id = `${rimClip}-soft-${key}`;
+    const grad = (name: string, stops: [number, number][]) => (
+      <linearGradient
+        id={`${id}-${name}`}
+        gradientUnits="userSpaceOnUse"
+        x1={0}
+        x2={0}
+        y1={y - fade}
+        y2={y}
+      >
+        {stops.map(([o, a]) => (
+          <stop key={o} offset={o} stopColor="#fff" stopOpacity={a} />
+        ))}
+      </linearGradient>
+    );
+    const mask = (name: string) => (
+      <mask
+        id={`${id}-m${name}`}
+        maskUnits="userSpaceOnUse"
+        x={-200}
+        y={-200}
+        width={2320}
+        height={1480}
+      >
+        <rect
+          x={-200}
+          y={-200}
+          width={2320}
+          height={1480}
+          fill={`url(#${id}-${name})`}
+        />
+      </mask>
+    );
     return (
       <g key={key}>
         <defs>
-          <linearGradient
-            id={`${id}-g`}
-            gradientUnits="userSpaceOnUse"
-            x1={0}
-            x2={0}
-            y1={y - fade}
-            y2={y + 0.1 * fade}
-          >
-            <stop offset={0} stopColor="#fff" />
-            <stop offset={0.55} stopColor="#fff" stopOpacity={0.55} />
-            <stop offset={1} stopColor="#fff" stopOpacity={0} />
-          </linearGradient>
-          <mask
-            id={id}
-            maskUnits="userSpaceOnUse"
+          {grad("a", [
+            [0, 1],
+            [0.45, 0],
+          ])}
+          {grad("b", [
+            [0, 0],
+            [0.45, 1],
+            [1, 0],
+          ])}
+          {mask("a")}
+          {mask("b")}
+          <filter
+            id={`${id}-warm`}
             x={-200}
             y={-200}
             width={2320}
             height={1480}
+            filterUnits="userSpaceOnUse"
+            colorInterpolationFilters="sRGB"
           >
-            <rect
-              x={-200}
-              y={-200}
-              width={2320}
-              height={1480}
-              fill={`url(#${id}-g)`}
+            <feColorMatrix
+              type="matrix"
+              values="1 0 0 0 0  0.3 0.55 0 0 0  0 0 0.4 0 0  0 0 0 0.85 0"
             />
-          </mask>
+          </filter>
         </defs>
-        <g mask={`url(#${id})`}>{node}</g>
+        <g mask={`url(#${id}-ma)`}>{node}</g>
+        <g mask={`url(#${id}-mb)`}>
+          <g filter={`url(#${id}-warm)`}>{node}</g>
+        </g>
       </g>
     );
   };
@@ -390,17 +432,18 @@ export const WreckWorld: React.FC<{
             "gap",
             gapFire.y,
             gapFire.w / FIRES.gap.w,
+            0.18,
             <Fire
               x={gapFire.x}
               y={gapFire.y}
               w={gapFire.w}
-              h={gapFire.h}
+              h={gapFire.h * (softFireBase ? 1.15 : 1)}
               frame={f + 13}
               seed={`wreck-gap${fireSeed}`}
               tongues={4}
               embers={4}
               palette={noLight}
-              intensity={intensity * 0.9}
+              intensity={intensity * (softFireBase ? 1 : 0.9)}
               smoke={false}
               clip={clip}
             />,
@@ -550,6 +593,7 @@ export const WreckWorld: React.FC<{
             "front",
             front.y,
             front.w / FIRES.front.w,
+            0.22,
             <Fire
               x={front.x}
               y={front.y}
@@ -574,6 +618,7 @@ export const WreckWorld: React.FC<{
               n.seed,
               c.y,
               c.w / n.w,
+              0.22,
               <Fire
                 key={n.seed}
                 x={c.x}
