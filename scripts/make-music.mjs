@@ -851,6 +851,10 @@ for (const k of kicks) {
 // -- the bridge's reverse swell: 73.3 -> 74.1, then it hands over to the riser -------------
 // Filtered noise whose cutoff climbs, plus a backwards Dm pad (D4 F4 A4 sines), both on a curve that grows
 // exponentially to 74.1 and then releases over two beats while the riser comes up.
+// MUSIC_BAR73=B (#34, A/B for the user, default off): the swell comes up from under the heartbeat tail to about
+// −24 dB on 73.4, so it rises into the riser's −22 dB on 74.1 instead of sitting 4 dB under the tail. Same notes,
+// same bars; only the level and the curve's shape change.
+const BAR73_B = process.env.MUSIC_BAR73 === "B";
 {
   const rng = mulberry32(707);
   const lp = lowpass(1.2);
@@ -858,10 +862,14 @@ for (const k of kicks) {
   const top = S(BRIDGE + 1);
   const end = S(BRIDGE + 1, 3);
   const notes = [62, 65, 69].map(midi);
+  const [shape, boost] = BAR73_B ? [0.9, 4.5] : [1.7, 1];
   for (let n = a; n < end; n++) {
     const rise = n < top ? (n - a) / (top - a) : 1;
     const env =
-      n < top ? Math.pow(rise, 1.7) : Math.pow(1 - (n - top) / (end - top), 2);
+      boost *
+      (n < top
+        ? Math.pow(rise, shape)
+        : Math.pow(1 - (n - top) / (end - top), BAR73_B ? 4 : 2));
     const fc = 300 + 2600 * rise * rise;
     const t = n / SR;
     let pad = 0;
