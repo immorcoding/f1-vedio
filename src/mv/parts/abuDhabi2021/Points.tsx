@@ -1,11 +1,16 @@
 // Shot 5.7 (bars 102–103): the final points, a new page (review-1: not 4.2's cockpit face-off again). Two stacked
 // panels on a diagonal gutter. On top, wide, is VER's helmet, lit by focus lines. Below, smaller, is HAM's helmet
-// under a screen of tone that thickens over the two bars. The racing is over, so there are no speed lines; the
-// music drops its drums here (102–103), and the page holds still apart from a slow push-in on VER (MOT-6, MOT-8).
-// On the cut (102.1, `abuDhabi2021.points`) the points box slams onto the gutter: 395.5 VS 387.5 (facts.md). On
-// 102.2 (`abuDhabi2021.pointsGold`) VER's 395.5 takes the gold stroke: by now he is the world champion, so it is a
-// champion's score like Brazil's 98 on 2.7 (the user, 2026-10-04). The helmets sit at opposite ends of the diagonal so
-// the box covers neither (ART-14).
+// under a screen of tone that thickens. The racing is over, so there are no speed lines.
+// The drums do not stop here (review-2: the v1 score keeps the drop's kick on every beat, clap and snare on 2 and 4),
+// so the page is cut to them (MOT-6, #28): every kick shakes the page lightly and re-draws the focus lines; the
+// accents sit on the real hits only. 102.1 (`abuDhabi2021.points`, the cut, boom and crash): the points box slams
+// onto the gutter, 395.5 VS 387.5 (facts.md), the lower panel still empty paper. 102.2 (snare,
+// `abuDhabi2021.pointsGold`): VER's 395.5 takes the gold stroke, a champion's score like Brazil's 98 on 2.7 (the
+// user, 2026-10-04; ART-8). 102.3 (kick, `abuDhabi2021.hamPanel`): HAM's panel slams up from below. 102.4 and 103.2
+// (snares): VER punches in a step; on 103.2 HAM's tone darkens a step. 103.3 (kick) is left quiet for HAM's panel
+// (#32's 2008 helmet ghost). 103.4 (snare, `abuDhabi2021.verPush`): the last punch on VER and the tone swallows
+// HAM, and the push keeps accelerating into the cut to 5.8 (MOT-8). The helmets sit at opposite ends of the diagonal
+// so the box covers neither (ART-14).
 import {
   MangaCar,
   PIRELLI_2021,
@@ -22,6 +27,8 @@ import { ToneDefs, tone } from "../../../kit/tone";
 import { helmetAnchor } from "../../../scenes/abu-dhabi-2021/Faceoff";
 import { scoreColumns } from "../../points";
 import { EDIT } from "./shots.ts";
+import { Easing } from "remotion";
+import { at, type Pos } from "../../timing.ts";
 import { cueAt, hit, ramp, secondsInShot, type ShotTime } from "./shotClock";
 
 const TOP = "M 30 30 L 1890 30 L 1890 540 L 30 660 Z";
@@ -35,12 +42,15 @@ const HelmetPanel: React.FC<{
   compound: string;
   helmet: { x: number; y: number };
   ppm: number;
-  t: number;
+  /** Focus-line pattern: a new one on every kick. */
+  seed: number;
+  /** Extra focus-line strength (a kick's flash). */
+  flash: number;
   /** 0..1: tone laid over the panel (the one who lost recedes). */
   dim: number;
   tag: string;
   tagAt: { x: number; y: number };
-}> = ({ id, poly, car, compound, helmet, ppm, t, dim, tag, tagAt }) => (
+}> = ({ id, poly, car, compound, helmet, ppm, seed, flash, dim, tag, tagAt }) => (
   <g>
     <defs>
       <clipPath id={id}>
@@ -49,7 +59,7 @@ const HelmetPanel: React.FC<{
     </defs>
     <g clipPath={`url(#${id})`}>
       <rect x={0} y={0} width={1920} height={1080} fill={INK} />
-      <path d={focusLines(helmet.x, helmet.y, 300, 120, Math.floor(t * 6) + (tag === "VER" ? 0 : 40))} fill={PAPER} opacity={0.45 - 0.3 * dim} />
+      <path d={focusLines(helmet.x, helmet.y, 300, 120, seed + (tag === "VER" ? 0 : 40))} fill={PAPER} opacity={Math.min(0.8, 0.45 - 0.3 * dim + flash)} />
       <MangaCar car={car} at={helmetAnchor(car, helmet.x, helmet.y, ppm)} state={{ wheelAngle: 0, compound, farSide: "low" }} />
       {dim > 0 ? <rect x={0} y={0} width={1920} height={1080} fill={tone("dark")} opacity={dim} /> : null}
       <g transform={`translate(${tagAt.x} ${tagAt.y}) rotate(-4)`}>
@@ -64,16 +74,39 @@ const HelmetPanel: React.FC<{
   </g>
 );
 
+// The drum hits of bars 102–103 (scripts/make-music.mjs: the drop's kick on every beat, clap and snare on 2 and 4).
+const BEATS = [102, 103].flatMap((bar) => [1, 2, 3, 4].map((beat) => at(bar, beat)));
+const SNARE_PUNCHES = [at(102, 4), at(103, 2)];
+const TONE_STEPS = [at(103, 2), at(103, 4)];
+
 export const Points: React.FC<{ st: ShotTime }> = ({ st }) => {
   useLettering();
   const { t, dur } = st;
-  const gold = secondsInShot(st, cueAt(EDIT, "abuDhabi2021.pointsGold"));
+  const since = (p: Pos) => secondsInShot(st, p);
+  const gold = since(cueAt(EDIT, "abuDhabi2021.pointsGold"));
+  const hamIn = since(cueAt(EDIT, "abuDhabi2021.hamPanel"));
+  const last = since(cueAt(EDIT, "abuDhabi2021.verPush"));
+  // the latest kick: which one (the focus-line pattern) and how long ago (shake, flash)
+  const kicks = BEATS.map(since).filter((s) => s <= t);
+  const kick = kicks.length - 1;
+  const sinceKick = t - kicks[kick];
   const slam = hit(t, 0, 0.2);
-  // a slow push on VER that quickens into the cut; HAM's panel greys over the two bars
-  const push = 0.05 * (t / dur) + 0.05 * ramp(t, dur - 0.6, dur);
-  const dim = 0.25 + 0.4 * ramp(t, 0.4, dur);
-  const sx = Math.sin(t * 41) * 16 * slam;
-  const sy = Math.cos(t * 37) * 12 * slam;
+  const hamSlam = hit(t, hamIn, 0.15);
+  // VER: a slow drift, a step on each snare punch, then the last punch accelerates into the cut (MOT-8)
+  const step = (a: number) => (t < a ? 0 : 1 - Math.exp(-(t - a) / 0.035)) + 0.6 * hit(t, a, 0.07);
+  const push =
+    0.03 * (t / dur) +
+    SNARE_PUNCHES.reduce((s, p) => s + 0.045 * step(since(p)), 0) +
+    0.06 * step(last) +
+    0.08 * ramp(t, last, dur) ** 2;
+  // HAM: comes up from below on 102.3, then the tone thickens a step on 103.2 and swallows him on 103.4
+  const u = Math.min(1, Math.max(0, (t - hamIn) / 0.12));
+  const hamY = t < hamIn ? null : 520 * (1 - Easing.out(Easing.back(1.6))(u));
+  const dim = 0.2 + TONE_STEPS.reduce((s, p) => s + (t < since(p) ? 0 : 0.25), 0) + 0.06 * ramp(t, hamIn, dur);
+  const shake = 16 * slam + 12 * hamSlam + 5 * hit(sinceKick, 0, 0.09);
+  const sx = Math.sin(t * 41) * shake;
+  const sy = Math.cos(t * 37) * shake * 0.75;
+  const flash = 0.25 * hit(sinceKick, 0, 0.1);
   return (
     <svg width={1920} height={1080}>
       <defs>
@@ -89,23 +122,29 @@ export const Points: React.FC<{ st: ShotTime }> = ({ st }) => {
           compound={PIRELLI_2021.soft}
           helmet={{ x: 1360, y: 290 }}
           ppm={600 * (1 + push)}
-          t={t}
+          seed={kick * 7}
+          flash={flash}
           dim={0}
           tag="VER"
           tagAt={{ x: 200, y: 110 }}
         />
-        <HelmetPanel
-          id="pt-ham"
-          poly={BOTTOM}
-          car={W12}
-          compound={PIRELLI_2021.hard}
-          helmet={{ x: 380, y: 900 }}
-          ppm={500}
-          t={t}
-          dim={dim}
-          tag="HAM"
-          tagAt={{ x: 1720, y: 975 }}
-        />
+        {hamY === null ? null : (
+          <g transform={`translate(0 ${hamY})`}>
+            <HelmetPanel
+              id="pt-ham"
+              poly={BOTTOM}
+              car={W12}
+              compound={PIRELLI_2021.hard}
+              helmet={{ x: 380, y: 900 }}
+              ppm={500}
+              seed={kick * 7}
+              flash={0.4 * flash}
+              dim={dim}
+              tag="HAM"
+              tagAt={{ x: 1720, y: 975 }}
+            />
+          </g>
+        )}
         <g transform={`translate(${BOX.x} ${BOX.y}) rotate(-3.7)`}>
           <PointsBox
             accent="gold"
