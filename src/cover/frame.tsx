@@ -1,5 +1,5 @@
 // Shared pieces of the cover stills: the page (an SVG in a 1920-wide user space whose height follows the output's
-// aspect, so 16:9 is 1920×1080 and Bilibili's 16:10 is 1920×1201), panel geometry and a coarse cover screentone.
+// aspect, so 16:9 is 1920×1080, Bilibili's 16:10 is 1920×1201 and 4:3 is 1920×1440), panel geometry and a coarse cover screentone.
 import { AbsoluteFill } from "remotion";
 import { INK, PAPER } from "../kit/colors";
 import { TonePattern, ToneDefs } from "../kit/tone";
@@ -8,6 +8,7 @@ export const W = 1920;
 export type CoverProps = { h: number };
 export const H_16x9 = 1080;
 export const H_16x10 = (1920 * 717) / 1146;
+export const H_4x3 = 1440;
 
 export const CoverPage: React.FC<{ h: number; children: React.ReactNode }> = ({
   h,
