@@ -223,7 +223,9 @@ const Shrubs: React.FC<{ cam: Camera }> = ({ cam }) => (
 
 // ── The impact flash (user review of #26, round 3): one big spark burst on the contact point, no spark shower ────────
 const BURST_HEIGHT = 0.6; // where the far front corner meets the rails, m
-const BURST_R = 150; // px at full size
+const BURST_R = 150 * 0.85; // px at full size (85 %, user review of #26)
+// a small nudge to the right on screen, off the nose and onto the rails (the picture is flipped: −x before the flip)
+const BURST_NUDGE = 32;
 const BURST_FADE_BY = BALL_AT + 6; // gone as the fireball grows
 
 const star = (
@@ -556,7 +558,7 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
         >
           <Flip>
             <SparkBurst
-              x={burstAt.x}
+              x={burstAt.x - BURST_NUDGE}
               y={burstAt.y}
               r={BURST_R}
               t={ts}
