@@ -1,6 +1,6 @@
-// The 27-second stopwatch over 3.5 and the start of 3.6 (review 2, idea #1): a small manga stopwatch in the top-right
-// corner whose hand jumps on each heartbeat and stops, with a click of the crown, on the times the panels carry (0, 11,
-// 27 秒) and once more as GRO steps out. The schedule and why it looks like this are in shots.ts (STOPWATCH).
+// The 27-second stopwatch from the end of 3.4 to the start of 3.6 (review 2, idea #1): a small manga stopwatch in the
+// top-right corner that comes up at 0 out of the soft end of 3.4, then jumps on each heartbeat and stops, with a click
+// of the crown, on the times the panels carry (0, 11, 27 秒) and once more as GRO is out of the fire. The schedule and why it looks like this are in shots.ts (STOPWATCH).
 // Drawn over the picture (Scene.tsx), so it stays outside the heat haze and crisp (ART-22). A 60-second dial with no
 // digits: the panels' time labels and 3.6's "27s" are its readout (ART-14: one time on screen at a time).
 import { Easing } from "remotion";
@@ -17,7 +17,7 @@ const CY = 168;
 const R = 66;
 
 const TICKS = STOPWATCH.ticks.map((t) => ({ ...t, f: frameAt(t.at) }));
-const FROM = TICKS[0].f;
+const FROM = frameAt(STOPWATCH.from);
 const OUT = frameAt(STOPWATCH.out);
 const JUMP = 4; // frames the hand takes to land on its new second, overshooting a little like a real hand
 
@@ -48,9 +48,10 @@ const polar = (sec: number, r: number) => {
 };
 
 export const Stopwatch: React.FC<{ f: number }> = ({ f }) => {
-  if (f < FROM || f >= OUT + 12) return null;
+  if (f < FROM || f >= OUT + 18) return null;
   const pop = ramp(f, FROM, FROM + 8);
-  const fade = 1 - ramp(f, OUT, OUT + 12);
+  // the last click lands on OUT, then the watch hands over to 3.6's "27s"
+  const fade = 1 - ramp(f, OUT + 6, OUT + 18);
   const op = pop * fade;
   const scale =
     (0.85 + 0.15 * pop) * (1 - 0.1 * (1 - fade)) * (1 + 0.035 * heartbeat(f));

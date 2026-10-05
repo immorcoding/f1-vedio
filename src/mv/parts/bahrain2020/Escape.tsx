@@ -35,6 +35,7 @@ import {
 import { useGroExit } from "./GroExit";
 import { Haze } from "./haze";
 import { PowderJet } from "./powder";
+import { DefocusFilter } from "./scorch";
 import {
   Flip,
   WRECK_CAM,
@@ -57,6 +58,15 @@ const PATH_X = (() => {
   }
   return max;
 })();
+// the low fire along the rails in front of the cell, scaled: high enough (about 3 m) to hide GRO in the cockpit and
+// on its side from this camera, 3.2 m up
+const FRONT_FIRE = 1.3;
+// and a fire right in front of the cockpit's side, where he climbs out and over it: ~3 m high, so he is behind it
+// until he steps down in front of the rails
+const COVER_FIRE = { x: CLIMB_X - 0.3, z: WALK_Z + 0.75, w: 3.4, h: 3.6 };
+// how far the wreck recedes behind GRO (WreckWorld `recede`)
+const RECEDE = 0.75;
+
 // the side the fire lights someone from, in the unflipped picture
 const rimSideAt = (x: number) => (x < FIRES.back.x ? "right" : "left");
 
@@ -92,7 +102,8 @@ export const escapeCam = (f: number): Camera => {
     // the people at the size they had at 1.18 of the earlier camera (216 px/m on GRO's line); the creep keeps the
     // pace it had when 3.6 cut to black on 72.4
     (216 / WRECK_CAM.pxPerMetre(WALK_Z)) *
-      (1 + (0.05 / 1.18) * ramp(f - shot.from, 0, frameAt(at(72, 4)) - shot.from)),
+      (1 +
+        (0.05 / 1.18) * ramp(f - shot.from, 0, frameAt(at(72, 4)) - shot.from)),
     { x: 1920 - 1090, y: 600 },
   );
 };
@@ -148,20 +159,22 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   const aim = cam.project(AIM);
   const hb = heartbeat(f);
   const text = ramp(f, timeCue, timeCue + 8);
-  // the fire drops a step before 70.3 (the powder knocking it down), so the cockpit's rim and the halo's edge show
-  // round him as he hauls himself out: he reads as coming out of the car (review 1, #20). The low fire in front of
-  // the cell comes down below the rim; the big fire behind it a little. The heat haze keeps its full extent.
-  const lower = ramp(f, shot.from, frameAt(at(70, 3)) - 4);
-  const fireLevel = 1 - 0.15 * lower;
-  const frontFire = 1 - 0.55 * lower;
-  // everyone at the wreck stands in its heat haze with a lighter ripple, so they still read (haze.tsx)
+  // GRO comes out of the fire (user review 2026-10-05, as in the real footage): the low fire along the rails in front
+  // of the cell burns high, between the camera and the cockpit, so while he hauls himself out and over the side he
+  // is behind it, hidden but for glimpses between the tongues; as he steps down in front of the rails he walks out
+  // of it, his legs first (~70.4), all of him by 71.1, as "27s" lands. The wreck recedes behind him.
+  const fireLevel = 1;
+  const frontFire = FRONT_FIRE;
+  // the doctor, a step off GRO's plane, is out of focus (depth of field, below); GRO and the marshal stand in the
+  // heat haze with a light ripple, GRO's the lightest so he is the sharp one (haze.tsx)
   const calmAt = (at: { x: number; z: number }, k: number, s: number) => {
     const base = g(at);
     return { cx: base.x, cy: base.y - 0.95 * s, rx: 0.55 * s * k, ry: 1.0 * s };
   };
   const calm = [
-    calmAt(groAt, 1.1, cam.pxPerMetre(groScaleZ)),
-    calmAt(docAt, 1, ppm(docAt)),
+    ...(layers.body === "front"
+      ? [calmAt(groAt, 1.1, cam.pxPerMetre(groScaleZ))]
+      : []),
     calmAt(MARSHAL_AT, 1, mppm),
   ];
   const figure = (
@@ -193,13 +206,22 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   // the cell), and neither overlaps the marshal
   const people = [
     { z: groAt.z, node: gro.front },
-    { z: docAt.z, node: figure("doc", docAt, docPose, DOCTOR) },
+    {
+      z: docAt.z,
+      node: (
+        <g key="doc" filter="url(#b36-doc-defocus)">
+          {figure("doc", docAt, docPose, DOCTOR)}
+        </g>
+      ),
+    },
     { z: MARSHAL_AT.z, node: marshal },
   ].sort((a, b) => b.z - a.z);
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
         <ToneDefs prefix="b36" />
+        {/* the doctor out of focus (depth of field): GRO is the one in focus */}
+        <DefocusFilter id="b36-doc-defocus" blur={4.5} dim={0.8} />
       </defs>
       <Flip>
         <Haze
@@ -207,7 +229,7 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
           zone={heatZone(cam)}
           falloff={escapeFalloff(cam)}
           calm={calm}
-          calmHaze={{ disp: 8, blur: 1.0 }}
+          calmHaze={{ disp: 5, blur: 0.5 }}
         >
           <WreckWorld
             cam={cam}
@@ -219,6 +241,8 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
             cockpit={gro.cockpit}
             behindRails={gro.behindRails}
             driver={false}
+            recede={RECEDE}
+            coverFire={COVER_FIRE}
           />
           {/* the marshal's powder jet into the front of the cockpit, then everyone, deepest first (it crosses
               behind GRO and the doctor into the cell) */}

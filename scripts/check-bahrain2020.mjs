@@ -4,7 +4,7 @@
 //   under "2020 巴林大奖赛";
 // - the edit list's on-screen text for 3.3, 3.5 and 3.6 carries the same numbers (in English: "67G", "11s", "27s");
 // - the halo note on 3.6 ("HALO · MANDATORY SINCE 2018") matches the year registered in facts.md;
-// - the 27-second stopwatch (STOPWATCH): its hand moves only on a heartbeat (beats 1 and 3 of bars 61–72 and 73.1, not
+// - the 27-second stopwatch (STOPWATCH): it comes up on a heartbeat on its cue (bahrain2020.stopwatch), its hand moves only on a heartbeat (beats 1 and 3 of bars 61–72 and 73.1, not
 //   the impact's 61.1; scripts/make-music.mjs, MOT-6), never runs backwards, stops on 3.5's panels 1, 2 and 4 at the
 //   times their labels show (0s, 11s, 27s) and not on panel 3 (the extinguisher, no verified time, STO-7), ends at the
 //   escape time and hands over on 3.6's "27s" cue.
@@ -79,6 +79,12 @@ if (!text("3.6").includes(`HALO · MANDATORY SINCE ${FACTS.haloMandatorySince}`)
     (p.beat === 1 || p.beat === 3) &&
     key(p) > key({ bar: 61, beat: 1 }) &&
     key(p) <= key({ bar: 73, beat: 1 });
+  if (!heartbeat(STOPWATCH.from))
+    problems.push(`the stopwatch comes up on ${label(STOPWATCH.from)}, not on a heartbeat`);
+  if (key(STOPWATCH.from) !== key(cue("bahrain2020.stopwatch")))
+    problems.push("the stopwatch does not come up on its cue (bahrain2020.stopwatch)");
+  if (key(STOPWATCH.from) > key(STOPWATCH.ticks[0].at))
+    problems.push("the stopwatch ticks before it is on screen");
   let prev = -Infinity;
   let prevSec = 0;
   for (const t of STOPWATCH.ticks) {
@@ -125,7 +131,7 @@ if (!text("3.6").includes(`HALO · MANDATORY SINCE ${FACTS.haloMandatorySince}`)
     problems.push(
       "the stopwatch does not hand over on 3.6's 27s cue (bahrain2020.time)",
     );
-  if (key(last.at) >= key(STOPWATCH.out))
+  if (key(last.at) > key(STOPWATCH.out))
     problems.push("the stopwatch ticks after it hands over");
 }
 

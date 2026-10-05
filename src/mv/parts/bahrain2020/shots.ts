@@ -39,7 +39,8 @@ export const EDIT: PartEdit = {
       to: at(66),
       view: "closeup",
       content:
-        "断成两截的 Haas：前半截（座舱）卡在被撕开、压弯的护栏里（座舱上方的顶层护栏被撕裂，断口卷起，座舱、halo 和头盔露出来），后半截落在赛道一侧；4 小节缓慢推近，64.1 前后飘来的烟短暂散开，露出暗色的断开车尾一次；分层火焰（外焰/中焰/焰心各自闪动）升起，热浪扭曲夜空，火星上飘，墨线烟丝；只剩心跳",
+        "断成两截的 Haas：前半截（座舱）卡在被撕开、压弯的护栏里（座舱上方的顶层护栏被撕裂，断口卷起，座舱、halo 和头盔露出来），后半截落在赛道一侧；4 小节缓慢推近，64.1 前后飘来的烟短暂散开，露出暗色的断开车尾一次；分层火焰（外焰/中焰/焰心各自闪动）升起，热浪扭曲夜空，火星上飘，墨线烟丝；只剩心跳；65.1 起推近到座舱、画面在热浪里发虚（GRO 生死未知），右上角秒表从虚焦里出现，停在 0",
+      cues: [{ id: "bahrain2020.stopwatch", at: at(65) }],
     },
     {
       id: "3.5",
@@ -82,13 +83,16 @@ export const FACTS = {
   haloMandatorySince: 2018, // FIA 2017-07-19: halo on every F1 car from 2018
 } as const;
 
-// The 27-second stopwatch (review 2, idea #1; Stopwatch.tsx): a small dial in the top-right corner from 66.1 to 71.1.
-// Its hand jumps only on the heartbeat (lub on beats 1 and 3, scripts/make-music.mjs; MOT-6) and stops (`stop`, a click
-// of the crown) on the times 3.5's panels carry: 0 秒 on panel 1, 11 秒 on panel 2, 27 秒 on panel 4. It passes panel 3
-// (the extinguisher, no verified time, STO-7) without stopping. In 3.6 it holds at 27 and clicks once more as GRO steps
-// out (70.3); on 71.1 it hands its reading over to 3.6's big "27s" and fades. The dial carries no digits: the panels'
-// labels and 3.6's "27s" are its readout, so no time is on screen twice. Checked by scripts/check-bahrain2020.mjs.
+// The 27-second stopwatch (review 2, idea #1; Stopwatch.tsx): a small dial in the top-right corner from 65.1 to 71.1.
+// It comes up out of the soft, unknown last bar of 3.4 (`from`, the heartbeat on 65.1; user review 2026-10-05) at 0 and
+// waits there; its hand jumps only on the heartbeat (lub on beats 1 and 3, scripts/make-music.mjs; MOT-6) and stops
+// (`stop`, a click of the crown) on the times 3.5's panels carry: 0 秒 on panel 1 (the click that starts it), 11 秒
+// on panel 2, 27 秒 on panel 4. It passes panel 3 (the extinguisher, no verified time, STO-7) without stopping. In 3.6
+// it holds at 27 while the fire hides GRO and clicks once more on 71.1, as he is out of the fire and 3.6's big "27s"
+// lands; then it hands its reading over to that label and fades. The dial carries no digits: the panels' labels and
+// 3.6's "27s" are its readout, so no time is on screen twice. Checked by scripts/check-bahrain2020.mjs.
 export const STOPWATCH = {
+  from: at(65),
   ticks: [
     { at: at(66), seconds: 0, stop: true },
     { at: at(66, 3), seconds: 6 },
@@ -97,7 +101,7 @@ export const STOPWATCH = {
     { at: at(68), seconds: 19 },
     { at: at(68, 3), seconds: 23 },
     { at: at(69), seconds: FACTS.escapeSeconds, stop: true },
-    { at: at(70, 3), seconds: FACTS.escapeSeconds, stop: true },
+    { at: at(71), seconds: FACTS.escapeSeconds, stop: true },
   ],
   out: at(71),
 } as const;

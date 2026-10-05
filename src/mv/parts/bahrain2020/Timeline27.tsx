@@ -29,6 +29,7 @@ import { MedicalCar } from "./MedicalCar";
 import { NightBackdrop } from "./night";
 import { Haze } from "./haze";
 import { PowderJet } from "./powder";
+import { DefocusFilter } from "./scorch";
 import { FACTS } from "./shots.ts";
 import {
   Flip,
@@ -159,8 +160,14 @@ const PanelPry: React.FC<PanelProps> = ({ r, f, age, palette }) => {
     });
   });
   const intensity = 0.4 + 0.3 * ramp(age, 0, 200);
+  // out of focus, as 3.4 ends (65.3): at 0 秒 nobody knows yet whether he is alive (user review 2026-10-05); the
+  // panel stays soft on the page, the 27 秒 panel is the one in focus
   return (
     <g>
+      <defs>
+        <DefocusFilter id="b35-p0-defocus" blur={3.2} dim={0.92} />
+      </defs>
+      <g filter="url(#b35-p0-defocus)">
       <Flip cx={r.x + r.w / 2}>
         <Haze frame={f} zone={heatZone(cam, intensity)} clip={r}>
           <WreckWorld
@@ -191,6 +198,7 @@ const PanelPry: React.FC<PanelProps> = ({ r, f, age, palette }) => {
           ))}
         </Haze>
       </Flip>
+      </g>
       <TimeLabel r={r} corner="tl">
         0s
       </TimeLabel>
@@ -498,6 +506,7 @@ const PanelExtinguisher: React.FC<PanelProps> = ({ r, f, age, palette }) => {
             noGlow
             clip={r}
             tonePrefix="b35"
+            recede={0.5}
           />
           <PowderJet
             from={nozzle}
@@ -569,6 +578,7 @@ const PanelClimb: React.FC<PanelProps> = ({ r, f, age, palette }) => {
             cockpit={gro.cockpit}
             frontFire={0.45}
             tonePrefix="b35"
+            recede={0.85}
           />
         </Haze>
       </Flip>
