@@ -4,8 +4,9 @@
 // spray (his tread holds no water). The cars' treads differ in the side view too: HAM's tyres show the cut sipes,
 // GLO's are smooth. Real speeds (MOT-5): the pass is an explicit slow-motion beat (the road, rain and wheels all slow
 // together) held through bars 47–48; on 47.3 (`brazil2008.p5`) HAM's nose is ~2 m clear and the tags flip, HAM 6 → 5
-// and GLO 5 → 6; on 49.1 (`brazil2008.realTime`) real time snaps back, HAM pulls away up the hill and GLO drops out
-// of the frame behind. No grey haze over the panel: the slow motion reads from the motion alone.
+// and GLO 5 → 6; on 49.1 (`brazil2008.realTime`) real time snaps back and the shot cuts to the plan view (PullAway.tsx,
+// review-2 #4), so this side-on picture is on screen for bars 47–48 only (and in 5.2's mirror flash). No grey haze
+// over the panel: the slow motion reads from the motion alone.
 import { MP4_23, TF108 } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { Sfx } from "../../../kit/lettering";
