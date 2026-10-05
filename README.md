@@ -100,6 +100,8 @@ The stinger was Immor's idea: Claude's mascot Clawd carries a chequered flag and
 | | |
 |---|---|
 | Time | About 3 days (2026-10-03 to 10-05) |
+| Film | 3:43 (3:32 film + stinger), 1920×1080 at 60 fps, 13,388 frames |
+| Score | 128 BPM, D minor, 119 bars (113 film + 6 stinger) |
 | TypeScript / TSX | About 41,000 lines in 192 files, of which about 1,900 lines are throwaway prototypes |
 | Music, audio and check scripts | About 3,400 lines |
 | Standards and docs | About 970 lines, plus a 110-line facts register and a 66-line reference-photo register |
