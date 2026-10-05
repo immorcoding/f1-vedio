@@ -176,8 +176,13 @@ export type CarSpec = {
   // Draw the far wheels at their traced x instead of their near wheels' x (drawnFarWheels); only the approved STR3.
   keepFarWheelX?: true;
   rimR: number;
-  rim: "spoked" | "dark";
+  // "spoked" and "dark": the open 13-inch (and older) rims; "covered": the flat wheel cover over the 18-inch rim that
+  // every car carries from 2022 (2022 Technical Regulations, Art. 3.13.7), with the tyre's compound band just outside
+  // it and the Pirelli logo arcs on the shoulder.
+  rim: "spoked" | "dark" | "covered";
   rimAccent?: string;
+  // the coloured ring round the wheel nut (the 2022 RB18's lime ring), on a covered wheel
+  hubAccent?: string;
   // Default tyre sidewall band colour (Pirelli soft red, hard white, …); a scene can override it per race (CarState).
   // Leave it out for tyres without a coloured band (before 2011: Bridgestone, Goodyear).
   compound?: string;

@@ -12,7 +12,7 @@ import { CarCheck } from "./CarCheck";
 import { FarSideCheck, type FarSideCheckProps } from "./FarSideCheck";
 import { CAR_LOOKS_SIZE, CarLooksCheck } from "./CarLooksCheck";
 import { REAR_WING_LOW_SIZE, RearWingLowCheck } from "./RearWingLowCheck";
-import { CarSheet, SHEETS } from "./CarSheet";
+import { CarSheet, RB18_LOOKS, SHEETS } from "./CarSheet";
 import { CAR_STATES_FRAMES, CarStates } from "./CarStates";
 import { KitSheet } from "./KitSheet";
 import { PeopleHands } from "./PeopleHands";
@@ -65,6 +65,12 @@ export const LibraryFolder: React.FC = () => (
         {...SIZE}
       />
     ))}
+    <Still
+      id="Cars-2022-Looks-Sheet"
+      component={CarSheet}
+      defaultProps={RB18_LOOKS}
+      {...SIZE}
+    />
     <Still
       id="Cars-2021-Top-Sheet"
       component={TopCarSheet}
