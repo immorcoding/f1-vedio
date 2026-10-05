@@ -34,7 +34,7 @@
     "check:overlap": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-overlap.mjs",
     "check:people": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-people.mjs",
     "check:points": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-points.mjs",
-    "render": "cmd /c start \"\" /b /wait /affinity FF node node_modules/@remotion/cli/remotion-cli.js render",
-    "still": "cmd /c start \"\" /b /wait /affinity FF node node_modules/@remotion/cli/remotion-cli.js still"
+    "render": "cmd /c start \"\" /b /wait /affinity F node node_modules/@remotion/cli/remotion-cli.js render",
+    "still": "cmd /c start \"\" /b /wait /affinity F node node_modules/@remotion/cli/remotion-cli.js still"
   }
 }
