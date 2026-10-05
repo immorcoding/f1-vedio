@@ -81,3 +81,23 @@ export const FACTS = {
   medicalCarSeconds: 11, // "医疗车 11 秒内到场"
   haloMandatorySince: 2018, // FIA 2017-07-19: halo on every F1 car from 2018
 } as const;
+
+// The 27-second stopwatch (review 2, idea #1; Stopwatch.tsx): a small dial in the top-right corner from 66.1 to 71.1.
+// Its hand jumps only on the heartbeat (lub on beats 1 and 3, scripts/make-music.mjs; MOT-6) and stops (`stop`, a click
+// of the crown) on the times 3.5's panels carry: 0 秒 on panel 1, 11 秒 on panel 2, 27 秒 on panel 4. It passes panel 3
+// (the extinguisher, no verified time, STO-7) without stopping. In 3.6 it holds at 27 and clicks once more as GRO steps
+// out (70.3); on 71.1 it hands its reading over to 3.6's big "27s" and fades. The dial carries no digits: the panels'
+// labels and 3.6's "27s" are its readout, so no time is on screen twice. Checked by scripts/check-bahrain2020.mjs.
+export const STOPWATCH = {
+  ticks: [
+    { at: at(66), seconds: 0, stop: true },
+    { at: at(66, 3), seconds: 6 },
+    { at: at(67), seconds: FACTS.medicalCarSeconds, stop: true },
+    { at: at(67, 3), seconds: 15 },
+    { at: at(68), seconds: 19 },
+    { at: at(68, 3), seconds: 23 },
+    { at: at(69), seconds: FACTS.escapeSeconds, stop: true },
+    { at: at(70, 3), seconds: FACTS.escapeSeconds, stop: true },
+  ],
+  out: at(71),
+} as const;

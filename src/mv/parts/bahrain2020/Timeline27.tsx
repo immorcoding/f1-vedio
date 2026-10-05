@@ -6,7 +6,7 @@
 //   (no time: not verified) a marshal turns a dry-powder extinguisher on the cockpit;
 //   27 秒  GRO, in his helmet, rises out of the cockpit through the fire, both gloves on the halo, hauling himself up.
 // People from the shared people module (src/kit/figure, ART-16), no faces (ART-5). Each panel has a small time label in
-// a corner the subject is not in (ART-14).
+// a corner the subject is not in (ART-14), the top-left: the page's top-right corner holds the stopwatch.
 import { pinhole, type Camera } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import {
@@ -456,7 +456,8 @@ const PanelMedical: React.FC<PanelProps> = ({ r, f, age, palette }) => {
         {streaks}
         {trails}
       </Flip>
-      <TimeLabel r={r} corner="tr">
+      {/* top-left like the other panels: the top-right corner of the page is the stopwatch's (Stopwatch.tsx) */}
+      <TimeLabel r={r} corner="tl">
         {`${FACTS.medicalCarSeconds}s`}
       </TimeLabel>
     </g>
