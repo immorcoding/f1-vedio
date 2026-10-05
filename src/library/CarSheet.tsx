@@ -2,13 +2,11 @@
 // (ART-7, docs/shape/references/cars-2021-sheet.png). One sheet per car year (SHEETS), registered as Cars-<year>-Sheet.
 import { AbsoluteFill } from "remotion";
 import { CARS, MangaCar, type CarId } from "../cars";
-import type { FarSideCamera } from "../cars/spec";
 import { PAPER } from "../kit/colors";
 
-// Each row: a car with its rear end at screen x and its ground line at screen y; `farSide` is its camera look
-// (ART-26), LOW when left out.
+// Each row: a car with its rear end at screen x and its ground line at screen y.
 export type CarSheetProps = {
-  rows: { car: CarId; x: number; ground: number; farSide?: FarSideCamera }[];
+  rows: { car: CarId; x: number; ground: number }[];
   pxPerMetre: number;
   // Optional top views (track-map cars): rear end at (x, y), nose to the right.
   tops?: { car: CarId; x: number; y: number }[];
@@ -25,10 +23,9 @@ export const CarSheet: React.FC<CarSheetProps> = ({
     <svg width={1920} height={1080}>
       {rows.map((r) => (
         <MangaCar
-          key={`${r.car}-${r.ground}`}
+          key={r.car}
           car={CARS[r.car]}
           at={{ x: r.x, y: r.ground, pxPerMetre }}
-          state={{ farSide: r.farSide }}
         />
       ))}
       {tops.map((t) => (
@@ -106,13 +103,3 @@ export const SHEETS = {
     pxPerMetre: 275,
   },
 } satisfies Record<number, CarSheetProps>;
-
-// The RB18 in its two looks (ART-26) at the 2021 sheet's scale: HIGH (a camera looking down: far wheels, far rear
-// endplate, ground shadow) above LOW (a trackside camera). Registered as Cars-2022-Looks-Sheet.
-export const RB18_LOOKS: CarSheetProps = {
-  rows: [
-    { car: "RB18", x: 180, ground: 490, farSide: "high" },
-    { car: "RB18", x: 180, ground: 1010, farSide: "low" },
-  ],
-  pxPerMetre: 275,
-};

@@ -1,27 +1,27 @@
 // Car looks check (ART-26): the side-view cars in their two looks at one scale, on one ground line, with vertical guides
-// through the near wheel centres. Top: the 2020–22 cars (RB16B first, the reference), each as HIGH before the far
+// through the near wheel centres. Top: the four 2020–21 cars (RB16B first, the reference), each as HIGH before the far
 // wheels were lined up and lowered (user review 2026-10-04), HIGH now and LOW, with the front corner of HIGH and LOW
 // blown up 3×: in LOW the near front endplate hides the nose tip. Bottom: every other car with far wheels, before and
-// after lining them up with the near wheels. Registered as Check-Car-Looks (2400 × 2860).
+// after lining them up with the near wheels. Registered as Check-Car-Looks (2400 × 2560).
 import { AbsoluteFill } from "remotion";
 import { CARS, MangaCar, type CarId, type CarSpec } from "../cars";
 import { carLength, carPoint, type FarSideCamera } from "../cars/spec";
 import { CAPTION_FONT } from "../kit/lettering";
 import { INK, PAPER } from "../kit/colors";
 
-export const CAR_LOOKS_SIZE = { width: 2400, height: 2860 };
+export const CAR_LOOKS_SIZE = { width: 2400, height: 2560 };
 
 const PPM = 80;
 const ZOOM = 3;
 const CORNER = { w: 1.35, h: 0.8 }; // m of the front corner in a blow-up: from the front end back, from the ground up
-const MODERN: CarId[] = ["RB16B", "W12", "AT01", "VF20", "RB18"];
+const MODERN: CarId[] = ["RB16B", "W12", "AT01", "VF20"];
 const OTHERS: CarId[] = ["MP4-23", "F2008", "STR3", "TF108", "MP45-PRO", "F641-PRO", "MP45B-SEN"];
 
-// The car as drawn before this check's change: far wheels at their traced x, and the 2021–22 cars' HIGH far wheels at
+// The car as drawn before this check's change: far wheels at their traced x, and the 2021 cars' HIGH far wheels at
 // the full traced lift.
 const before = (car: CarSpec): CarSpec => {
   const high = car.farSide?.high;
-  const full = /^202[12]/.test(car.name) && high ? { ...high, wheels: car.farWheels } : high;
+  const full = car.name.startsWith("2021") && high ? { ...high, wheels: car.farWheels } : high;
   return { ...car, keepFarWheelX: true, farSide: car.farSide && { ...car.farSide, high: full } };
 };
 

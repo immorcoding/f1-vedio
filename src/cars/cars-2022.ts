@@ -80,28 +80,20 @@ export const RB18: CarSpec = {
     { cx: 536, cy: 572, r: 107 },
     { cx: 1650, cy: 578, r: 108 },
   ],
-  // As the RB16B (ART-26): far wheels at the near wheels' x in both looks.
+  // Only the LOW look (ART-26), as the RB16B's: the RB18 is only ever seen from trackside cameras (outro 6.1, the
+  // post-credits stinger), so it has no HIGH look (user review 2026-10-05).
   farSide: {
-    // HIGH camera: the car as traced (the photo looks down ~13°); far wheels at 53 % of the traced lift, as on the
-    // 2021 cars, mostly hidden behind the body; the ground shadow between the two rows of wheels.
-    high: {
-      wheels: [
-        { cx: 430, cy: 628, r: 107 },
-        { cx: 1603, cy: 631, r: 108 },
-      ],
-      groundShadow: true,
-    },
     low: {
       wheels: [
         { cx: 430, cy: 683, r: 112 },
         { cx: 1603, cy: 683, r: 113 },
       ],
       frontEndplate: { dx: 4, dy: -8, scale: 0.95 },
-      // The low 2022 nose drops behind the near endplate from a low camera, and the wing surface with it: the deck stays
-      // inside the endplate (the generic side-on deck would stick out ahead of its curved top as a thin plank); only
-      // the red flap shows, rising over the endplate's top at the back as the flaps turn up into it.
+      // The low 2022 nose drops behind the near endplate from a low camera, and the wing surface and its flap with it:
+      // both stay inside the endplate (the generic side-on deck would stick out ahead of its curved top as a thin
+      // plank, and the red flap peeked over its top as a stray red piece: user review 2026-10-05).
       frontDeck: "M 190 690 L 270 690 L 270 720 L 190 720 Z",
-      frontFlap: "M 212 671 L 277 655 L 277 671 Z",
+      frontFlap: "M 230 690 L 270 690 L 270 720 L 230 720 Z",
       // LOW camera: the body re-projected from the photo's 13.3° (the far wheels' traced lift over a 1.6 m track) to a
       // 4° trackside camera (seenFrom.ts).
       body: { photoElevation: 13.3, elevation: 4, floorY: 790, podY: 745, noseTo: 580 },
