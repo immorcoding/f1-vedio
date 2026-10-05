@@ -43,8 +43,16 @@ import {
   heartbeat,
   heatZone,
   zoomCam,
+  type NearFire,
 } from "./Wreck";
-import { FIRES, REAR_SPAN, REAR_Z } from "./wreck-geometry.ts";
+import {
+  CELL_FROM,
+  CELL_TO,
+  CELL_Z,
+  FIRES,
+  REAR_SPAN,
+  REAR_Z,
+} from "./wreck-geometry.ts";
 
 // The ground the people cover over the whole shot (GRO from the cockpit back toward the track, the doctor behind
 // him): sampled once, in the wreck view's metres, so the haze's falloff reaches all of it.
@@ -58,12 +66,22 @@ const PATH_X = (() => {
   }
   return max;
 })();
-// the low fire along the rails in front of the cell, scaled: it stays up (about 2 m) while he climbs out
-const FRONT_FIRE = 1.3;
-// and a fire right in front of the cockpit's side, where he climbs out and over it: ~2.3 m high, so his body is in
-// it while his helmet and shoulders read over and through the flames, until he steps down in front of the rails and
-// walks out of it (user review 2026-10-05: he never disappears for long)
-const COVER_FIRE = { x: CLIMB_X - 0.3, z: WALK_Z + 0.75, w: 2.8, h: 2.3 };
+// The fires of 3.6 (user reviews 2026-10-05). While he climbs out they are low: the big fire behind the cell only a
+// little taller than the ones in front (about 2.4 m, not a wall over everything), the low fire along the rails
+// about 1.3 m, and a fire right in front of the cockpit's side, where he climbs out and over it, ~1.7 m: his body is
+// in it, his helmet and shoulders read over and through it, and it never covers him as he walks out. Once he is
+// clear (71.1, in front of the rails, everything of him drawn over the fire) the fire takes the car: over 71.1–71.4
+// it grows round the cell until only the top of the halo and the roll hoop show: he got out just in time.
+const BACK_FIRE = 0.32;
+const FRONT_FIRE = 0.8;
+const COVER_FIRE = { x: CLIMB_X - 0.3, z: WALK_Z + 0.75, w: 2.2, h: 1.7 };
+// the fire over the cell once he is out: across the whole cell, just in front of it
+const ENGULF = {
+  x: (CELL_FROM + CELL_TO) / 2,
+  z: CELL_Z - 0.8,
+  w: CELL_TO - CELL_FROM + 1.0,
+  h: 1.75,
+};
 // how far the wreck recedes behind GRO (WreckWorld `recede`)
 const RECEDE = 0.75;
 
@@ -164,7 +182,14 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
   // is behind it, hidden but for glimpses between the tongues; as he steps down in front of the rails he walks out
   // of it, his legs first (~70.4), all of him by 71.1, as "27s" lands. The wreck recedes behind him.
   const fireLevel = 1;
-  const frontFire = FRONT_FIRE;
+  // the fire taking the car once he is clear of it
+  const take = ramp(f, timeCue, frameAt(at(71, 4)));
+  const frontFire = FRONT_FIRE * (1 + 0.5 * take);
+  const backFire = BACK_FIRE * (1 + 0.6 * take);
+  const nearFires: NearFire[] = [
+    { ...COVER_FIRE, seed: "cover" },
+    { ...ENGULF, h: ENGULF.h * take, seed: "engulf", tongues: 9 },
+  ];
   // the doctor, a step off GRO's plane, is out of focus (depth of field, below); GRO and the marshal stand in the
   // heat haze with a light ripple, GRO's the lightest so he is the sharp one (haze.tsx)
   const calmAt = (at: { x: number; z: number }, k: number, s: number) => {
@@ -227,7 +252,7 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
         <ToneDefs prefix="b36" />
         {/* the doctor and the marshal gently out of focus (depth of field): GRO is the one in focus; kept light so
             it looks like a lens, not a smear (user review 2026-10-05: "don't blur too much") */}
-        <DefocusFilter id="b36-defocus" blur={2} dim={0.92} />
+        <DefocusFilter id="b36-defocus" blur={1.1} dim={0.98} />
       </defs>
       <Flip>
         <Haze
@@ -248,7 +273,8 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
             behindRails={gro.behindRails}
             driver={false}
             recede={RECEDE}
-            coverFire={COVER_FIRE}
+            nearFires={nearFires}
+            backFire={backFire}
           />
           {/* the marshal's powder jet into the front of the cockpit, then everyone, deepest first (it crosses
               behind GRO and the doctor into the cell) */}

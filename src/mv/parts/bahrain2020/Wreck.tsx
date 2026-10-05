@@ -94,6 +94,16 @@ export const heatZone = (cam: Camera, intensity = 1): ScreenRect => {
   return { x: left, y: top, w: right - left, h: bottom - top };
 };
 
+// A fire in front of the cell (WreckWorld `nearFires`), V metres.
+export type NearFire = {
+  x: number;
+  z: number;
+  w: number;
+  h: number;
+  seed: string;
+  tongues?: number;
+};
+
 // The barrier as the impact left it (wreck-geometry.ts): all three rails torn open along the cell, their ends curled.
 export { RUN, WRECK_BEND, WRECK_GAPS, CELL_FROM };
 
@@ -161,9 +171,11 @@ export const WreckWorld: React.FC<{
   // 0–1: the wreck recedes, darker, so GRO (drawn crisp in `cockpit`, `behindRails` or over it) is
   // the subject (user review 2026-10-05; ART-23); the fire is the light and stays as it is
   recede?: number;
-  // a fire between the camera and the cockpit, in the same layer as the low fire (in front of someone in the cockpit
-  // or out over its side, behind someone who has stepped down in front of the rails): ground point in V metres
-  coverFire?: { x: number; z: number; w: number; h: number };
+  // fires between the camera and the cell, in the same layer as the low fire (in front of someone in the cockpit or
+  // out over its side, behind someone who has stepped down in front of the rails): ground point, size in V metres
+  nearFires?: readonly NearFire[];
+  // the big fire behind the cell, scaled
+  backFire?: number;
 }> = ({
   cam,
   f,
@@ -181,7 +193,8 @@ export const WreckWorld: React.FC<{
   burntOut = false,
   veilOpen = 0,
   recede = 0,
-  coverFire,
+  nearFires = [],
+  backFire = 1,
 }) => {
   const p = noGlow
     ? { ...FIRE_PALETTES[palette], glow: null }
@@ -193,7 +206,12 @@ export const WreckWorld: React.FC<{
     const ppm = cam.pxPerMetre(z);
     return { x: base.x, y: base.y, w: w * ppm, h: h * ppm };
   };
-  const back = fireAt(FIRES.back.x, FIRES.back.z, FIRES.back.w, FIRES.back.h);
+  const back = fireAt(
+    FIRES.back.x,
+    FIRES.back.z,
+    FIRES.back.w,
+    FIRES.back.h * backFire,
+  );
   const front = fireAt(
     FIRES.front.x,
     FIRES.front.z,
@@ -399,18 +417,21 @@ export const WreckWorld: React.FC<{
           clip={clip}
         />
       )}
-      {coverFire && !burntOut
-        ? (() => {
-            const c = fireAt(coverFire.x, coverFire.z, coverFire.w, coverFire.h);
+      {burntOut
+        ? null
+        : nearFires.map((n, i) => {
+            if (n.h <= 0) return null;
+            const c = fireAt(n.x, n.z, n.w, n.h);
             return (
               <Fire
+                key={n.seed}
                 x={c.x}
                 y={c.y}
                 w={c.w}
                 h={c.h}
-                frame={f + 23}
-                seed={`wreck-cover${fireSeed}`}
-                tongues={5}
+                frame={f + 23 + 11 * i}
+                seed={`wreck-${n.seed}${fireSeed}`}
+                tongues={n.tongues ?? 5}
                 embers={5}
                 palette={noLight}
                 intensity={intensity}
@@ -418,8 +439,7 @@ export const WreckWorld: React.FC<{
                 clip={clip}
               />
             );
-          })()
-        : null}
+          })}
       {burntOut ? null : (
         <Fire
           x={gapFire.x}
