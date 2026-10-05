@@ -47,6 +47,9 @@ export const bodyWarp = (car: CarSpec, v: BodyView): PointWarp => {
   const c2 = Math.cos(rad(v.elevation));
   const aFloor = (g - v.floorY) / ppm;
   const aPod = (g - v.podY) / ppm;
+  // the floor edge's depth: shared, or backed out from a given true height (BodyView.floorHeight)
+  const floorDepth =
+    v.floorHeight === undefined ? FLOOR_DEPTH : (aFloor - v.floorHeight * c1) / s1;
   const front = car.nearWheels[0].cx;
   // the nose: its depth from the traced underside at D-D, its tip moved to NOSE_BEHIND_ENDPLATE (the nose stretched
   // or squeezed between the tip and noseTo)
@@ -58,7 +61,7 @@ export const bodyWarp = (car: CarSpec, v: BodyView): PointWarp => {
     const a = (g - y) / ppm;
     const body =
       a <= aPod
-        ? lerp(FLOOR_DEPTH, POD_DEPTH, (a - aFloor) / (aPod - aFloor))
+        ? lerp(floorDepth, POD_DEPTH, (a - aFloor) / (aPod - aFloor))
         : lerp(POD_DEPTH, CENTRE, (a - aPod) / (TOP_HEIGHT - aPod));
     const nose = 1 - Math.max(0, Math.min(1, (x - front) / (v.noseTo - front)));
     const d = lerp(body, noseDepth, nose);

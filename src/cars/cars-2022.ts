@@ -85,8 +85,9 @@ export const RB18: CarSpec = {
   farSide: {
     low: {
       wheels: [
+        // level, one size: 2022 tyres are 720 mm front and rear
         { cx: 430, cy: 683, r: 112 },
-        { cx: 1603, cy: 683, r: 113 },
+        { cx: 1603, cy: 683, r: 112 },
       ],
       frontEndplate: { dx: 4, dy: -8, scale: 0.95 },
       // The low 2022 nose drops behind the near endplate from a low camera, and the wing surface and its flap with it:
@@ -95,8 +96,11 @@ export const RB18: CarSpec = {
       frontDeck: "M 190 690 L 270 690 L 270 720 L 190 720 Z",
       frontFlap: "M 230 690 L 270 690 L 270 720 L 230 720 Z",
       // LOW camera: the body re-projected from the photo's 13.3° (the far wheels' traced lift over a 1.6 m track) to a
-      // 4° trackside camera (seenFrom.ts).
-      body: { photoElevation: 13.3, elevation: 4, floorY: 790, podY: 745, noseTo: 580 },
+      // 4° trackside camera (seenFrom.ts). The floor edge (786 on the photo; the dark below it is the floor's shadow)
+      // stands 0.085 m above the ground (user review 2026-10-05: read at the 2020–21 cars' 0.35 m depth it sank into
+      // the ground). The photo shows it 0.068 m up from 13°, so the car at speed runs lower; 0.085 m is the raised floor edge
+      // of a 2022 car at rest, and leaves a paper gap over the contact shadow like the RB16B's.
+      body: { photoElevation: 13.3, elevation: 4, floorY: 786, floorHeight: 0.085, podY: 745, noseTo: 580 },
     },
   },
   rimR: 75, // the 18-inch rim (457 mm) under its cover
@@ -106,8 +110,8 @@ export const RB18: CarSpec = {
   body:
     "M 104 694 C 150 672 230 652 330 624 C 400 604 450 572 510 556 L 600 541 L 700 534 L 760 530 L 1000 528 L 1068 526 " +
     "L 1072 500 C 1072 470 1074 452 1080 442 L 1095 436 L 1190 433 L 1250 437 L 1300 446 L 1350 456 L 1420 469 L 1480 485 " +
-    "L 1545 502 L 1600 532 L 1660 565 L 1700 592 L 1842 600 L 1846 655 L 1720 670 L 1700 700 L 1520 765 L 1490 790 " +
-    "L 600 796 L 585 790 L 576 702 C 470 702 360 704 260 706 C 190 708 140 710 108 708 Z",
+    "L 1545 502 L 1600 532 L 1660 565 L 1700 592 L 1842 600 L 1846 655 L 1720 670 L 1700 700 L 1520 765 L 1490 786 " +
+    "L 600 786 L 585 782 L 576 702 C 470 702 360 704 260 706 C 190 708 140 710 108 708 Z",
   regions: {
     cover:
       "M 1068 440 L 1190 433 L 1300 446 L 1420 469 L 1545 502 L 1660 565 L 1720 640 C 1600 652 1460 642 1350 630 C 1250 622 1140 604 1060 594 Z",
@@ -116,7 +120,7 @@ export const RB18: CarSpec = {
     sidepod:
       "M 752 600 C 800 586 900 580 1000 586 C 1130 596 1250 620 1350 630 C 1460 642 1600 652 1720 640 L 1700 700 L 1500 762 C 1300 758 1100 745 960 718 C 880 700 800 676 758 662 Z",
     undercut:
-      "M 576 652 L 756 662 C 800 676 880 700 960 718 C 1100 745 1300 758 1500 762 L 1490 792 L 600 798 L 585 790 Z",
+      "M 576 652 L 756 662 C 800 676 880 700 960 718 C 1100 745 1300 758 1500 762 L 1490 788 L 600 788 L 585 784 Z",
     chassis:
       "M 400 600 L 510 556 L 600 541 L 760 530 L 1068 526 L 1060 594 C 1000 586 900 580 800 588 L 752 600 L 758 662 L 576 652 L 576 702 L 400 704 Z",
   },
@@ -125,7 +129,9 @@ export const RB18: CarSpec = {
   glints: [
     "M 1100 440 L 1160 438 L 1150 446 L 1104 448 Z",
   ],
-  floor: "M 590 788 L 1495 778 L 1492 790 L 595 798 Z",
+  // the floor edge, level along the car at the photo's 776–786 (the old trace ran down to 798 at the front, into the
+  // floor's shadow, and tilted the car nose-down)
+  floor: "M 590 776 L 1495 776 L 1492 786 L 595 786 Z",
   frontWing: {
     // The 2022 near endplate (ART-12, ART-17), a quarter-rounded block (user review 2026-10-05): flat top at the
     // photo's "ESSO" panel top (669), straight vertical rear edge facing the front wheel (279), flat bottom (797), the

@@ -67,6 +67,10 @@ export type BodyView = {
   photoElevation: number; // deg, the trace photo's camera (out/review/v2-far-side/perspective.md)
   elevation: number; // deg, the camera the look is drawn for
   floorY: number; // photo y of the floor edge, mid-car
+  // The floor edge's true height above the ground, m, where the photo can't give it: its depth is then backed out from
+  // this height (as the nose's is from NOSE_DD_HEIGHT) instead of the shared FLOOR_DEPTH (0.35 m, the 2020–21 cars).
+  // The RB18's photo shows the floor edge 0.068 m up from 13°: read at 0.35 m deep it sank below the ground.
+  floorHeight?: number;
   podY: number; // photo y of the sidepod's lower line, mid-car
   noseTo: number; // photo x where the nose has blended into the body
 };
