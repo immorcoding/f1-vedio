@@ -338,7 +338,10 @@ const BANNER_H = 270;
 const BANNER_TILT = -3;
 const STRIP = 34;
 
-export const FlagTitle: React.FC<{ st: ShotTime }> = ({ st }) => {
+export const FlagTitle: React.FC<{ st: ShotTime; title?: string }> = ({
+  st,
+  title = TITLE,
+}) => {
   useLettering();
   const t0 = cueS("outro.title");
   const tf = t0 + st.t;
@@ -352,8 +355,13 @@ export const FlagTitle: React.FC<{ st: ShotTime }> = ({ st }) => {
   const punch = Math.max(0, 1 - since / 0.3) ** 2;
   const shakeX = punch * 12 * Math.sin(st.t * 97);
   const shakeY = punch * 9 * Math.cos(st.t * 83);
-  const tw = titleWidth(TITLE, TITLE_SIZE);
-  const ty = 540 + TITLE_SIZE * 0.26; // baseline: the caps centred on the banner, a little above for the strip
+  // a longer title (the #34 candidates) shrinks to keep a margin on the banner
+  const size = Math.min(
+    TITLE_SIZE,
+    (TITLE_SIZE * 1500) / titleWidth(title, TITLE_SIZE),
+  );
+  const tw = titleWidth(title, size);
+  const ty = 540 + size * 0.26; // baseline: the caps centred on the banner, a little above for the strip
   const sq = Math.round(STRIP * 0.42);
   const checks = Math.round(tw / sq);
   const strip = Math.max(0, Math.min(1, (since - glintAt) / 0.3));
@@ -409,8 +417,8 @@ export const FlagTitle: React.FC<{ st: ShotTime }> = ({ st }) => {
             <TitleText
               x={960 - tw / 2 + 8}
               y={ty}
-              size={TITLE_SIZE}
-              text={TITLE}
+              size={size}
+              text={title}
               colour={INK}
             />
             <CircuitTag
@@ -426,7 +434,7 @@ export const FlagTitle: React.FC<{ st: ShotTime }> = ({ st }) => {
             {/* the ping: a glint on the title's top right */}
             {g > 0.01 ? (
               <g
-                transform={`translate(${960 + tw / 2 - 10} ${ty - TITLE_SIZE * 0.8}) rotate(${20 * g})`}
+                transform={`translate(${960 + tw / 2 - 10} ${ty - size * 0.8}) rotate(${20 * g})`}
                 opacity={Math.min(1, g * 1.6)}
               >
                 <path
@@ -444,3 +452,12 @@ export const FlagTitle: React.FC<{ st: ShotTime }> = ({ st }) => {
     </div>
   );
 };
+
+// Review still for #34: the outro title card as it stands at outro bar 7 beat 4 (banner in, strip wiped in), with a
+// candidate film title in place of the shipped one. Library > Checks > Check-Outro-Title.
+export const OutroTitleCandidate: React.FC<{ title: string }> = ({ title }) => (
+  <FlagTitle
+    st={shotAt(EDIT, frameAt(cueAt(EDIT, "outro.titleGlint")) + FPS / 2)}
+    title={title}
+  />
+);

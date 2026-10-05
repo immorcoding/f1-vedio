@@ -4,6 +4,7 @@
 import { Composition, Folder, Still } from "remotion";
 import { CARS, type CarId } from "../cars";
 import type { TrackId } from "../tracks";
+import { OutroTitleCandidate } from "../mv/parts/outro/Flag";
 import { T5Panel } from "../scenes/abu-dhabi-2021/T5Panel";
 import { Cars2020States, FireSheet } from "./Bahrain2020Sheets";
 import { BahrainGeometry } from "./BahrainGeometry";
@@ -119,15 +120,33 @@ export const LibraryFolder: React.FC = () => (
       />
     ))}
     <Folder name="Checks">
-      <Still id="Check-Bahrain-Geometry" component={BahrainGeometry} {...SIZE} />
+      <Still
+        id="Check-Outro-Title"
+        component={OutroTitleCandidate}
+        defaultProps={{ title: "F1 · 1989–2021" }}
+        {...SIZE}
+      />
+      <Still
+        id="Check-Bahrain-Geometry"
+        component={BahrainGeometry}
+        {...SIZE}
+      />
       <Still
         id="Check-Far-Side"
         component={FarSideCheck}
         defaultProps={FAR_SIDE_ROWS}
         {...SIZE}
       />
-      <Still id="Check-Car-Looks" component={CarLooksCheck} {...CAR_LOOKS_SIZE} />
-      <Still id="Check-Rear-Wing-Low" component={RearWingLowCheck} {...REAR_WING_LOW_SIZE} />
+      <Still
+        id="Check-Car-Looks"
+        component={CarLooksCheck}
+        {...CAR_LOOKS_SIZE}
+      />
+      <Still
+        id="Check-Rear-Wing-Low"
+        component={RearWingLowCheck}
+        {...REAR_WING_LOW_SIZE}
+      />
       {(Object.keys(CARS) as CarId[]).map((car) => (
         <Still
           key={`trace-${car}`}
