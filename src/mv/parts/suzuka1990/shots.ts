@@ -12,7 +12,14 @@ export const EDIT: PartEdit = {
       view: "title",
       content:
         "1989 那一页（1.1 的成品：减速弯圈和放大小格、“TEAM-MATES · RIVALS”）翻过去，下一页是同一条铃鹿，圈落在 1 号弯；PRO 的头盔格落在 1.2 的左上位置，第 23 小节翻面，同一顶头盔从 McLaren 红白换到法拉利红；镜头推向发车直道",
-      text: ["SUZUKA 1990", "SUZUKA INTERNATIONAL RACING COURSE", "PRO MOVES TO FERRARI", "78 VS 69", "SEN", "PRO"],
+      text: [
+        "SUZUKA 1990",
+        "SUZUKA INTERNATIONAL RACING COURSE",
+        "PRO MOVES TO FERRARI",
+        "78 VS 69",
+        "SEN",
+        "PRO",
+      ],
       cues: [
         { id: "suzuka1990.flip", at: at(22, 1) },
         { id: "suzuka1990.move", at: at(23, 1) },
@@ -51,13 +58,19 @@ export const EDIT: PartEdit = {
       to: at(33),
       view: "panel",
       content:
-        "尘土落定，两车停在缓冲区；30.2 画面压暗，1.2/1.4 的两格头盔放大回到左右对称的位置、面对面：30.4 PRO（法拉利）盖“1989 CHAMPION”，31.2 SEN 盖“1990 CHAMPION”（与 1.4 同款红章），31.4 最后一行小字；缓推到第 32 小节末尾切",
-      text: ["1989 CHAMPION", "1990 CHAMPION", "SEN LATER ADMITTED IT WAS DELIBERATE"],
+        "尘土落定，两车停在缓冲区；30.2 画面压暗，1.2/1.4 的两格头盔放大回到左右对称的位置、面对面：30.4 PRO（法拉利）盖“1989 CHAMPION”，31.2 SEN 盖“1990 CHAMPION”（与 1.4 同款红章），31.4 最后一行小字；缓推到第 32 小节末尾；32.4 的通鼓滚奏上翻页（同 1.5 的翻页）：前三下通鼓各把右下角掀起一点，第四下整页翻走，33.1 落在巴西标题卡上",
+      text: [
+        "1989 CHAMPION",
+        "1990 CHAMPION",
+        "SEN LATER ADMITTED IT WAS DELIBERATE",
+      ],
       cues: [
         { id: "suzuka1990.helmets", at: at(30, 2) },
         { id: "suzuka1990.stamp89", at: at(30, 4) },
         { id: "suzuka1990.stamp90", at: at(31, 2) },
         { id: "suzuka1990.admitted", at: at(31, 4) },
+        // the page turns over to Brazil on the tom run into 33.1 (#34)
+        { id: "suzuka1990.pageTurn", at: at(32, 4) },
       ],
     },
   ],
