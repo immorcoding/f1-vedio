@@ -4,20 +4,23 @@
 // the pose the wreck has in every later shot. Filmed from the wreck camera's spot (square to the car's flank, 3.2 m up,
 // a little wider), so the rails cross in front of the nose at the angle they keep after the cut; the picture is
 // flipped like the wreck's, so the car runs left → right as in 3.2. The contact lands on the bar's first beat; then an
-// explicit slow motion of the 0.1 s that matter (MOT-5): sparks spray off the rails from the frame it touches, the
+// explicit slow motion of the 0.1 s that matter (MOT-5): sparks spray from the frame it touches, off the far front
+// corner where it meets the rails and on along them, behind the car (ground.ts scrapeAt); the
 // middle rail splits back from the first touch as the nose slides on through it, the top and bottom rails bend back
 // and split along the survival cell — their torn ends curling up and back, the gap every later shot shows
 // (wreck-geometry.ts TEARS, tornCurl) — the car breaks at the engine bulkhead — the power unit and rear left behind on
 // the track side — and the fuel cell bursts into a fireball, carbon shards flying. On the last beats the frame freezes
 // into white paper and black line, an impact star round the nose with 67G, the fireball still burning in colour
-// (facts.md; FIA accident investigation summary).
+// (facts.md; FIA accident investigation summary). The ground comes from the same model (ground.ts): the run-off, the
+// track's white edge line and the barrier's foot run to one vanishing point, the tyre marks along the 29° path to
+// another, so the 51° between the car and the rails reads on screen (review-2 #1).
 import { random } from "remotion";
 import { MangaCar, VF20, carLength } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { BubbleSmoke, FIRE_PALETTES, Fireball } from "../../../kit/fire";
 import { BigText } from "../../../kit/lettering";
 import { focusLines } from "../../../kit/lines";
-import { ToneDefs } from "../../../kit/tone";
+import { ToneDefs, tone } from "../../../kit/tone";
 import { BentGuardrail, bump, type Deflection } from "./bent-rail";
 import { BREAK_PIVOT, carPointOnScreen } from "./car-points";
 import { ramp, shotById, type PictureProps } from "./common";
@@ -31,16 +34,22 @@ import {
   IMPACT_POINT,
   PATH_DIR,
   PIERCE,
+  PPM,
   RUN,
   RUN_DIR_V,
+  RUN_W,
   TEARS,
   TRACKWARD_V,
   along,
   dirToView,
   runS,
+  toView,
   tornCurl,
+  type P2,
 } from "./wreck-geometry.ts";
+import { EDGE_LINE, TRACK_EDGE_Y, TRACK_FAR_Y, scrapeAt } from "./ground.ts";
 import { FACTS } from "./shots.ts";
+import type { Camera } from "../../../kit/camera";
 
 // The wreck camera, opened up a little and framed on the whole slide, from the first touch to the rest pose.
 export const IMPACT_CAM = zoomCam(WRECK_CAM, { x: 2.2, y: 0.5, z: 8.6 }, 0.95, {
@@ -79,6 +88,175 @@ const gapAt = (travel: number, rail: number): [number, number] => {
   return [c + (a - c) * g, c + (b - c) * g];
 };
 const RUN_LEN = Math.hypot(RUN.b.x - RUN.a.x, RUN.b.z - RUN.a.z);
+
+// ── The ground (ground.ts): what the car and the rails stand on, so the 51° reads (review-2 #1) ─────────────────────
+// The run-off in 3.2's mid tone between the track's white edge line and the barrier, the track beyond the line in its
+// light tone, the ground behind the barrier left dark; the barrier's foot as a line along the ground; and the tyre marks
+// the car lays down along its 29° path. The edge line and the barrier's foot run to one vanishing point, the tyre marks
+// to another, and the car is square to the camera: the three directions of the top view, on screen.
+const NEAR_Z = 0.5; // the ground in front of the camera
+const FAR = 3000; // metres up and down the barrier, to the horizon
+const pathOf = (cam: Camera, ps: { x: number; z: number }[]) =>
+  ps
+    .map((p, i) => {
+      const s = cam.project(p);
+      return `${i ? "L" : "M"} ${s.x.toFixed(1)} ${s.y.toFixed(1)}`;
+    })
+    .join(" ");
+// A ground polygon given on the top view, through the camera: clipped to the ground in front of it.
+const groundPolygon = (cam: Camera, ps: P2[]) => {
+  const v = ps.map(toView);
+  const out: { x: number; z: number }[] = [];
+  v.forEach((a, i) => {
+    const b = v[(i + 1) % v.length];
+    if (a.z >= NEAR_Z) out.push(a);
+    if (a.z >= NEAR_Z !== b.z >= NEAR_Z) {
+      const k = (NEAR_Z - a.z) / (b.z - a.z);
+      out.push({ x: a.x + (b.x - a.x) * k, z: NEAR_Z });
+    }
+  });
+  return out.length > 2 ? `${pathOf(cam, out)} Z` : "";
+};
+// a band of ground along the barrier, between W y0 and y1
+const band = (cam: Camera, y0: number, y1: number) =>
+  groundPolygon(cam, [
+    { x: -FAR, y: y0 },
+    { x: FAR, y: y0 },
+    { x: FAR, y: y1 },
+    { x: -FAR, y: y1 },
+  ]);
+const MARK_W = 0.3; // a tyre's sliding mark, m
+const MARK_LEN = 80; // back up the path, out of the picture
+// The car's tyres where the picture draws them (VF-20, the high far side, ART-26), as points on the ground in V: the
+// near tyres stand at the car's depth; the far ones, drawn higher, stand where the ground is that high on screen.
+const tyresOnGround = (
+  cam: Camera,
+  at: { x: number; y: number },
+  depth: number,
+  front: number, // V x shift of the front piece, metres
+  rear: number,
+) => {
+  const ppm = cam.pxPerMetre(depth);
+  const far = VF20.farSide?.high?.wheels ?? VF20.farWheels;
+  const onGround = (
+    w: { cx: number; cy: number; r: number },
+    dx: number,
+    near: boolean,
+  ) => {
+    const sx = at.x + ((w.cx - VF20.frame.x) / PPM + dx) * ppm;
+    if (near) return { x: (sx - cam.cx) / ppm, z: depth };
+    const sy = at.y + ((w.cy + w.r - VF20.frame.ground) / PPM) * ppm;
+    const z = (cam.f * cam.height) / (sy - cam.horizon);
+    return { x: ((sx - cam.cx) * z) / cam.f, z };
+  };
+  return [
+    onGround(far[0], front, false),
+    onGround(far[1], rear, false),
+    onGround(VF20.nearWheels[0], front, true),
+    onGround(VF20.nearWheels[1], rear, true),
+  ];
+};
+// One tyre's mark: a band from the tyre back along the path, darkest under the tyre.
+const tyreMark = (cam: Camera, p: { x: number; z: number }) => {
+  const n = { x: -PATH_V.z * (MARK_W / 2), z: PATH_V.x * (MARK_W / 2) };
+  const back = { x: p.x - PATH_V.x * MARK_LEN, z: p.z - PATH_V.z * MARK_LEN };
+  return `${pathOf(cam, [
+    { x: p.x + n.x, z: p.z + n.z },
+    { x: back.x + n.x, z: back.z + n.z },
+    { x: back.x - n.x, z: back.z - n.z },
+    { x: p.x - n.x, z: p.z - n.z },
+  ])} Z`;
+};
+
+// ── Sparks (review-2 #1): off the far side where it scrapes the rails ────────────────────────────────────────────────
+// They start on the contact frame at the right front-wing corner (IMPACT_POINT), then come off wherever the car's far
+// side is scraping the barrier (ground.ts scrapeAt), thrown on along the rails in the direction the car is sliding,
+// glancing back off the rail faces toward the track and up, falling; each one a streak in the 3-D world through the
+// camera. Behind the car's middle they are drawn behind the car.
+const SPARK_N = 110;
+const SPARK_G = 0.008; // m per frame², slowed with the picture
+// A spark is behind the car until it is this much nearer the camera than the car's depth (the drawn car's near side,
+// with a margin for the bodywork and the rails it is passing): it never covers the near side of the car.
+const SPARK_CLEAR = 2.6;
+type Spark = {
+  head: { x: number; y: number };
+  tail: { x: number; y: number };
+  depth: number; // V z of the head
+  w: number;
+  op: number;
+};
+const sparksAt = (cam: Camera, ts: number): Spark[] =>
+  Array.from({ length: SPARK_N }, (_, i): Spark | null => {
+    // a burst on the touch, then all through the slide
+    const born = i < 18 ? (i % 3) * 0.5 : Math.floor(((i * 0.618) % 1) * 58);
+    const life = 12 + ((i * 7) % 11);
+    const age = ts - born;
+    if (age < 0 || age > life) return null;
+    // where the far side was scraping when it was struck off, or a little way back along the scraped stretch
+    const tb = stage(born).travel;
+    const back = i % 3 === 0 ? ((i * 0.37) % 1) * Math.min(tb, 1.2) : 0;
+    const o = scrapeAt(Math.max(0, tb - back));
+    const rail = RAILS[i % 4 === 3 ? 2 : i % 2];
+    const y0 = rail[0] + (rail[1] - rail[0]) * ((i * 0.29) % 1);
+    // on along the rails (W +x), glancing off toward the track (−y) and up
+    const v = 0.22 + ((i * 5) % 9) * 0.03 + (i < 18 ? 0.08 : 0);
+    const a = ((1 + ((i * 0.381) % 1) * 13) * Math.PI) / 180;
+    const e = ((2 + ((i * 0.233) % 1) * 16) * Math.PI) / 180;
+    const pos = (s: number) => {
+      const w = toView({
+        x: o.x + v * Math.cos(e) * Math.cos(a) * s,
+        y: o.y - v * Math.cos(e) * Math.sin(a) * s,
+      });
+      const y = Math.max(
+        0.02,
+        y0 + v * Math.sin(e) * s - 0.5 * SPARK_G * s * s,
+      );
+      return { ...w, y };
+    };
+    const h = pos(age);
+    const t = pos(Math.max(0, age - 4));
+    if (h.z < 1.5) return null; // past the camera
+    return {
+      head: cam.project(h),
+      tail: cam.project(t),
+      depth: h.z,
+      w: 3 + (i % 4) * 1.2,
+      op: Math.min(1, 1.6 * (1 - age / life)),
+    };
+  }).filter((s): s is Spark => s !== null);
+const SparkStreaks: React.FC<{ sparks: Spark[]; ink: boolean }> = ({
+  sparks,
+  ink,
+}) => (
+  <>
+    {sparks.map((s, i) => (
+      <g key={i} opacity={ink ? 1 : s.op}>
+        <path
+          d={`M ${s.tail.x} ${s.tail.y} L ${s.head.x} ${s.head.y}`}
+          stroke={INK}
+          strokeWidth={s.w + 3}
+          strokeLinecap="round"
+        />
+        {ink ? null : (
+          <>
+            <path
+              d={`M ${s.tail.x} ${s.tail.y} L ${s.head.x} ${s.head.y}`}
+              stroke="#ffa31a"
+              strokeWidth={s.w}
+              strokeLinecap="round"
+            />
+            <path
+              d={`M ${(s.tail.x + s.head.x) / 2} ${(s.tail.y + s.head.y) / 2} L ${s.head.x} ${s.head.y}`}
+              stroke="#fffbe6"
+              strokeWidth={s.w * 0.55}
+              strokeLinecap="round"
+            />
+          </>
+        )}
+      </g>
+    ))}
+  </>
+);
 
 const star = (
   cx: number,
@@ -183,49 +361,15 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
   });
   // the stretch of the barrier down the run from where it crosses the car's plane is nearer than the car: in front
   const splitU = along((A.z - CELL_Z) / RUN_DIR_V.z);
-  // sparks off the rails: streaks thrown back and up from the contact, under gravity, every frame
-  const sparks = Array.from({ length: 46 }, (_, i) => {
-    const born = (i * 37) % 44;
-    const age = ts - born;
-    if (age < 0 || age > 16) return null;
-    const ang = -Math.PI * (0.05 + ((i * 0.618) % 1) * 0.55);
-    const v = 16 + ((i * 7) % 11) * 2.2;
-    const pos = (a: number) => ({
-      x: hit.x + MX * Math.cos(ang) * v * a,
-      y: hit.y + Math.sin(ang) * v * a + 0.45 * a * a,
-    });
-    return { a: pos(Math.max(0, age - 2.5)), b: pos(age), w: 3 + (i % 3) };
-  }).filter((s) => s !== null);
-  // the spark shower along the rails the car scrapes: from the stretch it has slid along so far — the first touch on
-  // the contact frame, then on down the run as it goes through (no sparks before the car reaches the rails) — on each
-  // rail's face, thrown back (away from the car's travel) and up in long streaks
-  const scraped = travel * PATH_DIR.x + 0.15;
-  const scrape = Array.from({ length: 120 }, (_, i) => {
-    const born = (i * 13) % 52;
-    const life = 10 + (i % 7);
-    const age = ts - born;
-    if (age < 0 || age > life || frozen) return null;
-    const s = S_TOUCH + scraped * ((i * 0.618) % 1);
-    const u = Math.max(0, Math.min(1, s / RUN_LEN));
-    const rail = RAILS[i % 3];
-    const o = CAM.project({
-      x: RUN.a.x + (RUN.b.x - RUN.a.x) * u,
-      y: (rail[0] + rail[1]) / 2,
-      z: RUN.a.z + (RUN.b.z - RUN.a.z) * u,
-    });
-    const ang = -Math.PI * (0.02 + ((i * 0.377) % 1) * 0.32);
-    const v = 22 + ((i * 11) % 13) * 2.4;
-    const pos = (a: number) => ({
-      x: o.x + MX * Math.cos(ang) * v * a,
-      y: o.y + Math.sin(ang) * v * a + 0.6 * a * a,
-    });
-    return {
-      a: pos(Math.max(0, age - 4)),
-      b: pos(age),
-      w: 4.5 + (i % 4) * 1.3,
-      op: Math.min(1, 1.6 * (1 - age / life)),
-    };
-  }).filter((s) => s !== null);
+  // sparks off the far side where it scrapes the rails, from the contact frame on: behind the car's middle they go
+  // behind it (in the freeze, all of them in ink on top)
+  const sparks = sparksAt(CAM, ts);
+  const sparksBehind = frozen
+    ? []
+    : sparks.filter((s) => s.depth > A.z - SPARK_CLEAR);
+  const sparksFront = sparks.filter((s) => s.depth <= A.z - SPARK_CLEAR);
+  // the tyres on the ground as drawn: the front ones on the front piece, the rear ones on the piece left behind
+  const tyres = tyresOnGround(CAM, at, A.z, -front.dx, -rear.dx);
   // a spray of fine carbon bits off the nose and the break (the finer-particle language of the Abu Dhabi lock-up
   // smoke): many small dark flecks, flung out and falling, each seen for a moment and gone (user review 2026-10-04:
   // the big shards read as stickers)
@@ -311,13 +455,7 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
         <Flip>
           {frozen ? (
             <>
-              <rect
-                x={-200}
-                y={-200}
-                width={2320}
-                height={1480}
-                fill={PAPER}
-              />
+              <rect x={-200} y={-200} width={2320} height={1480} fill={PAPER} />
               <path d={focusLines(nose.x, nose.y, 380, 140, 61)} fill={INK} />
               <path
                 d={star(nose.x, nose.y, 210, 470, 14, 0.3)}
@@ -335,7 +473,38 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
               />
             </>
           ) : (
-            <FloodlitNight cam={CAM} tonePrefix="b33" id="b33-night" />
+            <>
+              <FloodlitNight cam={CAM} tonePrefix="b33" id="b33-night" />
+              <path d={band(CAM, TRACK_EDGE_Y, 0)} fill={tone("mid", "b33")} />
+              <path
+                d={band(CAM, TRACK_FAR_Y, TRACK_EDGE_Y)}
+                fill={tone("light", "b33")}
+              />
+              <path
+                d={band(CAM, TRACK_EDGE_Y - EDGE_LINE, TRACK_EDGE_Y)}
+                fill={PAPER}
+                stroke={INK}
+                strokeWidth={2.5}
+                strokeLinejoin="round"
+              />
+              {/* the barrier's foot */}
+              <path
+                d={pathOf(CAM, [
+                  toView({ x: -FAR, y: 0 }),
+                  toView({ x: RUN_W.to, y: 0 }),
+                ])}
+                stroke={INK}
+                strokeWidth={4}
+              />
+              {tyres.map((p, i) => (
+                <path
+                  key={`m${i}`}
+                  d={tyreMark(CAM, p)}
+                  fill={INK}
+                  opacity={0.62}
+                />
+              ))}
+            </>
           )}
           {lineArt(
             <>
@@ -350,6 +519,7 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
                 gaps={gaps}
                 tonePrefix="b33"
               />
+              <SparkStreaks sparks={sparksBehind} ink={false} />
               <MangaCar
                 car={VF20}
                 facing="left"
@@ -419,44 +589,7 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
               opacity={s.op}
             />
           ))}
-          {scrape.map((s, i) => (
-            <g key={`r${i}`} opacity={s.op}>
-              <path
-                d={`M ${s.a.x} ${s.a.y} L ${s.b.x} ${s.b.y}`}
-                stroke={INK}
-                strokeWidth={s.w + 4}
-                strokeLinecap="round"
-              />
-              <path
-                d={`M ${s.a.x} ${s.a.y} L ${s.b.x} ${s.b.y}`}
-                stroke="#ffa31a"
-                strokeWidth={s.w}
-                strokeLinecap="round"
-              />
-              <path
-                d={`M ${(s.a.x + s.b.x) / 2} ${(s.a.y + s.b.y) / 2} L ${s.b.x} ${s.b.y}`}
-                stroke="#fffbe6"
-                strokeWidth={s.w * 0.55}
-                strokeLinecap="round"
-              />
-            </g>
-          ))}
-          {sparks.map((s, i) => (
-            <g key={`s${i}`}>
-              <path
-                d={`M ${s.a.x} ${s.a.y} L ${s.b.x} ${s.b.y}`}
-                stroke={INK}
-                strokeWidth={s.w + 2}
-                strokeLinecap="round"
-              />
-              <path
-                d={`M ${s.a.x} ${s.a.y} L ${s.b.x} ${s.b.y}`}
-                stroke={frozen ? INK : "#fff1b8"}
-                strokeWidth={s.w}
-                strokeLinecap="round"
-              />
-            </g>
-          ))}
+          <SparkStreaks sparks={sparksFront} ink={frozen} />
         </Flip>
       </g>
       {frozen ? (
