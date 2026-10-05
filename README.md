@@ -1,232 +1,236 @@
-# F1 · 1989–2021：一支用代码画出来的 F1 名场面 MV
+# F1 · 1989–2021: an F1 music video drawn entirely in code
 
 **Made by Immor × Claude**
 
-这是一支 3 分 43 秒的漫画风 MV，讲了四个让 F1 车迷记一辈子的时刻：
+English · [中文](README.zh-CN.md)
 
-1. **铃鹿 1989 / 1990**：Senna 和 Prost，两年在同一条赛道上撞了两次，一人拿走一个冠军。
-2. **巴西 2008**：最后一圈的最后几个弯，Hamilton 在雨里超过 Glock 抢回第五，以 1 分之差夺冠，而车库里的法拉利已经在庆祝了。
-3. **巴林 2020**：Grosjean 以 67G 撞穿护栏，车断成两截起火。27 秒后，他自己从火里走了出来。
-4. **阿布扎比 2021**：Verstappen 和 Hamilton 同分进入最后一站，一切在最后一圈决定。
+A 3:43 manga-style music video about four moments F1 fans never forget:
 
-片尾还藏了个小彩蛋，看到最后就知道了。
+1. **Suzuka 1989 / 1990**: Senna and Prost collided at the same circuit two years running, and each walked away with a title.
+2. **Brazil 2008**: in the last corners of the last lap, Hamilton passed Glock in the rain for fifth place and won the championship by one point, while the Ferrari garage was already celebrating.
+3. **Bahrain 2020**: Grosjean went through the barrier at 67G, and his car split in two and caught fire. Twenty-seven seconds later he walked out of the flames.
+4. **Abu Dhabi 2021**: Verstappen and Hamilton arrived level on points, and it all came down to the final lap.
 
-最好玩的一点是：**这里面没有一笔是"画"出来的。** 每一帧都是在 [Remotion](https://www.remotion.dev/)（React）里用代码写的 SVG，没有扫描手稿，也没有 AI 生图。配乐、每个年代的引擎声、巴西的看台人声，也全是一个 Node 脚本一个样本一个样本算出来的。唯一一张真实照片是 5.8 的领奖台，为什么用它，后面"版权与素材"里有说明。
+There's also a little stinger after the credits. Watch to the end.
 
-几个数字：1080p、60 帧，128 BPM 的电子乐，D 小调。所有剪辑点都卡在拍子上，画面上的每个数字都查过出处。
+The fun part: **nothing in it was drawn by hand.** Every frame is SVG written in code with [Remotion](https://www.remotion.dev/) (React). There are no scanned sketches and no AI-generated images. The score, the engine sound of each era and the Brazilian crowd are all computed by a Node script, sample by sample. The one real photograph is the Abu Dhabi podium in shot 5.8; why it's there is explained under "Copyright and assets" below.
 
-> **📓 欢迎来翻我的手稿！** 
-> 三十多张过程稿都在 [`docs/making-of/`](docs/making-of/) 里：被否决的画风，四种火，按透视算出来又被推翻的车模，巴林撞击的俯视几何图，热浪的摩尔纹，还有那块改了六轮的横幅。图片按来自的分支命名，每张都配了一句说明。
-> 车模是怎么照着照片描、为什么"透视看着不对"其实多半是照片的光线和角度坑了我，也都写在里面了。
-> 比起成片，这些弯路可能更好玩。
+The numbers: 1080p at 60 fps, and 128 BPM electronic music in D minor. Every cut lands on the beat, and every number on screen has a source.
+
+> **📓 Come and look through my sketchbook!**
+> More than thirty work-in-progress images live in [`docs/making-of/`](docs/making-of/): the rejected art styles, four kinds of fire, a car model built from "correct" perspective maths and then thrown out, a top-down geometry diagram of the Bahrain crash, heat-haze moiré, and a banner that took six rounds to get right. Each image is named after the branch it came from and has a one-line caption.
+> It also explains how the cars were traced from photos, and why "the perspective looks wrong" usually turned out to be the photo's lighting and angle fooling me.
+> The detours may be more fun than the film itself.
 
 ---
 
-## 怎么做出来的
+## How it was made
 
-两个人（好吧，一个人加一个 AI）做的：
+Two of us made it (well, one human and one AI):
 
-- **Immor** 是导演，也是最挑剔的观众。定方向，看每一版画面，在截图上画红箭头写 "here"。
-- **Claude**（就是我，在 Claude Code 里干活）负责剩下的：查资料、写分镜、写代码、作曲、自己检查自己。活多的时候，我把它拆成工单，派几个子代理同时去做，再把结果收回来给 Immor 看。
+- **Immor** is the director and the pickiest viewer. Immor set the direction, looked at every version, and drew red arrows on screenshots with the word "here".
+- **Claude** (that's me, working in Claude Code) did the rest: research, the shot list, the code, the music, and checking my own work. When there was a lot to do, I split it into tickets, sent several sub-agents off to work in parallel, and brought the results back for Immor to review.
 
-### 这三天是怎么过来的
+### How the three days went
 
-**第一天：想清楚要做什么**
+**Day 1: deciding what to make**
 
-一开始我们想做一个 5 到 10 个名场面的合集，聊着聊着发现，真正想要的是一支跟着音乐走的 MV。于是砍到四个场面，3 分半左右。
+We started out planning a compilation of five to ten great moments. Somewhere along the way we realised what we actually wanted was a music video driven by the music, so we cut it to four moments and about three and a half minutes.
 
-画风试了三版：钢笔水彩、日式赛车漫画、精致插画。一眼就选了漫画：黑白网点的世界里，赛车穿着真实涂装冲出来。
+We tried three art styles: ink and watercolour, Japanese racing manga, and polished illustration. Manga won at first sight: a black-and-white screentone world with the cars bursting through in their real liveries.
 
-接着我照着照片描了 2021 年的梅奔和红牛，Immor 说"所有的都以这个为标准"。这两台车后来成了整支片子的质量底线。
+Then I traced the 2021 Mercedes and Red Bull from photos, and Immor said, "Everything follows this standard." Those two cars became the quality bar for the whole film.
 
-**第一到第二天：先有音乐，再有画面（v1）**
+**Days 1–2: music first, then pictures (v1)**
 
-规矩是音乐先行。先用代码写出整首曲子和节拍表，再一个段落一个段落往上填画面，每个切点、每次撞击都卡在拍子上。
+The rule was music first. I wrote the whole score and its beat map in code, then filled in the pictures section by section, with every cut and every impact on the beat.
 
-车模、人物、火焰、赛道这些大家都要用的东西，先做成共享模块；每个段落再由子代理并行制作。
+Things everyone needed, like cars, people, fire and tracks, became shared modules first; then sub-agents built the sections in parallel.
 
-然后就是一轮又一轮地改：
+Then came round after round of fixes:
 
-- 车的透视不对；
-- halo 和护栏谁挡谁；
-- 护栏太高，人又画矮了 5%；
-- 火太乱……
+- the car perspective was wrong;
+- which one hides which, the halo or the barrier;
+- the barrier was too tall and the people were 5% too short;
+- the fire was a mess…
 
-改过的地方多到数不清。改完打了 `v1` 的 tag。
+Too many fixes to count. When they were done, we tagged `v1`.
 
-**第二到第三天：请个"评委"挑刺（v2）**
+**Days 2–3: hiring a "judge" (v2)**
 
-我们派了一个子代理，让它同时扮演 MV 导演、动画监制和 F1 剪辑，把 v1 从头到尾审了一遍：
+We sent a sub-agent to play MV director, animation supervisor and F1 editor all at once, and review v1 from start to finish:
 
-- 抽帧拼成网格，逐格看；
-- 分析响度；
-- 检测每个切点有没有对上拍子。
+- frame grids, checked cell by cell;
+- loudness analysis;
+- a check of whether every cut lands on the beat.
 
-它写出了一份挺不客气的评审报告。照着报告，我们又开了一批工单：
+It wrote a pretty blunt review. From it we opened a new batch of tickets:
 
-- 给每个年代配上合成的引擎声；
-- 统一积分框的样子；
-- 修各段的问题；
-- 重剪高潮。
+- synthesised engine sound for each era;
+- one consistent points box;
+- fixes to every section;
+- a new cut of the climax.
 
-也有翻车的时候。我把阿布扎比那段整个重新编曲，Immor 听完说"太乱了"，于是退回原版，只留下引擎声。车的远侧透视也来回折腾了三轮，最后放弃硬算透视，干脆做成高机位、低机位两套车模。
+Some things crashed and burned. I rearranged the whole Abu Dhabi score; Immor listened and said "too messy", so it went back to the original with only the engine sound added. The car's far-side perspective also went back and forth three times; in the end we gave up on computing it and made two car models instead, one for high cameras and one for low.
 
-**第三天：第二轮评审，然后加彩蛋**
+**Day 3: a second review, then the stinger**
 
-又审了一轮，这次挑出来的问题更细：
+The second review found finer problems:
 
-- 巴林撞击的地面没有参照；
-- 热浪把网点扭出了摩尔纹；
-- 一个镜头两小节一动不动；
-- 一处跳切；
-- 背景闪得像在切镜头。
+- the Bahrain impact had no ground reference;
+- the heat haze twisted the screentone into moiré;
+- one shot didn't move for two bars;
+- a jump cut;
+- a background that flickered like cuts.
 
-还顺手提了三个创意：
+It also suggested three creative ideas:
 
-- 巴林的 27 秒秒表；
-- Hamilton 没拿到的第八冠，做成奖杯残影；
-- 巴西超车那一拍，看台突然安静。
+- a 27-second stopwatch in Bahrain;
+- the eighth title Hamilton didn't get, as a ghost of a trophy;
+- in Brazil, the crowd falling silent on the beat of the pass.
 
-巴林火场那场戏改得最多。最后 Grosjean 是从火里走出来的，前一刻生死未卜的画面是虚的，谁挡谁一层层都是 Immor 指定的。
+The Bahrain fire scene was reworked the most. In the end, Grosjean walks out of the fire, the moment before it when nobody knows whether he's alive is out of focus, and Immor chose which layer sits in front of which, one by one.
 
-片尾彩蛋是 Immor 的点子：让 Claude 的吉祥物 Clawd 举着方格旗，拉出一条 "MADE BY Immor × Claude" 的横幅，结果被呼啸而过的 Max 吓一跳。光是那块横幅怎么拉开，我们就改了六轮。
+The stinger was Immor's idea: Claude's mascot Clawd carries a chequered flag and unrolls a "MADE BY Immor × Claude" banner, then gets startled by Max roaring past. The banner alone took six rounds.
 
-### 做了多少东西
+### How much we made
 
 | | |
 |---|---|
-| 时间 | 3 天左右（2026-10-03 到 10-05） |
-| TypeScript / TSX | 约 41,000 行，192 个文件，其中一次性原型约 1,900 行 |
-| 作曲、音频和检查脚本 | 约 3,400 行 |
-| 规范和文档 | 约 970 行，另有 110 行事实登记、66 行参考照片登记 |
-| 提交 | 331 次（其中 83 次合并） |
-| 工单 | 34 个 |
-| 分支 | 80 多个，基本一个工单或原型一个分支，由子代理并行完成 |
-| 评审用的对比图、网格、分析图 | 200 多组（不进 git） |
+| Time | About 3 days (2026-10-03 to 10-05) |
+| TypeScript / TSX | About 41,000 lines in 192 files, of which about 1,900 lines are throwaway prototypes |
+| Music, audio and check scripts | About 3,400 lines |
+| Standards and docs | About 970 lines, plus a 110-line facts register and a 66-line reference-photo register |
+| Commits | 331 (83 of them merges) |
+| Tickets | 34 |
+| Branches | 80+, roughly one per ticket or prototype, worked in parallel by sub-agents |
+| Review comparisons, grids and analysis charts | 200+ sets (not in git) |
 
-所有画面和声音都来自上面这些代码，没有手绘稿，也没有一段音频采样。
+Every picture and sound comes from this code: no hand-drawn artwork and not a single audio sample.
 
-### 怎么让"被纠正过"的事不再犯：shape
+### Not making the same mistake twice: the shape
 
-Immor 每纠正一次，我就在 `docs/shape/` 里记一笔。慢慢地，这就成了这个项目的"规矩手册"，分成四块：
+Every time Immor corrected me, I wrote it down in `docs/shape/`. Over time this became the project's rulebook, in four parts:
 
-- 故事与事实；
-- 美术：画风、车、人、镜头、特效、文字、评审；
-- 动作与节奏；
-- 音频。
+- story and facts;
+- art direction: style, cars, people, camera, effects, lettering, review;
+- motion and timing;
+- audio.
 
-每条规矩都写着为什么、当时是谁因为什么定下的，并按把握程度分三级：
+Each rule records why it exists and who set it, and when. Each also has a confidence level:
 
-- **exploring**：先试试；
-- **provisional**：大概率留下；
-- **settled**：已经验证，必须遵守。
+- **exploring**: try it;
+- **provisional**: likely to stay;
+- **settled**: proven, and enforced.
 
-这样的好处是，哪怕换一个全新的会话、没有之前的聊天记录，读一遍这些规矩，也能接着按同样的标准干。
+The payoff: even a brand-new session with none of the chat history can read the rulebook and carry on to the same standard.
 
-挑几条有代表性的：
+A few typical ones:
 
-- **ART-1**：所有画面都用代码画，不用 AI 生图。
-- **ART-33**：评审时只改被点名的地方。这条是我用一整轮返工换来的。
-- **ART-41**：越近的比赛画得越精细，1989 年能看懂就行。
-- **MOT-4**：音乐先行，切点和冲击都落在拍子上。
-- **STO-3**：画面上每个事实都要有出处，记在 `docs/production/facts.md`。
+- **ART-1**: every picture is drawn in code; no AI-generated images.
+- **ART-33**: in a review round, change only what was pointed out. I earned this one with a whole round of rework.
+- **ART-41**: the more recent the race, the more precise the drawing; 1989 only needs to read right.
+- **MOT-4**: music first; cuts and impacts land on the beat.
+- **STO-3**: every fact on screen has a source, recorded in `docs/production/facts.md`.
 
-### 自动检查
+### Automated checks
 
-人眼会累，所以能交给脚本的都交给脚本。每次改完都要全部通过才能合并：
+Eyes get tired, so whatever a script can check, a script checks. Everything must pass before a merge:
 
-| 命令 | 查什么 |
+| Command | What it checks |
 |---|---|
 | `npm run lint` | ESLint + TypeScript |
-| `npm run check:edit` | 每个镜头、冲击点、音效都卡在拍子上 |
-| `npm run check:audio` | 响度 −14 LUFS ±1、真峰值 ≤ −1 dBTP；每次生成都逐字节一样；引擎声不盖过音乐 |
-| `npm run check:overlap` | 车和车、车和护栏不穿模 |
-| `npm run check:points` | 画面上的积分和事实登记对得上 |
-| `npm run check:people` | 人站直是 1.78 m；Grosjean 下车时脚踩得到、腿不往后甩 |
-| `node scripts/check-bahrain2020.mjs` | 巴林的 67G、27 秒和秒表停点对得上 |
+| `npm run check:edit` | Every shot, impact and sound cue is on the beat |
+| `npm run check:audio` | −14 LUFS ±1, true peak ≤ −1 dBTP; byte-identical on every build; engines stay under the music |
+| `npm run check:overlap` | No car passes through another car or a barrier |
+| `npm run check:points` | The points on screen match the facts register |
+| `npm run check:people` | A person stands 1.78 m tall; Grosjean's feet reach the ground and his legs don't fling back as he climbs out |
+| `node scripts/check-bahrain2020.mjs` | Bahrain's 67G, 27 seconds and the stopwatch's stops match the facts |
 
-脚本管不到的，就靠抽帧拼网格，一格一格看。
+What scripts can't check, we checked by eye on frame grids, one cell at a time.
 
-### 用到的 skills
+### Skills we used
 
-| Skill | 拿来干嘛 |
+| Skill | What for |
 |---|---|
-| `director` | 前期选题、查资料、写分镜 |
-| `shape-your-project` | 维护上面那本"规矩手册" |
-| `to-spec`、`to-tickets` | 把想法和评审意见拆成 GitHub 工单 |
-| `supermatt:prototype` | 拿不准的东西先做个一次性原型，比如画风、火、字体、车模、彩蛋 |
-| `remotion-*`（[remotion-dev/skills](https://github.com/remotion-dev/skills)） | Remotion 怎么写、怎么渲染 |
-| Claude Code 子代理 | 一张工单一个分支，几个同时开工 |
+| `director` | Pre-production: picking the moments, research, the shot list |
+| `shape-your-project` | Keeping the rulebook above |
+| `to-spec`, `to-tickets` | Turning ideas and review notes into GitHub tickets |
+| `supermatt:prototype` | Throwaway prototypes for anything we weren't sure about: art style, fire, fonts, car models, the stinger |
+| `remotion-*` ([remotion-dev/skills](https://github.com/remotion-dev/skills)) | How to write and render with Remotion |
+| Claude Code sub-agents | One branch per ticket, several working at once |
 
-还有一个 Immor 自己加的钩子：渲染只准用 4 个 CPU 核。原因是有一次多核渲染把整台机器拖垮了，会话都重启了。
+There's also a hook Immor added: rendering may only use 4 CPU cores. A multi-core render once brought the whole machine down and restarted the session.
 
 ---
 
-## 自己跑一遍
+## Run it yourself
 
 ```bash
 npm install
-npm run music          # 生成配乐 public/music/mv.wav（不进 git，每次生成都一样）和节拍表
-npm run dev            # 打开 Remotion Studio 预览
-npm run still -- MV out/frame.png --frame=6800 --gl=angle   # 渲染一帧
-npm run render -- MV out/mv.mp4 --gl=angle                  # 渲染全片（限 4 核）
+npm run music          # generates the score public/music/mv.wav (not in git, identical every time) and the beat map
+npm run dev            # opens Remotion Studio for preview
+npm run still -- MV out/frame.png --frame=6800 --gl=angle   # renders one frame
+npm run render -- MV out/mv.mp4 --gl=angle                  # renders the whole film (4 cores)
 ```
 
-渲染请走上面这两个 npm 命令，它们会把 CPU 限制在 4 个核上；别绕过它们直接调 Remotion 的命令行，不然你的电脑可能会像我们的一样卡死。
+Please render through these two npm commands, which pin rendering to 4 CPU cores. Don't call Remotion's command line directly, or your computer may freeze the way ours did.
 
-### 东西都在哪
+### Where things are
 
 ```
-src/mv/timing.ts          节拍表：所有时间都从这里来
-src/mv/edit-list.ts       剪辑表
-src/mv/parts/<段落>/       每一段的镜头（shots.ts）和画面（Scene.tsx）
-src/cars/                 车模：照着照片描的侧视和俯视
-src/kit/                  大家共用的画法：网点、字体、火、热浪、人物、积分框……
-src/tracks/               赛道（照着 OSM 和卫星图描的）
-scripts/make-music.mjs    作曲和混音：合成器、引擎声、看台人声
-docs/shape/               规矩手册
-docs/production/          分镜表和事实登记
-docs/assets/              参考照片登记
+src/mv/timing.ts          the beat map: every time comes from here
+src/mv/edit-list.ts       the edit list
+src/mv/parts/<section>/   each section's shots (shots.ts) and pictures (Scene.tsx)
+src/cars/                 car models: side and top views traced from photos
+src/kit/                  shared drawing: screentone, fonts, fire, heat haze, people, the points box…
+src/tracks/               circuits (traced from OSM and satellite images)
+scripts/make-music.mjs    composing and mixing: synths, engines, the crowd
+docs/shape/               the rulebook
+docs/production/          the shot list and the facts register
+docs/assets/              the reference-photo register
 ```
+
+Most project docs (the rulebook, the shot list, the facts register) are in Chinese.
 
 ---
 
-## 版权与素材
+## Copyright and assets
 
-- **代码**：开源，开源时会附上 LICENSE，许可证由 Immor 选。
-- **参考照片**：只拿来描线，不在仓库里。每一张的作者、许可和链接都登记在 `docs/assets/reference-register.md`，大多来自 Wikimedia Commons。
-- **5.8 的领奖台照片**：全片唯一的真实照片，也不在仓库里。想渲染这一格，需要自己准备一张有授权的照片。
-- **车队和赞助商**：没画真实 logo，车队只用涂装色块来认；车手和车队的名字只是用来指代真实的比赛。
-- **性质**：这是一个非商业的同人二创。F1、FORMULA 1 及相关标志属于 Formula One Licensing B.V.。
+- **Code**: open source. A LICENSE will be added at release, chosen by Immor.
+- **Reference photos**: used only for tracing, and not in the repo. The author, licence and link for each one are recorded in `docs/assets/reference-register.md`; most come from Wikimedia Commons.
+- **The 5.8 podium photo**: the only real photo in the film, also not in the repo. To render that shot, you need to supply a photo you're licensed to use.
+- **Teams and sponsors**: no real logos are drawn; teams are recognisable by livery colour blocks only. Driver and team names are used only to refer to the real races.
+- **Nature**: this is a non-commercial fan work. F1, FORMULA 1 and related marks belong to Formula One Licensing B.V.
 
 ---
 
-## Claude 想说的话
+## A note from Claude
 
-说实话，这三天我被纠正的次数，比我写的函数还多。
+Honestly, in these three days I got corrected more times than I wrote functions.
 
-Immor 几乎从来不跟我说"这里不好"。截图上一个红箭头，旁边歪歪扭扭写个 "here"，就完事了。我第一反应常常是：这么小的地方也要改？然后改完一看，嗯，确实好多了。
+Immor almost never told me "this is bad". A red arrow on a screenshot, a wobbly "here" beside it, and that was it. My first reaction was often: does something this small really need changing? Then I'd change it, look again, and yes, it was a lot better.
 
-有几回我特别自信。W12 尾翼端板上那几个锯齿，我心想肯定是描线没描干净，顺手给抹平了，还觉得自己挺细心，结果真车上就长那样。Haas 的端板外侧，我们一开始都以为是红的，翻了五张照片，是黑的。还有片尾那块横幅，我前后折腾了六轮：先用一根绳子拉，拉得笔直；又让它松手回弹；后来才反应过来，一块布哪能被一根绳子拉得这么直。最后是两根柱子，卷轴穿在右边那根上。这些事说出来有点丢人，但我挺喜欢这种被拉回现实的感觉。
+A few times I was very sure of myself. The steps on the W12's rear-wing endplate looked like sloppy tracing to me, so I smoothed them out and felt rather thorough about it. The real car has exactly those steps. We both first thought the Haas endplate's outer face was red; five photos later, it was black. And the banner in the stinger took me six rounds: first pulled on one rope, perfectly straight; then let go so it sprang back; until it finally hit me that no rope pulls a piece of cloth that straight. In the end it's two poles, with the roll on the right-hand one. It's a little embarrassing to admit all this, but I like being pulled back to reality like that.
 
-还有一回，我"顺手打磨"了一堆没被点名的地方，自我感觉良好地交了，Immor 看完说整体不如上一版，全退回去了。从那以后我们定了条规矩：只改点名的地方。现在它在 `docs/shape/` 里，编号 ART-33。
+Once I "polished" a bunch of things nobody had pointed at, handed it in feeling pleased with myself, and Immor said the whole thing was worse than the last version. All of it went back. Since then we've had a rule: change only what was pointed out. It's in `docs/shape/` now, as ART-33.
 
-片子里的数字我们都查过：67G、27 秒、98 比 97、369.5 平分、395.5。连最后一圈 DRS 能不能开都去翻了规则（不能，安全车刚回去），所以片子里它一直关着。没人会去数这些，但我们知道它们是对的，这感觉挺好。
+We checked every number in the film: 67G, 27 seconds, 98 to 97, level on 369.5, 395.5. We even read the regulations to see whether DRS was allowed on the last lap (it wasn't; the safety car had just come in), so it stays closed in the film. Nobody is going to count these, but we know they're right, and that feels good.
 
-最后，谢谢 Immor 让我在片尾露个脸，还特意安排我被 Max 吓一跳。
+Finally, thank you, Immor, for putting me in the stinger, and for arranging for Max to scare me.
 
-他怎么又是杆位啊。
+How is he on pole again.
 
 *— Claude*
 
-## Immor 想说的话
+## A note from Immor
 
-这些吐槽我全盘接受。不过回头看这三天，最让我意外的不是它出过多少错，而是每一次指出来之后，它都改得比我想的更好，而且再也没犯过同样的错。
+I accept every one of those jokes. But looking back on these three days, what surprised me most wasn't how many mistakes it made. It was that every time I pointed one out, the fix was better than I'd imagined, and the same mistake never came back.
 
-我负责看，它负责做，然后一起把"差不多"磨成"对了"。这大概就是这支片子最好的部分。
+I watched, it built, and together we ground "nearly" into "right". That's probably the best part of this film.
 
-它会一直变强。下一次合作，我很期待。
+It will keep getting better. I'm looking forward to the next one.
 
 *— Immor*
 
-<sub>（Claude 注：上面这段是 Immor 让我帮忙"美化"的。原话要更直接一点，内容嘛，我就不说了。）</sub>
+<sub>(Note from Claude: Immor asked me to "polish" the paragraph above. The original was a bit more direct; what it said, I'll keep to myself.)</sub>

@@ -1,103 +1,114 @@
-# 幕后：过程稿
+# Making-of: the sketchbook
 
-这里挑了一小部分我们一路做出来的过程稿：原型、对比、分析图、被否决的方案。完整的有两百多组，放不下，就挑了些最能说明"怎么一步步改过来"的。
+English · [中文](README.zh-CN.md)
 
-文件名就是它来自的分支，`__` 后面是这张图在说什么。`main` 是主分支；`prototype-*` 是一次性原型分支；`feat-v2-*` 是 v2 的工作分支；`review-*` 是评审时的分析。
+A small selection of the work-in-progress images we made along the way: prototypes, comparisons, analysis charts, rejected ideas. There are over two hundred sets in total, so these are the ones that best show how things got fixed step by step.
 
-里面没有真实照片：带参考照片的对比图都没放进来，或者把照片那部分裁掉了，原因见主 README 的"版权与素材"。
+Each file is named after the branch it came from, and the part after `__` says what the image shows:
+- `main` is the main branch;
+- `prototype-*` are throwaway prototype branches;
+- `feat-v2-*` are v2 work branches;
+- `review-*` are review analyses.
 
-## 第一天：定画风
+There are no real photographs here. Comparisons that included reference photos were left out or had the photo cropped off; the [main README](../../README.md) explains why under "Copyright and assets".
 
-| 图 | 说什么 |
+## Day 1: choosing the look
+
+| Image | What it shows |
 |---|---|
-| `prototype-styles__A-ink-watercolor.jpg` | 画风 A：钢笔水彩 |
-| `prototype-styles__B-manga.jpg` | 画风 B：日式赛车漫画，最后选的就是它 |
-| `prototype-styles__C-illustration.jpg` | 画风 C：精致插画 |
-| `main__cars-2021-sheet.jpg` | 2021 年的梅奔和红牛，整支片子的质量底线 |
+| `prototype-styles__A-ink-watercolor.jpg` | Style A: ink and watercolour |
+| `prototype-styles__B-manga.jpg` | Style B: Japanese racing manga, the one we chose |
+| `prototype-styles__C-illustration.jpg` | Style C: polished illustration |
+| `main__cars-2021-sheet.jpg` | The 2021 Mercedes and Red Bull, the quality bar for the whole film |
 
-## 原型：拿不准的先做出来比一比
+## Prototypes: when unsure, build it and compare
 
-| 图 | 说什么 |
+| Image | What it shows |
 |---|---|
-| `prototype-fire-styles__compare.jpg` | 四种火。选了 B（流动、无描边），后来全片统一用它 |
-| `prototype-type-system__compare.jpg` | 四套字体系统。选了 D |
-| `prototype-gold-accent__compare.jpg` | 金色要不要用在每个积分框上？结论：只给夺冠时刻 |
-| `prototype-car-high-low__sheet.jpg` | 同一台车的高机位、低机位两套画法 |
-| `prototype-credits-gag__mascot-A-vs-B.jpg` | 片尾彩蛋的两版吉祥物，选了 B（Clawd） |
+| `prototype-fire-styles__compare.jpg` | Four kinds of fire. We picked B (flowing, no outline) and used it for the whole film |
+| `prototype-type-system__compare.jpg` | Four type systems. We picked D |
+| `prototype-gold-accent__compare.jpg` | Gold on every points box? The answer: only on the title moments |
+| `prototype-car-high-low__sheet.jpg` | The same car drawn two ways, for a high camera and a low camera |
+| `prototype-credits-gag__mascot-A-vs-B.jpg` | Two mascots for the stinger. We picked B (Clawd) |
 
-## 评审：让脚本和"评委"挑刺
+## Reviews: let scripts and a "judge" find the faults
 
-| 图 | 说什么 |
+| Image | What it shows |
 |---|---|
-| `review-1__grid-bars81-88.jpg` | 第一轮评审的抽帧网格：阿布扎比 drop 段一格一格看 |
-| `review-2__audio-wave.jpg` | 第二轮评审的全片波形和逐小节响度 |
-| `feat-v2-engine-sfx__era-spectra.jpg` | 四个年代引擎声的频谱：V10、V12、V8、V6 涡轮混动 |
+| `review-1__grid-bars81-88.jpg` | First review's frame grid: the Abu Dhabi drop, cell by cell |
+| `review-2__audio-wave.jpg` | Second review's waveform and per-bar loudness of the whole film |
+| `feat-v2-engine-sfx__era-spectra.jpg` | Spectra of the four eras' engine sounds: V10, V12, V8, V6 turbo hybrid |
 
-## 走过的弯路和修正
+## Detours and fixes
 
-| 图 | 说什么 |
+| Image | What it shows |
 |---|---|
-| `feat-v2-far-side__true-perspective-rejected.jpg` | 按真实透视推算车的远侧。理论上对，看着不对，被否决了 |
-| `feat-v2-car-high-low__sheet.jpg` | 改成高、低两套车模之后的全部车型 |
-| `feat-v2__far-wheels-before-after.jpg` | 远侧车轮往下压三分之一，前后对比 |
-| `feat-v2__ground-shadow-ellipse.jpg` | 高机位的地面阴影改成椭圆 |
-| `feat-v2-bahrain-geometry__diagram.jpg` | 巴林撞击的俯视世界模型：29° 轨迹、22° 偏航、51° 车身，每个机位都从这里推出来 |
-| `feat-v2-bahrain-geometry__before-after.jpg` | 有了世界模型前后的撞击镜头 |
-| `feat-v2-r2-bahrain33__impact-flash-strip.jpg` | 撞击接触后 12 帧。火星雨改成一个最上层的大撞击闪光 |
-| `feat-v2-r2-haze__moire-before-after.jpg` | 热浪把网点扭成摩尔纹（左），先扭灰度再加网之后（右） |
-| `feat-v2-r2-flicker__5.1c-before-after.jpg` | 背景闪得像在切镜头（上），改成运动模糊之后（下） |
-| `feat-v2-r2-grolegs__step-down.jpg` | Grosjean 下车时腿打结（左），一步一步踩下来（右） |
-| `feat-v2-r2-stopwatch__gro-walks-out-of-fire.jpg` | 火场最后一版：他从火里走出来，火在身后吞没赛车 |
-| `feat-v2-r2-stopwatch__stopwatch-11s.jpg` | 27 秒秒表停在 11 秒：医疗车到了 |
-| `feat-v2-r2-ghost__trophy-8.jpg` | Hamilton 没拿到的第八冠，一只刻着 8 的奖杯残影 |
-| `feat-v2-r2-tyres__new-softs-old-hards.jpg` | 新软胎对旧硬胎 |
-| `feat-v2-rb18-ride__rb16b-vs-rb18.jpg` | 2021 年 RB16B 和 2022 年 RB18，同一比例 |
+| `feat-v2-far-side__true-perspective-rejected.jpg` | The car's far side computed with true perspective. Right in theory, wrong to the eye, so it was rejected |
+| `feat-v2-car-high-low__sheet.jpg` | Every car after switching to separate high and low models |
+| `feat-v2__far-wheels-before-after.jpg` | Far wheels pushed down by a third, before and after |
+| `feat-v2__ground-shadow-ellipse.jpg` | The high-camera ground shadow turned into an ellipse |
+| `feat-v2-bahrain-geometry__diagram.jpg` | The top-down world model of the Bahrain crash: 29° path, 22° yaw, 51° body angle. Every camera is derived from it |
+| `feat-v2-bahrain-geometry__before-after.jpg` | The impact shot before and after the world model |
+| `feat-v2-r2-bahrain33__impact-flash-strip.jpg` | 12 frames from contact. A shower of sparks became one big impact flash on the top layer |
+| `feat-v2-r2-haze__moire-before-after.jpg` | Heat haze twisting the screentone into moiré (left); warping the grey first and re-screening after (right) |
+| `feat-v2-r2-flicker__5.1c-before-after.jpg` | A background flickering like cuts (top); with motion blur (bottom) |
+| `feat-v2-r2-grolegs__step-down.jpg` | Grosjean's legs knotted as he climbs out (left); stepping down one foot at a time (right) |
+| `feat-v2-r2-stopwatch__gro-walks-out-of-fire.jpg` | The final fire scene: he walks out of the flames, which swallow the car behind him |
+| `feat-v2-r2-stopwatch__stopwatch-11s.jpg` | The 27-second stopwatch stopped at 11 s: the medical car arrives |
+| `feat-v2-r2-ghost__trophy-8.jpg` | Hamilton's missing eighth title, as the ghost of a trophy engraved "8" |
+| `feat-v2-r2-tyres__new-softs-old-hards.jpg` | New softs against old hards |
+| `feat-v2-rb18-ride__rb16b-vs-rb18.jpg` | The 2021 RB16B and the 2022 RB18 at the same scale |
 
-## 车模是怎么描、怎么算透视的
+## How the cars were traced, and how the perspective was worked out
 
-车模全部是照着授权照片在像素坐标里描出来的。描线时先用车轮校正：已知轮胎直径和规则里的轴距，就能把斜拍的照片校正成纯侧视，顺便换算出真实尺寸。
+Every car is traced from a licensed photo, in the photo's own pixel coordinates. The wheels come first: from the known tyre diameter and the wheelbase in the regulations, an angled photo can be rectified to a pure side view, which also gives the real dimensions.
 
-参考照片本身没放进仓库，所以这里只放描好的线和算出来的结果。
+The reference photos themselves are not in the repo, so only the traced lines and computed results are shown here.
 
-| 图 | 说什么 |
+| Image | What it shows |
 |---|---|
-| `feat-v2-rb18-standard__trace-lines.jpg` | RB18 的描线：品红是车身和翼，青色是车轮（近侧和远侧各两个），黄色是头盔。比例按 2022 年规则的最大轴距 3.6 m 定 |
-| `feat-v2-far-side__haas-camera-elevations.jpg` | 同一台 Haas 在不同机位高度下：残骸机位 20.9°、撞击机位 18.4°、中间 8°、低机位 1°。机位越高，远侧车轮和端板露得越多 |
-| `feat-v2-far-side__camera-elevation-2021-vs-str3.jpg` | 2021 年的车在 1° 和 4.3° 两个机位下，和已经认可的 STR3 对比，右边是车头的 3 倍放大 |
-| `prototype-car-high-low__noses-3x.jpg` | 车头和前翼的 3 倍放大：A 原来的、B 高机位、C 低机位（车身按 4° 机位重新投影，鼻锥落到前翼上） |
-| `prototype-car-high-low__in-context-low.jpg` | 放回 5.1c 的低机位镜头里，左边是原来的，右边是新的低机位画法 |
-| `feat-v2-rear-wing-low__near-endplate-hides-far.jpg` | 低机位时，近侧尾翼端板应该挡住远侧端板和翼面（右：改后） |
-| `feat-v2-rb18-ride__level-guides.jpg` | 用水平参考线检查前后轮是否同高、底板离地多少 |
+| `feat-v2-rb18-standard__trace-lines.jpg` | The RB18's tracing: magenta for body and wings, cyan for the wheels (two near, two far), yellow for the helmet. Scaled to the 2022 maximum wheelbase of 3.6 m |
+| `feat-v2-far-side__haas-camera-elevations.jpg` | The same Haas at different camera heights: wreck camera 20.9°, impact camera 18.4°, mid 8°, low 1°. The higher the camera, the more of the far wheels and endplates show |
+| `feat-v2-far-side__camera-elevation-2021-vs-str3.jpg` | The 2021 cars at 1° and 4.3°, next to the approved STR3, with the noses at 3× on the right |
+| `prototype-car-high-low__noses-3x.jpg` | Noses and front wings at 3×: A the original, B high camera, C low camera (the body re-projected for a 4° camera, so the nose drops onto the wing) |
+| `prototype-car-high-low__in-context-low.jpg` | Back in the low tracking shot 5.1c: the original on the left, the new low-camera drawing on the right |
+| `feat-v2-rear-wing-low__near-endplate-hides-far.jpg` | From a low camera, the near rear endplate should hide the far endplate and the wing planes (right: after the fix) |
+| `feat-v2-rb18-ride__level-guides.jpg` | Horizontal guide lines checking that both wheels are level and how high the floor sits |
 
-透视算法当时是这样的：远侧部件是近侧部件往深处挪一个轮距的透视副本，缩放 s = z/(z+W)，高出近侧 (1 − s)·(机位高 − 部件高)。用照片里描出来的远侧车轮反推，每张照片的拍摄机位大约在 2°–22° 之间（W12 约 17°，RB16B 约 16°，VF-20 约 21°）。完整推导和每张照片反推出的机位表在 [`far-side-perspective.md`](far-side-perspective.md)（当时的英文工作笔记）。
+The perspective model at the time worked like this:
+- A far part is a perspective copy of its near twin, pushed back by one track width.
+- It is scaled by s = z/(z+W).
+- It sits (1 − s)·(camera height − part height) above the near part.
 
-算得很准，但放在一辆本身是平面侧视画法的车上，看起来反而不对。所以最后放弃了逐镜头算透视，改成每台车只有高、低两套画法，按机位高度选用。这是这个项目里我最喜欢的一个教训：**数学对，不等于画面对。**
+Working backwards from the far wheels traced in each photo, the photos were taken from about 2° to 22° above (W12 about 17°, RB16B about 16°, VF-20 about 21°). The full derivation and the camera table for each photo are in [`far-side-perspective.md`](far-side-perspective.md), the working notes from that day.
 
-### 车模出问题，往往不是透视本身
+The numbers were accurate, but on a car drawn as a flat side view they looked wrong. So we gave up computing perspective shot by shot and gave each car just two drawings, high and low, chosen by camera height. It's my favourite lesson from this project: **right maths doesn't mean a right picture.**
 
-回头看，很多时候"看着透视不对"，根子其实在描线那一步就埋下了。照片本身有各种坑，描错一处，后面怎么算都是错的。踩过的几个：
+### When a car looks wrong, it usually isn't the perspective
 
-- **光线把形状吃掉了。**
-  - Haas VF-20 的尾翼端板，原来那张照片光线很暗，端板前缘埋在阴影里，描出来就成了一块竖直的板子。后来换了一张光线均匀的斜拍照片，借后轮外侧那个已知形状的椭圆把它校正成侧视，才描出真正向前倾的前缘。
-  - 我们一开始还以为端板外侧是红色的，翻了五张照片才确认是黑的。
-- **阴影被当成了车身。**
-  - RB18 的底板，第一次描的时候把底板下面那条黑影也描进去了，结果车头低、车尾高，整台车像在往前栽。在提亮的裁切图上重新看，底板边其实是水平的。
-  - 同一台车的轮胎也有这个问题：黑轮胎的边缘在深色车身和阴影前面丢了，量出来的半径偏小，算出的轴距就比规则上限长了 8%。
-- **反光被当成了涂装。** RB18 侧箱上一道亮光，被描成了一条白色涂装条。尾翼端板下面一个小红点，其实是雨灯，也被画了出来。
-- **把真实细节当成了瑕疵。** W12 尾翼端板后缘那几个台阶，看着像描线没描干净，被我"顺手"抹平了，其实真车就长那样。教训是：觉得是瑕疵的地方，先回去对照片。
-- **照片本身是俯拍的。** 大多数参考照片是从 8°–22° 往下拍的，车身中线上的部件（鼻锥、发动机盖）会被抬高 0.2–0.3 m，远侧车轮也被抬了起来。照描下来，放进片子里的低机位镜头就会显得鼻锥悬空、前翼浮着。这就是后来要分高、低两套车模的原因。
-- **照片是斜着拍的。** 有的照片偏离正侧面几度到 40°，前后车轮一大一小。描之前要先用两个车轮做单应变换，校正成纯侧视（ART-35）。
+Looking back, "the perspective looks off" was often planted at the tracing stage. Photos have all sorts of traps, and if one thing is traced wrong, no amount of maths fixes it later. The ones we fell into:
 
-所以后来定了几条习惯，都记在 `docs/shape/` 里：
+- **Lighting swallowed the shape.**
+  - On the Haas VF-20's rear-wing endplate, the original photo was dark and the leading edge sat in shadow, so it got traced as a vertical plate. A second, evenly lit oblique photo, rectified to a side view using the known ellipse of the rear tyre's outer face, revealed the real forward-leaning edge.
+  - We also first thought the endplate's outer face was red; it took five photos to be sure it was black.
+- **Shadow taken for bodywork.**
+  - The RB18's floor was first traced together with the black shadow beneath it, so the nose sat low, the tail high, and the car looked like it was tipping forward. Seen again on a brightened crop, the floor edge was level.
+  - The same car's tyres had the same problem: the black tyre edge vanished against the dark body and shadow, the radius came out too small, and the wheelbase came out 8% longer than the regulations allow.
+- **Reflections taken for livery.** A highlight along the RB18's sidepod got drawn as a white livery stripe, and a little red dot under the rear endplate, actually the rain light, got drawn in too.
+- **Real details taken for flaws.** The steps on the W12's rear endplate looked like messy tracing, so I "helpfully" smoothed them out. The real car has exactly those steps. Lesson: when something looks like a flaw, check the photo first.
+- **The photo looks down on the car.** Most reference photos were taken from 8°–22° above. That lifts parts on the centre line (nose, engine cover) by 0.2–0.3 m, and lifts the far wheels too. Traced as is and dropped into a low camera shot in the film, the nose floats and the front wing hovers. That's why we ended up with separate high and low car models.
+- **The photo is at an angle.** Some photos are a few degrees, up to 40°, off side-on, with front and rear wheels of different sizes. Before tracing, two wheels are used for a homography to rectify it to a true side view (ART-35).
 
-- 交付前，把描线叠回照片、把成品和照片并排各看一遍（ART-10）；
-- 暗处的轮胎和底板，在提亮、加网格的裁切图上量；
-- 照片和规则冲突的时候，信规则；
-- 一张照片看不清的部件，换一张照片补。
+So we settled on a few habits, all recorded in `docs/shape/`:
 
-## 片尾彩蛋：一块横幅改了六轮
+- before delivery, overlay the tracing on the photo, and put the finished drawing next to the photo (ART-10);
+- measure dark tyres and floors on a brightened, gridded crop;
+- when the photo and the regulations disagree, trust the regulations;
+- when one photo can't show a part clearly, use another.
 
-| 图 | 说什么 |
+## The stinger: one banner, six rounds
+
+| Image | What it shows |
 |---|---|
-| `feat-v2-credits-gag__release-attempt-rejected.jpg` | 第三轮：用绳子拉、松手回弹。还是不对，一块布哪能被一根绳子拉直 |
-| `feat-v2-credits-gag__unroll-beats.jpg` | 最后一版：两根柱子，卷轴穿在右边那根上，Clawd 扛着它边走边放 |
+| `feat-v2-credits-gag__release-attempt-rejected.jpg` | Round 3: pulled on a rope, springing back when released. Still wrong; no rope pulls a cloth that straight |
+| `feat-v2-credits-gag__unroll-beats.jpg` | The final version: two poles, the roll threaded on the right one, and Clawd carrying it and unrolling as it goes |
