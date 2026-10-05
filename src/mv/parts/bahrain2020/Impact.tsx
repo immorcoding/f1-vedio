@@ -20,12 +20,12 @@ import { INK, PAPER } from "../../../kit/colors";
 import { BubbleSmoke, FIRE_PALETTES, Fireball } from "../../../kit/fire";
 import { BigText } from "../../../kit/lettering";
 import { focusLines } from "../../../kit/lines";
+import { Sparks, sparksAt } from "../../../kit/sparks";
 import { ToneDefs, TonePattern, tone } from "../../../kit/tone";
 import { BentGuardrail, bump, type Deflection } from "./bent-rail";
 import { BREAK_PIVOT, carPointOnScreen } from "./car-points";
 import { ramp, shotById, type PictureProps } from "./common";
 import { FloodlitNight } from "./floodlit-night";
-import { RAILS } from "./night";
 import { Flip, WRECK_CAM, zoomCam } from "./Wreck";
 import {
   CELL_ANCHOR_X,
@@ -65,8 +65,6 @@ export const IMPACT_CAM = zoomCam(WRECK_CAM, { x: 2.2, y: 0.5, z: 8.6 }, 0.95, {
   y: 560,
 });
 const CAM = IMPACT_CAM;
-// in the camera's own (unflipped) picture the car travels −x: sparks thrown back off it go +x
-const MX = 1;
 const L = carLength(VF20);
 const SLOW = 70; // frames of slow motion before the freeze
 const BREAK_AT = 12; // frame the car starts to tear in two
@@ -178,9 +176,9 @@ const tyreMark = (cam: Camera, p: { x: number; z: number }) => {
 
 // The run-off's tone: one step darker than 3.2's mid tone, lighter than the night's dark (user review of #26).
 const RUNOFF_TONE_R = 2.25;
-// The infield's shrubs behind the barrier (ground.ts SHRUBS), dark against the dark ground with the floodlights
-// catching their tops: a few overlapping round clumps, no outline. Only those in front of the grandstands
-// (floodlit-night.tsx stands from 118 m), farthest first.
+// The infield's trees behind the barrier (ground.ts SHRUBS), read as distant low vegetation (user review of #26): low,
+// wider-than-tall mounds in a lighter screentone than the ground, standing on the ground line with a faint darker base
+// and no outline. Only those in front of the grandstands (floodlit-night.tsx stands from 118 m), farthest first.
 const SHRUB_MAX_Z = 110;
 const Shrubs: React.FC<{ cam: Camera }> = ({ cam }) => (
   <>
@@ -192,142 +190,44 @@ const Shrubs: React.FC<{ cam: Camera }> = ({ cam }) => (
         if (base.x < -300 || base.x > 2220) return null;
         const k = cam.pxPerMetre(v.z);
         const w = s.w * k;
-        const h = s.h * k;
-        const r = (j: number) => 0.75 + 0.5 * ((s.seed * (j + 3) * 0.618) % 1);
-        const clumps = [
-          {
-            x: -0.28 * w,
-            y: -0.38 * h,
-            rx: 0.3 * w * r(1),
-            ry: 0.4 * h * r(1),
-          },
-          {
-            x: 0.26 * w,
-            y: -0.42 * h,
-            rx: 0.3 * w * r(2),
-            ry: 0.42 * h * r(2),
-          },
-          { x: 0, y: -0.6 * h, rx: 0.34 * w * r(3), ry: 0.42 * h * r(3) },
+        const h = s.h * 0.55 * k; // flattened: the crown seen across the ground
+        const r = (j: number) => 0.8 + 0.4 * ((s.seed * (j + 3) * 0.618) % 1);
+        // three mounds standing on the ground line, the middle one a little higher
+        const mounds = [
+          { x: -0.3 * w, rx: 0.3 * w * r(1), ry: 0.6 * h * r(1) },
+          { x: 0.28 * w, rx: 0.3 * w * r(2), ry: 0.65 * h * r(2) },
+          { x: 0, rx: 0.36 * w * r(3), ry: 0.9 * h * r(3) },
         ];
+        const d = mounds
+          .map(
+            (m) =>
+              `M ${(m.x - m.rx).toFixed(1)} 0 A ${m.rx.toFixed(1)} ${m.ry.toFixed(1)} 0 0 1 ${(m.x + m.rx).toFixed(1)} 0 Z`,
+          )
+          .join(" ");
         return (
           <g key={s.seed} transform={`translate(${base.x} ${base.y})`}>
-            <g opacity={0.7}>
-              {clumps.map((c, j) => (
-                <ellipse
-                  key={j}
-                  cx={c.x}
-                  cy={c.y - Math.max(1, 0.07 * h)}
-                  rx={c.rx}
-                  ry={c.ry}
-                  fill="#6e6e6e"
-                />
-              ))}
-              {clumps.map((c, j) => (
-                <ellipse
-                  key={`d${j}`}
-                  cx={c.x}
-                  cy={c.y}
-                  rx={c.rx}
-                  ry={c.ry}
-                  fill="#1e1e1e"
-                />
-              ))}
-            </g>
+            <path d={d} fill={tone("mid", "b33")} opacity={0.75} />
+            <ellipse
+              cx={0}
+              cy={0}
+              rx={0.5 * w}
+              ry={Math.max(1, 0.08 * h)}
+              fill="#2a2a2a"
+              opacity={0.5}
+            />
           </g>
         );
       })}
   </>
 );
 
-// ── Sparks (review-2 #1): off the far side where it scrapes the rails ────────────────────────────────────────────────
-// They start on the contact frame at the right front-wing corner (IMPACT_POINT), then come off wherever the car's far
-// side is scraping the barrier (ground.ts scrapeAt), thrown on along the rails in the direction the car is sliding,
-// glancing back off the rail faces toward the track and up, falling; each one a streak in the 3-D world through the
-// camera. Behind the car's middle they are drawn behind the car.
-const SPARK_N = 110;
-const SPARK_G = 0.008; // m per frame², slowed with the picture
+// ── Sparks (review-2 #1, rebuilt on the user's review): the kit's spark shower (src/kit/sparks.tsx) off the far
+// side where it scrapes the rails (ground.ts scrapeAt), thrown on along the rails the way the car slides ─────────────
 // A spark is behind the car until it is this much nearer the camera than the car's depth (the drawn car's near side,
 // with a margin for the bodywork and the rails it is passing): it never covers the near side of the car.
 const SPARK_CLEAR = 2.6;
-type Spark = {
-  head: { x: number; y: number };
-  tail: { x: number; y: number };
-  depth: number; // V z of the head
-  w: number;
-  op: number;
-};
-const sparksAt = (cam: Camera, ts: number): Spark[] =>
-  Array.from({ length: SPARK_N }, (_, i): Spark | null => {
-    // a burst on the touch, then all through the slide
-    const born = i < 18 ? (i % 3) * 0.5 : Math.floor(((i * 0.618) % 1) * 58);
-    const life = 12 + ((i * 7) % 11);
-    const age = ts - born;
-    if (age < 0 || age > life) return null;
-    // where the far side was scraping when it was struck off, or a little way back along the scraped stretch
-    const tb = stage(born).travel;
-    const back = i % 3 === 0 ? ((i * 0.37) % 1) * Math.min(tb, 1.2) : 0;
-    const o = scrapeAt(Math.max(0, tb - back));
-    const rail = RAILS[i % 4 === 3 ? 2 : i % 2];
-    const y0 = rail[0] + (rail[1] - rail[0]) * ((i * 0.29) % 1);
-    // on along the rails (W +x), glancing off toward the track (−y) and up
-    const v = 0.22 + ((i * 5) % 9) * 0.03 + (i < 18 ? 0.08 : 0);
-    const a = ((1 + ((i * 0.381) % 1) * 13) * Math.PI) / 180;
-    const e = ((2 + ((i * 0.233) % 1) * 16) * Math.PI) / 180;
-    const pos = (s: number) => {
-      const w = toView({
-        x: o.x + v * Math.cos(e) * Math.cos(a) * s,
-        y: o.y - v * Math.cos(e) * Math.sin(a) * s,
-      });
-      const y = Math.max(
-        0.02,
-        y0 + v * Math.sin(e) * s - 0.5 * SPARK_G * s * s,
-      );
-      return { ...w, y };
-    };
-    const h = pos(age);
-    const t = pos(Math.max(0, age - 4));
-    if (h.z < 1.5) return null; // past the camera
-    return {
-      head: cam.project(h),
-      tail: cam.project(t),
-      depth: h.z,
-      w: 3 + (i % 4) * 1.2,
-      op: Math.min(1, 1.6 * (1 - age / life)),
-    };
-  }).filter((s): s is Spark => s !== null);
-const SparkStreaks: React.FC<{ sparks: Spark[]; ink: boolean }> = ({
-  sparks,
-  ink,
-}) => (
-  <>
-    {sparks.map((s, i) => (
-      <g key={i} opacity={ink ? 1 : s.op}>
-        <path
-          d={`M ${s.tail.x} ${s.tail.y} L ${s.head.x} ${s.head.y}`}
-          stroke={INK}
-          strokeWidth={s.w + 3}
-          strokeLinecap="round"
-        />
-        {ink ? null : (
-          <>
-            <path
-              d={`M ${s.tail.x} ${s.tail.y} L ${s.head.x} ${s.head.y}`}
-              stroke="#ffa31a"
-              strokeWidth={s.w}
-              strokeLinecap="round"
-            />
-            <path
-              d={`M ${(s.tail.x + s.head.x) / 2} ${(s.tail.y + s.head.y) / 2} L ${s.head.x} ${s.head.y}`}
-              stroke="#fffbe6"
-              strokeWidth={s.w * 0.55}
-              strokeLinecap="round"
-            />
-          </>
-        )}
-      </g>
-    ))}
-  </>
-);
+const SPARKS_UNTIL = 58; // the last frame of the slide that strikes sparks
+const SPARK_HEIGHT = 0.6; // where the far front corner meets the rails, m
 
 const star = (
   cx: number,
@@ -392,8 +292,6 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
   const wheelAngle = 13 * Math.min(t, SLOW) * (1 - p * 0.6);
   const noseX = A.x - L - front.dx;
   const nose = CAM.project({ x: noseX - 0.1, y: 0.45, z: A.z });
-  // where the car is hitting the rails: its right front corner, on the far side of the nose
-  const hit = CAM.project({ x: noseX + 0.3, y: 0.6, z: A.z + 0.9 });
   const breakAt = carPointOnScreen(
     at,
     BREAK_PIVOT,
@@ -432,39 +330,61 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
   });
   // the stretch of the barrier down the run from where it crosses the car's plane is nearer than the car: in front
   const splitU = along((A.z - CELL_Z) / RUN_DIR_V.z);
-  // sparks off the far side where it scrapes the rails, from the contact frame on: behind the car's middle they go
-  // behind it (in the freeze, all of them in ink on top)
-  const sparks = sparksAt(CAM, ts);
-  const sparksBehind = frozen
+  // sparks off the far side where it scrapes the rails, from the contact frame on (kit/sparks.tsx), in the camera's
+  // world V: behind the car's middle they go behind it; none in the freeze
+  const pieces = frozen
     ? []
-    : sparks.filter((s) => s.depth > A.z - SPARK_CLEAR);
-  const sparksFront = sparks.filter((s) => s.depth <= A.z - SPARK_CLEAR);
+    : sparksAt({
+        seed: "b33-sparks",
+        t: ts,
+        until: SPARKS_UNTIL,
+        contact: (tb) => {
+          const p = toView(scrapeAt(stage(tb).travel));
+          return { x: p.x, y: SPARK_HEIGHT, z: p.z };
+        },
+        along: { x: RUN_DIR_V.x, y: 0, z: RUN_DIR_V.z },
+        away: { x: TRACKWARD_V.x, y: 0, z: TRACKWARD_V.z },
+        speed: [0.45, 0.75],
+        gravity: 0.03,
+        live: 10,
+        life: [6, 10],
+        burst: 4,
+        project: (p) => CAM.project(p),
+      });
+  const sparksBehind = pieces.filter((s) => s.depth > A.z - SPARK_CLEAR);
+  const sparksFront = pieces.filter((s) => s.depth <= A.z - SPARK_CLEAR);
   // the tyres on the ground as drawn: the front ones on the front piece, the rear ones on the piece left behind
   const tyres = tyresOnGround(CAM, at, A.z, -front.dx, -rear.dx);
-  // a spray of fine carbon bits off the nose and the break (the finer-particle language of the Abu Dhabi lock-up
-  // smoke): many small dark flecks, flung out and falling, each seen for a moment and gone (user review 2026-10-04:
-  // the big shards read as stickers)
-  const bits = Array.from({ length: 44 }, (_, i) => i).flatMap((i) => {
-    const fromBreak = i % 3 === 0;
-    const born = fromBreak ? BREAK_AT + (i % 9) : (i * 5) % 14;
-    const life = 12 + ((i * 7) % 11);
-    const age = ts - born;
-    if (age < 0 || age > life) return [];
-    const o = fromBreak ? breakAt : hit;
-    const ang = -Math.PI * (0.05 + ((i * 0.618) % 1) * 0.9);
-    const v = 9 + ((i * 5) % 9) * 1.6;
-    const s = 2.2 + ((i * 3) % 5) * 1.1;
-    return [
-      {
-        x: o.x + MX * Math.cos(ang) * v * age,
-        y: o.y + Math.sin(ang) * v * age + 0.35 * age * age,
-        s,
-        rot: i * 47 + age * (i % 2 ? 14 : -11),
-        grey: i % 4 === 1,
-        op: Math.min(1, (1 - age / life) * 2),
-      },
-    ];
-  });
+  // the car (the rear piece, then the cell once it splits), drawn once in the picture and once as the sparks' mask
+  const car = (
+    <>
+      <MangaCar
+        car={VF20}
+        facing="left"
+        at={at}
+        state={{
+          // the impact camera is 3.2 m up: the VF-20's high far side (ART-26)
+          farSide: "high",
+          wheelAngle,
+          ...(split > 0
+            ? { split: { front, rear, show: "rear" as const } }
+            : { tilt: -1 }),
+        }}
+      />
+      {split > 0 ? (
+        <MangaCar
+          car={VF20}
+          facing="left"
+          at={at}
+          state={{
+            farSide: "high",
+            wheelAngle,
+            split: { front, rear, show: "front" },
+          }}
+        />
+      ) : null}
+    </>
+  );
   const lineArt = (children: React.ReactNode) =>
     frozen ? <g filter="url(#b33-lineart)">{children}</g> : children;
   return (
@@ -520,6 +440,17 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
             <feMergeNode in="outline" />
           </feMerge>
         </filter>
+        {/* the car's silhouette, to keep the sparks behind it */}
+        <filter id="b33-black">
+          <feColorMatrix
+            type="matrix"
+            values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
+          />
+        </filter>
+        <mask id="b33-car-mask">
+          <rect x={-2000} y={-2000} width={6000} height={5000} fill="#fff" />
+          <g filter="url(#b33-black)">{car}</g>
+        </mask>
       </defs>
       <g
         transform={`translate(${960 + dx} ${540 + dy}) scale(${push}) translate(-960 -540)`}
@@ -604,32 +535,7 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
                 gaps={gaps}
                 tonePrefix="b33"
               />
-              <SparkStreaks sparks={sparksBehind} ink={false} />
-              <MangaCar
-                car={VF20}
-                facing="left"
-                at={at}
-                state={{
-                  // the impact camera is 3.2 m up: the VF-20's high far side (ART-26)
-                  farSide: "high",
-                  wheelAngle,
-                  ...(split > 0
-                    ? { split: { front, rear, show: "rear" as const } }
-                    : { tilt: -1 }),
-                }}
-              />
-              {split > 0 ? (
-                <MangaCar
-                  car={VF20}
-                  facing="left"
-                  at={at}
-                  state={{
-                    farSide: "high",
-                    wheelAngle,
-                    split: { front, rear, show: "front" },
-                  }}
-                />
-              ) : null}
+              {car}
               <BentGuardrail
                 cam={CAM}
                 a={RUN.a}
@@ -639,6 +545,11 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
                 gaps={gaps}
                 tonePrefix="b33"
               />
+              {/* sparks fly on the track side of the rails, so in front of them; those behind the car's near side
+                  are cut out where the car stands in front of them */}
+              <g mask="url(#b33-car-mask)">
+                <Sparks pieces={sparksBehind} palette={fire} />
+              </g>
             </>,
           )}
           {/* the fuel cell bursts at the break: a fireball in the fire's colours, bubble smoke rising after it in
@@ -665,16 +576,7 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
             palette={fire}
             backing={frozen}
           />
-          {bits.map((s, i) => (
-            <path
-              key={`d${i}`}
-              d={`M ${-s.s} ${-s.s * 0.3} L ${s.s * 0.2} ${-s.s * 0.6} L ${s.s} ${s.s * 0.1} L ${-s.s * 0.1} ${s.s * 0.5} Z`}
-              transform={`translate(${s.x} ${s.y}) rotate(${s.rot})`}
-              fill={s.grey ? "#6a6560" : "#1c1a19"}
-              opacity={s.op}
-            />
-          ))}
-          <SparkStreaks sparks={sparksFront} ink={frozen} />
+          <Sparks pieces={sparksFront} palette={fire} />
         </Flip>
       </g>
       {frozen ? (
