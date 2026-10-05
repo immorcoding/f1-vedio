@@ -6,6 +6,9 @@
 // Original, code-synthesised electronic track: 128 BPM, 4/4, 113 bars, D minor throughout.
 // Under it, the SFX layer (#15): era engine sounds at the cues of src/mv/sfx.ts (scripts/lib/engine.mjs), on their
 // own bus, mixed in before the master. `--stems` also writes the engines alone and sfx-report.json.
+// Optional (#33, OFF until the user picks it from the A/B): a synthesised grandstand crowd in Brazil, 39.1 to 47.1,
+// cut dead on the pass (scripts/lib/crowd.mjs). Switch: CROWD_DEFAULT below, or MV_CROWD=1 / MV_CROWD=0 in the
+// environment.
 // Every time comes from src/mv/timing.ts. Deterministic: seeded noise, no clocks, fixed order.
 //
 // Final arrangement (ticket #10). Tempo, bars, sections and hits are untouched (timing.ts);
@@ -26,6 +29,7 @@ import * as T from "../src/mv/timing.ts";
 import { integratedLoudness, limit } from "./lib/audio.mjs";
 import { buildBeatMap, formatBeatMap } from "./lib/beat-map.mjs";
 import { driveline, synthEngine } from "./lib/engine.mjs";
+import { synthCrowd } from "./lib/crowd.mjs";
 import { SFX } from "../src/mv/sfx.ts";
 
 const SR = T.SAMPLE_RATE;
@@ -35,6 +39,11 @@ const at = T.at;
 const S = (bar, beat = 1) => Math.round(T.sampleAt(at(bar, beat)));
 const TARGET_LUFS = -14;
 const CEILING_DB = -2.5; // true-peak ceiling of the limiter; leaves room under the -1 dBTP check
+// Brazil crowd (#33): the user's one-line choice. MV_CROWD in the environment overrides it either way.
+const CROWD_DEFAULT = false;
+const CROWD = process.env.MV_CROWD
+  ? process.env.MV_CROWD === "1"
+  : CROWD_DEFAULT;
 
 const L = new Float64Array(N);
 const R = new Float64Array(N);
@@ -1145,8 +1154,90 @@ const sfxCues = [];
   }
 }
 
-// Per-bar RMS of the music and of the engines, measured on their buses before the master (the master's gain is added
-// below); the SFX report and check-audio's "engines under the music" test read it.
+// -- crowd (#33, only with CROWD): the Interlagos grandstands, Massa's home crowd ------------------------------------
+// It wakes on 39.1 (2.3: MAS crosses the line, the Ferrari garage celebrates), builds through the last lap and is cut
+// dead on 47.1, the pass (HAM takes P5), so the pass lands in a sudden hush. Its own bus, after the engines (their
+// levels don't move) and before the master. Level, like the engines (AUD-7) but further down: in every bar it sits at
+// least CROWD_UNDER dB under the music's RMS in that bar (the music alone), rising from 26 dB under to 18.
+const CROWD_FROM = 39;
+const CROWD_TO = 47; // cut on 47.1
+const CROWD_UNDER = (bar) => ramp(bar, 39, 46, 26, 18);
+const CL = new Float64Array(N);
+const CR = new Float64Array(N);
+if (CROWD) {
+  const a = S(CROWD_FROM);
+  const b = S(CROWD_TO);
+  const len = b - a;
+  const barSec = (BEAT * T.BEATS_PER_BAR) / SR;
+  const secs = len / SR;
+  // intensity: a quick swell over the first bar (the cheer for MAS), then a steady climb to the pass
+  const intensity = (t) =>
+    Math.min(0.55, (0.55 * t) / barSec) +
+    0.45 * clamp01((t - barSec) / (secs - barSec));
+  const [cl, cr] = synthCrowd(len, SR, 4733, intensity);
+  // edges: a one-beat fade in, a 2 ms ramp onto the cut; a gentle pump with the kick keeps the drums on top
+  const tail = Math.round(SR * 0.002);
+  for (let i = 0; i < len; i++) {
+    const env = Math.min(1, i / BEAT, (len - i) / tail);
+    const pump = 0.7 + 0.3 * duck[a + i];
+    cl[i] *= env * pump;
+    cr[i] *= env * pump;
+  }
+  const musicE = (n) => {
+    const ml = L[n] - SL[n];
+    const mr = R[n] - SR_[n];
+    return ml * ml + mr * mr;
+  };
+  // per-bar target gain, interpolated in dB between bar centres so the level never steps; then the whole bus is
+  // pulled down until every bar is at or under its target
+  const bars = [];
+  for (let bar = CROWD_FROM; bar < CROWD_TO; bar++) {
+    let m = 0;
+    let c = 0;
+    for (let n = S(bar); n < S(bar + 1); n++) {
+      m += musicE(n);
+      c += cl[n - a] * cl[n - a] + cr[n - a] * cr[n - a];
+    }
+    bars.push({
+      mid: (S(bar) + S(bar + 1)) / 2 - a,
+      db: 10 * Math.log10(m / c) - CROWD_UNDER(bar),
+    });
+  }
+  const gainDbAt = (i) => {
+    if (i <= bars[0].mid) return bars[0].db;
+    for (let k = 1; k < bars.length; k++)
+      if (i <= bars[k].mid) {
+        const u = (i - bars[k - 1].mid) / (bars[k].mid - bars[k - 1].mid);
+        return bars[k - 1].db + u * (bars[k].db - bars[k - 1].db);
+      }
+    return bars[bars.length - 1].db;
+  };
+  for (let i = 0; i < len; i++) {
+    const g = Math.pow(10, gainDbAt(i) / 20);
+    CL[a + i] = cl[i] * g;
+    CR[a + i] = cr[i] * g;
+  }
+  let over = 0;
+  for (let bar = CROWD_FROM; bar < CROWD_TO; bar++) {
+    let m = 0;
+    let c = 0;
+    for (let n = S(bar); n < S(bar + 1); n++) {
+      m += musicE(n);
+      c += CL[n] * CL[n] + CR[n] * CR[n];
+    }
+    over = Math.max(over, 10 * Math.log10(c / m) + CROWD_UNDER(bar));
+  }
+  const fix = Math.pow(10, -over / 20);
+  for (let n = a; n < b; n++) {
+    CL[n] *= fix;
+    CR[n] *= fix;
+    L[n] += CL[n];
+    R[n] += CR[n];
+  }
+}
+
+// Per-bar RMS of the music, of the engines and of the crowd, measured on their buses before the master (the master's
+// gain is added below); the SFX report and check-audio's "engines under the music" test read it.
 const barEnergy = (() => {
   const rows = [];
   for (let bar = 1; bar <= T.BARS; bar++) {
@@ -1154,13 +1245,16 @@ const barEnergy = (() => {
     const b = S(bar + 1);
     let m = 0;
     let x = 0;
+    let c = 0;
     for (let n = a; n < b; n++) {
-      const ml = L[n] - SL[n];
-      const mr = R[n] - SR_[n];
+      const ml = L[n] - SL[n] - CL[n];
+      const mr = R[n] - SR_[n] - CR[n];
       m += ml * ml + mr * mr;
       x += SL[n] * SL[n] + SR_[n] * SR_[n];
+      c += CL[n] * CL[n] + CR[n] * CR[n];
     }
-    rows.push({ bar, music: m / (2 * (b - a)), sfx: x / (2 * (b - a)) });
+    const k = 2 * (b - a);
+    rows.push({ bar, music: m / k, sfx: x / k, crowd: c / k });
   }
   return rows;
 })();
@@ -1240,6 +1334,7 @@ fs.writeFileSync(
 if (stems) {
   const master = Math.pow(10, gainDb / 20);
   writeWav(path.join(outDir, "sfx.wav"), SL, SR_, master);
+  if (CROWD) writeWav(path.join(outDir, "crowd.wav"), CL, CR, master);
   const dB = (e) =>
     e > 0 ? Number((10 * Math.log10(e) + gainDb).toFixed(2)) : null;
   const pos = (p) => ({
@@ -1263,10 +1358,20 @@ if (stems) {
       levelDb: Number(g.toFixed(2)),
       note: cue.note,
     })),
+    // the Brazil crowd (#33), when it is on; its per-bar level is bars[].crowd
+    crowd: CROWD
+      ? {
+          from: pos(at(CROWD_FROM)),
+          to: pos(at(CROWD_TO)),
+          end: "cut",
+          underDb: [CROWD_UNDER(CROWD_FROM), CROWD_UNDER(CROWD_TO - 1)],
+        }
+      : null,
     bars: barEnergy.map((r) => ({
       bar: r.bar,
       music: dB(r.music),
       sfx: dB(r.sfx),
+      ...(CROWD ? { crowd: dB(r.crowd) } : {}),
     })),
   };
   fs.writeFileSync(
@@ -1275,5 +1380,5 @@ if (stems) {
   );
 }
 console.log(
-  `wrote ${path.join(outDir, "mv.wav")} (${T.DURATION_SECONDS}s, gain ${gainDb.toFixed(2)} dB, ${finalLufs.toFixed(2)} LUFS by the internal meter; ${SFX.length} SFX cues, bus ${sfxHash.slice(0, 12)})`,
+  `wrote ${path.join(outDir, "mv.wav")} (${T.DURATION_SECONDS}s, gain ${gainDb.toFixed(2)} dB, ${finalLufs.toFixed(2)} LUFS by the internal meter; ${SFX.length} SFX cues, bus ${sfxHash.slice(0, 12)}${CROWD ? "; Brazil crowd ON" : ""})`,
 );

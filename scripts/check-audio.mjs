@@ -6,6 +6,8 @@
 // - determinism: two fresh builds are byte-identical, and identical to public/music/mv.wav; so are their SFX stems
 // - SFX (src/mv/sfx.ts): in every bar with engines they sit ≥ 12 dB (RMS) under the music; "cut" cues are silent
 //   from their end beat (Bahrain's 61.1)
+// - crowd (#33, only when make-music runs with MV_CROWD=1): ≥ 14 dB under the music per bar, silent from 47.1
+//   (the rebuilds inherit MV_CROWD, so run the check with the same setting as npm run music)
 import { execFileSync, spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -29,7 +31,8 @@ const PEAK_MAX_DB = -1;
 const LUFS_RANGE = [-15, -13];
 const HIT_RISE_DB = 6; // the 25 ms after a hit must be this much louder than the 60 ms before it
 const SFX_UNDER_DB = 12; // engines at least this far under the music, per bar (RMS), wherever they play (user, after #15: they covered the music)
-const quick = process.argv.includes("--quick");
+const CROWD_UNDER_DB = 14; // the Brazil crowd (#33), when on: at least as far under as AUD-7's engines
+const quick =process.argv.includes("--quick");
 
 let failures = 0;
 const report = (ok, label, detail) => {
@@ -258,6 +261,30 @@ if (!quick) {
     "engine cuts",
     leaks.length ? leaks.join("; ") : silent.join(", "),
   );
+
+  // the Brazil crowd (#33, only when make-music has it on): under the music at least as far as the engines, in every
+  // bar, and silent from the pass (47.1)
+  if (sfxReport.crowd) {
+    const bars = sfxReport.bars.filter((b) => b.crowd != null);
+    const close = bars.filter((b) => b.music - b.crowd < CROWD_UNDER_DB);
+    const margin = Math.min(...bars.map((b) => b.music - b.crowd));
+    // the crowd ends on a downbeat, so its whole cut bar must be silent
+    const cutBar = sfxReport.bars.find(
+      (b) => b.bar === Number(sfxReport.crowd.to.pos.split(".")[0]),
+    );
+    report(
+      !close.length && bars.length > 0 && cutBar && cutBar.crowd == null,
+      "crowd under the music",
+      close.length
+        ? close
+            .map(
+              (b) =>
+                `bar ${b.bar} only ${(b.music - b.crowd).toFixed(1)} dB under`,
+            )
+            .join("; ")
+        : `bars ${bars[0].bar}–${bars.at(-1).bar}, every bar ≥ ${CROWD_UNDER_DB} dB under the music (closest ${margin.toFixed(1)} dB), silent from ${sfxReport.crowd.to.pos}`,
+    );
+  }
 } else {
   console.log("skip  deterministic and SFX checks (--quick)");
 }
