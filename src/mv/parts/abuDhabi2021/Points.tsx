@@ -8,7 +8,7 @@
 // `abuDhabi2021.pointsGold`): VER's 395.5 takes the gold stroke, a champion's score like Brazil's 98 on 2.7 (the
 // user, 2026-10-04; ART-8). 102.3 (kick, `abuDhabi2021.hamPanel`): HAM's panel slams up from below. 102.4 and 103.2
 // (snares): VER punches in a step; on 103.2 HAM's tone darkens a step. 103.3 (kick) is left quiet for HAM's panel
-// (#32): on its kick the ghost of a championship trophy engraved "8" flashes up, translucent, in the empty space above HAM, the
+// (#32): on its kick the ghost of a championship trophy engraved "8" flashes up, translucent, in the empty space above the HAM tag, the
 // record eighth title he is losing (facts.md; no caption, the 8 is the only text), and fades into the tone before
 // 103.4 (`abuDhabi2021.hamGhost`). 103.4 (snare, `abuDhabi2021.verPush`): the last punch on VER and the tone swallows
 // HAM, and the push keeps accelerating into the cut to 5.8 (MOT-8). The helmets sit at opposite ends of the diagonal
@@ -221,7 +221,7 @@ export const Points: React.FC<{ st: ShotTime }> = ({ st }) => {
               tag="HAM"
               tagAt={{ x: 1720, y: 975 }}
             >
-              <TrophyGhost x={300} y={895} h={216} a={ghostA} drift={ghostDrift} />
+              <TrophyGhost x={1720} y={925} h={216} a={ghostA} drift={ghostDrift} />
             </HelmetPanel>
           </g>
         )}
