@@ -40,7 +40,7 @@ const S = (bar, beat = 1) => Math.round(T.sampleAt(at(bar, beat)));
 const TARGET_LUFS = -14;
 const CEILING_DB = -2.5; // true-peak ceiling of the limiter; leaves room under the -1 dBTP check
 // Brazil crowd (#33): the user's one-line choice. MV_CROWD in the environment overrides it either way.
-const CROWD_DEFAULT = false;
+const CROWD_DEFAULT = true; // user 2026-10-05: keep the crowd (B)
 const CROWD = process.env.MV_CROWD
   ? process.env.MV_CROWD === "1"
   : CROWD_DEFAULT;
@@ -863,7 +863,7 @@ for (const k of kicks) {
 // MUSIC_BAR73=B (#34, A/B for the user, default off): the swell comes up from under the heartbeat tail to about
 // −24 dB on 73.4, so it rises into the riser's −22 dB on 74.1 instead of sitting 4 dB under the tail. Same notes,
 // same bars; only the level and the curve's shape change.
-const BAR73_B = process.env.MUSIC_BAR73 === "B";
+const BAR73_B = process.env.MUSIC_BAR73 !== "A"; // user 2026-10-05: B is the shipped swell; MUSIC_BAR73=A for the old one
 {
   const rng = mulberry32(707);
   const lp = lowpass(1.2);
