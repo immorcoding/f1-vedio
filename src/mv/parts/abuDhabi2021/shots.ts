@@ -41,7 +41,7 @@ export const EDIT: PartEdit = {
       from: at(87),
       to: at(88),
       view: "panel",
-      content: "头盔小格：87.1 VER 一格从左砸入上半，87.3 HAM 一格从右砸入下半，两格斜切，夜色速度线流过",
+      content: "头盔小格（侧面头盔特写，DriverHelmet，#34）：87.1 VER 一格从左砸入上半，87.3 HAM 一格从右砸入下半，两格斜切，夜色速度线流过",
       cues: [
         { id: "abuDhabi2021.helmetVer", at: at(87) },
         { id: "abuDhabi2021.helmetHam", at: at(87, 3) },
