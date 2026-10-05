@@ -5,7 +5,7 @@
 // - hits: every hit in the beat map is an audible attack in the audio, on its sample
 // - determinism: two fresh builds are byte-identical, and identical to public/music/mv.wav; so are their SFX stems
 // - SFX (src/mv/sfx.ts): in every bar with engines they sit ≥ 12 dB (RMS) under the music; "cut" cues are silent
-//   from their end beat (Bahrain's 61.1)
+//   from their end beat (Bahrain's 61.1); one named exception, the stinger's pass-by (AUD7_EXCEPTIONS below)
 // - crowd (#33, only when make-music runs with MV_CROWD=1): ≥ 14 dB under the music per bar, silent from 47.1
 //   (the rebuilds inherit MV_CROWD, so run the check with the same setting as npm run music)
 import { execFileSync, spawnSync } from "node:child_process";
@@ -31,7 +31,12 @@ const PEAK_MAX_DB = -1;
 const LUFS_RANGE = [-15, -13];
 const HIT_RISE_DB = 6; // the 25 ms after a hit must be this much louder than the 60 ms before it
 const SFX_UNDER_DB = 12; // engines at least this far under the music, per bar (RMS), wherever they play (user, after #15: they covered the music)
-const CROWD_UNDER_DB = 14; // the Brazil crowd (#33), when on: at least as far under as AUD-7's engines
+const CROWD_UNDER_DB = 14;
+// The one exception to "engines under the music" (AUD-7), by cue id: the post-credits stinger's RB18 pass-by is the
+// gag's punch and sits above the music, with the music ducked under it (src/mv/sfx.ts `aboveMusic`). User 2026-10-05,
+// the stinger only; every other cue keeps the rule. The bars this cue covers are skipped in the test (no other cue may
+// share them), and its level against the music is printed; the master's peak and loudness checks still cover it.
+const AUD7_EXCEPTIONS = ["credits.pass"]; // the Brazil crowd (#33), when on: at least as far under as AUD-7's engines
 const quick =process.argv.includes("--quick");
 
 let failures = 0;
@@ -217,10 +222,36 @@ if (!quick) {
   );
 
   // the engines sit under the music in every bar they play (AUD: the music is the skeleton)
-  const loud = sfxReport.bars.filter(
-    (b) => b.sfx !== null && b.music - b.sfx < SFX_UNDER_DB,
+  // bars covered by an exempt cue (AUD7_EXCEPTIONS); a bar it shares with another cue stays in the test
+  const barsOf = (c) => {
+    const [b0] = c.from.pos.split(".").map(Number);
+    const [b1, beat1] = c.to.pos.split(".").map(Number);
+    return Array.from({ length: b1 - b0 + (beat1 > 1 ? 1 : 0) }, (_, k) => b0 + k);
+  };
+  const exemptCues = sfxReport.cues.filter((c) => AUD7_EXCEPTIONS.includes(c.id));
+  const otherBars = new Set(
+    sfxReport.cues.filter((c) => !AUD7_EXCEPTIONS.includes(c.id)).flatMap(barsOf),
   );
-  const played = sfxReport.bars.filter((b) => b.sfx !== null);
+  const exemptBars = new Set(
+    exemptCues.flatMap(barsOf).filter((b) => !otherBars.has(b)),
+  );
+  for (const c of exemptCues) {
+    const over = sfxReport.bars
+      .filter((b) => barsOf(c).includes(b.bar) && b.sfx !== null)
+      .map((b) => `bar ${b.bar} ${(b.sfx - b.music).toFixed(1)} dB over`);
+    console.log(
+      `      AUD-7 exception ${c.id} (user 2026-10-05, stinger only): ${over.join(", ")}`,
+    );
+  }
+  const loud = sfxReport.bars.filter(
+    (b) =>
+      b.sfx !== null &&
+      !exemptBars.has(b.bar) &&
+      b.music - b.sfx < SFX_UNDER_DB,
+  );
+  const played = sfxReport.bars.filter(
+    (b) => b.sfx !== null && !exemptBars.has(b.bar),
+  );
   const margin = Math.min(...played.map((b) => b.music - b.sfx));
   report(
     !loud.length,

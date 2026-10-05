@@ -37,6 +37,11 @@ export type SfxCar = {
   readonly db?: number;
   /** Race second the clutch drops; before it the car sits on the grid revving. */
   readonly launch?: number;
+  /**
+   * A pass-by heard from the roadside: the car passes the listener `distance` m away at screen second `at`, moving at
+   * `speed` m/s. The engine is Doppler-shifted (pitch up coming in, down going away) and gets louder with closeness.
+   */
+  readonly doppler?: { readonly at: number; readonly distance: number; readonly speed: number };
 };
 
 export type SfxCue = {
@@ -55,6 +60,12 @@ export type SfxCue = {
   readonly underDb: number;
   /** Low-pass, Hz: an engine heard through rain. */
   readonly muffle?: number;
+  /**
+   * The one exception to AUD-7's "under the music" (user 2026-10-05, the stinger only): the cue may sit above the
+   * music (`underDb` negative) and the music is ducked under it by up to `duck` (0..1, following the cue's envelope).
+   * scripts/check-audio.mjs exempts exactly the cues listed in its AUD7_EXCEPTIONS, by id.
+   */
+  readonly aboveMusic?: { readonly reason: string; readonly duck: number };
   readonly note: string;
 };
 
@@ -310,6 +321,33 @@ export const SFX = [
           1.5 * ramp(t, PULL_54, ALONG_54) -
           2.5 * ramp(t, ALONG_54 + 0.5, DUR_54),
         pan: (s) => panX(hamX54(s)),
+      },
+    ],
+  },
+  {
+    // The stinger's punch (credits/Scene.tsx): VER's RB18 #1 whips past behind Clawd, its centre crossing the middle of
+    // the frame on bar 117 beat 1 at 78 m/s, 10.5 m from the camera. A big, close pass-by with the Doppler pitch drop.
+    id: "credits.pass",
+    shot: "7.2",
+    from: at(116, 3),
+    to: at(117, 4),
+    end: "fade",
+    underDb: -6,
+    aboveMusic: {
+      reason: "user 2026-10-05: the stinger's whoosh is the gag's punch and may exceed the music (AUD-7 exception)",
+      duck: 0.6,
+    },
+    note: "RB18 #1 flat out down the straight past the camera: Doppler pass-by, closest on 117.1, panned left to right",
+    cars: [
+      {
+        who: "VER",
+        era: "v6h-2021",
+        speed: () => 78,
+        pan: (s) => {
+          const x = 78 * (s - span(at(116, 3), at(117)));
+          return (0.9 * x) / Math.hypot(x, 10.5);
+        },
+        doppler: { at: span(at(116, 3), at(117)), distance: 10.5, speed: 78 },
       },
     ],
   },

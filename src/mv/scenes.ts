@@ -8,6 +8,7 @@ import { Scene as Bahrain2020 } from "./parts/bahrain2020/Scene";
 import { Scene as Buildup } from "./parts/buildup/Scene";
 import { Scene as AbuDhabi2021 } from "./parts/abuDhabi2021/Scene";
 import { Scene as Outro } from "./parts/outro/Scene";
+import { Scene as Credits } from "./parts/credits/Scene";
 
 /** A part's scene is mounted inside a Sequence that starts at the part's first frame. */
 export type SceneProps = { readonly part: Part };
@@ -21,4 +22,5 @@ export const SCENES: Record<PartId, React.FC<SceneProps>> = {
   buildup: Buildup,
   abuDhabi2021: AbuDhabi2021,
   outro: Outro,
+  credits: Credits,
 };

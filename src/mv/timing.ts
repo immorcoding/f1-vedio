@@ -8,7 +8,7 @@ export const BPM = 128;
 export const BEATS_PER_BAR = 4;
 export const FPS = 60;
 /** Bars in the song. The song ends on the downbeat of bar BARS + 1. */
-export const BARS = 113;
+export const BARS = 119;
 /** Audio sample rate of the score. 128 BPM puts every beat on a whole sample (22 500). */
 export const SAMPLE_RATE = 48000;
 
@@ -43,8 +43,8 @@ export const beatsAtFrame = (frame: number) => frame / FRAMES_PER_BEAT;
 
 export const SONG_START: Pos = at(1);
 export const SONG_END: Pos = at(BARS + 1);
-export const TOTAL_FRAMES = frameAt(SONG_END); // 12 713
-export const DURATION_SECONDS = secondsAt(SONG_END); // 211.875
+export const TOTAL_FRAMES = frameAt(SONG_END); // 13 388
+export const DURATION_SECONDS = secondsAt(SONG_END); // 223.125
 
 /** True when p sits on a beat of the song (a whole bar and beat), from 1.1 up to and including the end. */
 export const isOnGrid = (p: Pos) =>
@@ -77,6 +77,9 @@ export const SECTIONS = [
   { id: "buildup", name: "蓄力", from: at(74), to: at(82) },
   { id: "abuDhabi", name: "阿布扎比 2021", from: at(82), to: at(106) },
   { id: "outro", name: "尾奏", from: at(106), to: at(114) },
+  // The post-credits stinger (user 2026-10-05): a beat of black after the film's fade, the gag, and a last bar of
+  // black for the final note.
+  { id: "credits", name: "片尾彩蛋", from: at(114), to: at(120) },
 ] as const satisfies readonly Section[];
 
 export type SectionId = (typeof SECTIONS)[number]["id"];
@@ -101,6 +104,8 @@ export const HITS = {
   "abuDhabi2021.lockup": at(90, 1),
   "abuDhabi2021.finish": at(100, 1),
   "abuDhabi2021.points": at(102, 1),
+  "credits.jump": at(118, 3),
+  "credits.end": at(119, 1),
 } as const satisfies Record<string, Pos>;
 
 export type HitId = keyof typeof HITS;

@@ -94,6 +94,12 @@ MV 画面上出现的每个事实及其来源（STO-3）。来源核对日期：
   - RB18 全车（2026-10-05，片尾彩蛋要用整车）按 2022 技术规则画：轴距不超过 3600 mm（3.4.2）；干胎直径不超过 725 mm，前胎宽 345–375 mm、后胎 440–470 mm（10.8.1）；每个车轮一块与轮辋同转的轮罩（3.13.7，所以看不到辐条）；尾翼主翼与 DRS 翼片缝隙关闭时 10–15 mm、打开时不超过 85 mm（3.10.1、3.10.10），片中 DRS 全程关闭；尾翼参考体积：翼面在后轴后 140–555 mm、离参考面 670–910 mm，端板本体 325–675 mm，梁翼 325–500 mm（附录参考体积 RV-RW-PROFILES、RV-RWEP-BODY、RV-RW-BEAM）；前翼最前到前轴前 1350 mm（RV-FW）。来源：[2022 Formula 1 Technical Regulations, Issue 12, 2022-06-29（FIA）](https://api.fia.com/sites/default/files/fia_2022_formula_1_technical_regulations_-_issue_12_-_2022-06-29.pdf)（核对 2026-10-05）
 - 来源：[2021 Abu Dhabi Grand Prix — Wikipedia](https://en.wikipedia.org/wiki/2021_Abu_Dhabi_Grand_Prix)（积分、轮胎、5 号弯改造、Latifi 第 53 圈 14 号弯）；[Motorsport.com 正赛报道](https://www.motorsport.com/f1/news/abu-dhabi-f1-gp-race-report-verstappen-hamilton/6877919/)（左手发卡弯内线超车、守住内线、2.2 秒）；[Motor Authority：2021 年安全车](https://www.motorauthority.com/news/1131539_upgraded-aston-martin-vantage-joins-mercedes-benz-amg-gt-as-2021-f1-safety-car)、[GPFans：阿布扎比 2021 安全车出售](https://www.gpfans.com/en/f1-news/1076741/f1-2021-abu-dhabi-grand-prix-controversial-safety-car-sale/)（Vantage SC02）
 
+## 片尾彩蛋（镜头 7.2，2026-10-05）
+
+- 彩蛋不声称是哪一场比赛：Clawd 站在亚斯码头（Yas Marina）赛道边（2021 段的同一套赛道边），Verstappen 的 2022 Red Bull RB18（#1，2022 头盔）从后面开过去。
+- 对话框 "POLE AGAIN?!"（"他怎么又是 pole"）：Verstappen 在阿布扎比连续两年拿到杆位。2021 年阿布扎比大奖赛杆位 Verstappen（#33，Red Bull Racing Honda，Q3 1:22.109）；2022 年阿布扎比大奖赛杆位 Verstappen（#1，Red Bull Racing RBPT，Q3 1:23.824，他本赛季第 7 个杆位，Pérez 第二）。所以在亚斯码头看到 #1 的 RB18 说"又是杆位"是真的。来源：[formula1.com 2021 阿布扎比排位成绩](https://www.formula1.com/en/results/2021/races/1107/abu-dhabi/qualifying)、[formula1.com 2022 阿布扎比排位成绩](https://www.formula1.com/en/results/2022/races/1138/abu-dhabi/qualifying)、[2021 Abu Dhabi Grand Prix — Wikipedia](https://en.wikipedia.org/wiki/2021_Abu_Dhabi_Grand_Prix)、[2022 Abu Dhabi Grand Prix — Wikipedia](https://en.wikipedia.org/wiki/2022_Abu_Dhabi_Grand_Prix)（核对 2026-10-05）
+- 声音：RB18 用 2022 年的 1.6 L V6 涡轮混动（Red Bull Powertrains 接手的 Honda 动力单元），合成沿用预设 `v6h-2021`（同一套结构参数）；掠过时的多普勒降调按约 80 m/s 计算，是示意。
+
 ## 引擎声（音效轨，#15）
 
 音效轨用代码合成引擎声（`scripts/lib/engine.mjs` 的年代预设，挂点见 `src/mv/sfx.ts`）。每个预设对应的真实引擎如下；合成只取型号的结构参数（气缸数、转速范围、档位数、有没有涡轮和 ERS），音色是示意，不是录音复刻。点火频率 = 转速 / 60 × 气缸数 / 2（四冲程每两转每缸点火一次）。（核对 2026-10-04）
