@@ -6,9 +6,18 @@
 // pixels, and the air moves smoothly, never re-seeded per frame. Text goes outside, on top.
 //
 // How: the scene is drawn once, then laid over itself through soft masks — as it is, fully hazed inside the zone,
-// lightly hazed inside the calm ellipses — so the strengths blend without seams.
+// lightly hazed inside the calm ellipses — so the strengths blend without seams. The hazed layers warp the scene's tone
+// layer, not its dots, and screen it again afterwards (kit/screen-warp.tsx), so the dot screens never ripple into a
+// moiré (review 2, #27).
 import { useId } from "react";
 import type { ScreenRect } from "../../../kit/fire";
+import {
+  FlatCopy,
+  WarpSource,
+  toneWarp,
+  useFlatTone,
+  warpFilterRegion,
+} from "../../../kit/screen-warp";
 
 const FPS = 60;
 const RISE_PX_S = 80; // how fast the ripples climb, px/s
@@ -57,6 +66,8 @@ export const Haze: React.FC<{
   children,
 }) => {
   const id = `hz${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  // inside another warp's flat copy: warp flat, that warp screens once
+  const rescreen = !useFlatTone();
   const scroll = -(frame / FPS) * RISE_PX_S;
   const M = 40;
   const region = {
@@ -65,17 +76,18 @@ export const Haze: React.FC<{
     width: clip.w + 2 * M,
     height: clip.h + 2 * M,
   };
+  // the region in the filtered group's space (it is shifted by the scroll), and the filter's room for the warp source
+  const area = { ...region, y: region.y - scroll };
+  const room = warpFilterRegion(area, rescreen);
   const filter = (name: string, k: Strength) => (
     <filter
       id={`${id}-${name}`}
-      x={region.x}
-      y={region.y - scroll}
-      width={region.width}
-      height={region.height}
+      {...room}
       filterUnits="userSpaceOnUse"
       colorInterpolationFilters="sRGB"
     >
       <feTurbulence
+        {...area}
         type="fractalNoise"
         baseFrequency={NOISE}
         numOctaves={2}
@@ -84,21 +96,21 @@ export const Haze: React.FC<{
       />
       {/* an opaque map, so the displacement reads the noise's colour straight */}
       <feColorMatrix
+        {...area}
         in="n"
         type="matrix"
         values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 1"
         result="map"
       />
-      <feDisplacementMap
-        in="SourceGraphic"
-        in2="map"
-        scale={k.disp}
-        xChannelSelector="R"
-        yChannelSelector="G"
-        result="d"
-      />
-      <feGaussianBlur in="d" stdDeviation={k.blur} result="b" />
-      <feColorMatrix in="b" type="matrix" values={WARM} />
+      {toneWarp({
+        name: "b",
+        map: "map",
+        disp: k.disp,
+        blur: k.blur,
+        area,
+        rescreen,
+      })}
+      <feColorMatrix {...area} in="b" type="matrix" values={WARM} />
     </filter>
   );
   const zoneRect = (
@@ -109,7 +121,13 @@ export const Haze: React.FC<{
     <g mask={`url(#${id}-m${name})`}>
       <g transform={`translate(0 ${scroll})`} filter={`url(#${id}-${name})`}>
         <g transform={`translate(0 ${-scroll})`}>
-          <use href={`#${id}-scene`} />
+          <WarpSource
+            id={`${id}-${name}-src`}
+            flat={`${id}-flat`}
+            normal={`${id}-scene`}
+            region={region}
+            rescreen={rescreen}
+          />
         </g>
       </g>
     </g>
@@ -122,6 +140,8 @@ export const Haze: React.FC<{
   return (
     <g>
       <defs>
+        {/* the scene with its dot screens flat: what the hazed layers warp */}
+        <FlatCopy id={`${id}-flat`}>{children}</FlatCopy>
         {filter("full", FULL)}
         {filter("calm", calmHaze)}
         {falloff ? (
