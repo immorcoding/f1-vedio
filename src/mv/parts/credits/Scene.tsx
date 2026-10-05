@@ -98,6 +98,8 @@ const layout = () => {
 
 /** The scroll's radius, px: tight when rolled up, thinning to nothing as the paper unwinds (u: 0 rolled … 1 open). */
 const ROLL_R0 = 46;
+/** Below this radius the roll is thinner than its post and is drawn no more. */
+const ROLL_MIN = 12;
 /** The paper's back (the outside of the roll and of the curl): plain, a light grey, no print. */
 const PAPER_BACK = "#d4d2cb";
 
@@ -492,7 +494,10 @@ const Banner: React.FC<{ L: Layout; c: Cloth; clipId: string; namesBase: number;
 }) => {
   const T = BANNER.top;
   const B = BANNER.bottom;
-  const r = ROLL_R0 * (1 - c.p);
+  // the roll's radius goes as the square root of the cloth still on it (its end area), so it stays fat almost to the
+  // end and collapses quickly; once thinner than the post it is gone
+  const rRaw = ROLL_R0 * Math.sqrt(Math.max(0, 1 - c.p));
+  const r = rRaw >= ROLL_MIN ? rRaw : 0;
   const cl = POST_LX(L);
   const cr = c.postX - r;
   const span = Math.max(1, cr - cl);
@@ -619,7 +624,23 @@ const Banner: React.FC<{ L: Layout; c: Cloth; clipId: string; namesBase: number;
         />
         <rect x={c.postX - 9} y={postTop} width={18} height={POST_H} fill={PAPER} stroke={INK} strokeWidth={6} />
         {/* the roll the cloth unwinds from, round the carried post: its plain back outward */}
-        {r >= 2 ? <PaperRoll x={c.postX - r} r={r} top={T - 12 + dR} bottom={B + 12 + dR} /> : null}
+        {r > 0 ? (
+          <g>
+            <PaperRoll x={c.postX - r} r={r} top={T - 12 + dR} bottom={B + 12 + dR} core={9} />
+            {/* the post runs through the roll's core: it comes out of the middle of the top cap (its cut end a dot in
+                the spiral's centre) and out of the bottom; between, the roll hides it */}
+            <rect
+              x={c.postX - 9}
+              y={postTop}
+              width={18}
+              height={T - 12 + dR - postTop}
+              fill={PAPER}
+              stroke={INK}
+              strokeWidth={6}
+            />
+            <ellipse cx={c.postX} cy={T - 12 + dR} rx={12} ry={5} fill={INK} />
+          </g>
+        ) : null}
         <circle cx={c.postX} cy={postTop - 6} r={14} fill={INK} />
       </g>
       {c.planted && k < 14 ? (
@@ -644,14 +665,20 @@ const Banner: React.FC<{ L: Layout; c: Cloth; clipId: string; namesBase: number;
 
 // A roll of the banner's paper seen from the side, standing upright: the outside is the paper's plain back (grey, ink
 // outline, no print), the top end shows the wound spiral. (x is its left side; it is 2r wide.)
-const PaperRoll: React.FC<{ x: number; r: number; top: number; bottom: number }> = ({ x, r, top, bottom }) => {
+const PaperRoll: React.FC<{ x: number; r: number; top: number; bottom: number; core?: number }> = ({
+  x,
+  r,
+  top,
+  bottom,
+  core = 0,
+}) => {
   const ry = Math.max(2, r * 0.32);
   const spiral = (() => {
     const pts: string[] = [];
     const turns = Math.max(1.5, r / 12);
     for (let i = 0; i <= 48; i++) {
       const a = (i / 48) * turns * 2 * Math.PI;
-      const k = 1 - i / 52;
+      const k = 1 - (i / 48) * (1 - Math.min(0.9, Math.max(0.08, (core + 4) / r)));
       pts.push(`${(x + r + Math.cos(a) * r * k).toFixed(1)} ${(top + Math.sin(a) * ry * k).toFixed(1)}`);
     }
     return `M ${pts.join(" L ")}`;
