@@ -2,7 +2,7 @@
 
 画面长什么样：画风、颜色、赛车与赛道的画法、透视、画面里的文字。
 
-Next id: ART-42
+Next id: ART-45
 
 ## Pillars
 
