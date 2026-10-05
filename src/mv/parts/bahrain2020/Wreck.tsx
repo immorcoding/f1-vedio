@@ -184,6 +184,8 @@ export const WreckWorld: React.FC<{
   debrisUnderFire?: boolean;
   // someone in or out of the cockpit drawn over the fires round the car, the car and the fire in the gap
   subjectOverFires?: boolean;
+  // the fires behind the subject fade out into the ground at their base (no bright line or pool at the root)
+  softFireBase?: boolean;
 }> = ({
   cam,
   f,
@@ -206,6 +208,7 @@ export const WreckWorld: React.FC<{
   gapFireBack = 0,
   debrisUnderFire = false,
   subjectOverFires = false,
+  softFireBase = false,
 }) => {
   const p = noGlow
     ? { ...FIRE_PALETTES[palette], glow: null }
@@ -338,24 +341,70 @@ export const WreckWorld: React.FC<{
       {behindRails}
     </>
   );
+  // a fire's base faded into the ground (`softFireBase`): its bottom `fade` px go from full to nothing at the base
+  const soft = (key: string, y: number, ppm: number, node: React.ReactNode) => {
+    if (!softFireBase) return node;
+    const fade = 0.45 * ppm;
+    const id = `${rimClip}-soft-${key}`;
+    return (
+      <g key={key}>
+        <defs>
+          <linearGradient
+            id={`${id}-g`}
+            gradientUnits="userSpaceOnUse"
+            x1={0}
+            x2={0}
+            y1={y - fade}
+            y2={y + 0.1 * fade}
+          >
+            <stop offset={0} stopColor="#fff" />
+            <stop offset={0.55} stopColor="#fff" stopOpacity={0.55} />
+            <stop offset={1} stopColor="#fff" stopOpacity={0} />
+          </linearGradient>
+          <mask
+            id={id}
+            maskUnits="userSpaceOnUse"
+            x={-200}
+            y={-200}
+            width={2320}
+            height={1480}
+          >
+            <rect
+              x={-200}
+              y={-200}
+              width={2320}
+              height={1480}
+              fill={`url(#${id}-g)`}
+            />
+          </mask>
+        </defs>
+        <g mask={`url(#${id})`}>{node}</g>
+      </g>
+    );
+  };
   const gapFireNode = (
     <>
-      {burntOut ? null : (
-        <Fire
-          x={gapFire.x}
-          y={gapFire.y}
-          w={gapFire.w}
-          h={gapFire.h}
-          frame={f + 13}
-          seed={`wreck-gap${fireSeed}`}
-          tongues={4}
-          embers={4}
-          palette={noLight}
-          intensity={intensity * 0.9}
-          smoke={false}
-          clip={clip}
-        />
-      )}
+      {burntOut
+        ? null
+        : soft(
+            "gap",
+            gapFire.y,
+            gapFire.w / FIRES.gap.w,
+            <Fire
+              x={gapFire.x}
+              y={gapFire.y}
+              w={gapFire.w}
+              h={gapFire.h}
+              frame={f + 13}
+              seed={`wreck-gap${fireSeed}`}
+              tongues={4}
+              embers={4}
+              palette={noLight}
+              intensity={intensity * 0.9}
+              smoke={false}
+              clip={clip}
+            />,
+          )}
     </>
   );
   const rearNode = (
@@ -495,28 +544,36 @@ export const WreckWorld: React.FC<{
           seed={`wreck-dying${fireSeed}`}
         />
       ) : null}
-      {burntOut ? null : (
-        <Fire
-          x={front.x}
-          y={front.y}
-          w={front.w}
-          h={front.h}
-          frame={f + 7}
-          seed={`wreck-front${fireSeed}`}
-          tongues={7}
-          embers={6}
-          palette={noLight}
-          intensity={intensity}
-          smoke={false}
-          clip={clip}
-        />
-      )}
+      {burntOut
+        ? null
+        : soft(
+            "front",
+            front.y,
+            front.w / FIRES.front.w,
+            <Fire
+              x={front.x}
+              y={front.y}
+              w={front.w}
+              h={front.h}
+              frame={f + 7}
+              seed={`wreck-front${fireSeed}`}
+              tongues={7}
+              embers={6}
+              palette={noLight}
+              intensity={intensity}
+              smoke={false}
+              clip={clip}
+            />,
+          )}
       {burntOut
         ? null
         : nearFires.map((n, i) => {
             if (n.h <= 0) return null;
             const c = fireAt(n.x, n.z, n.w, n.h);
-            return (
+            return soft(
+              n.seed,
+              c.y,
+              c.w / n.w,
               <Fire
                 key={n.seed}
                 x={c.x}
@@ -531,7 +588,7 @@ export const WreckWorld: React.FC<{
                 intensity={intensity}
                 smoke={false}
                 clip={clip}
-              />
+              />,
             );
           })}
       {subjectOverFires ? (

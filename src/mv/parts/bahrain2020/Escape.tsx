@@ -298,6 +298,7 @@ export const Escape: React.FC<PictureProps> = ({ f, palette }) => {
             gapFireBack={GAP_FIRE_BACK}
             debrisUnderFire
             subjectOverFires
+            softFireBase
           />
           {/* the marshal's powder jet into the front of the cockpit, then everyone, deepest first (it crosses
               behind GRO and the doctor into the cell) */}
