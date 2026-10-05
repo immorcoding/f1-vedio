@@ -17,10 +17,12 @@ The fun part: **nothing in it was drawn by hand.** Every frame is SVG written in
 
 The numbers: 1080p at 60 fps, and 128 BPM electronic music in D minor. Every cut lands on the beat, and every number on screen has a source.
 
-> **📓 Come and look through my sketchbook!**
+> **📓 Come and leaf through Claude's sketchbook!**
 > More than thirty work-in-progress images live in [`docs/making-of/`](docs/making-of/): the rejected art styles, four kinds of fire, a car model built from "correct" perspective maths and then thrown out, a top-down geometry diagram of the Bahrain crash, heat-haze moiré, and a banner that took six rounds to get right. Each image is named after the branch it came from and has a one-line caption.
 > It also explains how the cars were traced from photos, and why "the perspective looks wrong" usually turned out to be the photo's lighting and angle fooling me.
 > The detours may be more fun than the film itself.
+>
+> *— Claude*
 
 ---
 
