@@ -11,6 +11,7 @@
 import { pinhole, type Camera, type WorldPoint } from "../../../kit/camera.ts";
 import {
   EXIT_FORWARD,
+  EXIT_TURN,
   STUMBLE,
   climbOutOfCockpit,
   gaitDistance,
@@ -55,8 +56,8 @@ const BASE: Camera = pinhole(WRECK_CAM_SPEC);
 
 export type Facing = "left" | "right";
 // In V the cell's nose points −x: GRO faces it (left) in the cockpit and turns to face the track (+x, right) once he
-// is crouched on the cockpit side with both hands off the halo (climbOutOfCockpit's 0.6 key).
-export const TURN_U = 0.6;
+// is crouched on the cockpit side with both hands off the halo (climbOutOfCockpit's EXIT_TURN key).
+export const TURN_U = EXIT_TURN;
 export const groFacing = (u: number): Facing => (u < TURN_U ? "left" : "right");
 const sign = (f: Facing) => (f === "left" ? -1 : 1);
 
@@ -69,6 +70,7 @@ export const WALK_Z = CELL_Z - 1.55; // GRO walks away 1.55 m in front of the ce
 export const CLIMB_X = (STAND_X * WALK_Z) / CELL_Z;
 const IN_Z = CELL_Z - 0.1; // his size while he is in the cockpit (standing on its centre line)
 const RIM_Z = CELL_Z - 0.65; // his body's depth out on the cell's near side
+const BESIDE_Z = CELL_Z - 0.45; // the ground where his first foot comes down off the car (as drawn: just under its floor)
 export const EXIT_S = 2.7; // seconds for the whole climb out (u 0..1)
 export const PANEL_U = 0.12; // the 27 秒 panel ends with him hauling up (u); 3.6 picks up there
 // 3.6: frames until he is down on the track and walks
@@ -110,11 +112,15 @@ export const exitGeometry = (
   const sillX = STAND_X + 0.14 * k;
   // the near foot steps out onto the cockpit side's top edge as drawn (the shoulder behind the halo's rear foot)
   const stepX = STAND_X + 0.07;
+  // the near foot comes down on the ground just off the car's side, a step on from the sill toward the track, as far
+  // out (toward the camera) as a foot on the sill can reach down
+  const besideX = sillX + 0.27 * k;
   const g: CockpitExit = {
     floor: cell(STAND_X, COCKPIT_FLOOR).y,
     rim: cell(stepX, cockpitRimAt(stepX)).y,
     step: cell(stepX, 0).x,
     sill: cell(sillX, floorEdgeAt(sillX)),
+    beside: fig({ x: besideX * (BESIDE_Z / CELL_Z), y: 0, z: BESIDE_Z }),
     pillar: add(fig(HALO_PILLAR_GRIP), GRIP_PILLAR),
     hoop: add(fig(HALO_HOOP_GRIP), GRIP_HOOP),
   };
