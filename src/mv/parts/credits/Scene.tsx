@@ -1,10 +1,10 @@
 // Picture for 片尾彩蛋, the post-credits stinger (shots.ts has the beat plan). One continuous take after a beat of black:
 //   1.2–1.3  the lights come up on a static trackside close-up at Yas Marina by night (the 2021 part's set, ART-8 B/W).
 //        On the left stand two posts: the banner, a cloth printed with the words and the end title's chequered strip
-//        (ART-32), is rolled tight round the first (its plain back outward), its free end tied to the second;
+//        (ART-32), has its end fixed to the left post and the rest rolled tight round the right one (plain back outward);
 //   1.4  Clawd hops in from the left carrying the chequered flag, one hop per beat, landing on the kick, with squash and
-//        stretch; it picks up the second post and carries it right, so the cloth unrolls between the posts (sagging a
-//        little, bouncing with each hop) and "MADE BY / Immor × Claude" appears only where it has already been (it
+//        stretch; it picks up the right post with its roll and carries it off, so the cloth unwinds off the carried
+//        roll between the posts (sagging a little, bouncing with each hop) and "MADE BY / Immor × Claude" appears only where it has already been (it
 //        never covers the words, ART-14); on bar 3 beat 4 it plants the post with a thunk, and the banner hangs between
 //        two fixed posts as cloth;
 //   bar 4  VER's RB18 #1 shoots past behind at race speed: the only fast thing on screen (the camera stays still, no
@@ -458,9 +458,10 @@ const Gag: React.FC<{ f: number }> = ({ f }) => {
   );
 };
 
-// The banner: one length of cloth, printed on its front (the words and the chequered strip), plain on its back, wound
-// on a roll round the left post; its right end is tied to a second post. Clawd carries that post off to the right, so
-// the cloth unrolls between the two (sagging a little, bouncing with each hop), plants it on bar 3 beat 4, and from then
+// The banner: one length of cloth, printed on its front (the words and the chequered strip), plain on its back. Its left
+// end is fixed to the left post; the rest is wound on a roll round a second post. Clawd carries that post off to the
+// right, so the cloth unwinds off the carried roll between the two (sagging a little, bouncing with each hop); the roll
+// runs out exactly as Clawd plants the post on bar 3 beat 4, leaving the cloth's edge clamped to it, and from then
 // the cloth hangs between two fixed posts: a slight catenary sag top and bottom, soft folds, and on the RB18's gust a
 // ripple running along it that dies away. The print rides the cloth (drawn in thin vertical slices, each moved with it).
 type Layout = ReturnType<typeof layout>;
@@ -492,12 +493,12 @@ const Banner: React.FC<{ L: Layout; c: Cloth; clipId: string; namesBase: number;
   const T = BANNER.top;
   const B = BANNER.bottom;
   const r = ROLL_R0 * (1 - c.p);
-  const cl = POST_LX(L) + r;
-  const cr = c.postX;
+  const cl = POST_LX(L);
+  const cr = c.postX - r;
   const span = Math.max(1, cr - cl);
   const dR = -c.postLift;
-  const sagTop = (c.planted ? 9 : 5) + c.bounce;
-  const sagBot = (c.planted ? 12 : 7) + c.bounce;
+  const sagTop = (c.planted ? 18 : 6) + c.bounce;
+  const sagBot = (c.planted ? 20 : 8) + c.bounce;
   const u = (x: number) => clamp01((x - cl) / span);
   const wave = (x: number) =>
     c.ripple * Math.sin(Math.PI * u(x)) * Math.sin((2 * Math.PI * (x - cl)) / 460 - 2 * Math.PI * 2.4 * c.rt);
@@ -605,8 +606,6 @@ const Banner: React.FC<{ L: Layout; c: Cloth; clipId: string; namesBase: number;
           <path d={sheet()} fill="none" stroke={INK} strokeWidth={10} strokeLinejoin="round" />
         </g>
       ) : null}
-      {/* the roll round the left post: the cloth's plain back outward */}
-      {r >= 2 ? <PaperRoll x={POST_LX(L) - r} r={r} top={T - 12} bottom={B + 12} /> : null}
       <circle cx={POST_LX(L)} cy={T - 52} r={14} fill={INK} />
       {/* the right post */}
       <g transform={`translate(${shake} 0)`}>
@@ -619,6 +618,8 @@ const Banner: React.FC<{ L: Layout; c: Cloth; clipId: string; namesBase: number;
           opacity={c.postLift > 0 ? 0.2 : 0.4}
         />
         <rect x={c.postX - 9} y={postTop} width={18} height={POST_H} fill={PAPER} stroke={INK} strokeWidth={6} />
+        {/* the roll the cloth unwinds from, round the carried post: its plain back outward */}
+        {r >= 2 ? <PaperRoll x={c.postX - r} r={r} top={T - 12 + dR} bottom={B + 12 + dR} /> : null}
         <circle cx={c.postX} cy={postTop - 6} r={14} fill={INK} />
       </g>
       {c.planted && k < 14 ? (
