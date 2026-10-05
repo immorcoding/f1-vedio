@@ -28,6 +28,12 @@ import {
 import { wreckShotCam } from "../mv/parts/bahrain2020/Wreck";
 import { cueFrame, shotById } from "../mv/parts/bahrain2020/common";
 import {
+  RUNOFF_WIDTH,
+  TRACK_EDGE_Y,
+  scrapeAt,
+  tyresAtTouch,
+} from "../mv/parts/bahrain2020/ground.ts";
+import {
   CAR_STATIONS,
   CELL_REST,
   IMPACT_POINT,
@@ -46,7 +52,7 @@ import {
 } from "../mv/parts/bahrain2020/wreck-geometry.ts";
 
 const K = 56; // px per metre
-const MAP = { x0: -10, x1: 8.6, y0: -9.2, y1: 5.6 };
+const MAP = { x0: -10, x1: 8.6, y0: -10.6, y1: 5.6 };
 const O = { x: 30 - MAP.x0 * K, y: 40 - MAP.y0 * K }; // screen point of the W origin
 const S = (p: P2) => ({ x: O.x + p.x * K, y: O.y + p.y * K });
 const pts = (ps: P2[]) =>
@@ -193,6 +199,7 @@ export const BahrainGeometry: React.FC = () => {
     .filter((_, i) => i <= cut)
     .map((p) => toW(rightFrontCorner(p, L_GRO)))
     .filter((p) => p.x > MAP.x0 - 1);
+  const tyres = tyresAtTouch();
   // the rest poses
   const cellAt = (m: number) =>
     add(CELL_REST.rollHoop, NOSE_DIR, m - CAR_STATIONS.rollHoop);
@@ -309,6 +316,10 @@ export const BahrainGeometry: React.FC = () => {
         </defs>
         <g clipPath="url(#geo-map)">
           <rect x={0} y={S({ x: 0, y: 0 }).y} width={1920} height={1080} fill="#ddd8cf" />
+          {/* 3.3's ground (ground.ts): the track beyond its white edge line, the run-off to the barrier */}
+          <rect x={0} y={0} width={1920} height={S({ x: 0, y: TRACK_EDGE_Y }).y} fill="#ebe6dc" />
+          <line x1={0} y1={S({ x: 0, y: TRACK_EDGE_Y }).y} x2={1920} y2={S({ x: 0, y: TRACK_EDGE_Y }).y} stroke={INK} strokeWidth={9} />
+          <line x1={0} y1={S({ x: 0, y: TRACK_EDGE_Y }).y} x2={1920} y2={S({ x: 0, y: TRACK_EDGE_Y }).y} stroke={PAPER} strokeWidth={5} />
           {Array.from({ length: 30 }, (_, i) => Math.ceil(MAP.x0) + i).map((x) => (
             <line key={`gx${x}`} x1={S({ x, y: 0 }).x} y1={0} x2={S({ x, y: 0 }).x} y2={1080} stroke="#000" strokeOpacity={0.06} />
           ))}
@@ -348,6 +359,12 @@ export const BahrainGeometry: React.FC = () => {
           ))}
           {/* 3.2's last second (right front-wing corner), then the slide through the barrier */}
           <polyline points={pts(path32)} fill="none" stroke={BLUE} strokeWidth={3} strokeDasharray="10 7" />
+          {/* 3.3's tyre marks: each tyre's line along the 29° path, up to where it was on the first touch */}
+          {tyres.map((p, i) => (
+            <polyline key={`tm${i}`} points={pts([add(p, PATH_DIR, (MAP.x0 - 1 - p.x) / PATH_DIR.x), p])} stroke={GREY} strokeWidth={4} strokeOpacity={0.75} />
+          ))}
+          {/* where the far side scrapes the rails as it slides in: 3.3's sparks come off this stretch */}
+          <polyline points={pts([{ x: IMPACT_POINT.x, y: -0.12 }, { x: scrapeAt(PIERCE).x, y: -0.12 }])} stroke={ORANGE} strokeWidth={9} />
           {/* the car at the first touch */}
           <g opacity={0.85}>
             <MangaCar car={VF20} view="top" at={{ ...S(touchRear), pxPerMetre: K }} state={{ heading: BODY_ANGLE }} />
@@ -380,6 +397,24 @@ export const BahrainGeometry: React.FC = () => {
               </Label>
             );
           })}
+          <Label at={{ x: MAP.x1 - 0.3, y: TRACK_EDGE_Y - 0.35 }} size={20} anchor="end">
+            {`track edge, white line (run-off ${RUNOFF_WIDTH.toFixed(1)} m, as 3.2)`}
+          </Label>
+          <Label at={add(tyres[3], PATH_DIR, (MAP.x0 + 0.3 - tyres[3].x) / PATH_DIR.x)} dy={34} size={18} color={GREY}>
+            3.3: tyre marks along the 29° path
+          </Label>
+          {/* the sparks' stretch: a leader to its note, clear of the labels round the touch */}
+          <polyline
+            points={pts([
+              { x: (IMPACT_POINT.x + scrapeAt(PIERCE).x) / 2, y: -0.12 },
+              { x: MAP.x0 + 4.6, y: 2.45 },
+            ])}
+            stroke={ORANGE}
+            strokeWidth={2}
+          />
+          <Label at={{ x: MAP.x0 + 0.3, y: 2.75 }} size={18} color={ORANGE}>
+            3.3: sparks where the far side scrapes the rails
+          </Label>
           <Label at={W.at} dx={16} dy={-14} size={20}>
             wreck camera
           </Label>
