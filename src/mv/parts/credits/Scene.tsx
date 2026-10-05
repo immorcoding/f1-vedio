@@ -1,15 +1,17 @@
 // Picture for 片尾彩蛋, the post-credits stinger (shots.ts has the beat plan). One continuous take after a beat of black:
-//   1.2  the outro title's chequered strip wipes back in on black, in the same place and at the same tilt (CircuitTag's
-//        motion, ART-32): the film's title card coming back;
-//   1.3  the black lifts off a static trackside close-up at Yas Marina by night (the 2021 part's set, ART-8 B/W);
+//   1.2–1.3  the lights come up on a static trackside close-up at Yas Marina by night (the 2021 part's set, ART-8 B/W).
+//        On a post at the left stands the banner, rolled up tight: a paper scroll with the chequered strip (ART-32, the
+//        end title's strip) wound in along its bottom edge;
 //   1.4  Clawd hops in from the left carrying the chequered flag, one hop per beat, landing on the kick, with squash and
-//        stretch; its back hand holds the cord of a paper banner's roll, so the banner unrolls behind it and the words
-//        "MADE BY / Immor × Claude" appear only where it has already been (it never covers them, ART-14);
+//        stretch; its back hand pulls the scroll's cord, so the paper and its strip unroll together as one piece behind
+//        it, the roll thinning as it unwinds to a clean banner edge, and the words "MADE BY / Immor × Claude" appear
+//        only where it has already been (it never covers them, ART-14);
 //   bar 4  VER's RB18 #1 shoots past behind at race speed: the only fast thing on screen (the camera stays still, no
-//        speed lines on the scene; the car alone smears and trails a few lines). Its wind ruffles Clawd and the flag.
+//        speed lines on the scene; the car alone smears and trails a few lines), hard-freezing for 3 frames centred in
+//        the frame on the whoosh peak (paper flash, focus lines) so it reads as VER's #1. Its wind ruffles Clawd.
 //        Clawd keeps hopping on the spot, humming (a note over its head);
-//   bar 5  the last landing on beat 1; the late double-take on beat 2 with a speech bubble POLE AGAIN?! (VER took pole at
-//        Yas Marina in 2021 and 2022, facts.md); the startled jump on beat 3 (!!, BOING!) and the flag flies out of its
+//   bar 5  the last landing on beat 1; the late double-take on beat 2 with a shout POLE AGAIN?! bursting out next to its
+//        head (Bangers, no box; VER took pole at Yas Marina in 2021 and 2022, facts.md); the startled jump on beat 3 (!!, BOING!) and the flag flies out of its
 //        hands; on beat 4 the flag falls back over the camera, covers the frame and wipes it to black (STO-10).
 // Every beat is a frame from the beat map (frameAt via the edit list's cues); the car and the camera are real-size
 // through the pinhole camera (ART-9).
@@ -22,12 +24,13 @@ import {
   CircuitTag,
   lean,
   measure,
+  SFX_FONT,
   Sfx,
   TITLE_FONT,
   titleWidth,
   useLettering,
 } from "../../../kit/lettering";
-import { speedLines } from "../../../kit/lines";
+import { focusLines, speedLines } from "../../../kit/lines";
 import { ChequeredFlag } from "../../../scenes/abu-dhabi-2021/ChequeredFlag";
 import { Closeup, PANEL, trackLayout } from "../../../scenes/abu-dhabi-2021/Closeup";
 import { useSongFrame } from "../../clock";
@@ -41,8 +44,8 @@ const F = (p: Pos) => frameAt(p);
 const cue = (id: string) => F(cueAt(EDIT, id));
 
 // ── beats, as frames ─────────────────────────────────────────────────────────────────────────────────────────────────
-const STRIP_AT = cue("credits.strip");
 const LIGHTS_AT = cue("credits.lights");
+const LIGHTS_UP = F(cb(1, 3));
 const HOP_IN = cue("credits.hopIn");
 const PASS_AT = cue("credits.pass");
 const DOUBLE_TAKE = cue("credits.doubleTake");
@@ -57,14 +60,14 @@ const WALK_LANDINGS = 8;
 // ── the camera and the set: a static low trackside camera, the car's lane behind Clawd ─────────────────────────────
 const cam = pinhole({ f: 1500, horizon: 160, cx: 960, height: 1.25 });
 const LAYOUT = trackLayout(-60, 60, { x0: 20, x1: 90, z: 520, top: 38 });
-const TILT = -3; // the outro banner's tilt, so the strip comes back exactly where it was
+const TILT = -3; // the outro banner's tilt
 const CAR_Z = 10.5;
 const CAR_V = 78; // m/s, ~280 km/h down the straight
 const GROUND = 965; // Clawd's feet (in the tilted panel's frame)
 const PW = 18; // Clawd's block width, px
 
-// ── the title card coming back: the outro's strip (outro/Flag.tsx FlagTitle: title size 150, baseline 540 + 0.26·150,
-// strip 26 below it, 34 px CircuitTag) ──────────────────────────────────────────────────────────────────────────────
+// ── the banner: the end title's banner and strip (outro/Flag.tsx FlagTitle: title size 150, baseline 540 + 0.26·150,
+// strip 26 below it, 34 px CircuitTag), standing rolled up by the track ──────────────────────────────────────────────────────────────────────────────
 const OUTRO_TITLE = "F1 · 1989–2021";
 const STRIP = 34;
 const SQ = Math.round(STRIP * 0.42);
@@ -89,8 +92,9 @@ const layout = () => {
   return { checks, stripW, x0, size, namesW, left, end };
 };
 
-/** The strip's wipe: CircuitTag's 14 frames from bar 1 beat 2. */
-const stripAt = (f: number) => clamp01((f - STRIP_AT) / 14);
+/** The scroll's radius, px: tight when rolled up, thinning to nothing as the paper unwinds (u: 0 rolled … 1 open). */
+const ROLL_R0 = 34;
+const rollR = (u: number) => ROLL_R0 * Math.sqrt(Math.max(0, 1 - u));
 
 // ── Clawd's hops ─────────────────────────────────────────────────────────────────────────────────────────────────────
 const CONTACT = 0.2; // share of a beat on the ground after each landing (the squash and the push-off)
@@ -136,7 +140,13 @@ const hopAt = (f: number, xs: number[]): Body => {
 
 // ── the car: its centre passes the middle of the frame on bar 4 beat 1 (the whoosh's closest point) ─────────────────
 const LEN = carLength(RB18);
-const carRear = (f: number) => (CAR_V * (f - PASS_AT)) / FPS - LEN / 2; // m from the camera axis
+// The pass is too quick to read at true speed (~0.3 s across the frame), so on the whoosh's peak the car hard-freezes
+// for FREEZE frames, centred in the frame, over a paper flash and focus lines (a manga freeze-frame), then drives on at
+// the same speed. The car's clock stops during the freeze.
+const FREEZE = 3;
+const carClock = (f: number) => (f < PASS_AT ? f : f < PASS_AT + FREEZE ? PASS_AT : f - FREEZE);
+const frozenAt = (f: number) => f >= PASS_AT && f < PASS_AT + FREEZE;
+const carRear = (f: number) => (CAR_V * (carClock(f) - PASS_AT)) / FPS - LEN / 2; // m from the camera axis
 const ppmCar = cam.pxPerMetre(CAR_Z);
 const carScreen = (f: number) => {
   const rear = cam.screenX(carRear(f), CAR_Z);
@@ -151,7 +161,7 @@ const Gag: React.FC<{ f: number }> = ({ f }) => {
   const handBack = clawdHands(PW, { step: 0, planted: 1, stretch: 1, startle: 0, look: 0, reach: 1 }).back.x;
   // Clawd's x at each landing: the walk lays the banner open from its left end to its end, then it stays
   const xEnd = L.end - handBack;
-  const xStart = L.left + 40 - handBack;
+  const xStart = L.left + 2 * ROLL_R0 - handBack;
   const xs = LANDINGS.map((_, k) => lerp(xStart, xEnd, Math.min(1, k / WALK_LANDINGS)));
 
   // ── the car ──
@@ -189,9 +199,11 @@ const Gag: React.FC<{ f: number }> = ({ f }) => {
   const toWorld = (p: { x: number; y: number }) => ({ x: body.x + p.x * sx, y: GROUND - lift + p.y * sy });
   const backHand = toWorld(hands.back);
   const frontHand = toWorld(hands.front);
-  // the banner's roll follows the back hand, never going back
+  // the paper's open end follows the back hand (the roll sits between them); the roll thins as the paper unwinds
   const walked = f < LANDINGS[0] ? 0 : 1;
-  const edge = walked ? Math.min(L.end, Math.max(L.left, backHand.x)) : L.left;
+  const edge = walked ? Math.min(L.end, Math.max(L.left, backHand.x - 2 * ROLL_R0)) : L.left;
+  const unrolled = (edge - L.left) / (L.end - L.left);
+  const r = rollR(unrolled);
 
   // ── the flag Clawd carries: pole forward from its front hand, cloth trailing back over its head; the gust snaps it ──
   const flagAngle = 12 + 6 * Math.sin(t * 6) - 22 * gust;
@@ -200,20 +212,18 @@ const Gag: React.FC<{ f: number }> = ({ f }) => {
   const flyX = frontHand.x - 16 * Math.max(0, jt);
   const flyY = frontHand.y - 46 * Math.max(0, jt) + 0.6 * Math.max(0, jt) ** 2;
 
-  const strip = stripAt(f);
-
   const clipId = "cg-reveal";
   const namesBase = OUTRO_BASE + 11;
   const capH = 0.72 * L.size;
 
-  // ── speech bubble (the double-take, through the jump) ──
-  const bubbleOn = dt >= 0;
-  const bubblePop = bubbleOn ? 1 + 0.18 * Math.exp(-dt / 3) * Math.cos(dt * 0.9) : 0;
-  const BUBBLE_TEXT = "POLE AGAIN?!";
-  const bubbleSize = 66;
-  const bw = measure(BUBBLE_TEXT, CAPTION_FONT, 700, bubbleSize, 0.02) + 90;
-  const bh = bubbleSize * 1.75;
-  const bubbleC = { x: Math.min(PANEL.x + PANEL.w - bw / 2 - 40, xEnd - 40), y: 200 };
+  // ── the shout (the double-take, through the jump): Bangers, no box, bursting out beside Clawd's head, in the gap
+  // under the banner and left of the cord, so it covers neither the words nor Clawd ──
+  const shoutOn = dt >= 0;
+  const SHOUT = "POLE AGAIN?!";
+  const shoutSize = 84;
+  const shoutPop = shoutOn ? 1 + 0.35 * Math.exp(-dt / 2.5) * Math.cos(dt * 0.8) : 0;
+  const shoutJit = jt >= 0 && jt < 14 ? { x: ((jt * 37) % 7) - 3, y: ((jt * 53) % 7) - 3 } : { x: 0, y: 0 };
+  const shoutAt = { x: L.end - 80 + shoutJit.x * 3, y: GROUND - 120 + shoutJit.y * 3 };
 
   const notesOn = f >= LANDINGS[WALK_LANDINGS] - 20 && f < DOUBLE_TAKE;
 
@@ -232,7 +242,7 @@ const Gag: React.FC<{ f: number }> = ({ f }) => {
                 car: RB18,
                 x: carRear(f),
                 z: CAR_Z,
-                state: { wheelAngle: wheelAngleAt(RB18, CAR_V * (f / FPS)), farSide: "low" },
+                state: { wheelAngle: wheelAngleAt(RB18, CAR_V * (carClock(f) / FPS)), farSide: "low" },
               },
             ]
           : []
@@ -245,7 +255,17 @@ const Gag: React.FC<{ f: number }> = ({ f }) => {
         </g>
       }
       between={
-        carOn ? (
+        frozenAt(f) ? (
+          // the freeze-frame: a paper flash over the background and focus lines on the car; no smear
+          <g>
+            <rect x={-200} y={-200} width={2320} height={1480} fill={PAPER} opacity={0.88} />
+            <path
+              d={focusLines(960, carY - 0.6 * ppmCar, 0.62 * LEN * ppmCar, 150, 7 + (f - PASS_AT))}
+              fill={INK}
+              opacity={0.75}
+            />
+          </g>
+        ) : carOn ? (
           // the car alone carries the speed: a smear of ghosts behind it and a few lines trailing it
           <g>
             <path
@@ -268,7 +288,7 @@ const Gag: React.FC<{ f: number }> = ({ f }) => {
                 <MangaCar
                   car={RB18}
                   at={cam.anchor({ x: carRear(f) - d, z: CAR_Z })}
-                  state={{ wheelAngle: wheelAngleAt(RB18, CAR_V * (f / FPS)), farSide: "low" }}
+                  state={{ wheelAngle: wheelAngleAt(RB18, CAR_V * (carClock(f) / FPS)), farSide: "low" }}
                 />
               </g>
             ))}
@@ -277,7 +297,14 @@ const Gag: React.FC<{ f: number }> = ({ f }) => {
       }
       over={
         <g>
-          {/* the paper banner, unrolling behind Clawd (the outro's banner: ink shadow, ink rules) */}
+          {/* the banner's post at its left end, standing on the verge */}
+          <g>
+            <rect x={L.left - 22} y={BANNER.top - 46} width={18} height={GROUND - 30 - (BANNER.top - 46)} fill={PAPER} stroke={INK} strokeWidth={6} />
+            <circle cx={L.left - 13} cy={BANNER.top - 52} r={14} fill={INK} />
+            <ellipse cx={L.left - 13} cy={GROUND - 28} rx={30} ry={8} fill={INK} opacity={0.4} />
+          </g>
+          {/* the paper banner and its chequered strip, one piece, unrolling behind Clawd (the outro's banner: ink shadow,
+              ink rules; the end title's strip along the bottom) */}
           <defs>
             <clipPath id={clipId}>
               <rect x={-400} y={0} width={Math.max(0, edge + 400)} height={1080} />
@@ -292,11 +319,8 @@ const Gag: React.FC<{ f: number }> = ({ f }) => {
                 stroke={INK}
                 strokeWidth={4}
               />
-              <rect
-                x={L.left}
-                y={BANNER.top}
-                width={edge - L.left}
-                height={BANNER.bottom - BANNER.top}
+              <path
+                d={`M ${edge} ${BANNER.top} H ${L.left} V ${BANNER.bottom} H ${edge}${r < 2 ? " Z" : ""}`}
                 fill="none"
                 stroke={INK}
                 strokeWidth={10}
@@ -326,29 +350,45 @@ const Gag: React.FC<{ f: number }> = ({ f }) => {
                     {NAMES}
                   </text>
                 </g>
+                <CircuitTag x={L.x0} y={STRIP_Y} text="" strip={1} name={0} size={STRIP} checks={L.checks} colour={INK} />
               </g>
             </g>
           ) : null}
-          {/* the roll at the banner's open end */}
-          {f >= LIGHTS_AT ? (
+          {/* the roll: paper wound round itself with the strip's checks wound in along its bottom; it thins as the paper
+              unwinds and is gone once the banner is fully open (a clean edge) */}
+          {r >= 2 ? (
             <g>
-              <rect x={edge - 16} y={BANNER.top - 14} width={32} height={BANNER.bottom - BANNER.top + 28} fill={PAPER} stroke={INK} strokeWidth={6} />
+              <rect x={edge} y={BANNER.top - 12} width={2 * r} height={BANNER.bottom - BANNER.top + 24} fill={PAPER} stroke={INK} strokeWidth={6} />
+              {Array.from({ length: 3 }, (_, k) =>
+                [0, 1].map((row) =>
+                  (k + row) % 2 === 0 ? (
+                    <rect
+                      key={`${k}-${row}`}
+                      x={edge + (k * 2 * r) / 3}
+                      y={STRIP_Y + row * SQ}
+                      width={(2 * r) / 3}
+                      height={SQ}
+                      fill={INK}
+                    />
+                  ) : null,
+                ),
+              )}
               <path
-                d={`M ${edge + 4} ${BANNER.top - 6} V ${BANNER.bottom + 6}`}
+                d={`M ${edge + r * 0.55} ${BANNER.top - 4} V ${BANNER.bottom + 4} M ${edge + r * 1.3} ${BANNER.top - 4} V ${BANNER.bottom + 4}`}
                 stroke={INK}
-                strokeWidth={3}
-                opacity={0.6}
+                strokeWidth={2.5}
+                opacity={0.55}
               />
-              <ellipse cx={edge} cy={BANNER.top - 14} rx={16} ry={6} fill={PAPER} stroke={INK} strokeWidth={5} />
+              <rect x={edge + r * 1.45} y={BANNER.top - 8} width={r * 0.35} height={BANNER.bottom - BANNER.top + 16} fill={INK} opacity={0.18} />
+              <ellipse cx={edge + r} cy={BANNER.top - 12} rx={r} ry={Math.max(2, r * 0.3)} fill={PAPER} stroke={INK} strokeWidth={5} />
+              <ellipse cx={edge + r} cy={BANNER.top - 12} rx={r * 0.35} ry={Math.max(1, r * 0.1)} fill="none" stroke={INK} strokeWidth={2.5} />
             </g>
           ) : null}
-          {/* the outro's chequered strip, wiping back in (drawn again over the black curtain, Scene below) */}
-          <CircuitTag x={L.x0} y={STRIP_Y} text="" strip={strip} name={0} size={STRIP} checks={L.checks} colour={INK} />
 
           {/* the cord from the roll to Clawd's back hand */}
           {holding && walked ? (
             <path
-              d={`M ${edge} ${BANNER.bottom + 14} Q ${(edge + backHand.x) / 2 - 10} ${(BANNER.bottom + backHand.y) / 2 + 30} ${backHand.x} ${backHand.y}`}
+              d={`M ${edge + r} ${BANNER.bottom + 14} Q ${(edge + r + backHand.x) / 2 - 10} ${(BANNER.bottom + backHand.y) / 2 + 30} ${backHand.x} ${backHand.y}`}
               stroke={INK}
               strokeWidth={5}
               fill="none"
@@ -436,7 +476,7 @@ const Gag: React.FC<{ f: number }> = ({ f }) => {
               <Sfx x={body.x - 20} y={GROUND - lift - clawdSize(PW).h * stretch - 40} size={110} rotate={8} anchor="middle">
                 !!
               </Sfx>
-              <Sfx x={body.x - 300} y={GROUND + 52} size={84} rotate={-4}>
+              <Sfx x={body.x - 400} y={GROUND + 52} size={84} rotate={-4}>
                 BOING!
               </Sfx>
               <path
@@ -449,32 +489,41 @@ const Gag: React.FC<{ f: number }> = ({ f }) => {
             </g>
           ) : null}
 
-          {/* POLE AGAIN?! */}
-          {bubbleOn ? (
-            <g transform={`translate(${bubbleC.x} ${bubbleC.y}) scale(${bubblePop})`}>
-              <path
-                d={`M ${-bw * 0.08} ${bh * 0.42} L ${bw * 0.12} ${bh * 0.42 + 95} L ${bw * 0.16} ${bh * 0.38} Z`}
-                fill={PAPER}
-                stroke={INK}
-                strokeWidth={6}
-                strokeLinejoin="round"
-              />
-              <ellipse cx={0} cy={0} rx={bw / 2 + 24} ry={bh / 2 + 8} fill={PAPER} stroke={INK} strokeWidth={6} />
-              <path d={`M ${-bw * 0.06} ${bh * 0.4} L ${bw * 0.15} ${bh * 0.36}`} stroke={PAPER} strokeWidth={10} />
-              <text
-                x={0}
-                y={bubbleSize * 0.35}
-                textAnchor="middle"
-                fontFamily={CAPTION_FONT}
-                fontWeight={700}
-                fontSize={bubbleSize}
-                letterSpacing="0.02em"
-                fill={INK}
-              >
-                {BUBBLE_TEXT}
-              </text>
-            </g>
-          ) : null}
+          {/* POLE AGAIN?!: a hand-lettered shout bursting out beside Clawd's head, with a few emphasis strokes; it pops
+              with an overshoot on the double-take and jitters on the jump */}
+          {shoutOn
+            ? (() => {
+                const W = measure(SHOUT, SFX_FONT, 400, shoutSize, 0.03);
+                const x1 = shoutAt.x;
+                const x0 = x1 - W;
+                const yb = shoutAt.y;
+                const yt = yb - shoutSize * 0.8;
+                const strokes = [
+                  [x0 + W * 0.15, yt - 18, x0 + W * 0.1, yt - 58],
+                  [x0 + W * 0.45, yt - 22, x0 + W * 0.45, yt - 66],
+                  [x0 + W * 0.75, yt - 18, x0 + W * 0.8, yt - 58],
+                  [x0 - 18, yt + 10, x0 - 58, yt - 14],
+                  [x0 - 22, yb - 20, x0 - 66, yb - 16],
+                  [x1 + 16, yt - 6, x1 + 44, yt - 34],
+                ];
+                return (
+                  <g transform={`translate(${x1} ${yb}) rotate(-7) scale(${shoutPop}) translate(${-x1} ${-yb})`}>
+                    {strokes.map(([a, b, c, d], i) => (
+                      <path
+                        key={i}
+                        d={`M ${a} ${b} L ${c} ${d}`}
+                        stroke={INK}
+                        strokeWidth={8}
+                        strokeLinecap="round"
+                      />
+                    ))}
+                    <Sfx x={x1} y={yb} size={shoutSize} anchor="end">
+                      {SHOUT}
+                    </Sfx>
+                  </g>
+                );
+              })()
+            : null}
         </g>
       }
     />
@@ -536,28 +585,15 @@ const FlagFall: React.FC<{ f: number }> = ({ f }) => {
 
 export const Scene: React.FC<SceneProps> = ({ part }) => {
   const f = useSongFrame(part);
-  if (f < STRIP_AT || f >= BLACK) return <AbsoluteFill style={{ backgroundColor: INK }} />;
-  const curtain = f < HOP_IN ? 1 - Easing.inOut(Easing.cubic)(clamp01((f - LIGHTS_AT) / (HOP_IN - LIGHTS_AT))) : 0;
+  if (f < LIGHTS_AT || f >= BLACK) return <AbsoluteFill style={{ backgroundColor: INK }} />;
+  const dark = 1 - Easing.inOut(Easing.cubic)(clamp01((f - LIGHTS_AT) / (LIGHTS_UP - LIGHTS_AT)));
   return (
     <AbsoluteFill style={{ backgroundColor: INK }}>
       <Gag f={f} />
-      {/* the black: the whole frame on 1.2, lifting off on 1.3; the strip stays put on top of it, exactly over the
-          panel's own strip, so it is one strip throughout */}
-      {curtain > 0 ? (
+      {/* the lights come up on 1.2–1.3 */}
+      {dark > 0 ? (
         <svg width={1920} height={1080} style={{ position: "absolute", inset: 0 }}>
-          <rect y={-1300 * (1 - curtain)} width={1920} height={1080} fill={INK} />
-          <g transform={`rotate(${TILT} 960 540)`}>
-            <CircuitTag
-              x={layout().x0}
-              y={STRIP_Y}
-              text=""
-              strip={stripAt(f)}
-              name={0}
-              size={STRIP}
-              checks={layout().checks}
-              colour={INK}
-            />
-          </g>
+          <rect width={1920} height={1080} fill={INK} opacity={dark} />
         </svg>
       ) : null}
       <FlagFall f={f} />
