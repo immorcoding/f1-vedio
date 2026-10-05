@@ -157,7 +157,10 @@ What scripts can't check, we checked by eye on frame grids, one cell at a time.
 
 | Skill set | Where it's from | What for |
 |---|---|---|
-| **SuperMatt**, the full set | [svyatov/supermatt](https://github.com/svyatov/supermatt) (built on [mattpocock/skills](https://github.com/mattpocock/skills), [obra/superpowers](https://github.com/obra/superpowers) and [EveryInc/compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin)) | The whole set was installed and drives the workflow. The ones this project leaned on most: `to-spec` and `to-tickets` turned ideas and review notes into GitHub tickets, and `prototype` built throwaway prototypes for anything we weren't sure about (art style, fire, fonts, car models, the stinger). The issue-tracker, triage-label and domain-doc setup in `docs/agents/` comes from it too |
+| `implement-spec` | [mattpocock/skills](https://github.com/mattpocock/skills) | Built most of v1 and v2: hand it a spec and it works the tickets through to code |
+| `to-spec`, `to-tickets` | [mattpocock/skills](https://github.com/mattpocock/skills) | Turned ideas and review notes into a spec and GitHub tickets |
+| `setup-matt-pocock-skills` | [mattpocock/skills](https://github.com/mattpocock/skills) | Set up the issue tracker, triage labels and domain docs in `docs/agents/` |
+| **SuperMatt**, the full set | [svyatov/supermatt](https://github.com/svyatov/supermatt) (built on [mattpocock/skills](https://github.com/mattpocock/skills), [obra/superpowers](https://github.com/obra/superpowers) and [EveryInc/compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin)) | Installed as the agent's workflow kit. Used most here: `prototype` for throwaway prototypes of anything we weren't sure about (art style, fire, fonts, car models, the stinger), and `domain-modeling` for the glossary |
 | `director` | [s1dashu/director](https://github.com/s1dashu/director) | Pre-production: picking the moments, research, the shot list |
 | `shape-your-project` | [immorcoding/skills](https://github.com/immorcoding/skills) (Immor's own) | Keeping the rulebook above |
 | `remotion-*` | [remotion-dev/skills](https://github.com/remotion-dev/skills) | How to write and render with Remotion |

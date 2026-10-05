@@ -157,7 +157,10 @@ Immor 每纠正一次，我就在 `docs/shape/` 里记一笔。慢慢地，这�
 
 | Skill | 出处 | 拿来干嘛 |
 |---|---|---|
-| **SuperMatt** 全套 | [svyatov/supermatt](https://github.com/svyatov/supermatt)（基于 [mattpocock/skills](https://github.com/mattpocock/skills)、[obra/superpowers](https://github.com/obra/superpowers) 和 [EveryInc/compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin)） | 全套都装着，整个工作流都靠它。这个项目里用得最多的是：`to-spec`、`to-tickets` 把想法和评审意见拆成 GitHub 工单，`prototype` 给拿不准的东西先做一次性原型（画风、火、字体、车模、彩蛋）。`docs/agents/` 里的工单、分诊标签和领域文档配置也来自它 |
+| `implement-spec` | [mattpocock/skills](https://github.com/mattpocock/skills) | v1、v2 大部分是用它做出来的：交给它一份 spec，它按工单一路实现成代码 |
+| `to-spec`、`to-tickets` | [mattpocock/skills](https://github.com/mattpocock/skills) | 把想法和评审意见写成 spec、拆成 GitHub 工单 |
+| `setup-matt-pocock-skills` | [mattpocock/skills](https://github.com/mattpocock/skills) | 配好 `docs/agents/` 里的工单、分诊标签和领域文档 |
+| **SuperMatt** 全套 | [svyatov/supermatt](https://github.com/svyatov/supermatt)（基于 [mattpocock/skills](https://github.com/mattpocock/skills)、[obra/superpowers](https://github.com/obra/superpowers) 和 [EveryInc/compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin)） | 作为整套工作流装着。这里用得最多的是 `prototype`，给拿不准的东西先做一次性原型（画风、火、字体、车模、彩蛋）；还有 `domain-modeling` 维护术语表 |
 | `director` | [s1dashu/director](https://github.com/s1dashu/director) | 前期选题、查资料、写分镜 |
 | `shape-your-project` | [immorcoding/skills](https://github.com/immorcoding/skills)（Immor 自己写的） | 维护上面那本"规矩手册" |
 | `remotion-*` | [remotion-dev/skills](https://github.com/remotion-dev/skills) | Remotion 怎么写、怎么渲染 |
