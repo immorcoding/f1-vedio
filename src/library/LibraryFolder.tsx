@@ -4,9 +4,14 @@
 import { Composition, Folder, Still } from "remotion";
 import { CARS, type CarId } from "../cars";
 import type { TrackId } from "../tracks";
+import { OutroTitleCandidate } from "../mv/parts/outro/Flag";
 import { T5Panel } from "../scenes/abu-dhabi-2021/T5Panel";
 import { Cars2020States, FireSheet } from "./Bahrain2020Sheets";
+import { BahrainGeometry } from "./BahrainGeometry";
 import { CarCheck } from "./CarCheck";
+import { FarSideCheck, type FarSideCheckProps } from "./FarSideCheck";
+import { CAR_LOOKS_SIZE, CarLooksCheck } from "./CarLooksCheck";
+import { REAR_WING_LOW_SIZE, RearWingLowCheck } from "./RearWingLowCheck";
 import { CarSheet, SHEETS } from "./CarSheet";
 import { CAR_STATES_FRAMES, CarStates } from "./CarStates";
 import { KitSheet } from "./KitSheet";
@@ -16,6 +21,7 @@ import { PeopleSheet } from "./PeopleSheet";
 import { SuzukaTracksideSheet } from "./SceneSheets";
 import {
   AllTopsSheet,
+  Top2021TrioSheet,
   TOP_SHEET_2021,
   TOP_SHEETS_2008,
   TopCarSheet,
@@ -23,6 +29,18 @@ import {
 import { TRACK_SHEETS, TrackSheet } from "./TrackSheet";
 
 const SIZE = { width: 1920, height: 1080 };
+
+// The 2021 cars' and the VF-20's front corners against the STR3's (the approved low look), and the VF-20's high look.
+const FAR_SIDE_ROWS: FarSideCheckProps = {
+  rows: [
+    { car: "STR3" },
+    { car: "W12" },
+    { car: "RB16B" },
+    { car: "AT01" },
+    { car: "VF20" },
+    { car: "VF20", farSide: "high" },
+  ],
+};
 
 const YEARS = Object.keys(SHEETS).map(Number) as (keyof typeof SHEETS)[];
 
@@ -54,6 +72,11 @@ export const LibraryFolder: React.FC = () => (
       {...SIZE}
     />
     <Still id="Cars-Top-All-Sheet" component={AllTopsSheet} {...SIZE} />
+    <Still
+      id="Cars-2021-Top-Trio-Sheet"
+      component={Top2021TrioSheet}
+      {...SIZE}
+    />
     {(["A", "B"] as const).map((k) => (
       <Still
         key={k}
@@ -97,6 +120,33 @@ export const LibraryFolder: React.FC = () => (
       />
     ))}
     <Folder name="Checks">
+      <Still
+        id="Check-Outro-Title"
+        component={OutroTitleCandidate}
+        defaultProps={{ title: "F1 · 1989–2021" }}
+        {...SIZE}
+      />
+      <Still
+        id="Check-Bahrain-Geometry"
+        component={BahrainGeometry}
+        {...SIZE}
+      />
+      <Still
+        id="Check-Far-Side"
+        component={FarSideCheck}
+        defaultProps={FAR_SIDE_ROWS}
+        {...SIZE}
+      />
+      <Still
+        id="Check-Car-Looks"
+        component={CarLooksCheck}
+        {...CAR_LOOKS_SIZE}
+      />
+      <Still
+        id="Check-Rear-Wing-Low"
+        component={RearWingLowCheck}
+        {...REAR_WING_LOW_SIZE}
+      />
       {(Object.keys(CARS) as CarId[]).map((car) => (
         <Still
           key={`trace-${car}`}

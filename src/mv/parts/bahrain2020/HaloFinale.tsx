@@ -9,14 +9,16 @@
 // The tagline fades in from 72.3 and stands from the `bahrain2020.tagline` cue (73.1, where the music settles); from
 // 73.3, as the reverse swell rises into the buildup, everything fades to black, black on the `bahrain2020.black` cue
 // (74.1). It is set straight on the dark frame, no box: type system D (Titillium Web 700), letter-spaced caps in paper,
-// centred in the lower third, clear of the halo (ART-14).
+// centred in the lower third, clear of the halo (ART-14). Before it, a small "HALO · MANDATORY SINCE 2018" caption box
+// in the top-left corner says why he lived (#20; facts.md).
 import { INK, PAPER } from "../../../kit/colors";
 import { BubbleSmoke, FIRE_PALETTES } from "../../../kit/fire";
-import { CAPTION_FONT } from "../../../kit/lettering";
+import { CAPTION_FONT, Caption } from "../../../kit/lettering";
 import { ToneDefs } from "../../../kit/tone";
 import { at, frameAt } from "../../timing.ts";
 import { cueFrame, ramp, shotById, type PictureProps } from "./common";
 import {
+  Flip,
   HALO_WORLD,
   HaloScorch,
   Vignette,
@@ -31,12 +33,22 @@ const HALO_ON_SCREEN = { x: 960, y: 390 };
 const TAGLINE_Y = 935;
 const TAGLINE_SIZE = 60;
 
+// The finale's camera at song frame f: the wreck camera closing slowly on the halo.
+export const finaleCam = (f: number) => {
+  const u = ramp(
+    f,
+    cueFrame("bahrain2020.halo"),
+    cueFrame("bahrain2020.black"),
+    (x) => x,
+  );
+  return zoomCam(WRECK_CAM, HALO_WORLD, 2.4 + 0.28 * u, HALO_ON_SCREEN);
+};
+
 export const HaloFinale: React.FC<PictureProps> = ({ f, palette }) => {
   const from = cueFrame("bahrain2020.halo");
   const to = cueFrame("bahrain2020.black");
   const t = f - from;
-  const u = ramp(f, from, to, (x) => x);
-  const cam = zoomCam(WRECK_CAM, HALO_WORLD, 2.4 + 0.28 * u, HALO_ON_SCREEN);
+  const cam = finaleCam(f);
   const halo = cam.project(HALO_WORLD);
   const ppm = cam.pxPerMetre(HALO_WORLD.z);
   // the heart stops after its last beat on 73.1
@@ -44,6 +56,11 @@ export const HaloFinale: React.FC<PictureProps> = ({ f, palette }) => {
   const tagline = shotById("3.6").text[1];
   const tagIn = ramp(f, frameAt(at(72, 3)), cueFrame("bahrain2020.tagline"));
   const fade = ramp(f, frameAt(at(73, 3)), to);
+  // the halo note (facts.md: mandatory in F1 since 2018) comes up in the top-left corner just after the cut, a beat
+  // before the tagline starts, and stays to the black: small, in a type D caption box, clear of the halo and of the
+  // tagline in the lower third (ART-14). A quiet fade, not an accent (no sound on 72.2; MOT-6).
+  const haloNote = shotById("3.6").text[2];
+  const noteIn = ramp(f, from + 10, frameAt(at(72, 2)));
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
@@ -54,38 +71,45 @@ export const HaloFinale: React.FC<PictureProps> = ({ f, palette }) => {
           <stop offset="100%" stopColor={INK} stopOpacity={0.92} />
         </linearGradient>
       </defs>
-      <WreckWorld
-        cam={cam}
-        f={f}
-        fireSeed="halo"
-        palette={palette}
-        intensity={0.12}
-        noGlow
-        driver={false}
-        tonePrefix="b3h"
-        shimmer={6}
-        burntOut
-      />
-      <HaloScorch cam={cam} f={f} />
-      <g transform={`translate(${halo.x} ${halo.y - 0.1 * ppm})`}>
-        <BubbleSmoke
-          w={1.6 * ppm}
-          top={0}
-          frame={f}
-          seed="halo-smoke"
-          palette={FIRE_PALETTES[palette]}
-          rise={1.4 * ppm}
-          count={5}
-          size={0.5}
-          warm={false}
-          opacity={0.7}
+      <Flip>
+        <WreckWorld
+          cam={cam}
+          f={f}
+          fireSeed="halo"
+          palette={palette}
+          intensity={0.12}
+          noGlow
+          driver={false}
+          tonePrefix="b3h"
+          shimmer={6}
+          burntOut
         />
-      </g>
+        <HaloScorch cam={cam} f={f} />
+        <g transform={`translate(${halo.x} ${halo.y - 0.1 * ppm})`}>
+          <BubbleSmoke
+            w={1.6 * ppm}
+            top={0}
+            frame={f}
+            seed="halo-smoke"
+            palette={FIRE_PALETTES[palette]}
+            rise={1.4 * ppm}
+            count={5}
+            size={0.5}
+            warm={false}
+            opacity={0.7}
+          />
+        </g>
+      </Flip>
       {/* the lower third: dark ground under the embers, where the tagline stands */}
       <rect y={800} width={1920} height={280} fill="url(#b3h-ground)" />
       {/* it lands on the beat: a cut in from black */}
       <rect width={1920} height={1080} fill={INK} opacity={1 - ramp(t, 0, 4)} />
       <Vignette amount={0.45 + 0.3 * hb} />
+      {noteIn > 0 && haloNote ? (
+        <g opacity={noteIn}>
+          <Caption x={72} y={72} lines={[haloNote]} size={34} />
+        </g>
+      ) : null}
       {tagIn > 0 ? (
         <text
           x={960}

@@ -3,7 +3,7 @@
 // once its tail is clear of KVY's nose, it spears across the track and the run-off toward the guardrail, its path at
 // 29° and its nose yawed 22° further right (FIA; the hit itself is the cut to 3.3). Positions come from crash-geometry.ts, which the overlap check also reads
 // (ART-18: the cars touch, never overlap). The run-off is schematic; the facts are in docs/production/facts.md.
-import { AT01, MangaCar, VF20 } from "../../../cars";
+import { AT01, MangaCar, VF20, wheelAngleAt } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { CAPTION_FONT, Caption, Sfx } from "../../../kit/lettering";
 import { focusLines, speedLines } from "../../../kit/lines";
@@ -77,6 +77,13 @@ export const CrashMap: React.FC<PictureProps> = ({ f }) => {
   const tc = PLAN.contact;
   const gro = poseAtFrame(PLAN.gro, t);
   const kvy = poseAtFrame(PLAN.kvy, t);
+  // the tyres roll with the distance driven along the track; their speed on screen (slowed round the touch) sets the
+  // tread's blur (MOT-5)
+  const tNext = CLOCK.sim(shotT + 1);
+  const rolling = (poses: CarPose[], car: typeof VF20) => ({
+    wheelAngle: wheelAngleAt(car, poseAtFrame(poses, t).x),
+    speed: (poseAtFrame(poses, tNext).x - poseAtFrame(poses, t).x) * 60,
+  });
   // camera: on the pair until the touch, then on GRO, panning down toward the guardrail
   const follow = ramp(t, tc - 10, tc + 40);
   const groNose = {
@@ -304,13 +311,21 @@ export const CrashMap: React.FC<PictureProps> = ({ f }) => {
         car={AT01}
         view="top"
         at={at(kvy)}
-        state={{ heading: kvy.heading, steer: kvy.steer ?? 0 }}
+        state={{
+          heading: kvy.heading,
+          steer: kvy.steer ?? 0,
+          ...rolling(PLAN.kvy, AT01),
+        }}
       />
       <MangaCar
         car={VF20}
         view="top"
         at={at(gro)}
-        state={{ heading: gro.heading, steer: gro.steer ?? 0 }}
+        state={{
+          heading: gro.heading,
+          steer: gro.steer ?? 0,
+          ...rolling(PLAN.gro, VF20),
+        }}
       />
       {/* the touch: a small star where the wheels met */}
       {sinceContact >= 0 && sinceContact < 36 ? (

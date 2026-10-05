@@ -59,6 +59,47 @@ export const ppm13 = (f: number) => {
   const k = smooth(tau, SLOWMO_AT - 0.5, SLOWMO_AT + 1.5);
   return 26 + 10 * k;
 };
+// Where a driver tag (104 × 46 px box) sits: beside its car, square to the car's heading on screen, far enough out
+// that no part of the box reaches the car whatever its heading (the tags stay through the dive to the touch, while the
+// cars yaw into the corner). Each car keeps one side for the whole shot (`side`: 1 = the car's right, −1 its left):
+// SEN pulls out to the right and dives down the inside, so his tag is on his right and PRO's on his left. Choosing
+// the side from where the other car is flipped the tags every frame while the two ran nose to tail. `heading` is the
+// car's screen heading (degrees), smoothed by the caller (headingSmooth13); `cppm` the drawn px per metre.
+export const TAG_HALF = { w: 52, h: 23 };
+export const TAG_SIDE = { SEN: 1, PRO: -1 } as const;
+export const tagAt13 = (
+  q: { x: number; y: number },
+  side: 1 | -1,
+  heading: number,
+  cppm: number,
+) => {
+  const a = (heading * Math.PI) / 180;
+  const n = { x: -Math.sin(a) * side, y: Math.cos(a) * side };
+  const reach =
+    (MP45.width / 2) * cppm +
+    Math.abs(n.x) * TAG_HALF.w +
+    Math.abs(n.y) * TAG_HALF.h +
+    16;
+  return { x: q.x + n.x * reach, y: q.y + n.y * reach };
+};
+// A heading (degrees) averaged over a window, so a tag does not shake with the car's frame-to-frame yaw: the mean
+// direction of `heading(t + k·step)`, k = −n…n, as unit vectors (no wrap-around at ±180°).
+export const headingSmooth13 = (
+  heading: (t: number) => number,
+  t: number,
+  step = 0.05,
+  n = 4,
+) => {
+  let x = 0;
+  let y = 0;
+  for (let k = -n; k <= n; k++) {
+    const a = (heading(t + k * step) * Math.PI) / 180;
+    const w = n + 1 - Math.abs(k);
+    x += Math.cos(a) * w;
+    y += Math.sin(a) * w;
+  }
+  return (Math.atan2(y, x) * 180) / Math.PI;
+};
 // Cars are never drawn shorter than ~150 px (4.26 m × 36 px/m): larger than life on the wider framing.
 export const CAR_PPM_MIN = 36;
 export const carScale13 = (f: number) => Math.max(1, CAR_PPM_MIN / ppm13(f));
@@ -75,14 +116,35 @@ export const RESULT = cue("suzuka1989.result");
 export const SPEED = 83; // m/s, 300 km/h (MOT-5)
 export const Z_PRO_12 = 8;
 export const Z_SEN_12 = 11;
+// From 13.1 the shot cuts to a low-angle camera on the near kerb (review-1: the 4 bars were one static framing): the
+// same two lines, 3 m apart, seen from 2.5 m closer, so the depths drop by 2.5 m.
+export const LOW_12 = cue("suzuka1989.lowAngle");
+export const Z_PRO_LOW = 5.5;
+export const Z_SEN_LOW = 8.5;
+export const isLow12 = (f: number) => f >= LOW_12;
 export const cars12 = (f: number) => {
   const t = (f - SHOT_12.from) / 60;
+  const tLow = (LOW_12 - SHOT_12.from) / 60;
   const dur = (SHOT_12.to - SHOT_12.from) / 60;
-  // SEN, on the far line, closes from 1.5 m off PRO's gearbox until he runs alongside, his nose at PRO's cockpit
-  // (treatment 1.2: "并排"); the lines are 3 m apart, so the cars never meet (ART-18)
-  const gap = lerp(1.5, -2.6, smooth(t, 0.6, dur - 0.4));
+  // SEN, on the far line 3 m right of PRO's, reels him in: from 3 m off PRO's gearbox to 1 m by the cut to the low
+  // camera, then sits right on it (0.5–0.9 m, darting as he looks for a way by) — "SEN 紧咬". 1.3 picks up after 130R
+  // with SEN back in the tow. The lines are 3 m apart, so the cars never meet (ART-18).
+  const gap =
+    lerp(3, 1, smooth(t, 0.4, tLow - 0.2)) -
+    0.3 * smooth(t, tLow, tLow + 1.2) +
+    0.12 * smooth(t, tLow, tLow + 0.6) * Math.sin((t - tLow) * 4.1);
   const pro = SPEED * t + 0.6 * Math.sin(t * 1.3);
-  return { pro, sen: pro - MP45.length - gap, t };
+  return { pro, sen: pro - MP45.length - gap, t, dur };
+};
+// The low camera's x: the pair centred on the optical axis in screen terms (SEN's rear end and PRO's nose equally far
+// either side, each at its own depth), drifting 0.6 m forward over the two bars so the framing keeps moving.
+export const camXLow12 = (f: number) => {
+  const { pro, sen, t } = cars12(f);
+  const nose = pro + MP45.length;
+  const c =
+    (nose / Z_PRO_LOW + sen / Z_SEN_LOW) / (1 / Z_PRO_LOW + 1 / Z_SEN_LOW);
+  const tLow = (LOW_12 - SHOT_12.from) / 60;
+  return c + 0.6 * smooth(t, tLow, tLow + 3.75) - 0.3;
 };
 // The camera starts ahead of the cars, so they sweep in from the left, then holds the pair centred: the middle of
 // SEN's rear wing to PRO's nose on the optical axis.
@@ -119,7 +181,8 @@ export const MID_WHEELBASE = MP45.length / 2 - MP45.centreAhead;
 // SEN's middle of the wheelbase relative to the camera's x (the camera pans with the slide).
 export const SEN_MID_14 = -0.6;
 export const FREEZE_14 = 14; // frames
-const V0 = 22;
+// m/s, the pair's speed as they meet in the chicane (~80 km/h); the debris (wreck14.ts) keeps it
+export const V0 = 22;
 const TAU = 0.45;
 export const slideTime14 = (f: number) =>
   Math.max(0, (f - HIT - FREEZE_14) / 60);
@@ -166,11 +229,12 @@ export const SAMPLERS: TopViewSampler[] = [
     ...SHOT_12,
     poses: (f) => {
       const c = cars12(f);
+      const low = isLow12(f);
       return [
         {
           id: "PRO",
           x: c.pro + MP45.length / 2,
-          y: Z_PRO_12,
+          y: low ? Z_PRO_LOW : Z_PRO_12,
           heading: 0,
           length: MP45.length,
           width: MP45.width,
@@ -178,7 +242,7 @@ export const SAMPLERS: TopViewSampler[] = [
         {
           id: "SEN",
           x: c.sen + MP45.length / 2,
-          y: Z_SEN_12,
+          y: low ? Z_SEN_LOW : Z_SEN_12,
           heading: 0,
           length: MP45.length,
           width: MP45.width,

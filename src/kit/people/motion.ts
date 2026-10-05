@@ -6,8 +6,10 @@
 // stands frozen in a shot. Pure TypeScript with no React (node-loadable, like ./skeleton.ts).
 import {
   BONES,
+  add,
   LEG,
   footFrom,
+  lean,
   flatFoot,
   lerpV,
   mixPose,
@@ -728,30 +730,36 @@ export const assistedEscape = (
 
 // ── Getting out of a cockpit ─────────────────────────────────────────────────────────────────────────────────────
 // Climbing out of a single-seater's cockpit sideways, toward the camera, by the halo: the way drivers get out (both
-// hands on the halo, haul up, a foot up on the side of the chassis, step out), then down over a low barrier (a step on
-// its top edge) to the ground. Facing along the car (forward = toward the nose). The caller gives the geometry in the
-// figure frame (y up from the ground he ends on); the heights may come from a drawing rather than a true elevation, so
-// nothing here assumes them. u 0..1:
+// hands on the halo, haul up, a foot up on the side of the chassis, step out), then down the car's side to the ground.
+// Facing along the car (forward = toward the nose) until EXIT_TURN, then turned to face away from the car (the way he
+// steps down and walks off). The caller gives the geometry in the figure frame (y up from the ground he ends on) of
+// the way he faces — from EXIT_TURN on, the turned frame; the heights may come from a drawing rather than a true
+// elevation (a foothold further from the camera shows higher up), so nothing here assumes them. u 0..1:
 //   0     sitting in the cockpit, legs in the footwell, both hands up on the halo (far hand on the central pillar, near
 //         hand on the hoop's near side), head and shoulders above the rim;
 //   0.12  hauling himself up on the halo, feet drawn back under him;
 //   0.24  standing on the floor of the cockpit, leaning over the halo on both arms;
 //   0.36  the near foot lifted out onto the rim (the far hand has moved from the pillar to the hoop);
 //   0.48  pushed up off the hoop onto that foot, crouched over the side;
-//   0.6   the far leg over: both feet on the rim (the hands have let go);
-//   0.72  the near foot down onto the barrier's top edge;
-//   0.84  the far foot down past it onto the ground;
-//   1     the near foot off the barrier: standing, the first frame of the stumble away.
-// Rules the keys keep (MOT-5, ART-18): a hand that holds the halo stays on its point until it lets go (the caller
-// checks reach); a planted foot stays where it is; a limb changes layer only where it overlaps nothing it changes sides
-// of, so no limb passes through the halo, the cockpit side or a rail. A side-on figure cannot show a leg stepping
-// toward the camera, so a leg lifted out over the cockpit side swings its knee forward over the hoop — drawn in front
-// of the hoop, which is where a leg going out over the side is.
+//   0.6   the far leg over: both feet on the rim (the hands have let go); he turns on the spot, both feet where they
+//         are, so the far foot, behind him while he faced the nose, is now the front one;
+//   0.69  that front (far) foot reaches down onto the sill and takes his weight, the near leg crouched on the rim;
+//   0.79  he lowers himself on it and the trailing near foot comes down past it to the ground beside the car;
+//   0.9   the far foot off the sill, down to the ground where the walk starts;
+//   1     the near foot a step on: standing, the first frame of the stumble away.
+// Rules the keys keep (MOT-5, MOT-7, ART-18): a hand that holds the halo stays on its point until it lets go (the
+// caller checks reach); a planted foot stays where it is; every planted foot is within reach and never higher than
+// just under the hip, so knees bend forward only and no thigh swings back behind the body; a limb changes layer only
+// where it overlaps nothing it changes sides of, so no limb passes through the halo, the cockpit side or a rail. A
+// side-on figure cannot show a leg stepping toward the camera, so a leg lifted out over the cockpit side swings its
+// knee forward over the hoop — drawn in front of the hoop, which is where a leg going out over the side is — and the
+// steps down toward the camera are drawn as steps down (a foothold nearer the camera shows lower).
 export type CockpitExit = {
   floor: number; // the cockpit floor he stands on (y)
   rim: number; // top of the cockpit's near side, where he steps out (y)
   step: number; // x of his near foot on the rim (behind the hoop's foot, so the leg clears the halo)
-  sill: V; // the barrier's top edge where the near foot steps down
+  sill: V; // the first foothold down the car's side, where the far foot steps down (ankle-less: the sole's height)
+  beside: V; // the ground beside the car where the near foot comes down (the sole's height)
   pillar: V; // wrist target of the far hand on the halo's central pillar
   hoop: V; // wrist target of the near hand on the hoop's near side
 };
@@ -763,6 +771,9 @@ export type CockpitExit = {
 //   "front"    in front of the barrier.
 export type ExitLayer = "cockpit" | "lifting" | "out" | "front";
 export const EXIT_FORWARD = CLIMB_FORWARD; // the hip ends this far forward of the ground point
+// He turns from facing the nose to facing away from the car here (both feet on the rim, hands off the halo): from this
+// u on, the caller gives the geometry in the turned frame and draws him facing the other way.
+export const EXIT_TURN = 0.6;
 // when each part changes layer (u: at the top of its swing), and when each hand lets go of the halo
 // (a leg starts lifting as its swing out begins, is out once its foot is on the rim, and goes in front of the barrier
 // at the top of its swing down; the body goes out once the hip is over the side)
@@ -772,14 +783,20 @@ export const EXIT_SWITCH = {
   bodyOut: 0.48,
   farLegLift: 0.48,
   farLegOut: 0.6,
-  nearLegFront: 0.66,
+  farLegFront: 0.645,
+  nearLegFront: 0.74,
   bodyFront: 0.78,
-  farLegFront: 0.78,
   farHandOff: 0.24, // = the key where it starts to move (to the hoop: back on at farHandOn)
   farHandOn: 0.36,
   nearHandOff: 0.48,
 };
-const EXIT_KEYS = (g: CockpitExit): { u: number; pose: Pose }[] => {
+// How a foot swings into a key: which foot, how high it rises over the straight line (m, at mid-swing), how much its
+// toe points down on the way, and `out` > 1 to move out (along x) ahead of coming down — a foot stepping off a ledge
+// goes forward before it drops.
+type Swing = { foot: "near" | "far"; lift: number; toe: number; out?: number };
+type ExitKey = { u: number; pose: Pose; swing?: Swing };
+const mirrorX = (p: V): V => v(-p.x, p.y);
+const EXIT_KEYS = (g: CockpitExit, turned: boolean): ExitKey[] => {
   const F = g.floor;
   const R = g.rim;
   const end = shiftPose(stumble(0), EXIT_FORWARD);
@@ -798,110 +815,155 @@ const EXIT_KEYS = (g: CockpitExit): { u: number; pose: Pose }[] => {
   const onHoop = { near: both.near, far: hold(v(g.hoop.x - 0.13, g.hoop.y - 0.02), -40) };
   const onFloor = (x: number): FootPose => ({ ankle: v(x, F + BONES.ankle), pitch: 0 });
   const onRim = (x: number, pitch = 0): FootPose => ({ ankle: v(x, R + BONES.ankle), pitch });
-  const onSill = (pitch: number): FootPose => ({
-    ankle: v(g.sill.x, g.sill.y + BONES.ankle),
-    pitch,
+  // crouched on the rim, both feet on it, facing the nose (in the frame of the nose, whatever g's frame is)
+  const crouch = (step: number): Pose => ({
+    hip: v(-0.04, R + 0.4),
+    pelvis: 26,
+    chest: 42,
+    head: 0,
+    feet: { near: onRim(step), far: onRim(step - 0.16, 10) },
+    arms: free,
   });
+  if (!turned)
+    return [
+      {
+        u: 0,
+        pose: {
+          hip: v(0.16, F + 0.12),
+          pelvis: -20,
+          chest: 24,
+          head: -6,
+          // legs out along the footwell, knees a little up
+          feet: {
+            near: { ankle: v(0.82, F + 0.16), pitch: -30 },
+            far: { ankle: v(0.8, F + 0.15), pitch: -30 },
+          },
+          arms: both,
+        },
+      },
+      {
+        u: 0.12,
+        pose: {
+          hip: v(0.06, F + 0.42),
+          pelvis: 20,
+          chest: 32,
+          head: -8,
+          feet: { near: onFloor(0.12), far: onFloor(0.0) },
+          arms: both,
+        },
+      },
+      {
+        u: 0.24,
+        pose: {
+          hip: v(0.0, F + 0.8),
+          pelvis: 24,
+          chest: 48,
+          head: -6,
+          feet: { near: onFloor(-0.04), far: onFloor(-0.14) },
+          arms: both,
+        },
+      },
+      {
+        u: 0.36,
+        pose: {
+          hip: v(-0.02, F + 0.84),
+          pelvis: 26,
+          chest: 44,
+          head: -4,
+          feet: {
+            near: onRim(g.step),
+            far: { ankle: v(-0.14, F + BONES.ankle + 0.02), pitch: 24 },
+          },
+          arms: onHoop,
+        },
+      },
+      {
+        u: 0.48,
+        pose: {
+          hip: v(-0.04, R + 0.32),
+          pelvis: 30,
+          chest: 50,
+          head: -2,
+          feet: {
+            near: onRim(g.step),
+            far: { ankle: v(-0.12, F + BONES.ankle + 0.06), pitch: 46 },
+          },
+          arms: onHoop,
+        },
+      },
+      { u: EXIT_TURN, pose: crouch(g.step) },
+    ];
+  // Turned: the same crouch, its hip and feet where they were (g.step is mirrored with the frame, so the crouch is
+  // built from the nose frame's step and mirrored back); the body now leans the new way.
+  const c = crouch(-g.step);
+  const turnedCrouch: Pose = {
+    ...c,
+    hip: mirrorX(c.hip),
+    feet: {
+      near: { ankle: mirrorX(c.feet.near.ankle), pitch: 0 },
+      far: { ankle: mirrorX(c.feet.far.ankle), pitch: 0 },
+    },
+  };
+  const rimNear = turnedCrouch.feet.near;
+  const onSill: FootPose = { ankle: v(g.sill.x, g.sill.y + BONES.ankle), pitch: 0 };
+  const onBeside: FootPose = { ankle: v(g.beside.x, g.beside.y + BONES.ankle), pitch: 0 };
+  // the far foot comes down flat where the stumble finds it (ball where the stumble's ball is), and rolls up onto
+  // its ball by the end
+  const ef = end.feet.far;
+  const farDown = footFrom(add(ef.ankle, lean(BONES.ball, ef.pitch)), BONES.ball, 0);
+  // the hip over the feet that carry him: within reach of each, and well above the higher one
   return [
+    { u: EXIT_TURN, pose: turnedCrouch },
     {
-      u: 0,
+      // the front (far) foot down onto the sill, the near leg folded under him on the rim
+      u: 0.69,
       pose: {
-        hip: v(0.16, F + 0.12),
-        pelvis: -20,
-        chest: 24,
-        head: -6,
-        // legs out along the footwell, knees a little up
-        feet: {
-          near: { ankle: v(0.82, F + 0.16), pitch: -30 },
-          far: { ankle: v(0.8, F + 0.15), pitch: -30 },
-        },
-        arms: both,
-      },
-    },
-    {
-      u: 0.12,
-      pose: {
-        hip: v(0.06, F + 0.42),
-        pelvis: 20,
-        chest: 32,
-        head: -8,
-        feet: { near: onFloor(0.12), far: onFloor(0.0) },
-        arms: both,
-      },
-    },
-    {
-      u: 0.24,
-      pose: {
-        hip: v(0.0, F + 0.8),
+        hip: v(g.sill.x + 0.03, Math.min(g.sill.y + 0.88, R + 0.3)),
         pelvis: 24,
-        chest: 48,
-        head: -6,
-        feet: { near: onFloor(-0.04), far: onFloor(-0.14) },
-        arms: both,
-      },
-    },
-    {
-      u: 0.36,
-      pose: {
-        hip: v(-0.02, F + 0.84),
-        pelvis: 26,
-        chest: 44,
-        head: -4,
-        feet: {
-          near: onRim(g.step),
-          far: { ankle: v(-0.14, F + BONES.ankle + 0.02), pitch: 24 },
+        chest: 36,
+        head: 12,
+        feet: { near: rimNear, far: onSill },
+        arms: {
+          near: { shoulder: 30, elbow: 40, grip: "open", wrist: 10 },
+          far: { shoulder: 58, elbow: 26, grip: "open", wrist: 10 },
         },
-        arms: onHoop,
       },
+      swing: { foot: "far", lift: 0.05, toe: 30 },
     },
     {
-      u: 0.48,
+      // lowered on the sill foot, the near foot down past it to the ground beside the car
+      u: 0.79,
       pose: {
-        hip: v(-0.04, R + 0.32),
-        pelvis: 30,
-        chest: 50,
-        head: -2,
-        feet: {
-          near: onRim(g.step),
-          far: { ankle: v(-0.12, F + BONES.ankle + 0.06), pitch: 46 },
+        hip: v((g.sill.x + g.beside.x) / 2 + 0.02, g.beside.y + BONES.ankle + 0.78),
+        pelvis: 22,
+        chest: 30,
+        head: 12,
+        feet: { near: onBeside, far: onSill },
+        arms: {
+          near: { shoulder: 44, elbow: 30, grip: "open", wrist: 10 },
+          far: { shoulder: 30, elbow: 40, grip: "open", wrist: 10 },
         },
-        arms: onHoop,
       },
+      swing: { foot: "near", lift: 0.06, toe: 25, out: 1.7 },
     },
     {
-      u: 0.6,
+      // off the sill: the far foot down to the ground where the walk starts
+      u: 0.9,
       pose: {
-        hip: v(-0.04, R + 0.4),
-        pelvis: 26,
-        chest: 42,
-        head: 0,
-        feet: { near: onRim(g.step), far: onRim(g.step - 0.16, 10) },
-        arms: free,
-      },
-    },
-    {
-      u: 0.72,
-      pose: {
-        hip: v(0.04, Math.max(g.sill.y + 0.68, R + 0.08)),
-        pelvis: 20,
-        chest: 32,
-        head: 4,
-        feet: { near: onSill(0), far: onRim(g.step - 0.16, 24) },
-        arms: free,
-      },
-    },
-    {
-      u: 0.84,
-      pose: {
-        hip: v(0.16, end.hip.y - 0.06),
+        hip: v((g.beside.x + farDown.ankle.x) / 2 + 0.04, end.hip.y - 0.04),
         pelvis: 16,
-        chest: 24,
-        head: 8,
-        feet: { near: onSill(20), far: end.feet.far },
+        chest: 22,
+        head: 12,
+        feet: { near: onBeside, far: farDown },
         arms: free,
       },
+      swing: { foot: "far", lift: 0.04, toe: 20, out: 1.4 },
     },
-    { u: 1, pose: end },
+    {
+      u: 1,
+      pose: end,
+      swing: { foot: "near", lift: 0.05, toe: 0, out: 1.2 },
+    },
   ];
 };
 export const climbOutOfCockpit = (
@@ -912,27 +974,39 @@ export const climbOutOfCockpit = (
   layer: Record<BodyPart, ExitLayer>;
   holds: { near: boolean; far: boolean };
 } => {
-  const keys = EXIT_KEYS(g);
   const x = clamp01(u);
+  const keys = EXIT_KEYS(g, x >= EXIT_TURN);
   let i = 0;
   while (i < keys.length - 2 && x > keys[i + 1].u) i++;
   const a = keys[i];
   const b = keys[i + 1];
-  const k = (x - a.u) / (b.u - a.u);
+  const k = clamp01((x - a.u) / (b.u - a.u));
   const pose = mixPose(a.pose, b.pose, smooth(k));
-  // a swinging foot goes up and over what it crosses: half way it is drawn up to `clear` (an ankle height), a little
-  // ahead of the hip, the knee up like a hurdler's
+  // a swinging foot goes up and over what it crosses
   const over = Math.sin(Math.PI * k);
-  const lift = (ankle: V, clear: number, ahead: number) => {
-    const mid = v(pose.hip.x + ahead, clear);
-    ankle.x += (mid.x - ankle.x) * over;
-    ankle.y += (mid.y - ankle.y) * over;
-  };
-  if (i === 2) lift(pose.feet.near.ankle, g.rim + 0.1, -0.04); // near foot up and out onto the rim
-  if (i === 4) lift(pose.feet.far.ankle, g.rim + 0.12, -0.08); // far foot up and out onto the rim
-  if (i === 5) lift(pose.feet.near.ankle, g.rim + 0.16, 0.2); // near foot off the rim, over to the barrier's top
-  if (i === 6) lift(pose.feet.far.ankle, g.sill.y + 0.3, 0.3); // far foot over the barrier to the ground
-  if (i === 7) pose.feet.near.ankle.y += 0.1 * over; // near foot off the barrier
+  if (x < EXIT_TURN) {
+    // half way it is drawn up to `clear` (an ankle height), a little ahead of the hip, the knee up like a hurdler's
+    const lift = (ankle: V, clear: number, ahead: number) => {
+      const mid = v(pose.hip.x + ahead, clear);
+      ankle.x += (mid.x - ankle.x) * over;
+      ankle.y += (mid.y - ankle.y) * over;
+    };
+    if (i === 2) lift(pose.feet.near.ankle, g.rim + 0.1, -0.04); // near foot up and out onto the rim
+    if (i === 4) lift(pose.feet.far.ankle, g.rim + 0.12, -0.08); // far foot up and out onto the rim
+  } else if (b.swing) {
+    // stepping down: the foot leaves its hold, (out first, if it steps off a ledge) then down onto the next
+    const s = b.swing;
+    const from = a.pose.feet[s.foot].ankle;
+    const to = b.pose.feet[s.foot].ankle;
+    const ex = smooth(Math.min(1, k * (s.out ?? 1)));
+    const ey = smooth(k);
+    const foot = pose.feet[s.foot];
+    foot.ankle = v(
+      from.x + (to.x - from.x) * ex,
+      from.y + (to.y - from.y) * ey + s.lift * over,
+    );
+    foot.pitch += s.toe * over;
+  }
   const S = EXIT_SWITCH;
   const side = (lifting: number, out: number, front: number): ExitLayer =>
     x < lifting ? "cockpit" : x < out ? "lifting" : x < front ? "out" : "front";

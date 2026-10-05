@@ -15,24 +15,34 @@ import type { Accent, CarPlan, CarSpec, Driver } from "./spec";
 const RED = "#ee3a24";
 
 // Helmet designs in helmet units (centre 0 0, radius 1, facing left, y down; see Driver in ./spec).
-// Senna 1989: yellow, a green band over the eyeport with a thin blue band under it, a thin green line under the visor
-// (Honda F1 Exposition 2015 helmet photos by Morio, CC BY-SA 3.0).
+// Senna, 1989 and 1990 alike (one design for every SEN helmet in the film: the cars, the helmet cards of 1.2/1.4/1.8
+// and the outro): yellow; a broad green band over the eyeport edged above and below by thin blue pinstripes; a broad
+// navy band at chin height running back round the shell, with a thin green line above and below it. Checked against
+// the 1989 and 1990 helmets at the 2015 Honda F1 Exposition (Morio, CC BY-SA 3.0: navy band at visor level behind
+// the visor, green-and-white pinstripes under it) and the side view "Ayrton Senna Integralhelm 1990" (Auge=mit,
+// CC BY-SA 4.0). docs/assets/reference-register.md.
 const SENNA_GREEN = "#0f8a3c";
 const SENNA_BLUE = "#1d3f95";
+const SENNA_NAVY = "#14215e";
+// A band round the shell from y0 to y1 at the front (helmet units), sloping down toward the back by `fall`.
+const shellBand = (y0: number, y1: number, fall: number) =>
+  `M -1.1 ${y0} C -0.4 ${y0 - fall / 4} 0.4 ${y0} 1.15 ${y0 + fall} ` +
+  `L 1.15 ${y1 + fall} C 0.4 ${y1} -0.4 ${y1 - fall / 4} -1.1 ${y1} Z`;
 const SENNA_DESIGN: Accent[] = [
-  {
-    d: "M -1.1 -0.66 C -0.4 -0.74 0.4 -0.66 1.15 -0.38 L 1.15 -0.12 C 0.4 -0.4 -0.4 -0.46 -1.1 -0.42 Z",
-    color: SENNA_GREEN,
-  },
-  {
-    d: "M -1.1 -0.42 C -0.4 -0.46 0.4 -0.4 1.15 -0.12 L 1.15 -0.01 C 0.4 -0.3 -0.4 -0.35 -1.1 -0.31 Z",
-    color: SENNA_BLUE,
-  },
-  {
-    d: "M -1.1 0.15 C -0.5 0.11 0 0.11 0.25 0.13 L 0.25 0.2 C 0 0.18 -0.5 0.18 -1.1 0.23 Z",
-    color: SENNA_GREEN,
-  },
+  { d: shellBand(-0.74, -0.7, 0.28), color: SENNA_BLUE },
+  { d: shellBand(-0.68, -0.46, 0.28), color: SENNA_GREEN },
+  { d: shellBand(-0.44, -0.41, 0.28), color: SENNA_BLUE },
+  { d: shellBand(0.05, 0.08, 0.14), color: SENNA_GREEN },
+  { d: shellBand(0.1, 0.33, 0.14), color: SENNA_NAVY },
+  { d: shellBand(0.35, 0.38, 0.14), color: SENNA_GREEN },
 ];
+// Senna's helmet: the one data source for SEN in 1989 and 1990 (SEN_1990 reuses it).
+export const SENNA_HELMET: Driver["helmet"] = {
+  base: "#f7c600",
+  stripe: SENNA_GREEN,
+  shell: "classic",
+  design: SENNA_DESIGN,
+};
 
 // Prost 1989: white, a blue panel round the visor and chin that sweeps back to a point, orange-red pin stripes
 // (Alain Prost Integralhelm 1989, Commons, CC BY-SA 4.0; mirrored to face left).
@@ -59,12 +69,7 @@ const PROST_DESIGN: Accent[] = [
 
 export const SEN_1989: Driver = {
   number: "1",
-  helmet: {
-    base: "#f7c600",
-    stripe: SENNA_GREEN,
-    shell: "classic",
-    design: SENNA_DESIGN,
-  },
+  helmet: SENNA_HELMET,
 };
 
 export const PRO_1989: Driver = {

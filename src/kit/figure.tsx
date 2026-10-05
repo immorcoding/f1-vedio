@@ -651,7 +651,7 @@ export const Figure: React.FC<{
   const skull = [
     H(-0.105, 0.0),
     H(-0.08, 0.085),
-    H(0.0, 0.118),
+    H(0.0, BONES.skullTop),
     H(0.07, 0.085),
     H(0.093, 0.035),
     H(0.1, 0.0),

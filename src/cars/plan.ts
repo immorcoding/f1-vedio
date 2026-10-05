@@ -5,11 +5,14 @@
 // docs/assets/reference-register.md). A car of another shape (the 1989 MP4/5) carries a traced plan in its spec.
 import {
   carPoint,
+  isTopOnly,
   photoPxPerMetre,
   type Accent,
   type CarPlan,
   type CarSpec,
+  type PlanLengths,
   type TopMarks,
+  type TopOnlyCar,
 } from "./spec";
 
 // Mirror a half outline (y ≥ 0, from rear to front) into a closed outline symmetric about the centre line.
@@ -35,12 +38,27 @@ export const roundedBox = (x: number, y: number, len: number, w: number) => {
 
 // The 2017–2021 planform of a traced car, in its paint plus the top-only `marks`. A car without a halo (before 2018)
 // gets none here either.
-export const modernPlan = (car: CarSpec, marks: TopMarks = {}): CarPlan => {
-  const ra = carPoint(car, "rearAxle").x;
-  const fa = carPoint(car, "frontAxle").x;
-  const L = carPoint(car, "nose").x;
-  // the helmet's place along the car, from the side trace
-  const hx = (car.frame.x - car.helmetAt.cx) / photoPxPerMetre(car);
+export const modernPlan = (car: CarSpec, marks: TopMarks = {}): CarPlan =>
+  modernPlanFrom(
+    {
+      rearAxle: carPoint(car, "rearAxle").x,
+      frontAxle: carPoint(car, "frontAxle").x,
+      length: carPoint(car, "nose").x,
+      // the helmet's place along the car, from the side trace
+      helmet: (car.frame.x - car.helmetAt.cx) / photoPxPerMetre(car),
+      halo: Boolean(car.halo),
+    },
+    marks,
+  );
+
+export const modernPlanFrom = (
+  dims: PlanLengths,
+  marks: TopMarks = {},
+): CarPlan => {
+  const ra = dims.rearAxle;
+  const fa = dims.frontAxle;
+  const L = dims.length;
+  const hx = dims.helmet;
   const fwX0 = L - 0.7;
   const podStripe = (s: number) =>
     `M 1.5 ${s * 0.36} C 2.1 ${s * 0.5} 2.6 ${s * 0.6} 3.0 ${s * 0.64}`;
@@ -132,7 +150,7 @@ export const modernPlan = (car: CarSpec, marks: TopMarks = {}): CarPlan => {
       [hx + 0.72, 0.12],
     ]),
     helmet: { x: hx, r: 0.135 },
-    halo: car.halo
+    halo: dims.halo
       ? `M ${hx - 0.18} 0.25 C ${hx + 0.3} 0.32 ${hx + 0.75} 0.24 ${hx + 0.86} 0 C ${hx + 0.75} -0.24 ${hx + 0.3} -0.32 ${hx - 0.18} -0.25 M ${hx + 0.86} 0 L ${hx + 1.02} 0`
       : undefined,
     mirrors: [
@@ -155,5 +173,10 @@ export const modernPlan = (car: CarSpec, marks: TopMarks = {}): CarPlan => {
 };
 
 // The plan a car is drawn with from above.
-export const planOf = (car: CarSpec): CarPlan =>
-  car.top?.plan ?? modernPlan(car, car.top?.marks);
+export const planOf = (car: CarSpec | TopOnlyCar): CarPlan =>
+  isTopOnly(car) ? car.plan : (car.top?.plan ?? modernPlan(car, car.top?.marks));
+
+// The wheel angle (CarState.wheelAngle, degrees) of a car that has rolled `metres`: the distance over the tyre's
+// circumference, the same for the side and the top view.
+export const wheelAngleAt = (car: CarSpec | TopOnlyCar, metres: number) =>
+  (metres / (Math.PI * planOf(car).wheels[0].length)) * 360;

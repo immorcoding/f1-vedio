@@ -1,26 +1,39 @@
-// Shot 2.6 (bars 49–52): HAM crosses the line, fifth — enough by one point. The camera picks him up on the pit
-// straight in the rain and holds him as the chequered line slides under his wheels (~1.4 s in, a white flash); then
-// the shot slows and the camera pushes in on HAM in the cockpit — the spray hangs, focus lines close in as the title
-// sinks in.
+// Shot 2.6 (bars 51–52): HAM crosses the line, fifth — enough by one point. The camera picks him up on the pit
+// straight in the rain and holds him as the chequered line slides under his wheels: his front tyre meets the line on
+// 52.1 (`brazil2008.line`) with a white flash, and a chequered-flag inset drops in top right on the same beat, the
+// flag swinging down; then the shot slows and the camera pushes in on HAM in the cockpit — the spray hangs, focus
+// lines close in as the title sinks in.
+import { useId } from "react";
 import { MP4_23, carPoint } from "../../../cars";
-import { INK } from "../../../kit/colors";
+import { INK, PAPER } from "../../../kit/colors";
 import { focusLines } from "../../../kit/lines";
 import {
   BRAZIL_CAM,
   FinishStripe,
 } from "../../../scenes/brazil-2008/trackside";
-import { hit, ramp, type ShotTime } from "../abuDhabi2021/shotClock";
+import { ChequeredFlag } from "../../../scenes/abu-dhabi-2021/ChequeredFlag";
+import {
+  cueAt,
+  hit,
+  ramp,
+  secondsInShot,
+  type ShotTime,
+} from "../abuDhabi2021/shotClock";
 import { Page, Panel, RainCloseup } from "./common";
 import { PosTag } from "./PosTag";
+import { EDIT } from "./shots.ts";
 
 const V = 55; // m/s past the line
 const LINE_X = 0; // the finish line, world m
+// the chequered-flag inset, top right, clear of the car and of HAM's tag (ART-14)
+const INSET = { x: 1250, y: 70, w: 600, h: 360 };
 
 export const Line: React.FC<{ st: ShotTime }> = ({ st }) => {
   const { t, dur } = st;
+  const clip = `ln${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   const front = carPoint(MP4_23, "frontContact").x;
   // HAM's rear end along the track, and where the camera keeps him in the frame
-  const crossAt = 1.4;
+  const crossAt = secondsInShot(st, cueAt(EDIT, "brazil2008.line"));
   // after the line the picture goes to slow motion: race time τ runs at 0.35× (MOT-5: slow motion, not a slow car)
   const slowFrom = crossAt + 0.5;
   const tau = t <= slowFrom ? t : slowFrom + 0.35 * (t - slowFrom);
@@ -87,6 +100,65 @@ export const Line: React.FC<{ st: ShotTime }> = ({ st }) => {
           />
         </RainCloseup>
       </Panel>
+      {/* the chequered flag, dropped in on the line beat and swung down (it is black and white: ART-8) */}
+      {t >= crossAt ? (
+        <g
+          transform={`translate(0 ${-50 * (1 - ramp(t, crossAt, crossAt + 0.12))})`}
+        >
+          <defs>
+            <clipPath id={clip}>
+              <rect x={INSET.x} y={INSET.y} width={INSET.w} height={INSET.h} />
+            </clipPath>
+          </defs>
+          <rect
+            x={INSET.x + 9}
+            y={INSET.y + 9}
+            width={INSET.w}
+            height={INSET.h}
+            fill={INK}
+          />
+          <g clipPath={`url(#${clip})`}>
+            <rect
+              x={INSET.x}
+              y={INSET.y}
+              width={INSET.w}
+              height={INSET.h}
+              fill={PAPER}
+            />
+            <path
+              d={focusLines(
+                INSET.x + 300,
+                INSET.y + 180,
+                200,
+                100,
+                Math.floor(t * 8) + 3,
+              )}
+              fill={INK}
+              opacity={0.5}
+            />
+            <ChequeredFlag
+              x={INSET.x + 130}
+              y={INSET.y + 60}
+              w={380}
+              h={230}
+              t={t}
+              swing={
+                -35 * (1 - ramp(t, crossAt, crossAt + 0.18)) +
+                10 * Math.sin((t - crossAt) * 5)
+              }
+            />
+          </g>
+          <rect
+            x={INSET.x}
+            y={INSET.y}
+            width={INSET.w}
+            height={INSET.h}
+            fill="none"
+            stroke={INK}
+            strokeWidth={9}
+          />
+        </g>
+      ) : null}
       {/* the position he needed: 5th, once he is over the line */}
       <g opacity={ramp(t, crossAt, crossAt + 0.2)}>
         <PosTag x={260} y={150} code="HAM" pos={5} big />

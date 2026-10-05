@@ -1,63 +1,91 @@
-// Shot 5.1 (bars 82–85): the drop. Full speed up the straight to T5, the camera tracking at ~290 km/h. VER's nose is
-// in HAM's gearbox, riding the slipstream; on 84.1 he pulls out to the inside (farther from the camera) and draws up
-// alongside by the cut. The drop itself (82.1) lands as a white flash, focus lines and a jolt.
+// Shot 5.1c (bars 84–85): low-angle tracking. The camera drops to 1.1 m and tilts harder than the broadcast close-ups,
+// tracking at the cars' true speed (staging.ts) so the road, wall and stands stream past with parallax. VER sits in
+// HAM's gearbox; on 84.1 (`abuDhabi2021.pullOut`) he pulls out to the inside (away from the camera) with a jolt and a
+// burst of focus lines, and draws up until his front wheels are level with HAM's rear wheels by the cut.
 import { PIRELLI_2021, RB16B, W12 } from "../../../cars";
-import { INK, PAPER } from "../../../kit/colors";
+import { pinhole } from "../../../kit/camera";
+import { INK } from "../../../kit/colors";
 import { focusLines } from "../../../kit/lines";
-import { Closeup, Slipstream, trackLayout } from "../../../scenes/abu-dhabi-2021/Closeup";
-import { T5_CAM } from "../../../scenes/abu-dhabi-2021/T5Panel";
-import { at } from "../../timing.ts";
-import { hit, ramp, secondsInShot, type ShotTime } from "./shotClock";
+import { tone } from "../../../kit/tone";
+import { Closeup, Slipstream, streamingSpeedLines, trackLayout } from "../../../scenes/abu-dhabi-2021/Closeup";
+import { hit, type ShotTime } from "./shotClock";
+import { hamDist, hamSpeed, PULL_OUT, sidePlan } from "./staging.ts";
 
-const cam = T5_CAM;
-const V = 80; // m/s
-const LAYOUT = trackLayout(-60, 680, { x0: 250, x1: 330, z: 640, top: 38 });
+const cam = pinhole({ f: 1900, horizon: 400, cx: 960, height: 1.1 });
+const LAYOUT = trackLayout(-200, 1400, { x0: 250, x1: 330, z: 640, top: 38 });
+const HAM_X = -1.5;
 
-export const Charge: React.FC<{ st: ShotTime }> = ({ st }) => {
-  const { t, dur } = st;
-  const out = secondsInShot(st, at(84)); // VER pulls out of the tow
-  const camX = V * t;
-  const pull = ramp(t, out - 0.2, out + 0.9);
-  const draw = ramp(t, out + 0.4, dur);
-  const hamX = -2.5 + 0.15 * Math.sin(t * 2.1);
-  const verX = -8.6 + 1.2 * ramp(t, 0, out) + 3.4 * draw;
-  const verZ = 10.2 + 2.3 * pull;
-  const drop = hit(t, 0, 0.25);
-  const ham = cam.anchor({ x: hamX, z: 10 });
-  const wheel = t * 720;
+export const Charge: React.FC<{ st: ShotTime; t0: number }> = ({ st, t0 }) => {
+  const { t } = st;
+  const race = t0 + t;
+  const camX = hamDist(race);
+  const plan = sidePlan(race, HAM_X);
+  const pull = hit(race, PULL_OUT, 0.35);
+  const ham = cam.anchor(plan.ham);
+  const wheel = t * 900;
+  const seed = st.frame >> 1;
   return (
     <Closeup
       cam={cam}
       layout={LAYOUT}
       camX={camX}
-      seed={Math.floor(t * 20)}
+      seed={seed}
       speed={1}
-      tilt={-3 - 2 * drop}
-      shake={{ x: Math.sin(t * 61) * (3 + 14 * drop), y: Math.cos(t * 53) * (2 + 10 * drop) }}
+      // the crowd and the floodlight beams smeared over one frame of travel, so they stream instead of strobing
+      smear={hamSpeed(race) / 60}
+      tilt={-6 - 1.5 * pull}
+      shake={{ x: Math.sin(t * 61) * (3 + 12 * pull), y: Math.cos(t * 53) * (2 + 8 * pull) }}
+      under={
+        <g>
+          <path d={cam.groundQuad(2, 8.6, -400, 400)} fill={tone("light")} />
+          <path
+            // streaming past at the run-off's depth (~5 m), like the Closeup's own lines on this shot
+            d={streamingSpeedLines(
+              {
+                x: -300,
+                y: cam.screenY(0, 8.6),
+                w: 2600,
+                h: 1200 - cam.screenY(0, 8.6),
+                n: 30,
+                seed: "ch-near",
+                angle: 180,
+                thickness: 8,
+                length: [0.3, 0.8],
+              },
+              camX * cam.pxPerMetre(5),
+            )}
+            fill={INK}
+            opacity={0.75}
+          />
+        </g>
+      }
       cars={[
         {
           car: RB16B,
-          x: verX,
-          z: verZ,
-          state: { wheelAngle: wheel, compound: PIRELLI_2021.soft },
+          ...plan.ver,
+          // the 1.1 m tracking camera looks down ~4°: the LOW look (ART-26)
+          state: { wheelAngle: wheel, compound: PIRELLI_2021.soft, farSide: "low" },
         },
         {
           car: W12,
-          x: hamX,
-          z: 10,
-          state: { wheelAngle: wheel + 17, compound: PIRELLI_2021.hard },
+          ...plan.ham,
+          state: { wheelAngle: wheel + 17, compound: PIRELLI_2021.hard, farSide: "low" },
         },
       ]}
       between={
-        <Slipstream at={ham} t={t} length={5 + 2 * (1 - pull)} strength={1 - 0.6 * pull} />
+        <Slipstream
+          at={ham}
+          t={t}
+          length={6}
+          strength={race < PULL_OUT ? 1 : Math.max(0.25, 1 - (race - PULL_OUT) * 0.8)}
+        />
       }
     >
       <path
-        d={focusLines(1000, 560, 620 - 200 * drop, 120, Math.floor(t * 12))}
+        d={focusLines(1000, 560, 640 - 220 * pull, 120, seed)}
         fill={INK}
-        opacity={0.25 + 0.6 * drop}
+        opacity={0.22 + 0.6 * pull}
       />
-      <rect width={1920} height={1080} fill={PAPER} opacity={0.9 * drop} />
     </Closeup>
   );
 };

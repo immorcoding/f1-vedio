@@ -3,12 +3,19 @@
 // manga treatment as the side view: livery colours as flat blocks, a dot screen on the shadowed (right-hand) side, a
 // few ink lines, a white floodlight edge (ART-8, ART-11). Ink widths stay constant on screen at any map scale.
 import { useId } from "react";
+import { useCurrentFrame } from "remotion";
 import type { ScreenAnchor } from "../kit/camera";
 import { INK, PAPER } from "../kit/colors";
 import { TonePattern } from "../kit/tone";
 import type { CarState, Tread } from "./MangaCar";
 import { planOf, roundedBox } from "./plan";
-import { carPoint, type CarPlan, type CarSpec } from "./spec";
+import {
+  carPoint,
+  isTopOnly,
+  type CarPlan,
+  type CarSpec,
+  type TopOnlyCar,
+} from "./spec";
 
 const svgId = (raw: string) => `top${raw.replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
@@ -18,7 +25,7 @@ const SUSPENSION_ARM = 0.04;
 // `at` is the middle of the car's rear end on screen; the nose points along state.heading (degrees clockwise from
 // screen right). state.steer turns the front wheels, state.compound sets the tyre band.
 export const TopCar: React.FC<{
-  car: CarSpec;
+  car: CarSpec | TopOnlyCar;
   at: ScreenAnchor;
   state?: CarState;
 }> = ({ car, at, state = {} }) => {
@@ -29,9 +36,19 @@ export const TopCar: React.FC<{
   const band = state.compound ?? car.compound;
   const steer = state.steer ?? 0;
   const { base, stripe } = car.driver.helmet;
+  const flapColor = isTopOnly(car) ? car.flap : car.frontWing.flap.color;
   const h = plan.helmet;
   // ink widths stay constant on screen
   const w = (px: number) => px / ppm;
+  // the tyres turn as in the side view: state.wheelAngle (state.lockFront for locked front wheels) is how far they
+  // have rolled, so the tread runs round at the true road speed and stops with the car (MOT-5)
+  const locked = state.lockFront !== undefined;
+  const rolled = (t: CarPlan["wheels"][number]) =>
+    ((t.steer && locked ? state.lockFront! : (state.wheelAngle ?? 0)) / 360) *
+    Math.PI *
+    t.length;
+  const blur = treadBlur(state.speed ?? 0);
+  const frame = useCurrentFrame();
   return (
     <g
       transform={`translate(${at.x} ${at.y}) rotate(${state.heading ?? 0}) scale(${ppm})`}
@@ -88,6 +105,9 @@ export const TopCar: React.FC<{
               tread={state.tread ?? "dry"}
               grooves={car.tyreGrooves ?? 0}
               ink={w(1.6)}
+              rolled={rolled(t)}
+              blur={t.steer && locked ? 0 : blur}
+              frame={frame}
             />
           </g>
         );
@@ -134,7 +154,7 @@ export const TopCar: React.FC<{
         strokeLinejoin="round"
       />
       {plan.frontWing.flap ? (
-        <path d={plan.frontWing.flap} fill={car.frontWing.flap.color} />
+        <path d={plan.frontWing.flap} fill={flapColor} />
       ) : null}
       {plan.frontWing.endplates ? (
         <PlanEndplates
@@ -190,6 +210,14 @@ export const TopCar: React.FC<{
         />
       ) : null}
       {plan.airbox ? <path d={plan.airbox} fill={INK} /> : null}
+      {plan.tcam ? (
+        <path
+          d={plan.tcam.d}
+          fill={plan.tcam.color}
+          stroke={INK}
+          strokeWidth={w(1.4)}
+        />
+      ) : null}
       {/* cockpit: opening, helmet from above (shell in the base colour, a stripe, the visor peak) */}
       <path d={plan.cockpit} fill={INK} />
       <circle
@@ -272,40 +300,86 @@ export const TopCar: React.FC<{
   );
 };
 
-// The tread on a tyre seen from above (MOT-2): a dry tyre of a grooved era (CarSpec.tyreGrooves, e.g. the 2008
-// Bridgestones) shows its longitudinal grooves, a slick shows nothing; a wet tyre shows chevron sipes across the
-// tread for any car.
+// The tread seen from above on a turning tyre (MOT-5): a few marks across the tread (the wet pattern's chevrons on a
+// wet tyre) that run along the tyre as it rolls. The top of a rolling tyre moves forward relative to the car, at the
+// road speed, so the marks run toward the nose by `rolled` metres and wrap round at the front. Past a walking pace
+// the true rate aliases at 60 fps, so at speed (`blur` 0–1) the tread smears into a lighter band with a streak along
+// both sidewall edges, and over it the marks creep forward at a readable rate (`frame`), as the side view's wheel
+// blur does (suzuka1989 Motion.tsx). A dry tyre's longitudinal grooves (2008) stay put: they look the same all round.
 const TreadMarks: React.FC<{
   t: CarPlan["wheels"][number];
   tread: Tread;
   grooves: number;
   ink: number;
-}> = ({ t, tread, grooves, ink }) => {
+  rolled: number;
+  blur: number;
+  frame: number;
+}> = ({ t, tread, grooves, ink, rolled, blur, frame }) => {
   const half = t.length / 2 - 0.05;
-  if (tread === "wet") {
-    const n = 7;
-    const d = Array.from({ length: n }, (_, i) => {
-      const x = t.x - half + ((i + 0.5) / n) * 2 * half;
-      const hw = t.width / 2 - 0.03;
-      return `M ${x - 0.05} ${t.y - hw} L ${x + 0.03} ${t.y} L ${x - 0.05} ${t.y + hw}`;
-    }).join(" ");
-    return (
-      <path
-        d={d}
-        fill="none"
-        stroke="#8a8a8a"
-        strokeWidth={ink}
-        strokeLinejoin="round"
-      />
-    );
-  }
-  if (!grooves) return null;
-  const d = Array.from({ length: grooves }, (_, i) => {
-    const y = t.y - t.width / 2 + ((i + 1) / (grooves + 1)) * t.width;
-    return `M ${t.x - half} ${y} L ${t.x + half} ${y}`;
-  }).join(" ");
-  return <path d={d} stroke="#6a6a6a" strokeWidth={ink} />;
+  const hw = t.width / 2 - 0.03;
+  const n = tread === "wet" ? 7 : 4;
+  const pitch = (2 * half) / n;
+  // past half blur the true roll aliases: show a steady forward creep of 0.3 pitch per frame instead
+  const shown = blur < 0.5 ? rolled : frame * pitch * 0.3;
+  const phase = ((shown % pitch) + pitch) % pitch;
+  const xs = Array.from(
+    { length: n },
+    (_, i) => t.x - half + phase + i * pitch,
+  );
+  const marks =
+    tread === "wet"
+      ? xs
+          .filter((x) => x - 0.05 >= t.x - half && x + 0.03 <= t.x + half)
+          .map(
+            (x) =>
+              `M ${x - 0.05} ${t.y - hw} L ${x + 0.03} ${t.y} L ${x - 0.05} ${t.y + hw}`,
+          )
+          .join(" ")
+      : xs.map((x) => `M ${x} ${t.y - hw} L ${x} ${t.y + hw}`).join(" ");
+  const groove = grooves
+    ? Array.from({ length: grooves }, (_, i) => {
+        const y = t.y - t.width / 2 + ((i + 1) / (grooves + 1)) * t.width;
+        return `M ${t.x - half} ${y} L ${t.x + half} ${y}`;
+      }).join(" ")
+    : "";
+  return (
+    <>
+      {groove ? <path d={groove} stroke="#6a6a6a" strokeWidth={ink} /> : null}
+      {blur > 0 ? (
+        <>
+          <rect
+            x={t.x - half}
+            y={t.y - t.width * 0.2}
+            width={2 * half}
+            height={t.width * 0.4}
+            fill="#6e6e6e"
+            opacity={0.5 * blur}
+          />
+          <path
+            d={`M ${t.x - half} ${t.y - hw} L ${t.x + half} ${t.y - hw} M ${t.x - half} ${t.y + hw} L ${t.x + half} ${t.y + hw}`}
+            stroke="#8c8c8c"
+            strokeWidth={ink}
+            opacity={0.55 * blur}
+          />
+        </>
+      ) : null}
+      {marks ? (
+        <path
+          d={marks}
+          fill="none"
+          stroke={tread === "wet" ? "#8a8a8a" : "#5e5e5e"}
+          strokeWidth={ink}
+          strokeLinejoin="round"
+          opacity={1 - 0.4 * blur}
+        />
+      ) : null}
+    </>
+  );
 };
+
+// How much a top-view tyre's tread blurs at `speed` m/s (as seen on screen): none at a crawl, full from ~120 km/h.
+const treadBlur = (speed: number) =>
+  Math.max(0, Math.min(1, (Math.abs(speed) - 8) / 25));
 
 // Both endplates of a wing seen from above: thin plates in the wing colour, inked so a light one reads on paper.
 const PlanEndplates: React.FC<{
@@ -331,17 +405,21 @@ const helmetStripe = (x: number, r: number) => {
 // The `at` that puts the middle of the wheelbase on screen point `centre` for a car heading `heading` degrees: for
 // placing a top-view car by its centre (on a racing line, say) instead of by its rear end.
 export const topAnchorAt = (
-  car: CarSpec,
+  car: CarSpec | TopOnlyCar,
   centre: ScreenAnchor,
   heading: number,
 ): ScreenAnchor => {
-  const mid =
-    ((carPoint(car, "rearAxle").x + carPoint(car, "frontAxle").x) / 2) *
-    centre.pxPerMetre;
+  const mid = wheelbaseMiddle(car) * centre.pxPerMetre;
   const a = (heading * Math.PI) / 180;
   return {
     x: centre.x - Math.cos(a) * mid,
     y: centre.y - Math.sin(a) * mid,
     pxPerMetre: centre.pxPerMetre,
   };
+};
+
+// The middle of the wheelbase, m from the rear end: from the side trace, or the measured lengths of a top-only car.
+export const wheelbaseMiddle = (car: CarSpec | TopOnlyCar) => {
+  if (isTopOnly(car)) return (car.lengths.rearAxle + car.lengths.frontAxle) / 2;
+  return (carPoint(car, "rearAxle").x + carPoint(car, "frontAxle").x) / 2;
 };

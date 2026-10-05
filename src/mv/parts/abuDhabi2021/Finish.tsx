@@ -1,6 +1,8 @@
 // Shot 5.6 (bars 100–101): VER takes the flag. On the cut (100.1, `abuDhabi2021.finish`) his front tyre is on the
-// finish line — the panel opens in slow motion with a white flash and focus lines behind him (VER stays fully solid), the chequered flag waves in the
-// inset, then the camera speeds back up to race pace and the line streams away behind him.
+// finish line — the panel opens in slow motion with a white flash and focus lines behind him (VER stays fully solid),
+// the chequered flag in the inset at the bottom of its downstroke on that frame, then waving, as the camera speeds back
+// up to race pace and the line streams away behind him. (The user kept this side close-up over #23's gantry view,
+// 2026-10-04: top-down front views are too hard to draw well. HAM, 150 m back, is out of this framing.)
 import { carPoint, PIRELLI_2021, RB16B } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { focusLines } from "../../../kit/lines";
@@ -52,7 +54,8 @@ export const Finish: React.FC<{ st: ShotTime }> = ({ st }) => {
           car: RB16B,
           x: VER_X,
           z: VER_Z,
-          state: { wheelAngle: camX * 170, compound: PIRELLI_2021.soft },
+          // the 2.9 m camera looks down ~13°: the HIGH look (ART-26)
+          state: { wheelAngle: camX * 170, compound: PIRELLI_2021.soft, farSide: "high" },
         },
       ]}
       between={
@@ -75,7 +78,7 @@ export const Finish: React.FC<{ st: ShotTime }> = ({ st }) => {
       <g clipPath="url(#fin-inset)">
         <rect x={INSET.x} y={INSET.y} width={INSET.w} height={INSET.h} fill={PAPER} />
         <path d={focusLines(INSET.x + 300, INSET.y + 180, 200, 100, Math.floor(t * 8) + 3)} fill={INK} opacity={0.5} />
-        <ChequeredFlag x={INSET.x + 130} y={INSET.y + 60} w={380} h={230} t={t} swing={Math.sin(t * 5) * 12} />
+        <ChequeredFlag x={INSET.x + 130} y={INSET.y + 60} w={380} h={230} t={t} swing={14 * Math.cos(t * 5) - 2} />
       </g>
       <rect x={INSET.x} y={INSET.y} width={INSET.w} height={INSET.h} fill="none" stroke={INK} strokeWidth={9} />
     </Closeup>

@@ -20,7 +20,7 @@ export const EDIT: PartEdit = {
       view: "top",
       content:
         "第 1 圈 3 号弯后直道俯视：GRO 从左往右并线，右后轮擦到 KVY 左前轮，斜冲向右侧护栏",
-      text: ["LAP 1", "SKRRT!"],
+      text: ["LAP 1", "TAP"],
       cues: [{ id: "bahrain2020.contact", at: at(60) }],
     },
     {
@@ -29,7 +29,7 @@ export const EDIT: PartEdit = {
       to: at(62),
       view: "closeup",
       content:
-        "第 61 小节第一拍撞上三层护栏（轨迹与护栏成 29°，车身再偏航 22°）、音乐骤停、镜头一震；慢动作：火花沿护栏刮擦四溅，上下两层护栏被压弯、中间一层被撕开，座舱穿过去，车在发动机舱壁处断成两截（动力单元和车尾留在赛道一侧），油箱爆出火球，碎片飞散；最后定格成白底黑线的撞击星，火球保留彩色；定格前一瞬白闪",
+        "与 3.2 俯视同一屏幕方向（车从左往右）；护栏透视斜向画面深处，车头按 51°（轨迹 29° + 偏航 22°）斜插进去；第 61 小节第一拍撞上三层护栏、音乐骤停、镜头一震，火花从接触那一帧起；慢动作：火花沿护栏刮擦四溅，上下两层护栏被压弯、中间一层被撕开，座舱穿过去，车在发动机舱壁处断成两截（动力单元和车尾留在赛道一侧），油箱爆出火球，碎片飞散；最后定格成白底黑线的撞击星，火球保留彩色；定格前一瞬白闪",
       text: ["67G"],
       cues: [hitCue("bahrain2020.impact")],
     },
@@ -39,7 +39,8 @@ export const EDIT: PartEdit = {
       to: at(66),
       view: "closeup",
       content:
-        "断成两截的 Haas：前半截（座舱）卡在被撕开、压弯的护栏里（座舱上方的顶层护栏被撕裂，断口卷起，座舱、halo 和头盔露出来），后半截落在赛道一侧；分层火焰（外焰/中焰/焰心各自闪动）升起，热浪扭曲夜空，火星上飘，墨线烟丝；只剩心跳",
+        "断成两截的 Haas：前半截（座舱）卡在被撕开、压弯的护栏里（座舱上方的顶层护栏被撕裂，断口卷起，座舱、halo 和头盔露出来），后半截落在赛道一侧；4 小节缓慢推近，64.1 前后飘来的烟短暂散开，露出暗色的断开车尾一次；分层火焰（外焰/中焰/焰心各自闪动）升起，热浪扭曲夜空，火星上飘，墨线烟丝；只剩心跳；65.1 起推近到座舱、画面在热浪里发虚（GRO 生死未知），右上角秒表从虚焦里出现，停在 0",
+      cues: [{ id: "bahrain2020.stopwatch", at: at(65) }],
     },
     {
       id: "3.5",
@@ -62,8 +63,8 @@ export const EDIT: PartEdit = {
       to: at(74),
       view: "closeup",
       content:
-        "GRO 抓着 halo 从座舱里撑起、从被撕开的护栏缺口跨出，踩着底层护栏卷起的断口到赛道一侧，医生扶住他的手臂，从火里走出来；第 72 小节第一拍切到烧黑的座舱和烧焦但完好的 halo 特写（彩蛋；halo 是画面里最亮的东西，护栏边只剩余烬、几簇小火苗和上飘的火星），halo 和座舱在画面中上部，镜头继续缓慢推近；72.3 起标语直接写在下三分之一的暗处（无旁白框）淡入，73.1 停稳（音乐在 D 小调上收住），留满第 73 小节，73.3 起淡出到黑（反向渐强升进 riser），74.1 全黑",
-      text: ["27s", "F1 SPEED ISN'T ONLY IN THE CARS."],
+        "70.3 之前火压低一档，GRO 抓着 halo 从座舱里撑起（座舱边和 halo 的边露出来）、从被撕开的护栏缺口跨出，踩着底层护栏卷起的断口到赛道一侧，医生扶住他的手臂，从火里走出来；第 72 小节第一拍切到烧黑的座舱和烧焦但完好的 halo 特写（彩蛋；halo 是画面里最亮的东西，护栏边只剩余烬、几簇小火苗和上飘的火星），halo 和座舱在画面中上部，镜头继续缓慢推近；72.1 后左上角淡入 D 版说明框小字 HALO · MANDATORY SINCE 2018；72.3 起标语直接写在下三分之一的暗处（无旁白框）淡入，73.1 停稳（音乐在 D 小调上收住），留满第 73 小节，73.3 起淡出到黑（反向渐强升进 riser），74.1 全黑",
+      text: ["27s", "NOT ALL OF F1'S SPEED IS IN THE CARS.", "HALO · MANDATORY SINCE 2018"],
       cues: [
         { id: "bahrain2020.time", at: at(71) },
         { id: "bahrain2020.halo", at: at(72) },
@@ -79,4 +80,28 @@ export const FACTS = {
   impactG: 67, // "冲击约 67 G"
   escapeSeconds: 27, // FIA summary: "out of car after 27 seconds" (Wikipedia: about 28)
   medicalCarSeconds: 11, // "医疗车 11 秒内到场"
+  haloMandatorySince: 2018, // FIA 2017-07-19: halo on every F1 car from 2018
+} as const;
+
+// The 27-second stopwatch (review 2, idea #1; Stopwatch.tsx): a small dial in the top-right corner from 65.1 to 71.1.
+// It comes up out of the soft, unknown last bar of 3.4 (`from`, the heartbeat on 65.1; user review 2026-10-05) at 0 and
+// waits there; its hand jumps only on the heartbeat (lub on beats 1 and 3, scripts/make-music.mjs; MOT-6) and stops
+// (`stop`, a click of the crown) on the times 3.5's panels carry: 0 秒 on panel 1 (the click that starts it), 11 秒
+// on panel 2, 27 秒 on panel 4. It passes panel 3 (the extinguisher, no verified time, STO-7) without stopping. In 3.6
+// it holds at 27 while the fire hides GRO and clicks once more on 71.1, as he is out of the fire and 3.6's big "27s"
+// lands; then it hands its reading over to that label and fades. The dial carries no digits: the panels' labels and
+// 3.6's "27s" are its readout, so no time is on screen twice. Checked by scripts/check-bahrain2020.mjs.
+export const STOPWATCH = {
+  from: at(65),
+  ticks: [
+    { at: at(66), seconds: 0, stop: true },
+    { at: at(66, 3), seconds: 6 },
+    { at: at(67), seconds: FACTS.medicalCarSeconds, stop: true },
+    { at: at(67, 3), seconds: 15 },
+    { at: at(68), seconds: 19 },
+    { at: at(68, 3), seconds: 23 },
+    { at: at(69), seconds: FACTS.escapeSeconds, stop: true },
+    { at: at(71), seconds: FACTS.escapeSeconds, stop: true },
+  ],
+  out: at(71),
 } as const;

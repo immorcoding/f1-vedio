@@ -4,9 +4,16 @@ import { AbsoluteFill } from "remotion";
 import {
   CARS,
   carPoint,
+  FW43B,
   MangaCar,
   PIRELLI_2021,
+  isTopOnly,
+  RB16B,
+  TOP_ONLY_CARS,
+  W12,
   type CarId,
+  type CarSpec,
+  type TopOnlyCar,
   type Tread,
 } from "../cars";
 import { INK, PAPER } from "../kit/colors";
@@ -24,17 +31,19 @@ export const TOP_SHEET_2021: TopCarSheetProps = {
   ],
 };
 
-// Every traced car from above, two columns at 95 px per metre: for checking the top views side by side (ART-15).
+// Every car from above (the traced ones and the top-only ones), two columns at 95 px per metre: for checking the top
+// views side by side (ART-15).
+const ALL_TOPS: Record<string, CarSpec | TopOnlyCar> = { ...CARS, ...TOP_ONLY_CARS };
 export const AllTopsSheet: React.FC = () => (
   <AbsoluteFill style={{ backgroundColor: PAPER }}>
     <svg width={1920} height={1080}>
-      {(Object.keys(CARS) as CarId[]).map((id, i) => {
+      {Object.keys(ALL_TOPS).map((id, i) => {
         const x = 80 + (i % 2) * 960;
-        const y = 110 + Math.floor(i / 2) * 210;
+        const y = 110 + Math.floor(i / 2) * 175;
         return (
           <g key={id}>
             <MangaCar
-              car={CARS[id]}
+              car={ALL_TOPS[id]}
               view="top"
               at={{ x, y, pxPerMetre: 95 }}
               state={{ heading: 0 }}
@@ -101,6 +110,62 @@ export const TopCarSheet: React.FC<TopCarSheetProps> = ({ rows }) => (
             <text
               x={1800}
               y={y + 40}
+              textAnchor="end"
+              fontFamily="Arial"
+              fontSize={28}
+              fill={INK}
+            >
+              {car.name}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  </AbsoluteFill>
+);
+
+// The 2021 Williams FW43B (top view only, no side trace) under the W12 and RB16B from above at the same scale, with
+// the rear end, axles and nose tip of each car marked: the three 2021 cars must read as one family (ART-15).
+const TRIO_PPM = 150;
+const axles = (car: CarSpec | TopOnlyCar) =>
+  isTopOnly(car)
+    ? [0, car.lengths.rearAxle, car.lengths.frontAxle, car.lengths.length]
+    : [
+        0,
+        carPoint(car, "rearAxle").x,
+        carPoint(car, "frontAxle").x,
+        carPoint(car, "nose").x,
+      ];
+export const Top2021TrioSheet: React.FC = () => (
+  <AbsoluteFill style={{ backgroundColor: PAPER }}>
+    <svg width={1920} height={1080}>
+      {[
+        { car: RB16B, compound: PIRELLI_2021.soft },
+        { car: W12, compound: PIRELLI_2021.hard },
+        { car: FW43B, compound: undefined },
+      ].map(({ car, compound }, i) => {
+        const x0 = 300;
+        const y = 180 + i * 360;
+        return (
+          <g key={car.name}>
+            {axles(car).map((m) => (
+              <path
+                key={m}
+                d={`M ${x0 + m * TRIO_PPM} ${y - 175} L ${x0 + m * TRIO_PPM} ${y + 175}`}
+                stroke="#c33"
+                strokeWidth={1.5}
+                strokeDasharray="6 6"
+              />
+            ))}
+            <MangaCar
+              car={car}
+              view="top"
+              at={{ x: x0, y, pxPerMetre: TRIO_PPM }}
+              state={{ heading: 0, compound }}
+            />
+            <text
+              x={1860}
+              y={y - 130}
               textAnchor="end"
               fontFamily="Arial"
               fontSize={28}

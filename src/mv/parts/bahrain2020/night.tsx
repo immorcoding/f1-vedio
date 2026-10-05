@@ -28,7 +28,7 @@ export const NightBackdrop: React.FC<{ cam: Camera; tonePrefix: string }> = ({
         x={-400}
         y={-400}
         width={2720}
-        height={cam.horizon + 400}
+        height={Math.max(0, cam.horizon + 400)}
         fill={INK}
       />
       {/* far grandstand roofline and the floodlight masts with their lamp banks */}
@@ -36,7 +36,7 @@ export const NightBackdrop: React.FC<{ cam: Camera; tonePrefix: string }> = ({
         x={-400}
         y={cam.screenY(9, 140)}
         width={2720}
-        height={cam.horizon - cam.screenY(9, 140)}
+        height={Math.max(0, cam.horizon - cam.screenY(9, 140))}
         fill={tone("dark", tonePrefix)}
       />
       {towers.map((x) => {
@@ -74,7 +74,7 @@ export const NightBackdrop: React.FC<{ cam: Camera; tonePrefix: string }> = ({
         x={-400}
         y={cam.horizon}
         width={2720}
-        height={1480 - cam.horizon}
+        height={Math.max(0, 1480 - cam.horizon)}
         fill={tone("dark", tonePrefix)}
       />
     </g>

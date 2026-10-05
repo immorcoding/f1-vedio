@@ -35,28 +35,8 @@ export const Tone: React.FC<{
   </pattern>
 );
 
-/** A stroke that draws itself on as `progress` goes 0 → 1. */
-export const DrawPath: React.FC<{
-  d: string;
-  progress: number;
-  width?: number;
-  color?: string;
-  opacity?: number;
-}> = ({ d, progress, width = 3, color = WHITE, opacity = 1 }) =>
-  progress <= 0 ? null : (
-    <path
-      d={d}
-      pathLength={1}
-      fill="none"
-      stroke={color}
-      strokeWidth={width}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeDasharray="1.001 1"
-      strokeDashoffset={1 - progress}
-      opacity={opacity}
-    />
-  );
+// DrawPath, circlePath and arcPath moved to src/kit/lamp.tsx with the gantry lamp (#21).
+export { DrawPath, arcPath, circlePath } from "../../../kit/lamp";
 
 /** Focus lines (集中线): thin wedges converging on (cx, cy), clear inside `clear`. `seed` reshuffles them. */
 export const focusLines = (
@@ -77,20 +57,4 @@ export const focusLines = (
     d += `M ${cx + Math.cos(a) * inner} ${cy + Math.sin(a) * inner} L ${cx + Math.cos(a - w) * far} ${cy + Math.sin(a - w) * far} L ${cx + Math.cos(a + w) * far} ${cy + Math.sin(a + w) * far} Z `;
   }
   return d;
-};
-
-export const circlePath = (cx: number, cy: number, r: number) =>
-  `M ${cx - r} ${cy} a ${r} ${r} 0 1 0 ${2 * r} 0 a ${r} ${r} 0 1 0 ${-2 * r} 0`;
-
-/** Arc of a circle from angle a0 to a1 (radians, SVG orientation: 0 = right, π/2 = down). */
-export const arcPath = (
-  cx: number,
-  cy: number,
-  r: number,
-  a0: number,
-  a1: number,
-) => {
-  const large = Math.abs(a1 - a0) > Math.PI ? 1 : 0;
-  const sweep = a1 > a0 ? 1 : 0;
-  return `M ${cx + r * Math.cos(a0)} ${cy + r * Math.sin(a0)} A ${r} ${r} 0 ${large} ${sweep} ${cx + r * Math.cos(a1)} ${cy + r * Math.sin(a1)}`;
 };

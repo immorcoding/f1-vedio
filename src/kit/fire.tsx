@@ -14,6 +14,13 @@
 // Smoke anywhere is manga bubble smoke (ART-20): BubbleSmoke over a fire, SmokeBurst behind a fireball on paper.
 import { useId } from "react";
 import { INK, PAPER } from "./colors";
+import {
+  FlatCopy,
+  WarpSource,
+  toneWarp,
+  useFlatTone,
+  warpFilterRegion,
+} from "./screen-warp";
 import { TonePattern } from "./tone";
 
 // The project's frame rate (src/mv/timing.ts FPS); the kit keeps no dependency on the MV.
@@ -498,7 +505,8 @@ export const BubbleSmoke: React.FC<{
 // Heat shimmer: draws `children`, then a copy of them warped by turbulence and shown only inside an ellipse (the hot air
 // over a fire). The turbulence pattern scrolls upward smoothly (the filtered group is shifted one way and its contents
 // the other), so the air ripples continuously instead of re-seeding every frame. Put the background the heat rises in
-// front of into it.
+// front of into it. The warp bends the background's tone layer, not its dots, and screens it again (screen-warp.tsx),
+// so a dot-screened night does not ripple into a moiré (review 2, #27).
 export const HeatShimmer: React.FC<{
   frame: number;
   // the hot zone, screen px
@@ -513,6 +521,8 @@ export const HeatShimmer: React.FC<{
   children: React.ReactNode;
 }> = ({ frame, cx, cy, rx, ry, scale = 14, clip = FRAME, children }) => {
   const id = `shim${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  // inside another warp's flat copy: warp flat, that warp screens once
+  const rescreen = !useFlatTone();
   const scroll = -(frame / FPS) * 90;
   const M = scale + 8;
   const x0 = Math.max(cx - rx * 1.2, clip.x - M);
@@ -520,32 +530,39 @@ export const HeatShimmer: React.FC<{
   const y0 = Math.max(cy - ry * 1.2, clip.y - M);
   const y1 = Math.min(cy + ry * 1.2, clip.y + clip.h + M);
   if (x1 <= x0 || y1 <= y0) return <g>{children}</g>;
+  const region = { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+  // the region in the filtered group's space (it is shifted by the scroll)
+  const area = { ...region, y: y0 - scroll };
   return (
     <g>
-      {children}
+      <g id={`${id}-pic`}>{children}</g>
       <defs>
+        <FlatCopy id={`${id}-flat`}>{children}</FlatCopy>
+        {/* the noise and the displacement read in linear RGB, as this shimmer always has */}
         <filter
           id={`${id}-f`}
-          x={x0}
-          y={y0 - scroll}
-          width={x1 - x0}
-          height={y1 - y0}
+          {...warpFilterRegion(area, rescreen)}
           filterUnits="userSpaceOnUse"
+          colorInterpolationFilters="sRGB"
         >
           <feTurbulence
+            {...area}
             type="fractalNoise"
             baseFrequency="0.006 0.022"
             numOctaves={2}
             seed={4}
+            colorInterpolationFilters="linearRGB"
             result="n"
           />
-          <feDisplacementMap
-            in="SourceGraphic"
-            in2="n"
-            scale={scale}
-            xChannelSelector="R"
-            yChannelSelector="G"
-          />
+          {toneWarp({
+            name: "w",
+            map: "n",
+            disp: scale,
+            blur: 0,
+            area,
+            rescreen,
+            cif: "linearRGB",
+          })}
         </filter>
         <radialGradient id={`${id}-g`}>
           <stop offset="0%" stopColor="#fff" stopOpacity={1} />
@@ -558,7 +575,15 @@ export const HeatShimmer: React.FC<{
       </defs>
       <g mask={`url(#${id}-m)`}>
         <g transform={`translate(0 ${scroll})`} filter={`url(#${id}-f)`}>
-          <g transform={`translate(0 ${-scroll})`}>{children}</g>
+          <g transform={`translate(0 ${-scroll})`}>
+            <WarpSource
+              id={`${id}-src`}
+              flat={`${id}-flat`}
+              normal={`${id}-pic`}
+              region={region}
+              rescreen={rescreen}
+            />
+          </g>
         </g>
       </g>
     </g>

@@ -21,9 +21,13 @@ const runoff = (s: number, side: Side) => {
     : 7 - 2 * Math.exp(-((d / 60) ** 2));
 };
 
-// The night look of the section: floodlit paper surface, light-tone run-off behind a wall, tyre marks.
+// The section in the film's shared top-view ground language (Suzuka 1.3, Bahrain 3.2; user 2026-10-04): a screentone
+// road with painted white edge lines and rubbered-in tyre marks, ink-and-paper kerb blocks, light-tone run-off behind
+// a wall, grass with ink tufts beyond. All of it is fixed to the track, so it streams past at the cars' true speed.
 export const T5_SECTION = {
-  surface: "paper",
+  surface: "asphalt",
+  edgeLines: true,
+  grass: { x: 0, y: 0, w: 1920, h: 1080 },
   runoff,
   barrier: true,
   tyreMarks: true,

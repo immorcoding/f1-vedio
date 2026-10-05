@@ -51,6 +51,7 @@ export const BONES = {
   // scale, and a 1.78 m body's waist-to-neck is 0.445 m
   chestY: 1.155,
   headUp: 0.15, // the head's centre above the base of the neck (upright), m
+  skullTop: 0.118, // the top of the skull above the head's centre, m (figure.tsx draws the skull to it)
 };
 export const LEG = BONES.thigh + BONES.shin;
 

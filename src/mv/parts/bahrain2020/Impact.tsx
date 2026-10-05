@@ -1,71 +1,232 @@
-// Shot 3.3 (bar 61, on the music's stop): the Haas hits the triple guardrail, its path at 29° and the car yawed 22°
-// further (FIA), so the barrier meets the car's side at 51°. The contact lands on the bar's
-// first beat; then an explicit slow motion of the 0.1 s that matter (MOT-5): sparks spray off the rails, the nose bends
-// the rails back, then all three rails split along the survival cell as it goes through — their torn ends
-// curling up and back, the same torn gap every later shot shows (wreck-geometry.ts tornCurl) — the car breaks at the
-// engine bulkhead — the power unit and rear left behind on the track side — and the fuel cell bursts into a fireball,
-// carbon shards flying. On the last beats the frame freezes into white paper and black line, an impact star round the
-// nose with 67G, the fireball still burning in colour (facts.md; FIA accident investigation summary).
+// Shot 3.3 (bar 61, on the music's stop): the Haas hits the triple guardrail. Everything comes from the top-view model
+// (wreck-geometry.ts): its path at 29° to the barrier, its body yawed 22° further right, so the nose meets the rails at
+// 51°; it slides in along that path, nose first, through the rails until its roll structure is on the barrier line —
+// the pose the wreck has in every later shot. Filmed from the wreck camera's spot (square to the car's flank, 3.2 m up,
+// a little wider), so the rails cross in front of the nose at the angle they keep after the cut; the picture is
+// flipped like the wreck's, so the car runs left → right as in 3.2. The contact lands on the bar's first beat; then an
+// explicit slow motion of the 0.1 s that matter (MOT-5): a big spark burst lands on the frame it touches, on the far
+// front corner where it meets the rails, and rides along with it (ground.ts scrapeAt), drawn over everything; the
+// middle rail splits back from the first touch as the nose slides on through it, the top and bottom rails bend back
+// and split along the survival cell — their torn ends curling up and back, the gap every later shot shows
+// (wreck-geometry.ts TEARS, tornCurl) — the car breaks at the engine bulkhead — the power unit and rear left behind on
+// the track side — and the fuel cell bursts into a fireball. On the last beats the frame freezes
+// into white paper and black line, an impact star round the nose with 67G, the fireball still burning in colour
+// (facts.md; FIA accident investigation summary). The ground comes from the same model (ground.ts): the run-off, the
+// track's white edge line and the barrier's foot run to one vanishing point, the tyre marks along the 29° path to
+// another, so the 51° between the car and the rails reads on screen (review-2 #1).
 import { random } from "remotion";
 import { MangaCar, VF20, carLength } from "../../../cars";
-import { pinhole } from "../../../kit/camera";
 import { INK, PAPER } from "../../../kit/colors";
 import { BubbleSmoke, FIRE_PALETTES, Fireball } from "../../../kit/fire";
 import { BigText } from "../../../kit/lettering";
 import { focusLines } from "../../../kit/lines";
-import { ToneDefs } from "../../../kit/tone";
+import { SparkBurst } from "../../../kit/sparks";
+import { ToneDefs, TonePattern, tone } from "../../../kit/tone";
 import { BentGuardrail, bump, type Deflection } from "./bent-rail";
 import { BREAK_PIVOT, carPointOnScreen } from "./car-points";
 import { ramp, shotById, type PictureProps } from "./common";
 import { FloodlitNight } from "./floodlit-night";
-import { RAILS } from "./night";
-import { CAR_HALF_WIDTH } from "./crash-geometry.ts";
-import { tornCurl } from "./wreck-geometry.ts";
-import { IMPACT_ANGLE, IMPACT_YAW } from "./crash-geometry.ts";
+import { Flip, WRECK_CAM, zoomCam } from "./Wreck";
+import {
+  CELL_ANCHOR_X,
+  CELL_POSE,
+  CELL_Z,
+  IMPACT_POINT,
+  PATH_DIR,
+  PIERCE,
+  PPM,
+  RUN,
+  RUN_DIR_V,
+  RUN_W,
+  TEARS,
+  TRACKWARD_V,
+  along,
+  dirToView,
+  runS,
+  toView,
+  tornCurl,
+  type P2,
+} from "./wreck-geometry.ts";
+import {
+  BARRIER_FAR_X,
+  EDGE_LINE,
+  SERVICE_STRIP,
+  SHRUBS,
+  TRACK_EDGE_Y,
+  TRACK_FAR_Y,
+  scrapeAt,
+} from "./ground.ts";
 import { FACTS } from "./shots.ts";
+import type { Camera } from "../../../kit/camera";
 
-// Trackside camera, low, square to the car: the car is side-on, the barrier runs away from it at 29° + 22° = 51° to
-// the car's long axis (path angle plus yaw, crash-geometry.ts; ART-9).
-const CAM = pinhole({ f: 1500, horizon: 330, cx: 960, height: 1.3 });
-const CAR_Z = 9;
-const NOSE_X = -1.6; // world x where the barrier crosses the car's line
-const ANGLE = ((IMPACT_ANGLE + IMPACT_YAW) * Math.PI) / 180;
-const NEAR = 5.6 / Math.sin(ANGLE); // metres of barrier on the camera side of the contact, ending ~3 m from the lens
+// The wreck camera, opened up a little and framed on the whole slide, from the first touch to the rest pose.
+export const IMPACT_CAM = zoomCam(WRECK_CAM, { x: 2.2, y: 0.5, z: 8.6 }, 0.95, {
+  x: 960,
+  y: 560,
+});
+const CAM = IMPACT_CAM;
 const L = carLength(VF20);
-// The barrier through the contact point. The car faces left (we see its left side, the barrier on its right, behind):
-// the barrier runs toward the camera on the left and away on the right.
-const dir = { x: -Math.cos(ANGLE), z: -Math.sin(ANGLE) };
-const BAR_BEHIND = 0.15; // the barrier crosses the car's line this far behind its centre line
-const BAR_A = {
-  x: NOSE_X + dir.x * NEAR,
-  z: CAR_Z + BAR_BEHIND + dir.z * NEAR,
-}; // near end
-// far end: 140 m on, so the barrier runs on unbroken past the frame's right edge (user review 2026-10-04)
-const FAR = 140;
-const BAR_B = { x: NOSE_X - dir.x * FAR, z: CAR_Z + BAR_BEHIND - dir.z * FAR };
-const RUN = Math.hypot(BAR_B.x - BAR_A.x, BAR_B.z - BAR_A.z);
-const S_CONTACT = NEAR; // metres from the near end to the contact
-const U_CONTACT = S_CONTACT / RUN;
-// The car's far front corner meets the rails with the nose at world x 0 (the barrier crosses z = 10 there).
-const NOSE0 = 0;
 const SLOW = 70; // frames of slow motion before the freeze
-const PIERCE = 4.2; // metres the cell travels into the barrier
 const BREAK_AT = 12; // frame the car starts to tear in two
 const BALL_AT = 15; // frame the fuel cell bursts
-// The torn gap: where the cell's footprint (2.0 m wide) crosses the barrier at 51°, a hand's breadth to spare either
-// side, metres along the run from the near end. The middle rail fails first, then the top rail, then the bottom one as
-// the cell rides over it; each splits from the contact outward and is fully open (ends curled) well before the freeze.
-const TEAR = {
-  from: S_CONTACT - (CAR_HALF_WIDTH + BAR_BEHIND) / Math.sin(ANGLE) - 0.12, // the near side crosses here
-  to: S_CONTACT + (CAR_HALF_WIDTH - BAR_BEHIND) / Math.sin(ANGLE) + 0.12, // the far side
-};
-const SPLIT_AT = [2.3, 1.6, 2.0]; // cell travel (m) when each rail starts to split: middle, top, then bottom
-const SPLIT_OPEN = 1.0; // more metres of travel until it is fully open
+// The car's travel along its path, V: from the touch (its right front-wing corner on the rails) to the rest pose.
+const PATH_V = dirToView(PATH_DIR);
+// The car's anchor (its rear end) after `travel` metres, with the front piece pushed `frontDx` on along it by the
+// split: the front piece itself only ever moves along the path, and lands on the wreck's cell (WreckWorld) at rest.
+const anchorAt = (travel: number, frontDx: number) => ({
+  x: CELL_ANCHOR_X - CELL_POSE.dx + frontDx + PATH_V.x * (travel - PIERCE),
+  z: CELL_Z + PATH_V.z * (travel - PIERCE),
+});
+// metres along the run (wreck-geometry.ts RUN) of the first touch, and of where the cell's body crosses the rails at
+// rest; the middle rail fails first, then the top rail, then the bottom one as the cell rides over it; each splits
+// from the first touch outward and is fully open (ends curled) well before the freeze
+const S_TOUCH = runS(IMPACT_POINT.x);
+const SPLIT_AT = [3.2, 0.6, 2.4]; // travel (m) when each rail starts to split
+const SPLIT_OPEN = 1.6; // more metres of travel until it is fully open
 const opened = (travel: number, rail: number) =>
   Math.min(1, Math.max(0, (travel - SPLIT_AT[rail]) / SPLIT_OPEN));
-// the run's direction (near end → far end) and the way toward the track (the camera side), in world x/z
-const ALONG = { x: (BAR_B.x - BAR_A.x) / RUN, z: (BAR_B.z - BAR_A.z) / RUN };
-const TRACKWARD = { x: ALONG.z, z: -ALONG.x };
+// The torn stretch of a rail (metres along the run) as it splits: from the first touch (or, for the rails torn only
+// where the cell went through, from where it crosses them) out to the full gap.
+const gapAt = (travel: number, rail: number): [number, number] => {
+  const g = opened(travel, rail);
+  const [a, b] = TEARS[rail].map(runS);
+  const c = Math.min(Math.max(S_TOUCH, a), b);
+  return [c + (a - c) * g, c + (b - c) * g];
+};
+const RUN_LEN = Math.hypot(RUN.b.x - RUN.a.x, RUN.b.z - RUN.a.z);
+
+// ── The ground (ground.ts): what the car and the rails stand on, so the 51° reads (review-2 #1) ─────────────────────
+// The run-off in 3.2's mid tone between the track's white edge line and the barrier, the track beyond the line in its
+// light tone, the ground behind the barrier left dark; the barrier's foot as a line along the ground; and the tyre marks
+// the car lays down along its 29° path. The edge line and the barrier's foot run to one vanishing point, the tyre marks
+// to another, and the car is square to the camera: the three directions of the top view, on screen.
+const NEAR_Z = 0.5; // the ground in front of the camera
+const FAR = 3000; // metres up and down the barrier, to the horizon
+const pathOf = (cam: Camera, ps: { x: number; z: number }[]) =>
+  ps
+    .map((p, i) => {
+      const s = cam.project(p);
+      return `${i ? "L" : "M"} ${s.x.toFixed(1)} ${s.y.toFixed(1)}`;
+    })
+    .join(" ");
+// A ground polygon given on the top view, through the camera: clipped to the ground in front of it.
+const groundPolygon = (cam: Camera, ps: P2[]) => {
+  const v = ps.map(toView);
+  const out: { x: number; z: number }[] = [];
+  v.forEach((a, i) => {
+    const b = v[(i + 1) % v.length];
+    if (a.z >= NEAR_Z) out.push(a);
+    if (a.z >= NEAR_Z !== b.z >= NEAR_Z) {
+      const k = (NEAR_Z - a.z) / (b.z - a.z);
+      out.push({ x: a.x + (b.x - a.x) * k, z: NEAR_Z });
+    }
+  });
+  return out.length > 2 ? `${pathOf(cam, out)} Z` : "";
+};
+// a band of ground along the barrier, between W y0 and y1
+const band = (cam: Camera, y0: number, y1: number) =>
+  groundPolygon(cam, [
+    { x: -FAR, y: y0 },
+    { x: FAR, y: y0 },
+    { x: FAR, y: y1 },
+    { x: -FAR, y: y1 },
+  ]);
+const MARK_W = 0.3; // a tyre's sliding mark, m
+const MARK_LEN = 80; // back up the path, out of the picture
+// The car's tyres where the picture draws them (VF-20, the high far side, ART-26), as points on the ground in V: the
+// near tyres stand at the car's depth; the far ones, drawn higher, stand where the ground is that high on screen.
+const tyresOnGround = (
+  cam: Camera,
+  at: { x: number; y: number },
+  depth: number,
+  front: number, // V x shift of the front piece, metres
+  rear: number,
+) => {
+  const ppm = cam.pxPerMetre(depth);
+  const far = VF20.farSide?.high?.wheels ?? VF20.farWheels;
+  const onGround = (
+    w: { cx: number; cy: number; r: number },
+    dx: number,
+    near: boolean,
+  ) => {
+    const sx = at.x + ((w.cx - VF20.frame.x) / PPM + dx) * ppm;
+    if (near) return { x: (sx - cam.cx) / ppm, z: depth };
+    const sy = at.y + ((w.cy + w.r - VF20.frame.ground) / PPM) * ppm;
+    const z = (cam.f * cam.height) / (sy - cam.horizon);
+    return { x: ((sx - cam.cx) * z) / cam.f, z };
+  };
+  return [
+    onGround(far[0], front, false),
+    onGround(far[1], rear, false),
+    onGround(VF20.nearWheels[0], front, true),
+    onGround(VF20.nearWheels[1], rear, true),
+  ];
+};
+// One tyre's mark: a band from the tyre back along the path, darkest under the tyre.
+const tyreMark = (cam: Camera, p: { x: number; z: number }) => {
+  const n = { x: -PATH_V.z * (MARK_W / 2), z: PATH_V.x * (MARK_W / 2) };
+  const back = { x: p.x - PATH_V.x * MARK_LEN, z: p.z - PATH_V.z * MARK_LEN };
+  return `${pathOf(cam, [
+    { x: p.x + n.x, z: p.z + n.z },
+    { x: back.x + n.x, z: back.z + n.z },
+    { x: back.x - n.x, z: back.z - n.z },
+    { x: p.x - n.x, z: p.z - n.z },
+  ])} Z`;
+};
+
+// The run-off's tone: one step darker than 3.2's mid tone, lighter than the night's dark (user review of #26).
+const RUNOFF_TONE_R = 2.25;
+// The infield's trees behind the barrier (ground.ts SHRUBS), read as distant low vegetation (user review of #26): low,
+// wider-than-tall mounds in a lighter screentone than the ground, standing on the ground line with a faint darker base
+// and no outline. Only those in front of the grandstands (floodlit-night.tsx stands from 118 m), farthest first.
+const SHRUB_MAX_Z = 110;
+const Shrubs: React.FC<{ cam: Camera }> = ({ cam }) => (
+  <>
+    {SHRUBS.map((s) => ({ s, v: toView(s.at) }))
+      .filter(({ v }) => v.z > 3 && v.z < SHRUB_MAX_Z)
+      .sort((a, b) => b.v.z - a.v.z)
+      .map(({ s, v }) => {
+        const base = cam.project({ x: v.x, z: v.z });
+        if (base.x < -300 || base.x > 2220) return null;
+        const k = cam.pxPerMetre(v.z);
+        const w = s.w * k;
+        const h = s.h * 0.55 * k; // flattened: the crown seen across the ground
+        const r = (j: number) => 0.8 + 0.4 * ((s.seed * (j + 3) * 0.618) % 1);
+        // three mounds standing on the ground line, the middle one a little higher
+        const mounds = [
+          { x: -0.3 * w, rx: 0.3 * w * r(1), ry: 0.6 * h * r(1) },
+          { x: 0.28 * w, rx: 0.3 * w * r(2), ry: 0.65 * h * r(2) },
+          { x: 0, rx: 0.36 * w * r(3), ry: 0.9 * h * r(3) },
+        ];
+        const d = mounds
+          .map(
+            (m) =>
+              `M ${(m.x - m.rx).toFixed(1)} 0 A ${m.rx.toFixed(1)} ${m.ry.toFixed(1)} 0 0 1 ${(m.x + m.rx).toFixed(1)} 0 Z`,
+          )
+          .join(" ");
+        return (
+          <g key={s.seed} transform={`translate(${base.x} ${base.y})`}>
+            <path d={d} fill={tone("mid", "b33")} opacity={0.75} />
+            <ellipse
+              cx={0}
+              cy={0}
+              rx={0.5 * w}
+              ry={Math.max(1, 0.08 * h)}
+              fill="#2a2a2a"
+              opacity={0.5}
+            />
+          </g>
+        );
+      })}
+  </>
+);
+
+// ── The impact flash (user review of #26, round 3): one big spark burst on the contact point, no spark shower ────────
+const BURST_HEIGHT = 0.6; // where the far front corner meets the rails, m
+const BURST_R = 150 * 0.85; // px at full size (85 %, user review of #26)
+// a small nudge to the right on screen, off the nose and onto the rails (the picture is flipped: −x before the flip)
+const BURST_NUDGE = 32;
+const BURST_FADE_BY = BALL_AT + 6; // gone as the fireball grows
 
 const star = (
   cx: number,
@@ -88,8 +249,9 @@ const stage = (t: number) => {
   const p = Math.min(1, tt / 60);
   const travel = PIERCE * (1 - (1 - p) * (1 - p));
   const split = ramp(tt, BREAK_AT, 58);
-  // the cell drives on into the rails, pitching nose-down; the rear is left behind, kicking up and turning
-  const front = { dx: 0.55 * split, rotate: -4 * split };
+  // the cell drives on into the rails, pitching nose-down, into its rest pose; the rear is left behind, kicking up
+  // and turning
+  const front = { dx: CELL_POSE.dx * split, rotate: CELL_POSE.rotate * split };
   const rear = {
     dx: -1.1 * split,
     dy: 0.35 * Math.sin(Math.PI * Math.min(1, split * 1.3)),
@@ -98,45 +260,44 @@ const stage = (t: number) => {
   return { travel, split, front, rear, p };
 };
 
-// How the rails give: bent back and dragged along with the car round the contact, the bottom one pressed down where
-// the cell goes through, more the further in it is; once a rail splits, its torn ends curl (no rail bulges up).
+// How the rails give: pushed back and dragged along with the car where it is going through them, the bottom one
+// pressed down, more the further in it is; once a rail splits, its torn ends curl (no rail bulges up).
 const deflection =
   (travel: number): Deflection =>
   (s, rail) => {
-    const k = bump(s, S_CONTACT - travel * 0.5, 1.0 + travel * 0.45);
-    const d = travel * 0.5 * k;
+    const centre = S_TOUCH + travel * PATH_DIR.x * 0.7;
+    const k = bump(s, centre, 1.0 + travel * 0.35);
+    const d = Math.min(travel, 2.5) * 0.25 * k;
     const g = opened(travel, rail);
     const c = g > 0 ? tornCurl(s, ...gapAt(travel, rail), rail, g) : null;
+    const out = (c ? c.out : 0) - d; // toward the track (−: pushed back)
+    const run = 0.3 * d + (c ? c.along : 0);
     return {
-      dx: -d * 0.8 + (c ? c.along * ALONG.x + c.out * TRACKWARD.x : 0),
-      dz: d * 0.15 + (c ? c.along * ALONG.z + c.out * TRACKWARD.z : 0),
+      dx: out * TRACKWARD_V.x + run * RUN_DIR_V.x,
+      dz: out * TRACKWARD_V.z + run * RUN_DIR_V.z,
       dy: (rail === 0 ? -0.12 * k * Math.min(1, travel) : 0) + (c ? c.up : 0),
     };
   };
-// The torn stretch of a rail (metres along the run) as it splits: from the contact outward to the full gap.
-const gapAt = (travel: number, rail: number): [number, number] => {
-  const g = opened(travel, rail);
-  return [
-    S_CONTACT + (TEAR.from - S_CONTACT) * g,
-    S_CONTACT + (TEAR.to - S_CONTACT) * g,
-  ];
-};
 
 export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
   const shot = shotById("3.3");
   const t = f - shot.from;
   const frozen = t >= SLOW;
   const fire = FIRE_PALETTES[palette];
-  const { travel, split, front, rear } = stage(t);
-  const at = CAM.anchor({ x: NOSE0 + L - travel, z: CAR_Z });
+  const { travel, split, front, rear, p } = stage(t);
+  const A = anchorAt(travel, front.dx);
+  const at = CAM.anchor({ x: A.x, z: A.z });
   // the wheels still turning, slowed with the picture (slow motion: ~1/12 of 150° a frame), stopping as it digs in
-  const wheelAngle = 13 * Math.min(t, SLOW) * (1 - stage(t).p * 0.6);
-  const nose = CAM.project({ x: NOSE0 - travel - 0.1, y: 0.45, z: CAR_Z });
-  const hit = CAM.project({ x: NOSE0 - travel + 0.3, y: 0.6, z: CAR_Z + 0.9 });
-  const breakAt = carPointOnScreen(at, BREAK_PIVOT, {
-    dx: (front.dx + rear.dx) / 2,
-  });
-  const ppm = CAM.pxPerMetre(CAR_Z);
+  const wheelAngle = 13 * Math.min(t, SLOW) * (1 - p * 0.6);
+  const noseX = A.x - L - front.dx;
+  const nose = CAM.project({ x: noseX - 0.1, y: 0.45, z: A.z });
+  const breakAt = carPointOnScreen(
+    at,
+    BREAK_PIVOT,
+    { dx: (front.dx + rear.dx) / 2 },
+    "left",
+  );
+  const ppm = CAM.pxPerMetre(A.z);
   // camera: a hard, jagged jolt on the contact (a few frames, random direction each frame), then the slow motion's
   // long shudder, and a last kick as the frame freezes
   const jolt = 46 * Math.exp(-t / 4);
@@ -160,83 +321,56 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
           : 0;
   const ts = Math.min(t, SLOW);
   const deflect = deflection(travel);
-  // the middle rail fails first, then the top rail; both split along the cell as it goes through
+  // the middle rail fails first, then the top rail, then the bottom one; each splits along the way the car went
   const gaps: [number, number][][] = [0, 1, 2].map((rail) => {
     if (opened(travel, rail) <= 0) return [];
     const [a, b] = gapAt(travel, rail);
-    return [[a / RUN, b / RUN]];
+    return [[a / RUN_LEN, b / RUN_LEN]];
   });
-  // sparks off the rails: streaks thrown back and up from the contact, under gravity, every frame
-  const sparks = Array.from({ length: 46 }, (_, i) => {
-    const born = (i * 37) % 44;
-    const age = ts - born;
-    if (age < 0 || age > 16) return null;
-    const ang = -Math.PI * (0.05 + ((i * 0.618) % 1) * 0.55);
-    const v = 16 + ((i * 7) % 11) * 2.2;
-    const pos = (a: number) => ({
-      x: hit.x + Math.cos(ang) * v * a,
-      y: hit.y + Math.sin(ang) * v * a + 0.45 * a * a,
-    });
-    return { a: pos(Math.max(0, age - 2.5)), b: pos(age), w: 3 + (i % 3) };
-  }).filter((s) => s !== null);
-  // the spark shower along the rail the car scrapes: from points all along the stretch between the nose and where the
-  // car first touched, on each rail's face, thrown back (right, away from the car's travel) and up in long streaks
-  const scrape = Array.from({ length: 120 }, (_, i) => {
-    const born = (i * 13) % 52;
-    const life = 10 + (i % 7);
-    const age = ts - born;
-    if (age < 0 || age > life || frozen) return null;
-    const along = S_CONTACT - (travel + 0.6) * ((i * 0.618) % 1) + 0.3;
-    const u = Math.max(0, Math.min(1, along / RUN));
-    const rail = RAILS[i % 3];
-    const o = CAM.project({
-      x: BAR_A.x + (BAR_B.x - BAR_A.x) * u,
-      y: (rail[0] + rail[1]) / 2,
-      z: BAR_A.z + (BAR_B.z - BAR_A.z) * u,
-    });
-    const ang = -Math.PI * (0.02 + ((i * 0.377) % 1) * 0.32);
-    const v = 22 + ((i * 11) % 13) * 2.4;
-    const pos = (a: number) => ({
-      x: o.x + Math.cos(ang) * v * a,
-      y: o.y + Math.sin(ang) * v * a + 0.6 * a * a,
-    });
-    return {
-      a: pos(Math.max(0, age - 4)),
-      b: pos(age),
-      w: 4.5 + (i % 4) * 1.3,
-      op: Math.min(1, 1.6 * (1 - age / life)),
-    };
-  }).filter((s) => s !== null);
-  // a spray of fine carbon bits off the nose and the break (the finer-particle language of the Abu Dhabi lock-up
-  // smoke): many small dark flecks, flung out and falling, each seen for a moment and gone (user review 2026-10-04:
-  // the big shards read as stickers)
-  const bits = Array.from({ length: 44 }, (_, i) => i).flatMap((i) => {
-    const fromBreak = i % 3 === 0;
-    const born = fromBreak ? BREAK_AT + (i % 9) : (i * 5) % 14;
-    const life = 12 + ((i * 7) % 11);
-    const age = ts - born;
-    if (age < 0 || age > life) return [];
-    const o = fromBreak ? breakAt : hit;
-    const ang = -Math.PI * (0.05 + ((i * 0.618) % 1) * 0.9);
-    const v = 9 + ((i * 5) % 9) * 1.6;
-    const s = 2.2 + ((i * 3) % 5) * 1.1;
-    return [
-      {
-        x: o.x + Math.cos(ang) * v * age,
-        y: o.y + Math.sin(ang) * v * age + 0.35 * age * age,
-        s,
-        rot: i * 47 + age * (i % 2 ? 14 : -11),
-        grey: i % 4 === 1,
-        op: Math.min(1, (1 - age / life) * 2),
-      },
-    ];
-  });
+  // the stretch of the barrier down the run from where it crosses the car's plane is nearer than the car: in front
+  const splitU = along((A.z - CELL_Z) / RUN_DIR_V.z);
+  // the impact flash sits where the far front corner scrapes the rails (ground.ts scrapeAt), in the camera's world V
+  const scrape = toView(scrapeAt(travel));
+  const burstAt = CAM.project({ x: scrape.x, y: BURST_HEIGHT, z: scrape.z });
+  // the tyres on the ground as drawn: the front ones on the front piece, the rear ones on the piece left behind
+  const tyres = tyresOnGround(CAM, at, A.z, -front.dx, -rear.dx);
+  // the car: the rear piece, then the cell once it splits
+  const car = (
+    <>
+      <MangaCar
+        car={VF20}
+        facing="left"
+        at={at}
+        state={{
+          // the impact camera is 3.2 m up: the VF-20's high far side (ART-26)
+          farSide: "high",
+          wheelAngle,
+          ...(split > 0
+            ? { split: { front, rear, show: "rear" as const } }
+            : { tilt: -1 }),
+        }}
+      />
+      {split > 0 ? (
+        <MangaCar
+          car={VF20}
+          facing="left"
+          at={at}
+          state={{
+            farSide: "high",
+            wheelAngle,
+            split: { front, rear, show: "front" },
+          }}
+        />
+      ) : null}
+    </>
+  );
   const lineArt = (children: React.ReactNode) =>
     frozen ? <g filter="url(#b33-lineart)">{children}</g> : children;
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
         <ToneDefs prefix="b33" />
+        <TonePattern id="b33-runoff" r={RUNOFF_TONE_R} paper />
         {/* line art: the drawing's edges and silhouette in black on white, every fill gone */}
         <filter id="b33-lineart" x="-5%" y="-5%" width="110%" height="110%">
           <feColorMatrix
@@ -289,151 +423,152 @@ export const Impact: React.FC<PictureProps> = ({ f, palette }) => {
       <g
         transform={`translate(${960 + dx} ${540 + dy}) scale(${push}) translate(-960 -540)`}
       >
-        {frozen ? (
-          <>
-            <rect x={-200} y={-200} width={2320} height={1480} fill={PAPER} />
-            <path d={focusLines(nose.x, nose.y, 380, 140, 61)} fill={INK} />
-            <path
-              d={star(nose.x, nose.y, 210, 470, 14, 0.3)}
-              fill={PAPER}
-              stroke={INK}
-              strokeWidth={10}
-              strokeLinejoin="miter"
-            />
-            <path
-              d={star(nose.x, nose.y, 120, 250, 11, 1.1)}
-              fill="none"
-              stroke={INK}
-              strokeWidth={5}
-              strokeLinejoin="miter"
-            />
-          </>
-        ) : (
-          <FloodlitNight cam={CAM} tonePrefix="b33" id="b33-night" />
-        )}
-        {lineArt(
-          <>
-            {/* far stretch of the barrier (behind the car), the rear piece, the cell, then the near stretch the
-                cell goes through */}
-            <BentGuardrail
-              cam={CAM}
-              a={BAR_A}
-              b={BAR_B}
-              from={U_CONTACT - 0.4 / RUN}
-              deflect={deflect}
-              gaps={gaps}
-              tonePrefix="b33"
-            />
-            <MangaCar
-              car={VF20}
-              facing="left"
-              at={at}
-              state={{
-                wheelAngle,
-                ...(split > 0
-                  ? { split: { front, rear, show: "rear" as const } }
-                  : { tilt: -1 }),
-              }}
-            />
-            {split > 0 ? (
-              <MangaCar
-                car={VF20}
-                facing="left"
-                at={at}
-                state={{ wheelAngle, split: { front, rear, show: "front" } }}
+        <Flip>
+          {frozen ? (
+            <>
+              <rect x={-200} y={-200} width={2320} height={1480} fill={PAPER} />
+              <path d={focusLines(nose.x, nose.y, 380, 140, 61)} fill={INK} />
+              <path
+                d={star(nose.x, nose.y, 210, 470, 14, 0.3)}
+                fill={PAPER}
+                stroke={INK}
+                strokeWidth={10}
+                strokeLinejoin="miter"
               />
-            ) : null}
-            <BentGuardrail
-              cam={CAM}
-              a={BAR_A}
-              b={BAR_B}
-              to={U_CONTACT - 0.4 / RUN}
-              deflect={deflect}
-              gaps={gaps}
-              tonePrefix="b33"
-            />
-          </>,
-        )}
-        {/* the fuel cell bursts at the break: a fireball in the fire's colours, bubble smoke rising after it in the
-            night; on the paper of the freeze a dark bubble-smoke burst goes behind it instead (ART-20) */}
-        {ts >= BALL_AT + 10 && !frozen ? (
-          <g transform={`translate(${breakAt.x} ${breakAt.y - ppm * 0.6})`}>
-            <BubbleSmoke
-              w={ppm * 2.4}
-              top={ppm * 1.4}
-              rise={ppm * 3.2}
-              frame={ts}
-              seed="b33-smoke"
-              palette={fire}
-              opacity={0.85 * ramp(ts, BALL_AT + 10, BALL_AT + 30)}
-            />
-          </g>
-        ) : null}
-        <Fireball
-          x={breakAt.x}
-          y={breakAt.y}
-          r={ppm * 2.5}
-          age={ts - BALL_AT}
-          seed="b33-ball"
-          palette={fire}
-          backing={frozen}
-        />
-        {bits.map((s, i) => (
-          <path
-            key={`d${i}`}
-            d={`M ${-s.s} ${-s.s * 0.3} L ${s.s * 0.2} ${-s.s * 0.6} L ${s.s} ${s.s * 0.1} L ${-s.s * 0.1} ${s.s * 0.5} Z`}
-            transform={`translate(${s.x} ${s.y}) rotate(${s.rot})`}
-            fill={s.grey ? "#6a6560" : "#1c1a19"}
-            opacity={s.op}
+              <path
+                d={star(nose.x, nose.y, 120, 250, 11, 1.1)}
+                fill="none"
+                stroke={INK}
+                strokeWidth={5}
+                strokeLinejoin="miter"
+              />
+            </>
+          ) : (
+            <>
+              <FloodlitNight cam={CAM} tonePrefix="b33" id="b33-night" />
+              <path d={band(CAM, TRACK_EDGE_Y, 0)} fill="url(#b33-runoff)" />
+              {/* the paved strip behind the barrier, then the infield desert and its trees */}
+              <path
+                d={band(CAM, SERVICE_STRIP.from, SERVICE_STRIP.to)}
+                fill="url(#b33-runoff)"
+              />
+              <Shrubs cam={CAM} />
+              <path
+                d={band(CAM, TRACK_FAR_Y, TRACK_EDGE_Y)}
+                fill={tone("light", "b33")}
+              />
+              <path
+                d={band(CAM, TRACK_EDGE_Y - EDGE_LINE, TRACK_EDGE_Y)}
+                fill={PAPER}
+                stroke={INK}
+                strokeWidth={2.5}
+                strokeLinejoin="round"
+              />
+              {/* the barrier's foot */}
+              <path
+                d={pathOf(CAM, [
+                  toView({ x: -FAR, y: 0 }),
+                  toView({ x: RUN_W.to, y: 0 }),
+                ])}
+                stroke={INK}
+                strokeWidth={4}
+              />
+              {tyres.map((p, i) => (
+                <path
+                  key={`m${i}`}
+                  d={tyreMark(CAM, p)}
+                  fill={INK}
+                  opacity={0.62}
+                />
+              ))}
+            </>
+          )}
+          {lineArt(
+            <>
+              {/* the barrier up the run (behind the car), the rear piece, the cell, then the stretch down the run
+                  that the nose goes through, in front of it; first the barrier on up the run past the model's
+                  RUN, out to the vanishing point */}
+              <BentGuardrail
+                cam={CAM}
+                a={toView({ x: BARRIER_FAR_X, y: 0 })}
+                b={RUN.a}
+                tonePrefix="b33"
+              />
+              <BentGuardrail
+                cam={CAM}
+                a={RUN.a}
+                b={RUN.b}
+                to={splitU}
+                deflect={deflect}
+                gaps={gaps}
+                tonePrefix="b33"
+              />
+              {car}
+              <BentGuardrail
+                cam={CAM}
+                a={RUN.a}
+                b={RUN.b}
+                from={splitU}
+                deflect={deflect}
+                gaps={gaps}
+                tonePrefix="b33"
+              />
+            </>,
+          )}
+          {/* the fuel cell bursts at the break: a fireball in the fire's colours, bubble smoke rising after it in
+              the night; on the paper of the freeze a dark bubble-smoke burst goes behind it instead (ART-20) */}
+          {ts >= BALL_AT + 10 && !frozen ? (
+            <g transform={`translate(${breakAt.x} ${breakAt.y - ppm * 0.6})`}>
+              <BubbleSmoke
+                w={ppm * 2.4}
+                top={ppm * 1.4}
+                rise={ppm * 3.2}
+                frame={ts}
+                seed="b33-smoke"
+                palette={fire}
+                opacity={0.85 * ramp(ts, BALL_AT + 10, BALL_AT + 30)}
+              />
+            </g>
+          ) : null}
+          <Fireball
+            x={breakAt.x}
+            y={breakAt.y}
+            r={ppm * 2.5}
+            age={ts - BALL_AT}
+            seed="b33-ball"
+            palette={fire}
+            backing={frozen}
           />
-        ))}
-        {scrape.map((s, i) => (
-          <g key={`r${i}`} opacity={s.op}>
-            <path
-              d={`M ${s.a.x} ${s.a.y} L ${s.b.x} ${s.b.y}`}
-              stroke={INK}
-              strokeWidth={s.w + 4}
-              strokeLinecap="round"
-            />
-            <path
-              d={`M ${s.a.x} ${s.a.y} L ${s.b.x} ${s.b.y}`}
-              stroke="#ffa31a"
-              strokeWidth={s.w}
-              strokeLinecap="round"
-            />
-            <path
-              d={`M ${(s.a.x + s.b.x) / 2} ${(s.a.y + s.b.y) / 2} L ${s.b.x} ${s.b.y}`}
-              stroke="#fffbe6"
-              strokeWidth={s.w * 0.55}
-              strokeLinecap="round"
-            />
-          </g>
-        ))}
-        {sparks.map((s, i) => (
-          <g key={`s${i}`}>
-            <path
-              d={`M ${s.a.x} ${s.a.y} L ${s.b.x} ${s.b.y}`}
-              stroke={INK}
-              strokeWidth={s.w + 2}
-              strokeLinecap="round"
-            />
-            <path
-              d={`M ${s.a.x} ${s.a.y} L ${s.b.x} ${s.b.y}`}
-              stroke={frozen ? INK : "#fff1b8"}
-              strokeWidth={s.w}
-              strokeLinecap="round"
-            />
-          </g>
-        ))}
+        </Flip>
       </g>
       {frozen ? (
-        <g transform="rotate(-8 1330 250)">
-          <BigText x={1330} y={250} size={200} haloWidth={22}>
+        <g transform="rotate(-8 590 250)">
+          {/* on the left, clear of the impact star round the nose on the right */}
+          <BigText x={590} y={250} size={200} haloWidth={22} anchor="end">
             {`${FACTS.impactG}G`}
           </BigText>
         </g>
       ) : null}
       <rect width={1920} height={1080} fill={PAPER} opacity={flash} />
+      {/* the impact flash on the contact point: the top layer, over the car's nose, the rails and the white flash,
+          so it lands on the contact frame; it moves with the scrape point and is gone as the fireball grows */}
+      {frozen ? null : (
+        <g
+          transform={`translate(${960 + dx} ${540 + dy}) scale(${push}) translate(-960 -540)`}
+        >
+          <Flip>
+            <SparkBurst
+              x={burstAt.x - BURST_NUDGE}
+              y={burstAt.y}
+              r={BURST_R}
+              t={ts}
+              fadeBy={BURST_FADE_BY}
+              seed="b33-burst"
+              palette={fire}
+            />
+          </Flip>
+        </g>
+      )}
     </svg>
   );
 };

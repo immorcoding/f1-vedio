@@ -10,13 +10,18 @@ import {
   CAR_UNITS_PER_METRE,
   drawnFarWheels,
   endplateCopyTransform,
+  isTopOnly,
   photoPxPerMetre,
   type Accent,
   type CarSpec,
   type Driver,
   type EndplateCopy,
+  type FarSideCamera,
+  type TopOnlyCar,
   type Wheel,
 } from "./spec";
+import { specSeenFrom } from "./seenFrom";
+import { RearWingPlanesView } from "./RearWingPlanes";
 import { TopCar } from "./TopCar";
 
 // How the car is seen: from the side (the traced view), or from above on a track map (TopCar).
@@ -40,8 +45,11 @@ export type CarState = {
   heading?: number;
   // Top view only: front-wheel steer angle, degrees (positive = to the car's right).
   steer?: number;
-  // Rotation of the wheels, degrees (clockwise as the car rolls forward). Drive it from the frame to make them roll.
+  // Rotation of the wheels, degrees (clockwise as the car rolls forward). Drive it from the distance travelled
+  // (`wheelAngleAt(car, metres)`) to make them roll at the true speed; the top view scrolls the tread with it.
   wheelAngle?: number;
+  // Top view: road speed as seen on screen, m/s (slowed in a slow-motion shot), for the tread's motion blur.
+  speed?: number;
   // Front wheels locked under braking: when set, they stay at this angle and ignore wheelAngle.
   lockFront?: number;
   // Body pitch over the wheels, degrees, positive = nose up (negative for the nose dive under braking). The wheels stay
@@ -54,6 +62,14 @@ export type CarState = {
   tread?: Tread;
   // false: an empty cockpit — no helmet, no HANS (the driver has got out).
   driver?: false;
+  // false: the far front endplate is gone (torn off or bent away; the scene draws the damage), side view only.
+  farFrontEndplate?: false;
+  // Side view: how the far wheels and far front wing are drawn (CarSpec.farSide): "low" (default) for a trackside
+  // camera near the cars' height, "high" for one looking down on the car. Each shot says which; no camera maths.
+  farSide?: FarSideCamera;
+  // Side view: the rear wing's DRS flap, 0 = closed (the default), 1 = fully open (85 mm slot); in between animates it.
+  // Only cars with traced RearWingPlanes show it.
+  drs?: number;
 };
 
 export type Tread = "dry" | "wet";
@@ -73,6 +89,58 @@ const wetSipes = (w: Wheel) =>
     const b = a + 0.07;
     return `M ${w.cx + Math.cos(a) * (w.r - 1)} ${w.cy + Math.sin(a) * (w.r - 1)} L ${w.cx + Math.cos(b) * (w.r - 15)} ${w.cy + Math.sin(b) * (w.r - 15)}`;
   }).join(" ");
+
+// Bolt-hole dots round a flat wheel cover, so a covered wheel still shows it turning.
+const coverDots = (w: Wheel, r: number, n: number, dot: number) =>
+  Array.from({ length: n }, (_, i) => {
+    const a = (i / n) * Math.PI * 2 + 0.3;
+    const x = w.cx + Math.cos(a) * r;
+    const y = w.cy + Math.sin(a) * r;
+    return `M ${x - dot} ${y} A ${dot} ${dot} 0 1 0 ${x + dot} ${y} A ${dot} ${dot} 0 1 0 ${x - dot} ${y} Z`;
+  }).join(" ");
+
+// The Pirelli logo arcs on the tyre shoulder (2022 18-inch tyres): four short arcs in the compound colour.
+const logoArcs = (w: Wheel) =>
+  Array.from({ length: 4 }, (_, i) => {
+    const r = w.r - 15;
+    const a0 = (i / 4) * Math.PI * 2 + 0.5;
+    const a1 = a0 + 0.62;
+    return `M ${w.cx + Math.cos(a0) * r} ${w.cy + Math.sin(a0) * r} A ${r} ${r} 0 0 1 ${w.cx + Math.cos(a1) * r} ${w.cy + Math.sin(a1) * r}`;
+  }).join(" ");
+
+// the glossy black of a wheel cover (the photo's covers are black, the red tyre band rings them)
+const COVER = "#1f1f24";
+
+// The 2022 wheel (rim "covered"), drawn inside the wheel's turning group: the flat cover over the 18-inch rim, its bolt
+// holes, and the logo arcs on the shoulder. No spokes: the cover hides them (2022 Technical Regulations, Art. 3.13.7).
+const CoveredRim: React.FC<{
+  w: Wheel;
+  rimR: number;
+  compound?: string;
+  fill: string;
+}> = ({ w, rimR, compound, fill }) => (
+  <>
+    {compound ? (
+      <path
+        d={logoArcs(w)}
+        fill="none"
+        stroke={compound}
+        strokeWidth={7}
+        strokeLinecap="round"
+      />
+    ) : null}
+    <circle
+      cx={w.cx}
+      cy={w.cy}
+      r={rimR}
+      fill={COVER}
+      stroke={INK}
+      strokeWidth={4}
+    />
+    <circle cx={w.cx} cy={w.cy} r={rimR} fill={fill} opacity={0.35} />
+    <path d={coverDots(w, rimR * 0.72, 8, 3.2)} fill="#55555c" />
+  </>
+);
 
 const NearWheel: React.FC<{
   car: CarSpec;
@@ -105,14 +173,21 @@ const NearWheel: React.FC<{
       <circle
         cx={w.cx}
         cy={w.cy}
-        r={w.r - 24}
+        r={car.rim === "covered" ? car.rimR + 6 : w.r - 24}
         fill="none"
         stroke={compound}
         strokeWidth={6}
       />
     ) : null}
     <g transform={`rotate(${-angle} ${w.cx} ${w.cy})`}>
-      {car.rim === "spoked" ? (
+      {car.rim === "covered" ? (
+        <CoveredRim
+          w={w}
+          rimR={car.rimR}
+          compound={compound}
+          fill={tone("dark", id)}
+        />
+      ) : car.rim === "spoked" ? (
         <>
           <circle
             cx={w.cx}
@@ -162,6 +237,26 @@ const NearWheel: React.FC<{
         fill="none"
         stroke={car.rimAccent}
         strokeWidth={5}
+      />
+    ) : null}
+    {car.rim === "covered" ? (
+      <path
+        d={`M ${w.cx - car.rimR * 0.62} ${w.cy - car.rimR * 0.38} A ${car.rimR * 0.72} ${car.rimR * 0.72} 0 0 1 ${w.cx - car.rimR * 0.1} ${w.cy - car.rimR * 0.71}`}
+        fill="none"
+        stroke={PAPER}
+        strokeWidth={4}
+        strokeLinecap="round"
+        opacity={0.7}
+      />
+    ) : null}
+    {car.rim === "covered" && car.hubAccent ? (
+      <circle
+        cx={w.cx}
+        cy={w.cy}
+        r={19}
+        fill="none"
+        stroke={car.hubAccent}
+        strokeWidth={4}
       />
     ) : null}
     <circle
@@ -225,12 +320,16 @@ const FarWheel: React.FC<{
           stroke="#2c2c2c"
           strokeWidth={3}
         />
-        <path
-          d={spokePath(w, rimR * 0.85, car.rim === "spoked" ? 10 : 12)}
-          stroke="#4a4a4a"
-          strokeWidth={car.rim === "spoked" ? 4 : 2}
-          strokeLinecap="round"
-        />
+        {car.rim === "covered" ? (
+          <path d={coverDots(w, rimR * 0.72, 8, 3)} fill="#3a3a3a" />
+        ) : (
+          <path
+            d={spokePath(w, rimR * 0.85, car.rim === "spoked" ? 10 : 12)}
+            stroke="#4a4a4a"
+            strokeWidth={car.rim === "spoked" ? 4 : 2}
+            strokeLinecap="round"
+          />
+        )}
       </g>
       <circle cx={w.cx} cy={w.cy} r={9} fill={INK} />
       <path
@@ -380,9 +479,10 @@ export const DriverHelmet: React.FC<{
 // The car drawn in its reference photo's own pixel space, facing left as in the photo. MangaCar flips and places it;
 // the Art check still draws it straight onto the photo's frame.
 export const CarInPhotoSpace: React.FC<{ car: CarSpec; state?: CarState }> = ({
-  car,
+  car: traced,
   state = {},
 }) => {
+  const car = specSeenFrom(traced, state.farSide ?? "low");
   const id = svgId(useId());
   const defs = (
     <defs>
@@ -567,9 +667,43 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
   const [front, rear] = car.nearWheels;
   const pivot = { x: (front.cx + rear.cx) / 2, y: (front.cy + rear.cy) / 2 };
   const shade = car.shade ?? 1;
+  const camera = state.farSide ?? "low";
+  const look = car.farSide?.[camera] ?? {};
+  const farFront =
+    look.frontEndplate === undefined ? fw.farFrom : look.frontEndplate;
+  const deck = look.frontDeck ?? fw.deck;
+  const flap = look.frontFlap ?? fw.flap.d;
+  const farWheels = drawnFarWheels(car, camera);
+  // HIGH look: the car's shadow on the ground, an ellipse centred between the near and the far wheels' contact lines
+  // (a camera looking down sees it on both sides of the car; the floor edge alone would sit under the near side only)
+  const nearGround = (front.cy + front.r + rear.cy + rear.r) / 2;
+  const farGround =
+    (farWheels[0].cy + farWheels[0].r + farWheels[1].cy + farWheels[1].r) / 2;
+  const groundShadow = look.groundShadow
+    ? {
+        cx: (front.cx + rear.cx) / 2,
+        cy: (nearGround + farGround) / 2,
+        // the length of the car, so its ends show past the nose and the rear wing
+        rx: Math.abs(rear.cx - front.cx) / 2 + 2 * front.r,
+        ry: (nearGround - farGround) / 2 + 0.25 * front.r,
+      }
+    : null;
   return (
     <>
-      {drawnFarWheels(car).map((w, i) => (
+      {groundShadow ? (
+        // a half-tone edge (55 % ink) round a solid core under the floor
+        <g>
+          <ellipse {...groundShadow} fill={INK} opacity={0.55} />
+          <ellipse
+            cx={groundShadow.cx}
+            cy={groundShadow.cy}
+            rx={groundShadow.rx * 0.9}
+            ry={groundShadow.ry * 0.75}
+            fill={INK}
+          />
+        </g>
+      ) : null}
+      {farWheels.map((w, i) => (
         <FarWheel
           key={`f${w.cx}`}
           car={car}
@@ -586,19 +720,19 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
         }
       >
         {/* far side: far front endplate and wing surface, far rear endplate and rear wing top, airbox camera */}
-        {fw.farFrom ? (
+        {farFront && state.farFrontEndplate !== false ? (
           <Endplate
             d={fw.near}
             livery={fw.livery}
             fill={p.wing}
             w={4}
-            copy={fw.farFrom}
+            copy={farFront}
           />
         ) : null}
-        <path d={fw.deck} fill={p.frontDeck} />
-        <path d={fw.flap.d} fill={fw.flap.color} />
+        <path d={deck} fill={p.frontDeck} />
+        <path d={flap} fill={fw.flap.color} />
         <path
-          d={fw.deck}
+          d={deck}
           fill="none"
           stroke={INK}
           strokeWidth={4}
@@ -608,7 +742,9 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
         {car.rearWing.farFrom ? (
           <Endplate
             d={car.rearWing.near}
-            livery={car.rearWing.livery}
+            livery={
+              car.rearWing.farLivery === false ? [] : car.rearWing.livery
+            }
             fill={p.wing}
             w={5}
             copy={car.rearWing.farFrom}
@@ -626,7 +762,17 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
             <path d={car.rearWing.top} fill={`url(#${id}-dl)`} opacity={0.6} />
           </>
         ) : null}
-        <path d={car.rearWing.pylon} fill={INK} />
+        {car.rearWing.planes ? (
+          <RearWingPlanesView
+            car={car}
+            drs={state.drs ?? 0}
+            id={id}
+            fill={p.rearTop}
+          />
+        ) : null}
+        {car.rearWing.pylon ? (
+          <path d={car.rearWing.pylon} fill={INK} />
+        ) : null}
         {car.rearWing.elements.map((d) => (
           <Ink key={d} d={d} w={5} />
         ))}
@@ -731,7 +877,7 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
             transform="translate(0 4)"
           />
         </g>
-        <path d={car.floor} fill={INK} />
+        {look.groundShadow ? null : <path d={car.floor} fill={INK} />}
         {car.panelLines.map((d) => (
           <g key={d}>
             <Ink d={d} w={6} />
@@ -839,16 +985,19 @@ const CarLayers: React.FC<{ car: CarSpec; state: CarState; id: string }> = ({
 // car's other side, nose to −x (a car seen from the other side of the track).
 // With view "top", `at` is the middle of the car's rear end on a top-down map (TopCar; topAnchorAt places it by the
 // middle of the wheelbase instead), the nose points along state.heading and state.steer turns the front wheels.
+// A TopOnlyCar has no side trace and is always drawn from above.
 export const MangaCar: React.FC<{
-  car: CarSpec;
+  car: CarSpec | TopOnlyCar;
   at: ScreenAnchor;
   view?: CarView;
   facing?: "right" | "left";
   state?: CarState;
 }> = ({ car, at, view = "side", facing = "right", state = {} }) => {
-  if (view === "top") {
+  if (view === "top" || isTopOnly(car)) {
     return <TopCar car={car} at={at} state={state} />;
   }
+  // the body as this shot's camera sees it (FarSideLook.body); the number below follows it
+  car = specSeenFrom(car, state.farSide ?? "low");
   const scale = at.pxPerMetre / CAR_UNITS_PER_METRE;
   // Photo px → screen px.
   const k = car.frame.k * scale;
@@ -866,7 +1015,8 @@ export const MangaCar: React.FC<{
   const numberPiece = pieceScreenTransform(car, state, k, dir);
   return (
     <g transform={`translate(${at.x} ${at.y})`}>
-      {split ? null : (
+      {/* the flat contact shadow on the near ground line; a look with its own groundShadow (HIGH) draws that instead */}
+      {split || car.farSide?.[state.farSide ?? "low"]?.groundShadow ? null : (
         <ellipse
           cx={(car.frame.x - (front.cx + rear.cx) / 2) * k * dir}
           cy={2}

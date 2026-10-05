@@ -6,10 +6,11 @@ import { MangaCar, type CarSpec, type CarState } from "../../cars";
 import type { Camera } from "../../kit/camera";
 import { INK, PAPER } from "../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../kit/ink";
-import { speedLines } from "../../kit/lines";
+import { speedLines, type SpeedLineOptions } from "../../kit/lines";
 import { ToneDefs } from "../../kit/tone";
 import {
   Background,
+  STAND_Z,
   TrackSurface,
   TracksideDefs,
   type GroundMark,
@@ -17,6 +18,29 @@ import {
 } from "./trackside";
 
 export const PANEL = { x: 40, y: 40, w: 1840, h: 1000 };
+
+// The near band of speed lines lies over the outside half of the racing surface.
+const NEAR_Z = 9;
+
+/**
+ * Speed lines that stream instead of flickering: the band is tiled along the track (one fixed set of lines per
+ * tile, keyed by the tile's index) and slides left by `shift` px, so each line moves on with the world and only the
+ * tiles entering at the right are new. `opts.x`/`opts.w` give the visible band; `opts.seed` names the set.
+ */
+export const streamingSpeedLines = (opts: SpeedLineOptions, shift: number) => {
+  const W = opts.w;
+  const base = Math.floor(shift / W);
+  const off = shift - base * W;
+  return [0, 1]
+    .map((k) =>
+      speedLines({
+        ...opts,
+        x: opts.x - off + k * W,
+        seed: `${opts.seed}-t${base + k}`,
+      }),
+    )
+    .join(" ");
+};
 
 export type CloseupCar = {
   car: CarSpec;
@@ -64,6 +88,14 @@ export const Closeup: React.FC<{
   /** Extra camera shake, px. */
   shake?: { x: number; y: number };
   hotelGlow?: number;
+  /**
+   * Fast tracking shots: motion blur on the stands and floodlight beams, m of camera travel per frame (trackside.tsx
+   * Background). When set, the speed lines also stream past with the background instead of being re-dealt from
+   * `seed`, which at race speed strobes like a cut every few frames.
+   */
+  smear?: number;
+  /** Drawn on the ground nearer than the outside run-off (z < 6), for low cameras that see it. */
+  under?: React.ReactNode;
   /** Drawn between the cars (screen space, before the nearer car): smoke, sparks. */
   between?: React.ReactNode;
   /** Drawn over the cars inside the tilted camera group (air lines, smoke in front). */
@@ -83,12 +115,20 @@ export const Closeup: React.FC<{
   focus,
   shake,
   hotelGlow,
+  smear,
+  under,
   between,
   over,
   children,
 }) => {
   const prefix = `cu${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   const sorted = [...cars].sort((a, b) => b.z - a.z);
+  // Speed lines: re-dealt from `seed` (they flicker), or, on a smeared fast tracking shot, laid along the track
+  // and streaming past with the depth they sit at, so they carry the speed without re-dealing the whole band.
+  const lines = (opts: SpeedLineOptions, z: number) =>
+    smear
+      ? streamingSpeedLines(opts, camX * cam.pxPerMetre(z))
+      : speedLines({ ...opts, seed: `${opts.seed}-${seed}` });
   return (
     <svg width={1920} height={1080}>
       <defs>
@@ -97,7 +137,13 @@ export const Closeup: React.FC<{
         <clipPath id={`${prefix}-panel`}>
           <rect x={PANEL.x} y={PANEL.y} width={PANEL.w} height={PANEL.h} />
         </clipPath>
-        <TracksideDefs cam={cam} layout={layout} camX={camX} prefix={prefix} />
+        <TracksideDefs
+          cam={cam}
+          layout={layout}
+          camX={camX}
+          prefix={prefix}
+          smear={smear}
+        />
       </defs>
       <rect width={1920} height={1080} fill={PAPER} />
       <g filter={inkFilter()}>
@@ -111,24 +157,29 @@ export const Closeup: React.FC<{
               camX={camX}
               prefix={prefix}
               hotelGlow={hotelGlow}
+              smear={smear}
             />
             {speed > 0 ? (
               <path
-                d={speedLines({
-                  x: -300,
-                  y: -150,
-                  w: 2500,
-                  h: cam.screenY(0, 25) + 150,
-                  n: Math.round(40 + 60 * speed),
-                  seed: `bg-${seed}`,
-                  angle: 180,
-                  thickness: 8,
-                  length: [0.25, 0.7],
-                })}
+                d={lines(
+                  {
+                    x: -300,
+                    y: -150,
+                    w: 2500,
+                    h: cam.screenY(0, 25) + 150,
+                    n: Math.round(40 + 60 * speed),
+                    seed: "bg",
+                    angle: 180,
+                    thickness: 8,
+                    length: [0.25, 0.7],
+                  },
+                  STAND_Z,
+                )}
                 fill={PAPER}
                 opacity={Math.min(1, 0.9 * speed)}
               />
             ) : null}
+            {under}
             <TrackSurface
               cam={cam}
               camX={camX}
@@ -139,17 +190,20 @@ export const Closeup: React.FC<{
             />
             {speed > 0 ? (
               <path
-                d={speedLines({
-                  x: -300,
-                  y: cam.screenY(0, 13.65),
-                  w: 2500,
-                  h: 1200 - cam.screenY(0, 13.65),
-                  n: Math.round(20 + 30 * speed),
-                  seed: `fg-${seed}`,
-                  angle: 180,
-                  thickness: 6,
-                  length: [0.2, 0.5],
-                })}
+                d={lines(
+                  {
+                    x: -300,
+                    y: cam.screenY(0, 13.65),
+                    w: 2500,
+                    h: 1200 - cam.screenY(0, 13.65),
+                    n: Math.round(20 + 30 * speed),
+                    seed: "fg",
+                    angle: 180,
+                    thickness: 6,
+                    length: [0.2, 0.5],
+                  },
+                  NEAR_Z,
+                )}
                 fill={INK}
                 opacity={0.7 * speed}
               />

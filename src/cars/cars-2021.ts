@@ -6,6 +6,10 @@ import type { CarSpec } from "./spec";
 // Pirelli 2021 sidewall bands.
 export const PIRELLI_2021 = { soft: "#e3262b", hard: "#f4f4f4" };
 
+// The W12's DRS flap only: Petronas teal (#00a19b) muted a little (saturation 100% -> 65%, same hue), so it sits calmer
+// against the black wing and still reads teal (user review 2026-10-04). The rim rings and livery accents keep #00a19b.
+const W12_FLAP_TEAL = "#1e8d89";
+
 export const W12: CarSpec = {
   name: "2021 Mercedes-AMG W12",
   reference:
@@ -47,14 +51,39 @@ export const W12: CarSpec = {
     { cx: 452, cy: 592, r: 95 },
     { cx: 1585, cy: 590, r: 98 },
   ],
+  // From a trackside camera the far side reads as on the STR3 (user, 2026-10-04): the far wheels hidden behind the
+  // near ones, the far front endplate a sliver over the near one, the wing seen side-on, its elements rising from the
+  // endplate to the nose (ART-26).
+  farSide: {
+    // HIGH camera: the car as traced (the photo camera looks down ~18°, like the MV's 2.6–3.2 m cameras); the far
+    // wheels at 2/3 of the earlier 80% lift (user reviews 2026-10-04: still peeking, lower again by a third), x at the near wheels.
+    high: {
+      wheels: [
+        { cx: 452, cy: 661, r: 95 },
+        { cx: 1585, cy: 662, r: 98 },
+      ],
+      groundShadow: true,
+    },
+    low: {
+      wheels: [
+        { cx: 469, cy: 732, r: 101 },
+        { cx: 1636, cy: 735, r: 102 },
+      ],
+      frontEndplate: { dx: 4, dy: -8, scale: 0.95 },
+      // LOW camera: the body re-projected from the photo's 17.7° to a 4° trackside camera
+      // (seenFrom.ts): the nose drops onto the wing, the floor to the ground, the undercut closes up, the top comes
+      // down; the front wing is drawn side-on from the endplate to the nose.
+      body: { photoElevation: 17.7, elevation: 4, floorY: 803, podY: 755, noseTo: 620 },
+    },
+  },
   rimR: 56,
   rim: "dark",
   rimAccent: "#00a19b",
   compound: PIRELLI_2021.hard,
   body:
-    "M 128 700 C 200 680 300 652 420 614 C 500 590 560 566 610 556 L 705 552 L 730 566 L 930 566 L 1000 548 L 1030 530 L 1034 468 " +
+    "M 127 697 C 200 675 300 645 420 612 C 500 590 560 566 610 556 L 705 552 L 730 566 L 930 566 L 1000 548 L 1030 530 L 1034 468 " +
     "C 1060 458 1100 458 1140 460 L 1340 461 C 1420 470 1520 492 1600 520 L 1640 560 L 1690 610 L 1712 640 L 1700 690 L 1560 760 L 1540 800 " +
-    "L 620 800 L 600 790 L 598 700 C 520 690 440 676 360 682 C 260 690 180 712 132 716 Z",
+    "L 620 800 L 600 790 L 598 700 C 520 706 440 716 360 724 C 280 729 200 730 150 726 L 132 717 Z",
   regions: {
     cover:
       "M 1034 468 C 1060 458 1100 458 1140 460 L 1340 461 C 1420 470 1520 492 1600 520 L 1640 560 L 1600 650 C 1560 630 1500 615 1420 600 C 1300 575 1150 545 1030 530 Z",
@@ -82,14 +111,31 @@ export const W12: CarSpec = {
     flap: { d: "M 262 641 L 305 640 L 330 758 L 282 757 Z", color: "#00a19b" },
   },
   rearWing: {
-    // near endplate as in the photo, with the stepped cut-outs along its rear edge
-    near: "M 1687 525 L 1820 526 L 1821 540 L 1838 540 L 1838 552 L 1877 552 L 1847 600 L 1845 673 L 1690 677 Z",
-    // far endplate: the near one's copy, nearly all behind it; a sliver shows along the top and rear edges (ART-17)
-    farFrom: { dx: 12, dy: -5, scale: 0.95 },
-    // the wing elements (mainplane and flap) between the endplates, seen from above as a curved band
-    top: "M 1687 525 L 1662 500 C 1652 480 1652 458 1658 446 C 1690 438 1735 437 1762 440 L 1785 450 L 1790 525 Z",
-    elements: ["M 1664 490 C 1700 486 1750 488 1789 494"],
-    pylon: "M 1640 500 L 1682 500 L 1690 612 L 1650 616 Z",
+    // near endplate as in the photo, with the stepped cut-outs along its rear edge (the real shape; user review
+    // 2026-10-04). Its front edge is straight, leaving the top front corner at ~70° (measured on the photo's
+    // light panel edge, 1690 540 → 1668 600); the near rear wheel covers its lower end.
+    near: "M 1695 525 L 1820 526 L 1821 540 L 1838 540 L 1838 552 L 1877 552 L 1847 600 L 1845 673 L 1640 678 Z",
+    // far endplate (HIGH; LOW hides it): the near one's copy (uniform scale), lifted above it, its bounding-box centre x on
+    // the near one's (no sideways perspective offset; user review 2026-10-04).
+    // Centre x 1758.5; dx = (1 - 0.84) * 237 / 2; lifted 69 px.
+    // No separate wing-top block; the wing planes between the endplates come later.
+    farFrom: { dx: 19, dy: -69, scale: 0.84 },
+    elements: [],
+    // Main plane and DRS flap side-on (prototype, user review pending). The wing box is 150–500 mm behind the rear
+    // axle (2021 Technical Regulations, Art. 3.6.3): 1689–1798 px from the wheel centre at 1642, which matches the
+    // endplate's front at 1695. Main plane: thick and nearly flat, low in the box. Flap: thin and steep, its trailing
+    // edge at the endplate's top. The slot between them is 12.3 mm closed and 84.9 mm with the flap turned 29.3°
+    // about its trailing edge (DRS open, max 85 mm). Both drawn as smooth slabs with one outline.
+    planes: {
+      main: "M 1692.0 585.0 C 1690.8 579.1 1692.7 577.2 1697.8 576.1 C 1725.5 570.1 1749.9 570.1 1769.6 567.2 C 1771.8 566.7 1772.6 570.4 1770.4 570.8 C 1751.0 575.6 1728.7 585.5 1700.9 590.8 C 1695.7 591.9 1693.2 590.9 1692.0 585.0 Z",
+      flap: "M 1757.0 562.8 C 1755.4 560.5 1755.8 559.3 1757.8 557.9 C 1772.8 546.7 1786.2 539.9 1796.5 533.0 C 1797.3 532.4 1798.4 533.8 1797.5 534.5 C 1787.7 542.0 1777.2 552.7 1761.9 563.5 C 1759.9 565.0 1758.6 565.0 1757.0 562.8 Z",
+      pivot: { x: 1797, y: 533.8 },
+      drsOpen: 29.3,
+      // the upper flap is Petronas teal in the photo, a muted shade of the livery's teal
+      flapColor: W12_FLAP_TEAL,
+    },
+    // no pylon: on the centre line under the main plane's mid-chord it stays behind the near endplate in both looks
+    // (user review 2026-10-04: the old one stood beside the endplate as a stray black column)
     beam: "M 1690 600 L 1840 600",
   },
   panelLines: [
@@ -153,13 +199,38 @@ export const RB16B: CarSpec = {
     { cx: 450, cy: 590, r: 96 },
     { cx: 1565, cy: 590, r: 98 },
   ],
+  // From a trackside camera the far side reads as on the STR3 (user, 2026-10-04): the far wheels hidden behind the
+  // near ones, the far front endplate a sliver over the near one, the wing seen side-on, its elements rising from the
+  // endplate to the nose (ART-26).
+  farSide: {
+    // HIGH camera: the car as traced (the photo camera looks down ~16°, like the MV's 2.6–3.2 m cameras); the far
+    // wheels at 2/3 of the earlier 80% lift (user reviews 2026-10-04: still peeking, lower again by a third), x at the near wheels.
+    high: {
+      wheels: [
+        { cx: 450, cy: 655, r: 96 },
+        { cx: 1565, cy: 653, r: 98 },
+      ],
+      groundShadow: true,
+    },
+    low: {
+      wheels: [
+        { cx: 452, cy: 720, r: 101 },
+        { cx: 1588, cy: 717, r: 102 },
+      ],
+      frontEndplate: { dx: 4, dy: -8, scale: 0.95 },
+      // LOW camera: the body re-projected from the photo's 16.1° to a 4° trackside camera
+      // (seenFrom.ts): the nose drops onto the wing, the floor to the ground, the undercut closes up, the top comes
+      // down; the front wing is drawn side-on from the endplate to the nose.
+      body: { photoElevation: 16.1, elevation: 4, floorY: 782, podY: 730, noseTo: 600 },
+    },
+  },
   rimR: 56,
   rim: "spoked",
   compound: PIRELLI_2021.soft,
   body:
     "M 152 712 C 220 690 300 650 420 600 C 470 580 520 560 560 554 L 700 552 L 718 566 L 930 568 L 1000 552 L 1022 540 L 1022 444 " +
     "C 1060 440 1120 440 1200 441 L 1335 437 L 1420 460 L 1555 510 L 1600 560 L 1650 600 L 1690 640 L 1700 690 L 1520 745 L 1490 770 " +
-    "L 600 785 L 585 780 L 582 690 C 480 700 380 718 300 722 C 240 724 190 726 158 726 Z",
+    "L 600 785 L 585 780 L 582 690 C 480 704 380 726 300 734 C 240 739 190 737 162 731 L 158 726 Z",
   regions: {
     cover:
       "M 1022 444 C 1060 440 1120 440 1200 441 L 1335 437 L 1420 460 L 1555 510 L 1600 560 L 1600 650 C 1560 625 1500 600 1420 585 C 1300 560 1150 548 1022 540 Z",
@@ -185,19 +256,33 @@ export const RB16B: CarSpec = {
   rearWing: {
     // near endplate as in the photo: higher at the front, a step down at the rear, curved lower edge
     near: "M 1630 493 L 1743 493 L 1750 506 L 1773 520 L 1827 520 L 1790 603 L 1787 643 L 1760 655 L 1700 662 L 1650 650 L 1610 612 L 1603 597 Z",
-    // red endplate panel, on both endplates (ART-17)
+    // red endplate panel, on both endplates (ART-17); its front edge on the endplate's front edge (1630 493 → 1603 597),
+    // as in the photo (user review 2026-10-04)
     livery: [
       {
-        d: "M 1640 526 L 1825 524 L 1793 603 L 1604 598 Z",
+        d: "M 1621.4 526 L 1825 524 L 1793 603 L 1602.7 598 Z",
         color: "#d72a2e",
       },
     ],
-    // far endplate: the near one's copy, nearly all behind it; a sliver shows along the top and rear edges (ART-17)
-    farFrom: { dx: 17, dy: -6, scale: 0.95 },
-    // the wing elements (mainplane and flap) between the endplates, seen from above as a curved band
-    top: "M 1630 493 C 1616 470 1615 440 1624 418 C 1660 410 1705 410 1725 412 L 1742 424 L 1748 493 Z",
-    elements: ["M 1622 452 C 1670 448 1710 448 1746 452"],
-    pylon: "M 1595 455 L 1640 455 L 1645 610 L 1600 612 Z",
+    // far endplate (HIGH; LOW hides it): the near one's copy (uniform scale), lifted above it, its bounding-box centre x on
+    // the near one's (no sideways perspective offset; user review 2026-10-04).
+    // Centre x 1715; dx = (1 - 0.84) * 224 / 2; lifted 65 px.
+    // No separate wing-top block; the wing planes between the endplates come later.
+    farFrom: { dx: 18, dy: -65, scale: 0.84 },
+    // the far copy in the endplate's navy, without the red panel (user review 2026-10-04: no red band above the near one)
+    farLivery: false,
+    elements: [],
+    // Main plane and DRS flap side-on, as on the W12: the wing box 150–500 mm behind the rear axle (2021 Technical
+    // Regulations, Art. 3.6.3) is 1641–1750 px from the wheel centre at 1594. Slot 12.2 mm closed, 84.9 mm with the
+    // flap turned 27° about its trailing edge (DRS open, max 85 mm).
+    planes: {
+      main: "M 1641.0 553.0 C 1640.0 547.1 1642.0 545.2 1647.1 544.4 C 1671.6 539.8 1693.8 541.0 1711.7 539.2 C 1713.9 538.8 1714.5 542.5 1712.3 542.8 C 1694.7 546.6 1674.3 555.4 1649.6 559.1 C 1644.5 560.0 1642.0 558.9 1641.0 553.0 Z",
+      flap: "M 1704.0 534.0 C 1702.4 531.7 1702.8 530.6 1704.8 529.1 C 1721.6 516.6 1736.2 508.9 1747.5 501.3 C 1748.3 500.7 1749.4 502.1 1748.5 502.7 C 1737.7 511.0 1726.0 522.6 1708.9 534.8 C 1706.9 536.2 1705.6 536.3 1704.0 534.0 Z",
+      pivot: { x: 1748, y: 502 },
+      drsOpen: 27,
+    },
+    // no pylon: on the centre line under the main plane's mid-chord it stays behind the near endplate in both looks
+    // (user review 2026-10-04: the old one stood beside the endplate as a stray black column)
     beam: "M 1612 615 L 1788 615",
   },
   panelLines: [

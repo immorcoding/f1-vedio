@@ -12,6 +12,7 @@ import { EDIT as BAHRAIN_2020 } from "./parts/bahrain2020/shots.ts";
 import { EDIT as BUILDUP } from "./parts/buildup/shots.ts";
 import { EDIT as ABU_DHABI_2021 } from "./parts/abuDhabi2021/shots.ts";
 import { EDIT as OUTRO } from "./parts/outro/shots.ts";
+import { EDIT as CREDITS } from "./parts/credits/shots.ts";
 
 export type Part = {
   /** Also the prefix of the part's hits in timing.ts HITS ("intro.light1"). */
@@ -87,6 +88,14 @@ export const PARTS = [
     from: at(106),
     to: at(114),
     edit: OUTRO,
+  },
+  {
+    id: "credits",
+    name: "片尾彩蛋",
+    ticket: "post-credits stinger",
+    from: at(114),
+    to: at(120),
+    edit: CREDITS,
   },
 ] as const satisfies readonly Part[];
 

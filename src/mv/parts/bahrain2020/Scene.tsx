@@ -12,6 +12,7 @@ import { Escape } from "./Escape";
 import { Impact } from "./Impact";
 import { TitleMap } from "./TitleMap";
 import { HaloFinale } from "./HaloFinale";
+import { Stopwatch } from "./Stopwatch";
 import { Timeline27 } from "./Timeline27";
 import { WreckShot } from "./Wreck";
 
@@ -38,6 +39,8 @@ export const BahrainPicture: React.FC<{
   return (
     <AbsoluteFill style={{ backgroundColor: "#0d0d0d" }}>
       <Picture f={f} palette={palette} />
+      {/* the 27-second stopwatch over 3.5 and into 3.6, above the heat haze */}
+      <Stopwatch f={f} />
     </AbsoluteFill>
   );
 };

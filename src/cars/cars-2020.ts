@@ -71,6 +71,28 @@ export const VF20: CarSpec = {
     { cx: 546, cy: 581, r: 92 },
     { cx: 1588, cy: 573, r: 95 },
   ],
+  // Two looks, chosen per shot (CarState.farSide, ART-26). "high", for the 3.2 m wreck cam (3.3, 3.4, the 3.5 panels,
+  // 3.6, the halo finale): the traced far endplate and wing, the far wheels a little higher than the default half
+  // lift. "low", for a camera near the car's height: as the STR3, the far wing and wheels hidden behind the near ones.
+  farSide: {
+    high: {
+      wheels: [
+        { cx: 546, cy: 643, r: 92 },
+        { cx: 1588, cy: 638, r: 95 },
+      ],
+    },
+    low: {
+      wheels: [
+        { cx: 566, cy: 752, r: 93 },
+        { cx: 1659, cy: 752, r: 93 },
+      ],
+      frontEndplate: false,
+      // LOW camera: the body re-projected from the photo's 21.5° to a 4° trackside camera
+      // (seenFrom.ts): the nose drops onto the wing, the floor to the ground, the undercut closes up, the top comes
+      // down; the front wing is drawn side-on from the endplate to the nose.
+      body: { photoElevation: 21.5, elevation: 4, floorY: 797, podY: 715, noseTo: 700 },
+    },
+  },
   rimR: 53,
   rim: "dark",
   compound: PIRELLI_2020.hard,
@@ -78,7 +100,7 @@ export const VF20: CarSpec = {
     "M 222 712 C 250 692 320 664 400 632 C 480 600 570 566 640 546 L 772 549 C 784 551 792 560 800 568 C 805 573 810 576 822 576 " +
     "L 952 576 C 976 576 994 568 1010 560 C 1026 552 1044 546 1062 543 L 1062 460 " +
     "L 1150 460 L 1360 449 C 1450 458 1520 476 1556 492 L 1600 540 L 1640 600 L 1700 640 L 1702 690 L 1590 760 L 1580 795 " +
-    "L 690 795 L 668 780 L 660 700 C 560 698 450 700 360 708 C 300 714 252 722 226 724 Z",
+    "L 690 795 L 668 780 L 660 700 C 560 702 450 714 360 728 C 310 736 262 738 236 732 L 226 724 Z",
   regions: {
     cover:
       "M 1062 460 L 1150 460 L 1360 449 C 1450 458 1520 476 1556 492 L 1600 540 L 1600 655 C 1500 650 1300 625 1100 610 L 990 605 L 978 602 L 996 576 L 1000 530 L 1062 530 Z",
@@ -87,7 +109,7 @@ export const VF20: CarSpec = {
     undercut:
       "M 640 640 L 965 602 L 970 726 L 1000 726 L 1150 728 C 1300 708 1450 676 1600 664 L 1600 800 L 680 800 Z",
     chassis:
-      "M 200 730 L 222 712 C 250 692 320 664 400 632 C 480 600 570 566 640 546 L 772 549 L 812 574 L 996 574 L 978 602 L 965 602 L 640 640 L 660 700 C 560 698 450 700 360 708 Z",
+      "M 200 730 L 222 712 C 250 692 320 664 400 632 C 480 600 570 566 640 546 L 772 549 L 812 574 L 996 574 L 978 602 L 965 602 L 640 640 L 660 700 C 560 704 450 720 360 742 L 200 742 Z",
   },
   glints: [
     "M 1215 466 L 1352 457 L 1340 467 L 1222 474 Z",
@@ -103,13 +125,37 @@ export const VF20: CarSpec = {
     flap: { d: "M 364 617 L 404 616 L 416 762 L 380 762 Z", color: HAAS_RED },
   },
   rearWing: {
-    near: "M 1688 520 L 1892 516 L 1834 626 L 1800 640 L 1700 640 L 1688 600 Z",
-    // far endplate: the near one's copy, nearly all behind it; a sliver shows along the top and rear edges (ART-17)
-    farFrom: { dx: 16, dy: -6, scale: 0.95 },
-    // the wing elements (mainplane and flap) between the endplates, seen from above as a curved band
-    top: "M 1688 520 L 1592 470 C 1588 452 1590 432 1600 419 C 1660 414 1730 414 1780 416 L 1792 444 L 1800 520 Z",
-    elements: ["M 1596 462 C 1660 460 1740 462 1796 470"],
-    pylon: "M 1606 468 L 1632 468 L 1642 612 L 1616 614 Z",
+    // near endplate, retraced (user review 2026-10-04: the shape was off). The outline comes from Alberto-g-rovi's
+    // "Romain Grosjean-Haas VF-20 (1)" (2020 Barcelona test, sharp and evenly lit, about 40° off side-on): rectified
+    // through the near rear tyre (its outline is a 0.75:1 ellipse, the endplate's plane is parallel to it), scaled by
+    // the tyre diameter, and placed by the top edge and rear tip of the trace photo, where they stand against the sky.
+    // The top steps down by ~3 cm a third of the way from the rear; the front edge leans forward and sweeps down to the
+    // tyre's top (the trace photo shows the same edge as a highlight in its shadow). The lower edge, hidden behind the
+    // tyre in that photo, still sweeps forward and down to the rear crash structure and diffuser at the body's rear
+    // edge (user review 2026-10-04: it floated).
+    near: "M 1704 509 L 1796 508 L 1799 517 L 1892 516 L 1872 564 L 1847 627 L 1812 642 L 1774 656 L 1746 674 L 1702 688 L 1640 678 L 1633 638 L 1656 599 L 1683 533 Z",
+    // far endplate (HIGH; LOW hides it): the near one's copy (uniform scale), lifted above it, its bounding-box centre x on
+    // the near one's (no sideways perspective offset; user review 2026-10-04).
+    // Centre x 1762.5; dx = (1 - 0.79) * 259 / 2; lifted 62 px: the W12/RB16B lift (69/65 px) at this trace's scale
+    // (tyre radius 97 px against their 105–106 px), so it peeks just above the near one as on those two (user review
+    // 2026-10-04: 82 px stood too high).
+    // Both endplates stay black: the outer face is black with the BlueDEF logo on every 2020 VF-20 reference (Barcelona
+    // test side and rear-three-quarter shots, Tuscan GP race shot); the red sits on the wing planes.
+    farFrom: { dx: 27, dy: -62, scale: 0.79 },
+    elements: [],
+    // Main plane and DRS flap side-on, the W12's profiles moved to this car: the same metres behind the rear axle (the
+    // wing box is 150–500 mm behind it, 1708–1809 px from the wheel centre at 1665; 2020 Technical Regulations,
+    // Art. 3.6.3, the same box as 2021), the flap's trailing edge as far below the endplate's top as on the W12. Same
+    // slot as the W12 (12.3 mm closed, 84.9 mm with the flap turned 29.3° about its trailing edge). Both planes in Haas
+    // red: their upper surfaces are red (with the white HAAS logo, left out) on the 2020 test references.
+    planes: {
+      main: "M 1710.8 572.3 C 1709.7 566.9 1711.4 565.1 1716.1 564.1 C 1741.7 558.6 1764.3 558.6 1782.5 555.9 C 1784.5 555.4 1785.2 558.8 1783.2 559.2 C 1765.3 563.6 1744.7 572.8 1719.0 577.7 C 1714.2 578.7 1711.9 577.8 1710.8 572.3 Z",
+      flap: "M 1770.8 551.8 C 1769.4 549.7 1769.7 548.6 1771.6 547.3 C 1785.4 536.9 1797.8 530.7 1807.3 524.3 C 1808.1 523.7 1809.1 525.0 1808.2 525.7 C 1799.2 532.6 1789.5 542.5 1775.4 552.5 C 1773.5 553.8 1772.3 553.8 1770.8 551.8 Z",
+      pivot: { x: 1807.8, y: 525 },
+      drsOpen: 29.3,
+      mainColor: HAAS_RED,
+      flapColor: HAAS_RED,
+    },
     beam: "M 1700 626 L 1830 626",
   },
   panelLines: [
@@ -180,13 +226,37 @@ export const AT01: CarSpec = {
     { cx: 452, cy: 668, r: 92 },
     { cx: 1628, cy: 600, r: 92 },
   ],
+  // From a trackside camera the far side reads as on the STR3 (user, 2026-10-04): the far wheels hidden behind the
+  // near ones, the far front endplate a sliver over the near one, the wing seen side-on, its elements rising from the
+  // endplate to the nose (ART-26).
+  farSide: {
+    // HIGH camera: the car as traced, far wheels at the traced height and the near wheels' x (the photo camera
+    // looks down ~8°, like the MV's 2.6–3.2 m cameras).
+    high: {
+      wheels: [
+        { cx: 452, cy: 668, r: 92 },
+        { cx: 1628, cy: 600, r: 92 },
+      ],
+    },
+    low: {
+      wheels: [
+        { cx: 554, cy: 692, r: 93 },
+        { cx: 1688, cy: 692, r: 93 },
+      ],
+      frontEndplate: { dx: 4, dy: -8, scale: 0.95 },
+      // LOW camera: the body re-projected from the photo's 8.1° to a 4° trackside camera
+      // (seenFrom.ts): the nose drops onto the wing, the floor to the ground, the undercut closes up, the top comes
+      // down; the front wing is drawn side-on from the endplate to the nose.
+      body: { photoElevation: 8.1, elevation: 4, floorY: 780, podY: 738, noseTo: 650 },
+    },
+  },
   rimR: 53,
   rim: "spoked",
   compound: PIRELLI_2020.medium,
   body:
     "M 195 712 C 240 690 300 664 360 640 C 430 612 520 584 600 574 L 700 570 L 720 578 L 934 577 C 942 576 946 562 954 556 L 994 548 L 990 520 L 990 470 " +
     "C 1010 462 1050 462 1100 464 L 1300 470 C 1380 476 1440 490 1480 505 L 1520 540 L 1560 590 L 1600 620 L 1640 640 L 1650 690 " +
-    "L 1600 770 L 1590 780 L 640 782 L 620 772 L 612 700 C 520 698 420 700 330 706 C 270 710 225 716 198 720 Z",
+    "L 1600 770 L 1590 780 L 640 782 L 620 772 L 612 700 C 520 700 420 706 330 714 C 270 719 225 722 198 720 Z",
   regions: {
     cover:
       "M 990 470 C 1010 462 1050 462 1100 464 L 1300 470 C 1380 476 1440 490 1480 505 L 1520 540 L 1560 590 L 1600 620 L 1640 640 L 1650 700 L 1472 700 C 1472 600 1452 552 1402 528 C 1300 510 1150 516 1000 540 Z",
@@ -195,7 +265,7 @@ export const AT01: CarSpec = {
     undercut:
       "M 612 700 L 950 690 L 950 720 C 1050 735 1150 740 1300 738 C 1360 736 1420 720 1472 690 L 1650 700 L 1650 800 L 620 800 Z",
     chassis:
-      "M 180 730 L 195 712 C 240 690 300 664 360 640 C 430 612 520 584 600 574 L 700 570 L 720 578 L 950 576 L 985 560 L 1000 540 L 940 595 L 950 690 L 612 700 C 520 698 420 700 330 706 Z",
+      "M 180 730 L 195 712 C 240 690 300 664 360 640 C 430 612 520 584 600 574 L 700 570 L 720 578 L 950 576 L 985 560 L 1000 540 L 940 595 L 950 690 L 612 700 C 520 702 420 710 330 720 L 180 730 Z",
   },
   glints: [
     "M 1030 470 L 1290 474 L 1280 482 L 1040 480 Z",

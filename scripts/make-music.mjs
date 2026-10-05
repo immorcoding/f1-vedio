@@ -1,9 +1,15 @@
 // Synthesises the MV score (AUD-1..3) and writes the beat map next to it.
-//   public/music/mv.wav        48 kHz, 16-bit stereo, exactly 210 s
+//   public/music/mv.wav        48 kHz, 16-bit stereo, the song's length (timing.ts)
 //   public/music/beat-map.json every section, bar line, beat and hit with its second, sample and frame
 // Run: npm run music  (or: node scripts/make-music.mjs [outDir])
 //
-// Original, code-synthesised electronic track: 128 BPM, 4/4, 113 bars, D minor throughout.
+// Original, code-synthesised electronic track: 128 BPM, 4/4, 119 bars (the film's 113 and the post-credits stinger),
+// D minor throughout.
+// Under it, the SFX layer (#15): era engine sounds at the cues of src/mv/sfx.ts (scripts/lib/engine.mjs), on their
+// own bus, mixed in before the master. `--stems` also writes the engines alone and sfx-report.json.
+// Optional (#33, OFF until the user picks it from the A/B): a synthesised grandstand crowd in Brazil, 39.1 to 47.1,
+// cut dead on the pass (scripts/lib/crowd.mjs). Switch: CROWD_DEFAULT below, or MV_CROWD=1 / MV_CROWD=0 in the
+// environment.
 // Every time comes from src/mv/timing.ts. Deterministic: seeded noise, no clocks, fixed order.
 //
 // Final arrangement (ticket #10). Tempo, bars, sections and hits are untouched (timing.ts);
@@ -17,11 +23,17 @@
 //   buildup  74-81  riser, snare roll, half-time then quarter kick, one-eighth gap before the drop
 //   abuDhabi 82-105 strongest: heavy kick + sub, 16th bass, supersaw lead, stabs, open hats, snare
 //   outro    106-113 layers leave in order: arp/drums, bass, kick; ends on the intro pad and pings
+//   credits  114-119 the post-credits stinger: a beat of silence, light kick and hat on the hops, the RB18 pass-by
+//                    (SFX, above the music), boing and choke, a last Dm chord on the black
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import * as T from "../src/mv/timing.ts";
 import { integratedLoudness, limit } from "./lib/audio.mjs";
 import { buildBeatMap, formatBeatMap } from "./lib/beat-map.mjs";
+import { driveline, synthEngine } from "./lib/engine.mjs";
+import { synthCrowd } from "./lib/crowd.mjs";
+import { SFX } from "../src/mv/sfx.ts";
 
 const SR = T.SAMPLE_RATE;
 const N = T.sampleAt(T.SONG_END);
@@ -30,6 +42,11 @@ const at = T.at;
 const S = (bar, beat = 1) => Math.round(T.sampleAt(at(bar, beat)));
 const TARGET_LUFS = -14;
 const CEILING_DB = -2.5; // true-peak ceiling of the limiter; leaves room under the -1 dBTP check
+// Brazil crowd (#33): the user's one-line choice. MV_CROWD in the environment overrides it either way.
+const CROWD_DEFAULT = true; // user 2026-10-05: keep the crowd (B)
+const CROWD = process.env.MV_CROWD
+  ? process.env.MV_CROWD === "1"
+  : CROWD_DEFAULT;
 
 const L = new Float64Array(N);
 const R = new Float64Array(N);
@@ -305,8 +322,7 @@ for (const k of kicks) {
       for (const beat of [1, 3]) {
         if (bar === 61 && beat === 1) continue; // the impact owns that downbeat
         if (bar === BRIDGE && beat === 3) continue;
-        const fade =
-          bar === BRIDGE ? 0.45 : bar === 72 && beat === 3 ? 0.6 : 1;
+        const fade = bar === BRIDGE ? 0.45 : bar === 72 && beat === 3 ? 0.6 : 1;
         thump(S(bar, beat), 90, 48, 0.12, 0.5 * fade);
         thump(S(bar, beat) + BEAT / 4, 80, 45, 0.09, 0.3 * fade);
       }
@@ -847,6 +863,10 @@ for (const k of kicks) {
 // -- the bridge's reverse swell: 73.3 -> 74.1, then it hands over to the riser -------------
 // Filtered noise whose cutoff climbs, plus a backwards Dm pad (D4 F4 A4 sines), both on a curve that grows
 // exponentially to 74.1 and then releases over two beats while the riser comes up.
+// MUSIC_BAR73=B (#34, A/B for the user, default off): the swell comes up from under the heartbeat tail to about
+// −24 dB on 73.4, so it rises into the riser's −22 dB on 74.1 instead of sitting 4 dB under the tail. Same notes,
+// same bars; only the level and the curve's shape change.
+const BAR73_B = process.env.MUSIC_BAR73 !== "A"; // user 2026-10-05: B is the shipped swell; MUSIC_BAR73=A for the old one
 {
   const rng = mulberry32(707);
   const lp = lowpass(1.2);
@@ -854,12 +874,14 @@ for (const k of kicks) {
   const top = S(BRIDGE + 1);
   const end = S(BRIDGE + 1, 3);
   const notes = [62, 65, 69].map(midi);
+  const [shape, boost] = BAR73_B ? [0.9, 4.5] : [1.7, 1];
   for (let n = a; n < end; n++) {
     const rise = n < top ? (n - a) / (top - a) : 1;
     const env =
-      n < top
-        ? Math.pow(rise, 1.7)
-        : Math.pow(1 - (n - top) / (end - top), 2);
+      boost *
+      (n < top
+        ? Math.pow(rise, shape)
+        : Math.pow(1 - (n - top) / (end - top), BAR73_B ? 4 : 2));
     const fc = 300 + 2600 * rise * rise;
     const t = n / SR;
     let pad = 0;
@@ -1004,6 +1026,9 @@ for (const [a, b] of GATES)
   };
   for (const [id, pos] of Object.entries(T.HITS)) {
     const n = T.sampleAt(pos);
+    // the stinger's hits have their own small sounds (below), and must not draw on this block's noise: that would
+    // change every crash after them
+    if (/^credits\./.test(id)) continue;
     if (/^intro\.light\d$/.test(id)) {
       const k = Number(id.slice(-1)); // 1-5, each one heavier
       thud(n, 0.35 + 0.05 * k);
@@ -1036,6 +1061,99 @@ for (const [a, b] of GATES)
     crash(S(bar), bar === 98 ? 0.2 : 0.12, 1.4);
 }
 
+// -- the post-credits stinger (bars 114-119, src/mv/parts/credits/shots.ts) ----------------------------------------
+// A playful coda after the film's black, not the outro's pad: ticks under the strip wiping back in (114.2), a light
+// kick on every one of Clawd's landings (115.1 … 118.1) with a closed hat between, a two-note "?!" blip on the
+// double-take (118.2), a boing and a choked cymbal on the jump (118.3, credits.jump), a cloth swish as the flag falls
+// over the camera (118.4), and one clean last note on the black (119.1, credits.end) that rings out by the song's end.
+// The RB18's Doppler pass is an SFX cue (src/mv/sfx.ts "credits.pass"). Its own seeded noise, so nothing earlier in
+// the song changes.
+{
+  const C = T.SECTIONS.find((s) => s.id === "credits").from.bar; // 114
+  const cs = (k, beat = 1) => S(C + k - 1, beat);
+  const rng = mulberry32(1140);
+  const noise = () => rng() * 2 - 1;
+  const tick = (n, gain, decay, pan, fc = 8000) => {
+    const hp = highpass1(fc);
+    addEvent(n, Math.round(SR * decay * 6), (i) => {
+      const v = hp(noise()) * Math.exp(-i / (SR * decay)) * gain;
+      return [v * (1 - pan), v * (1 + pan)];
+    });
+  };
+  const kick = (n, gain) =>
+    addEvent(n, Math.round(SR * 0.3), (i) => {
+      const t = i / SR;
+      const ph = 2 * Math.PI * (58 * t + ((150 - 58) * (1 - Math.exp(-t * 40))) / 40);
+      const click = i < 72 ? (1 - i / 72) * 0.15 : 0;
+      return (Math.tanh(1.3 * Math.sin(ph)) * Math.exp(-t / 0.09) + click) * gain;
+    });
+  const bell = (n, note, gain, decay, pan = 0) => {
+    const f = midi(note);
+    addEvent(n, Math.round(SR * decay * 7), (i) => {
+      const t = i / SR;
+      const v =
+        (Math.sin(2 * Math.PI * f * t) +
+          0.3 * Math.sin(2 * Math.PI * 2 * f * t) * Math.exp(-t / (decay * 0.4)) +
+          0.12 * Math.sin(2 * Math.PI * 3.01 * f * t) * Math.exp(-t / (decay * 0.2))) *
+        Math.exp(-t / decay) *
+        Math.min(1, i / 40) *
+        gain;
+      return [v * (1 - pan * 0.5), v * (1 + pan * 0.5)];
+    });
+  };
+  // 114.2: the strip wipes back in (14 frames): a run of soft ticks, one per sixteenth
+  for (let k = 0; k < 4; k++) tick(cs(1, 2) + (k * BEAT) / 4, 0.03 + 0.008 * k, 0.012, -0.4 + 0.25 * k, 9000);
+  // the hops: a light kick on each landing (13), a closed hat on each off-beat between them
+  for (let b = 0; b < 13; b++) {
+    const n = cs(2) + b * BEAT;
+    kick(n, 0.3);
+    if (b < 12) tick(n + BEAT / 2, 0.06, 0.02, 0.15);
+  }
+  // 118.2: the double-take, a quick rising "?!" (A5 → D6)
+  bell(cs(5, 2), 81, 0.05, 0.08, 0.3);
+  bell(cs(5, 2) + Math.round(BEAT / 4), 86, 0.06, 0.12, 0.3);
+  // 118.3: the jump. A boing (a sine on a spring: pitch rising with a wobble) and a crash cymbal choked after 0.12 s
+  {
+    const n = cs(5, 3);
+    let ph = 0;
+    addEvent(n, Math.round(SR * 0.7), (i) => {
+      const t = i / SR;
+      const f = 190 * (1 + 0.9 * (1 - Math.exp(-t / 0.18))) * (1 + 0.22 * Math.exp(-t / 0.3) * Math.sin(2 * Math.PI * 11 * t));
+      ph += (2 * Math.PI * f) / SR;
+      return (Math.sin(ph) + 0.25 * Math.sin(2 * ph)) * Math.exp(-t / 0.22) * Math.min(1, i / 24) * 0.24;
+    });
+    const hp = highpass1(4000);
+    const hpR = highpass1(4000);
+    const choke = Math.round(SR * 0.12);
+    addEvent(n, choke + Math.round(SR * 0.01), (i) => {
+      const env = Math.min(1, i / 12) * Math.exp(-i / (SR * 0.5)) * Math.min(1, (choke + SR * 0.01 - i) / (SR * 0.01));
+      return [hp(noise()) * env * 0.22, hpR(noise()) * env * 0.22];
+    });
+    kick(n, 0.5);
+  }
+  // 118.4: the flag falls over the camera: a swish of filtered noise swelling and falling in pitch, gone before 119.1
+  {
+    const n = cs(5, 4);
+    const len = Math.round(BEAT * 0.9);
+    const lp = lowpass(1.2);
+    const lpR = lowpass(1.2);
+    addEvent(n, len, (i) => {
+      const u = i / len;
+      const env = Math.sin(Math.PI * Math.min(1, u * 1.15)) ** 2 * (u < 0.87 ? 1 : 0);
+      const fc = 5000 - 3800 * u;
+      return [lp(noise(), fc) * env * 0.16, lpR(noise(), fc) * env * 0.16];
+    });
+  }
+  // 119.1: the last note on the black: a clean D-minor bell chord (D4, A4, D5, F5) that rings out by the end
+  for (const [note, g] of [
+    [62, 0.07],
+    [69, 0.045],
+    [74, 0.04],
+    [77, 0.025],
+  ])
+    bell(cs(6), note, g, 0.42);
+}
+
 // -- ping-pong delay (dotted eighth) on the send bus ---------------------------------------
 {
   const d = Math.round(BEAT * 0.75);
@@ -1059,6 +1177,244 @@ for (const [a, b] of GATES)
   }
 }
 
+// -- SFX: the engines (src/mv/sfx.ts), on their own bus, mixed under the music ---------------
+// Each cue drives its cars by road speed (scripts/lib/engine.mjs). Its level is set against the music it plays over:
+// in every bar of the cue the engines sit at least `underDb` under the music's RMS in that bar, then pump with the kick's sidechain so the
+// music's transients stay on top. "cut" cues stop dead on their end beat (Bahrain's 61.1 goes with the music's stop).
+// A pass-by from the roadside (sfx.ts `doppler`): the car passes the listener `distance` m away at second `at`, at
+// `speed` m/s. Each output sample hears the engine as it was emitted at τ, where t = τ + r(τ)/c (solved by fixed-point
+// iteration, which converges while speed < c); the level follows 1/r, and a burst of air noise rides the closest
+// moment. Returns a new buffer the length of the engine's.
+const SOUND = 343; // m/s
+const dopplerPass = (y, { at: tp, distance: d, speed: v }, seed) => {
+  const out = new Float64Array(y.length);
+  const rng = mulberry32(seed * 31 + 7);
+  const lp = lowpass(0.9);
+  const r = (tau) => Math.hypot(v * (tau - tp), d);
+  for (let i = 0; i < y.length; i++) {
+    const t = i / SR;
+    let tau = t - r(t) / SOUND;
+    for (let k = 0; k < 6; k++) tau = t - r(tau) / SOUND;
+    const x = tau * SR;
+    const j = Math.floor(x);
+    const s = j >= 0 && j + 1 < y.length ? y[j] + (y[j + 1] - y[j]) * (x - j) : 0;
+    const near = d / r(tau);
+    const air = lp(rng() * 2 - 1, 900 + 2500 * near) * near ** 4 * 0.6;
+    out[i] = s * near ** 1.3 + air;
+  }
+  return out;
+};
+const SL = new Float64Array(N);
+const SR_ = new Float64Array(N);
+const sfxCues = [];
+{
+  const rmsOf = (a, b, chans) => {
+    let e = 0;
+    for (let n = a; n < b; n++) for (const c of chans) e += c[n] * c[n];
+    return Math.sqrt(e / Math.max(1, (b - a) * chans.length));
+  };
+  SFX.forEach((cue, ci) => {
+    const a = S(cue.from.bar, cue.from.beat);
+    const b = S(cue.to.bar, cue.to.beat);
+    const len = b - a;
+    const cl = new Float64Array(len);
+    const cr = new Float64Array(len);
+    cue.cars.forEach((car, k) => {
+      const seed = 1000 * (ci + 1) + k;
+      const drv = driveline(
+        car.era,
+        { speed: car.speed, time: cue.time, launch: car.launch },
+        len,
+        SR,
+        seed,
+      );
+      let y = synthEngine(drv, SR, seed);
+      if (car.doppler) y = dopplerPass(y, car.doppler, seed);
+      const g = Math.pow(10, (car.db ?? 0) / 20);
+      for (let i = 0; i < len; i++) {
+        const p = Math.max(-1, Math.min(1, car.pan(i / SR)));
+        const th = ((p + 1) * Math.PI) / 4;
+        cl[i] += y[i] * g * Math.cos(th) * Math.SQRT2;
+        cr[i] += y[i] * g * Math.sin(th) * Math.SQRT2;
+      }
+    });
+    if (cue.muffle) {
+      const lpL = lowpass(0.7);
+      const lpR = lowpass(0.7);
+      for (let i = 0; i < len; i++) {
+        cl[i] = lpL(cl[i], cue.muffle);
+        cr[i] = lpR(cr[i], cue.muffle);
+      }
+    }
+    // edges: 5 ms in; a 2 ms ramp onto a cut, a quarter-beat fade otherwise
+    const tail =
+      cue.end === "cut" ? Math.round(SR * 0.002) : Math.round(BEAT / 4);
+    for (let i = 0; i < len; i++) {
+      const env = Math.min(1, i / (SR * 0.005), (len - i) / tail);
+      cl[i] *= env;
+      cr[i] *= env;
+    }
+    // the loudest bar of the cue, against the music in that bar, sets the level: every bar sits at least underDb under
+    let gain = Infinity;
+    for (
+      let bar = cue.from.bar;
+      bar < cue.to.bar + (cue.to.beat > 1 ? 1 : 0);
+      bar++
+    ) {
+      const x0 = Math.max(a, S(bar));
+      const x1 = Math.min(b, S(bar + 1));
+      if (x1 - x0 < BEAT) continue;
+      const own = rmsOf(x0 - a, x1 - a, [cl, cr]);
+      if (own > 0)
+        gain = Math.min(
+          gain,
+          (rmsOf(x0, x1, [L, R]) * Math.pow(10, -cue.underDb / 20)) / own,
+        );
+    }
+    if (!Number.isFinite(gain)) gain = 0;
+    // the AUD-7 exception (sfx.ts `aboveMusic`): the music ducks under the cue, following its envelope, so the master
+    // limiter doesn't pump the music around it
+    if (cue.aboveMusic) {
+      const env = new Float64Array(len);
+      let e = 0;
+      let peak = 0;
+      const att = 1 - Math.exp(-1 / (SR * 0.01));
+      const rel = 1 - Math.exp(-1 / (SR * 0.2));
+      for (let i = 0; i < len; i++) {
+        const v = Math.max(Math.abs(cl[i]), Math.abs(cr[i]));
+        e += (v - e) * (v > e ? att : rel);
+        env[i] = e;
+        peak = Math.max(peak, e);
+      }
+      for (let i = 0; i < len; i++) {
+        const k = 1 - cue.aboveMusic.duck * (peak > 0 ? env[i] / peak : 0);
+        L[a + i] *= k;
+        R[a + i] *= k;
+      }
+    }
+    for (let i = 0; i < len; i++) {
+      const pump = 0.55 + 0.45 * duck[a + i];
+      SL[a + i] += cl[i] * gain * pump;
+      SR_[a + i] += cr[i] * gain * pump;
+    }
+    sfxCues.push({ cue, a, b, gainDb: 20 * Math.log10(gain) });
+  });
+  for (let n = 0; n < N; n++) {
+    L[n] += SL[n];
+    R[n] += SR_[n];
+  }
+}
+
+// -- crowd (#33, only with CROWD): the Interlagos grandstands, Massa's home crowd ------------------------------------
+// It wakes on 39.1 (2.3: MAS crosses the line, the Ferrari garage celebrates), builds through the last lap and is cut
+// dead on 47.1, the pass (HAM takes P5), so the pass lands in a sudden hush. Its own bus, after the engines (their
+// levels don't move) and before the master. Level, like the engines (AUD-7) but further down: in every bar it sits at
+// least CROWD_UNDER dB under the music's RMS in that bar (the music alone), rising from 26 dB under to 18.
+const CROWD_FROM = 39;
+const CROWD_TO = 47; // cut on 47.1
+const CROWD_UNDER = (bar) => ramp(bar, 39, 46, 26, 18);
+const CL = new Float64Array(N);
+const CR = new Float64Array(N);
+if (CROWD) {
+  const a = S(CROWD_FROM);
+  const b = S(CROWD_TO);
+  const len = b - a;
+  const barSec = (BEAT * T.BEATS_PER_BAR) / SR;
+  const secs = len / SR;
+  // intensity: a quick swell over the first bar (the cheer for MAS), then a steady climb to the pass
+  const intensity = (t) =>
+    Math.min(0.55, (0.55 * t) / barSec) +
+    0.45 * clamp01((t - barSec) / (secs - barSec));
+  const [cl, cr] = synthCrowd(len, SR, 4733, intensity);
+  // edges: a one-beat fade in, a 2 ms ramp onto the cut; a gentle pump with the kick keeps the drums on top
+  const tail = Math.round(SR * 0.002);
+  for (let i = 0; i < len; i++) {
+    const env = Math.min(1, i / BEAT, (len - i) / tail);
+    const pump = 0.7 + 0.3 * duck[a + i];
+    cl[i] *= env * pump;
+    cr[i] *= env * pump;
+  }
+  const musicE = (n) => {
+    const ml = L[n] - SL[n];
+    const mr = R[n] - SR_[n];
+    return ml * ml + mr * mr;
+  };
+  // per-bar target gain, interpolated in dB between bar centres so the level never steps; then the whole bus is
+  // pulled down until every bar is at or under its target
+  const bars = [];
+  for (let bar = CROWD_FROM; bar < CROWD_TO; bar++) {
+    let m = 0;
+    let c = 0;
+    for (let n = S(bar); n < S(bar + 1); n++) {
+      m += musicE(n);
+      c += cl[n - a] * cl[n - a] + cr[n - a] * cr[n - a];
+    }
+    bars.push({
+      mid: (S(bar) + S(bar + 1)) / 2 - a,
+      db: 10 * Math.log10(m / c) - CROWD_UNDER(bar),
+    });
+  }
+  const gainDbAt = (i) => {
+    if (i <= bars[0].mid) return bars[0].db;
+    for (let k = 1; k < bars.length; k++)
+      if (i <= bars[k].mid) {
+        const u = (i - bars[k - 1].mid) / (bars[k].mid - bars[k - 1].mid);
+        return bars[k - 1].db + u * (bars[k].db - bars[k - 1].db);
+      }
+    return bars[bars.length - 1].db;
+  };
+  for (let i = 0; i < len; i++) {
+    const g = Math.pow(10, gainDbAt(i) / 20);
+    CL[a + i] = cl[i] * g;
+    CR[a + i] = cr[i] * g;
+  }
+  let over = 0;
+  for (let bar = CROWD_FROM; bar < CROWD_TO; bar++) {
+    let m = 0;
+    let c = 0;
+    for (let n = S(bar); n < S(bar + 1); n++) {
+      m += musicE(n);
+      c += CL[n] * CL[n] + CR[n] * CR[n];
+    }
+    over = Math.max(over, 10 * Math.log10(c / m) + CROWD_UNDER(bar));
+  }
+  const fix = Math.pow(10, -over / 20);
+  for (let n = a; n < b; n++) {
+    CL[n] *= fix;
+    CR[n] *= fix;
+    L[n] += CL[n];
+    R[n] += CR[n];
+  }
+}
+
+// Per-bar RMS of the music, of the engines and of the crowd, measured on their buses before the master (the master's
+// gain is added below); the SFX report and check-audio's "engines under the music" test read it.
+const barEnergy = (() => {
+  const rows = [];
+  for (let bar = 1; bar <= T.BARS; bar++) {
+    const a = S(bar);
+    const b = S(bar + 1);
+    let m = 0;
+    let x = 0;
+    let c = 0;
+    for (let n = a; n < b; n++) {
+      const ml = L[n] - SL[n] - CL[n];
+      const mr = R[n] - SR_[n] - CR[n];
+      m += ml * ml + mr * mr;
+      x += SL[n] * SL[n] + SR_[n] * SR_[n];
+      c += CL[n] * CL[n] + CR[n] * CR[n];
+    }
+    const k = 2 * (b - a);
+    rows.push({ bar, music: m / k, sfx: x / k, crowd: c / k });
+  }
+  return rows;
+})();
+const sfxHash = crypto
+  .createHash("sha256")
+  .update(new Uint8Array(SL.buffer))
+  .update(new Uint8Array(SR_.buffer))
+  .digest("hex");
+
 // -- master: loudness to target, peak limit, hard silence at the very end ------------------
 for (let i = 0; i < SR * 0.01; i++) {
   const g = i / (SR * 0.01);
@@ -1066,8 +1422,11 @@ for (let i = 0; i < SR * 0.01; i++) {
   R[N - 1 - i] *= g;
 }
 let gainDb = 0;
+// The film (up to the stinger) sets the master gain, so adding the post-credits stinger leaves the film's level as it
+// was; the whole file still lands within the check's −14 ± 1 LUFS (check-audio measures all of it).
+const FILM_END = S(T.SECTIONS.find((s) => s.id === "credits").from.bar);
 for (let pass = 0; pass < 4; pass++) {
-  const lufs = integratedLoudness(L, R, SR);
+  const lufs = integratedLoudness(L.subarray(0, FILM_END), R.subarray(0, FILM_END), SR);
   const step = TARGET_LUFS - lufs;
   if (process.env.MUSIC_DEBUG) {
     let pk = 0;
@@ -1090,33 +1449,90 @@ for (let pass = 0; pass < 4; pass++) {
 const finalLufs = integratedLoudness(L, R, SR);
 
 // -- write ---------------------------------------------------------------------------------
-const outDir = process.argv[2]
-  ? path.resolve(process.argv[2])
+// node scripts/make-music.mjs [outDir] [--stems]
+// --stems also writes the engines alone (sfx.wav, at the master's gain) and sfx-report.json: every cue with its
+// bar/beat, time and level, the per-bar RMS of music and engines, and a hash of the SFX bus (check-audio reads it).
+const args = process.argv.slice(2);
+const stems = args.includes("--stems");
+const dirArg = args.find((a) => !a.startsWith("--"));
+const outDir = dirArg
+  ? path.resolve(dirArg)
   : path.join(import.meta.dirname, "..", "public", "music");
 fs.mkdirSync(outDir, { recursive: true });
-const wav = Buffer.alloc(44 + N * 4);
-wav.write("RIFF", 0);
-wav.writeUInt32LE(36 + N * 4, 4);
-wav.write("WAVEfmt ", 8);
-wav.writeUInt32LE(16, 16);
-wav.writeUInt16LE(1, 20);
-wav.writeUInt16LE(2, 22);
-wav.writeUInt32LE(SR, 24);
-wav.writeUInt32LE(SR * 4, 28);
-wav.writeUInt16LE(4, 32);
-wav.writeUInt16LE(16, 34);
-wav.write("data", 36);
-wav.writeUInt32LE(N * 4, 40);
 const q = (x) => Math.round(Math.max(-1, Math.min(1, x)) * 32767);
-for (let n = 0; n < N; n++) {
-  wav.writeInt16LE(q(L[n]), 44 + n * 4);
-  wav.writeInt16LE(q(R[n]), 46 + n * 4);
-}
-fs.writeFileSync(path.join(outDir, "mv.wav"), wav);
+const writeWav = (file, A, B, g = 1) => {
+  const wav = Buffer.alloc(44 + N * 4);
+  wav.write("RIFF", 0);
+  wav.writeUInt32LE(36 + N * 4, 4);
+  wav.write("WAVEfmt ", 8);
+  wav.writeUInt32LE(16, 16);
+  wav.writeUInt16LE(1, 20);
+  wav.writeUInt16LE(2, 22);
+  wav.writeUInt32LE(SR, 24);
+  wav.writeUInt32LE(SR * 4, 28);
+  wav.writeUInt16LE(4, 32);
+  wav.writeUInt16LE(16, 34);
+  wav.write("data", 36);
+  wav.writeUInt32LE(N * 4, 40);
+  for (let n = 0; n < N; n++) {
+    wav.writeInt16LE(q(A[n] * g), 44 + n * 4);
+    wav.writeInt16LE(q(B[n] * g), 46 + n * 4);
+  }
+  fs.writeFileSync(file, wav);
+};
+writeWav(path.join(outDir, "mv.wav"), L, R);
 fs.writeFileSync(
   path.join(outDir, "beat-map.json"),
   formatBeatMap(buildBeatMap()),
 );
+if (stems) {
+  const master = Math.pow(10, gainDb / 20);
+  writeWav(path.join(outDir, "sfx.wav"), SL, SR_, master);
+  if (CROWD) writeWav(path.join(outDir, "crowd.wav"), CL, CR, master);
+  const dB = (e) =>
+    e > 0 ? Number((10 * Math.log10(e) + gainDb).toFixed(2)) : null;
+  const pos = (p) => ({
+    pos: T.posLabel(p),
+    seconds: T.secondsAt(p),
+    frame: T.frameAt(p),
+  });
+  const report = {
+    note: "Engines (SFX bus) vs music, RMS dBFS per bar at the master's gain, measured before the limiter.",
+    sfxHash,
+    masterGainDb: Number(gainDb.toFixed(3)),
+    cues: sfxCues.map(({ cue, gainDb: g }) => ({
+      id: cue.id,
+      shot: cue.shot,
+      from: pos(cue.from),
+      to: pos(cue.to),
+      end: cue.end,
+      underDb: cue.underDb,
+      muffle: cue.muffle ?? null,
+      cars: cue.cars.map((c) => `${c.who} ${c.era}`),
+      levelDb: Number(g.toFixed(2)),
+      note: cue.note,
+    })),
+    // the Brazil crowd (#33), when it is on; its per-bar level is bars[].crowd
+    crowd: CROWD
+      ? {
+          from: pos(at(CROWD_FROM)),
+          to: pos(at(CROWD_TO)),
+          end: "cut",
+          underDb: [CROWD_UNDER(CROWD_FROM), CROWD_UNDER(CROWD_TO - 1)],
+        }
+      : null,
+    bars: barEnergy.map((r) => ({
+      bar: r.bar,
+      music: dB(r.music),
+      sfx: dB(r.sfx),
+      ...(CROWD ? { crowd: dB(r.crowd) } : {}),
+    })),
+  };
+  fs.writeFileSync(
+    path.join(outDir, "sfx-report.json"),
+    JSON.stringify(report, null, 2) + "\n",
+  );
+}
 console.log(
-  `wrote ${path.join(outDir, "mv.wav")} (${T.DURATION_SECONDS}s, gain ${gainDb.toFixed(2)} dB, ${finalLufs.toFixed(2)} LUFS by the internal meter)`,
+  `wrote ${path.join(outDir, "mv.wav")} (${T.DURATION_SECONDS}s, gain ${gainDb.toFixed(2)} dB, ${finalLufs.toFixed(2)} LUFS by the internal meter; ${SFX.length} SFX cues, bus ${sfxHash.slice(0, 12)}${CROWD ? "; Brazil crowd ON" : ""})`,
 );

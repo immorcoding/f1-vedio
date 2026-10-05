@@ -91,6 +91,62 @@ export const RailShadeFilter: React.FC<{ id: string }> = ({ id }) => (
   </filter>
 );
 
+// Focus on GRO in the fire (user review 2026-10-05: GRO is the subject, not the wreck): the wreck around him recedes,
+// darker (the heat haze already softens it; a blur here would smear its dot screens into streaks once the haze screens
+// them again), while he stays crisp. `amount` 0–1: how far it recedes (ART-23: burnt wreckage does not
+// steal the focus).
+const recedeMatrix = (amount: number) => {
+  const keep = 1 - 0.45 * amount; // the colour kept
+  const warm = [0.035, 0.02, 0.008].map((w) => w * amount); // a little of the fire's warm dark
+  return rowsOf(
+    [0, 1, 2]
+      .map((c) =>
+        [0, 1, 2].map((j) => (j === c ? keep : 0)).concat([0, warm[c]]),
+      )
+      .concat([[0, 0, 0, 1, 0]]),
+  );
+};
+export const RecedeFilter: React.FC<{ id: string; amount: number }> = ({
+  id,
+  amount,
+}) => (
+  <filter
+    id={id}
+    x="-5%"
+    y="-5%"
+    width="110%"
+    height="110%"
+    colorInterpolationFilters="sRGB"
+  >
+    <feColorMatrix type="matrix" values={recedeMatrix(amount)} />
+  </filter>
+);
+
+// Depth of field for someone out of the focal plane (the doctor beside GRO in 3.6), or for a moment whose outcome is
+// not known yet (the 0 秒 panel): a soft blur in screen pixels and a step darker, so the eye goes to what is sharp.
+export const DefocusFilter: React.FC<{
+  id: string;
+  blur: number;
+  dim?: number;
+}> = ({ id, blur, dim = 1 }) => (
+  <filter
+    id={id}
+    x="-20%"
+    y="-20%"
+    width="140%"
+    height="140%"
+    colorInterpolationFilters="sRGB"
+  >
+    <feGaussianBlur stdDeviation={blur} />
+    {dim < 1 ? (
+      <feColorMatrix
+        type="matrix"
+        values={`${dim} 0 0 0 0  0 ${dim} 0 0 0  0 0 ${dim} 0 0  0 0 0 1 0`}
+      />
+    ) : null}
+  </filter>
+);
+
 // photo-space bounding box of the traced body
 const BODY_NUMS = (VF20.body.match(/-?\d*\.?\d+/g) ?? []).map(Number);
 const BODY_X = BODY_NUMS.filter((_, i) => i % 2 === 0);

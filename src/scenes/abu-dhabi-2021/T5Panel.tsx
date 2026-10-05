@@ -80,12 +80,12 @@ export const Puffs: React.FC<{
 // so the settled frame (t = 0) already shows the full trail.
 const SMOKE = {
   rate: 84, // puffs per second
-  life: [1.0, 1.7], // s
-  back: [950, 1500], // initial speed back along the trail, px/s
+  life: [0.7, 1.2], // s
+  back: [380, 650], // initial speed back along the trail, px/s
   drag: 0.42, // s
-  rise: [10, 42], // px/s
+  rise: [20, 60], // px/s
   r0: [3, 10], // px at birth
-  grow: [10, 26], // px per s of age
+  grow: [8, 18], // px per s of age
 };
 const DUST = {
   rate: 150, // specks per second
@@ -324,7 +324,12 @@ export const T5Panel: React.FC<{ t?: number }> = ({ t = 0 }) => {
   const m = t5Motion(t);
   const VER = cam.anchor({ x: m.verX - m.camX + m.camX, z: 12.5 });
   const HAM = cam.anchor({ x: m.hamX, z: 10 });
-  const VER_LOCKUP = offsetFrom(VER, carPoint(RB16B, "frontContact").x);
+  // the smoke leaves the near front tyre where the locked tread scrubs the road and is thrown up its back edge
+  // (style-b-manga-v2.png: the puffs sit at the bottom-rear of VER's front wheel, under his floor)
+  const VER_AXLE = carPoint(RB16B, "frontAxle");
+  const VER_LOCKUP = offsetFrom(VER, VER_AXLE.x - 0.3, VER_AXLE.y * 0.45);
+  // the track's focus lines stay on the tyre's contact patch, as in the settled frame
+  const VER_CONTACT = offsetFrom(VER, carPoint(RB16B, "frontContact").x);
   const shake =
     t === 0
       ? undefined
@@ -380,21 +385,21 @@ export const T5Panel: React.FC<{ t?: number }> = ({ t = 0 }) => {
                 camX={m.camX}
                 prefix="t5"
                 focus={{
-                  x: VER_LOCKUP.x - 120,
-                  y: VER_LOCKUP.y - 60,
+                  x: VER_CONTACT.x - 120,
+                  y: VER_CONTACT.y - 60,
                   seed: flick(t, 5),
                 }}
               />
               <MangaCar
                 car={RB16B}
                 at={VER}
-                state={{ wheelAngle: 18 + m.wheel, lockFront: 18 }}
+                state={{ wheelAngle: 18 + m.wheel, lockFront: 18, farSide: "high" }} // 2.9 m camera, 12–14°
               />
               <LockupSmoke x={VER_LOCKUP.x} y={VER_LOCKUP.y} t={t} />
               <MangaCar
                 car={W12}
                 at={HAM}
-                state={{ wheelAngle: 40 + m.wheel }}
+                state={{ wheelAngle: 40 + m.wheel, farSide: "high" }}
               />
             </g>
             <g transform={shake}>

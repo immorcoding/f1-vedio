@@ -12,11 +12,12 @@ import {
   MP4_5_PRO,
   MP4_5_SEN,
   topAnchorAt,
+  wheelAngleAt,
   type CarSpec,
 } from "../../../cars";
 import { INK, PAPER } from "../../../kit/colors";
 import { InkFilterDef, inkFilter } from "../../../kit/ink";
-import { CAPTION_FONT, Caption } from "../../../kit/lettering";
+import { CAPTION_FONT, Caption, captionSize } from "../../../kit/lettering";
 import { speedLines } from "../../../kit/lines";
 import { ToneDefs, tone } from "../../../kit/tone";
 import {
@@ -30,7 +31,7 @@ import {
   type MapPoint,
   type MapView,
 } from "../../../tracks";
-import { shotById, type PictureProps } from "./common";
+import { cueFrame, shotById, type PictureProps } from "./common";
 import {
   proAt,
   rate,
@@ -43,12 +44,19 @@ import {
 import {
   carScale13,
   cars13,
+  CONTACT_13,
   ppm13,
+  headingSmooth13,
+  TAG_SIDE,
+  tagAt13,
   smooth as smoothstep,
   tau13,
 } from "./staging";
 
 const C = SUZUKA_1989.corners.chicane;
+// The driver tags hold through the dive to 18.4 (the beat before the crash), then fade out by the touch (review-1:
+// who is on the inside must read right up to the contact).
+const TAGS_OUT = cueFrame("suzuka1989.tagsOut");
 const T = SUZUKA_1989;
 const ESCAPE = polylinePoints(T.escapeRoads?.[0]?.path ?? []);
 const ESCAPE_W = 7; // drawn narrower than the race track (13 m): a service road, not the circuit
@@ -245,6 +253,7 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
   // the chicane's name, once, while its first apex is in the frame
   const apex = view.project(poseAt(T, C + 8, T.width / 2 - 1));
   const label = smoothstep(tau, 2.2, 2.7);
+  const tagsOn = 1 - smoothstep(f, TAGS_OUT, CONTACT_13);
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080}>
       <defs>
@@ -435,7 +444,7 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
               }),
             )
           : null}
-        {CARS.map(({ car, tag, at }) => {
+        {CARS.map(({ car, tag, at, brake }) => {
           const c = at(t);
           const h = view.heading(c.heading);
           const q = view.project(c);
@@ -463,7 +472,17 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
                 car={car}
                 view="top"
                 at={topAnchorAt(car, { x: q.x, y: q.y, pxPerMetre: cppm }, h)}
-                state={{ heading: h, steer: c.steer }}
+                state={{
+                  heading: h,
+                  steer: c.steer,
+                  // the tread rolls with the distance driven and stops while the fronts are locked (MOT-5)
+                  wheelAngle: wheelAngleAt(car, c.s),
+                  lockFront:
+                    t >= brake && t < brake + LOCK_TIME
+                      ? wheelAngleAt(car, at(brake).s)
+                      : undefined,
+                  speed: c.v * rate(tau),
+                }}
               />
             </g>
           );
@@ -494,19 +513,17 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
             });
           }),
         )}
-        {/* driver tags above and below the pair while they are still far from the corner */}
+        {/* driver tags above and below the pair, each on a fixed side of its car (SEN right, PRO left), until the touch */}
         {CARS.map(({ tag, at }) => {
           const c = at(t);
           const q = view.project(c);
-          const p = {
-            x: q.x,
-            y: q.y + (tag === "SEN" ? 1 : -1) * (1.4 * cppm + 34),
-          };
+          const h = headingSmooth13((u) => view.heading(at(u).heading), t);
+          const p = tagAt13(q, TAG_SIDE[tag], h, cppm);
           return (
-            <g key={`tag-${tag}`} opacity={1 - smoothstep(tau, 4.5, 5.2)}>
+            <g key={`tag-${tag}`} opacity={tagsOn}>
               <rect
                 x={p.x - 52}
-                y={p.y - 26}
+                y={p.y - 23}
                 width={104}
                 height={46}
                 fill={tag === "SEN" ? INK : PAPER}
@@ -515,7 +532,7 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
               />
               <text
                 x={p.x}
-                y={p.y + 10}
+                y={p.y + 11}
                 textAnchor="middle"
                 fontFamily={CAPTION_FONT}
                 fontWeight={700}
@@ -553,7 +570,11 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
         {label > 0 && apex.x < 1880 && apex.y > 40 && apex.y < 1040
           ? (() => {
               // the box sits right of and below the apex, kept inside the frame; a leader line points at the apex
-              const bx = Math.min(1620, Math.max(420, apex.x + 110));
+              const name = [shot.text[1]];
+              const bx = Math.min(
+                1860 - captionSize(name, 46).w,
+                Math.max(420, apex.x + 110),
+              );
               const by = Math.min(930, Math.max(120, apex.y + 70));
               return (
                 <g
@@ -569,13 +590,13 @@ export const Chicane: React.FC<PictureProps> = ({ f }) => {
                     strokeWidth={4}
                   />
                   <circle cx={apex.x} cy={apex.y} r={7} fill={INK} />
-                  <Caption x={bx} y={by} lines={["CHICANE"]} size={46} />
+                  <Caption x={bx} y={by} lines={name} size={46} />
                 </g>
               );
             })()
           : null}
         <g transform="translate(90 70)">
-          <Caption x={0} y={0} lines={[...shot.text]} size={56} />
+          <Caption x={0} y={0} lines={[shot.text[0]]} size={56} />
         </g>
         <rect
           x={0}

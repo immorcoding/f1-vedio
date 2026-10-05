@@ -1,7 +1,9 @@
 // Shot 2.2 (bars 35–38): the last lap in the rain. The camera picks up HAM's McLaren on intermediates (cut tread)
 // entering from the left and rides with it down the wet back straight, pushing in as it goes; spray boils up behind
 // the wheels, the track mirrors the car, rain streaks the lens. On bar 37 a close-up panel drops in over the sky:
-// HAM's helmet in the cockpit, rain bouncing off it. The caption box "最后一圈" sits top left, clear of the car (ART-14).
+// HAM's helmet in the cockpit, rain bouncing off it. The caption box sits top left, clear of the car (ART-14), in two
+// lines: "LAST LAP" / "HAM NEEDS P5" (facts.md: with MAS winning, 5th gives HAM 98 to 97; 6th ties on 97 and MAS
+// takes the title on wins, 6 to 5). HAM's race-position tag (6th at the start of the last lap) rides under his car.
 import { MP4_23 } from "../../../cars";
 import { pinhole } from "../../../kit/camera";
 import { INK } from "../../../kit/colors";
@@ -10,6 +12,7 @@ import { focusLines } from "../../../kit/lines";
 import { at } from "../../timing.ts";
 import { ramp, secondsInShot, type ShotTime } from "../abuDhabi2021/shotClock";
 import { Page, Panel, RainCloseup } from "./common";
+import { PosTag } from "./PosTag";
 
 const V = 62; // m/s down the straight in the wet
 const Z = 10.5;
@@ -55,7 +58,22 @@ export const Chase: React.FC<{ st: ShotTime }> = ({ st }) => {
     <Page>
       {scene}
       <g opacity={cap} transform={`translate(${-40 * (1 - cap)} 0)`}>
-        <Caption x={70} y={70} lines={["LAST LAP"]} size={64} />
+        <Caption
+          x={70}
+          y={70}
+          lines={["LAST LAP", "HAM NEEDS P5"]}
+          size={64}
+        />
+      </g>
+      {/* HAM's tag under the middle of his car: 6th going into the last lap (facts.md, laps 69–70) */}
+      <g opacity={cap}>
+        <PosTag
+          x={a.x + 2.4 * a.pxPerMetre}
+          y={a.y + 60}
+          code="HAM"
+          pos={6}
+          big
+        />
       </g>
       {t >= cut ? (
         <g opacity={inset} transform={`translate(0 ${-40 * (1 - inset)})`}>

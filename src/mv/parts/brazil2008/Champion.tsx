@@ -17,14 +17,15 @@ import { Easing, random } from "remotion";
 import { INK, PAPER } from "../../../kit/colors";
 import { inkFilter } from "../../../kit/ink";
 import {
-  CAPTION_FONT,
   TITLE_FONT,
   fitTitleSize,
   lean,
   useLettering,
 } from "../../../kit/lettering";
 import { focusLines, speedLines } from "../../../kit/lines";
+import { GOLD, PointsBox } from "../../../kit/points-box";
 import { Rain } from "../../../kit/rain";
+import { scoreColumns } from "../../points";
 import { tone } from "../../../kit/tone";
 import { at, FPS, type Pos } from "../../timing";
 import {
@@ -35,15 +36,14 @@ import {
 import { ChampionMoment, MOMENT_CAR, MOMENT_HELMET } from "./ChampionMoment";
 import { Page } from "./common";
 
-const GOLD = "#f2c230";
-
 type Box = { x: number; y: number; w: number; h: number };
 const rect = (b: Box) => ({ x: b.x, y: b.y, width: b.w, height: b.h });
 
 // Panels inside the page frame.
 const HELMET_PANEL: Box = { x: 44, y: 44, w: 1016, h: 992 };
 const TEXT_PANEL: Box = { x: 1084, y: 44, w: 792, h: 992 };
-// The score box sits in the panel's bottom-left corner, on the wet track below the car.
+// The score box (the shared points box, src/kit/points-box.tsx) sits in the panel's bottom-left corner, on the wet
+// track below the car; this is its layout frame (the box is centred in it).
 export const SCORE_W = 430;
 export const SCORE_H = 250;
 const CORNER = { x: 76, y: 768 };
@@ -135,73 +135,6 @@ const Sparkles: React.FC<{ box: Box; t: number; n: number; seed: string }> = ({
   return <g>{out}</g>;
 };
 
-// The final points in a paper box, laid out in its own SCORE_W × SCORE_H frame. `gold` (0–1) slams the gold
-// under-stroke onto HAM's 98.
-export const ScoreBox: React.FC<{ gold: { s: number; o: number } | null }> = ({
-  gold,
-}) => {
-  const num = (x: number, t: string, fill: string, dx = 0) => (
-    <text
-      x={x + dx}
-      y={168 + dx}
-      textAnchor="middle"
-      textLength={t === "·" ? undefined : 150}
-      lengthAdjust="spacingAndGlyphs"
-      transform={lean(x + dx, 168 + dx)}
-      fontFamily={TITLE_FONT}
-      fontWeight={900}
-      fontSize={168}
-      fill={fill}
-      stroke={dx ? INK : undefined}
-      strokeWidth={dx ? 10 : undefined}
-      paintOrder="stroke"
-    >
-      {t}
-    </text>
-  );
-  return (
-    <g>
-      <rect x={12} y={12} width={SCORE_W} height={SCORE_H} fill={INK} />
-      <rect width={SCORE_W} height={SCORE_H} fill={PAPER} />
-      {gold ? (
-        <g
-          opacity={gold.o}
-          transform={`translate(110 110) scale(${gold.s}) translate(-110 -110)`}
-        >
-          {num(108, "98", GOLD, 7)}
-        </g>
-      ) : null}
-      {num(108, "98", INK)}
-      {num(SCORE_W / 2, "·", INK)}
-      {num(322, "97", INK)}
-      {[
-        { x: 108, t: "HAM" },
-        { x: 322, t: "MAS" },
-      ].map((d) => (
-        <text
-          key={d.t}
-          x={d.x}
-          y={225}
-          textAnchor="middle"
-          fontFamily={CAPTION_FONT}
-          fontWeight={700}
-          fontSize={38}
-          fill={INK}
-        >
-          {d.t}
-        </text>
-      ))}
-      <rect
-        width={SCORE_W}
-        height={SCORE_H}
-        fill="none"
-        stroke={INK}
-        strokeWidth={9}
-      />
-    </g>
-  );
-};
-
 export const Champion: React.FC<{ st: ShotTime }> = ({ st }) => {
   useLettering();
   const { t, dur } = st;
@@ -235,8 +168,6 @@ export const Champion: React.FC<{ st: ShotTime }> = ({ st }) => {
   const k = BIG_K + (1 - BIG_K) * move;
   const bx = BIG.x + (CORNER.x - BIG.x) * move;
   const by = BIG.y + (CORNER.y - BIG.y) * move;
-  const scoreSlam = slam(t);
-  const goldSlam = sinceGold >= 0 ? slam(sinceGold) : null;
   const scoreJolt = decay(sinceLine[3], 0.3);
   // the panels slide in from the sides while the box flies
   const slideIn = (delay: number) =>
@@ -453,10 +384,14 @@ export const Champion: React.FC<{ st: ShotTime }> = ({ st }) => {
 
         {/* the score box: slams in big on the cut, then flies into the corner and stays there (outside the push) */}
         <g
-          transform={`translate(${bx} ${by}) scale(${k}) translate(${SCORE_W / 2} ${SCORE_H / 2}) scale(${scoreSlam.s}) rotate(${-2 + 1.5 * scoreJolt * Math.sin(t * 60) + 0.6 * Math.sin(t * 1.3)}) translate(${-SCORE_W / 2} ${-SCORE_H / 2})`}
-          opacity={scoreSlam.o}
+          transform={`translate(${bx} ${by}) scale(${k}) translate(${SCORE_W / 2} ${SCORE_H / 2}) rotate(${-2 + 1.5 * scoreJolt * Math.sin(t * 60) + 0.6 * Math.sin(t * 1.3)})`}
         >
-          <ScoreBox gold={goldSlam} />
+          <PointsBox
+            accent="gold"
+            columns={scoreColumns("brazil2008")}
+            since={t}
+            goldSince={sinceGold}
+          />
         </g>
       </g>
       {/* the cut lands on a white flash; the last slam flashes the page lightly */}

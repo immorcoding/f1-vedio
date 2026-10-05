@@ -19,6 +19,64 @@ export type Wheel = { cx: number; cy: number; r: number };
 // The far endplate of a wing as the copy of the near one seen further away (ART-17): scaled by `scale` about the near
 // endplate's bounding-box corner (min x, min y), then moved by (dx, dy) photo px.
 export type EndplateCopy = { dx: number; dy: number; scale: number };
+
+// The rear wing's two elements seen side-on at the near endplate (photo px): the main plane and the DRS flap above and
+// behind it. With DRS open (CarState.drs = 1) the flap turns by `drsOpen` degrees (clockwise on the photo, the leading
+// edge up) about `pivot` at its trailing edge, opening the slot from the closed 10–15 mm to 85 mm (2021 Technical
+// Regulations, Art. 3.6.3). Drawn between the near and the far endplate (HIGH), or as a sliver above the near endplate
+// (LOW).
+export type RearWingPlanes = {
+  main: string;
+  flap: string;
+  pivot: { x: number; y: number };
+  drsOpen: number;
+  // the main plane's livery colour where the photo shows one (VF-20: Haas red); else the wing-top paint
+  mainColor?: string;
+  // the flap's livery colour where the photo shows one (W12: Petronas teal); else a shade lighter than the main plane
+  flapColor?: string;
+};
+
+// The far side of a car as drawn for one kind of camera (ART-26), simple per-car data rather than a perspective
+// model: the body is drawn flat from the side, so the far parts are placed by eye to sit with it (user review
+// 2026-10-04: perspective-correct far parts on a flat body look wrong). Anything left out is drawn as traced: far
+// wheels at FAR_WHEEL_LIFT, the far endplates from `farFrom`, the wing surface from `deck`/`flap`.
+export type FarSideLook = {
+  // the far wheels (front, rear) as drawn, photo px; one at its near wheel's place, a little smaller, hides behind it
+  wheels?: [Wheel, Wheel];
+  // the far front endplate as the near one's copy; false: hidden behind the near one
+  frontEndplate?: EndplateCopy | false;
+  // the front wing surface and its flap seen side-on, in place of the traced (from above) `deck` and `flap.d`
+  frontDeck?: string;
+  frontFlap?: string;
+  // The body as a camera at `body.elevation` sees it, re-projected from the trace photo's higher camera (seenFrom.ts).
+  // Leave it out to draw the body as traced.
+  body?: BodyView;
+  // A camera looking down sees the car's shadow on the ground on both sides of the car: an ink ellipse centred between
+  // the near and the far wheels' contact lines, in place of the floor edge (user review 2026-10-04, HIGH look).
+  groundShadow?: boolean;
+};
+
+// The LOW look (ART-26): the trace photos look down 8–22° on the car, so every part further from the
+// camera than the near wheels is drawn higher than it is: the nose and the engine cover (on the centre line, ~0.8 m
+// behind the near wheel plane) by 0.8·sin(e), the sidepod undercut and floor edge by less. BodyView re-projects the
+// body for a lower camera (seenFrom.ts). Heights are photo px; the depth of a body point (m behind the near wheel
+// plane) is read from its height: FLOOR_DEPTH at `floorY` and below, POD_DEPTH at `podY`, the centre line (0.8 m)
+// from 0.65 m up, and the whole nose ahead of the front axle (blending into the body by `noseTo`), its depth and tip
+// set by the same real dimensions on every car (seenFrom.ts).
+export type BodyView = {
+  photoElevation: number; // deg, the trace photo's camera (out/review/v2-far-side/perspective.md)
+  elevation: number; // deg, the camera the look is drawn for
+  floorY: number; // photo y of the floor edge, mid-car
+  // The floor edge's true height above the ground, m, where the photo can't give it: its depth is then backed out from
+  // this height (as the nose's is from NOSE_DD_HEIGHT) instead of the shared FLOOR_DEPTH (0.35 m, the 2020–21 cars).
+  // The RB18's photo shows the floor edge 0.068 m up from 13°: read at 0.35 m deep it sank below the ground.
+  floorHeight?: number;
+  podY: number; // photo y of the sidepod's lower line, mid-car
+  noseTo: number; // photo x where the nose has blended into the body
+};
+// Which look a scene asks for (CarState.farSide): "low" for a trackside camera near the cars' height (the default),
+// "high" for a camera looking down on the car, as the trace photos and Bahrain's 3.2 m wreck cam do.
+export type FarSideCamera = "low" | "high";
 export type Accent = { d: string; color: string };
 
 // Real livery colours, one flat manga fill per form region (ART-8); screentone dots add the shading on top.
@@ -89,6 +147,7 @@ export type CarPlan = {
     endplateColor?: string; // default paint.wing
   };
   glints?: string; // floodlight on the upper edges, white lines (open path)
+  tcam?: Accent; // the T-camera pod on the airbox, drawn over it (where the car's colour tells team-mates apart)
 };
 
 // Colours seen only from above, for a car drawn with the modern planform (modernPlan). Real livery, no logos (ART-5).
@@ -116,9 +175,18 @@ export type CarSpec = {
   // Far-side wheels as traced on the photo (front, rear). The trace photos are shot from above, so the far wheels sit
   // high there; the renderer draws them lower (drawnFarWheels).
   farWheels: [Wheel, Wheel];
+  // The far side per camera look (FarSideLook); a car without one is drawn as traced from any camera.
+  farSide?: Partial<Record<FarSideCamera, FarSideLook>>;
+  // Draw the far wheels at their traced x instead of their near wheels' x (drawnFarWheels); only the approved STR3.
+  keepFarWheelX?: true;
   rimR: number;
-  rim: "spoked" | "dark";
+  // "spoked" and "dark": the open 13-inch (and older) rims; "covered": the flat wheel cover over the 18-inch rim that
+  // every car carries from 2022 (2022 Technical Regulations, Art. 3.13.7), with the tyre's compound band just outside
+  // it and the Pirelli logo arcs on the shoulder.
+  rim: "spoked" | "dark" | "covered";
   rimAccent?: string;
+  // the coloured ring round the wheel nut (the 2022 RB18's lime ring), on a covered wheel
+  hubAccent?: string;
   // Default tyre sidewall band colour (Pirelli soft red, hard white, …); a scene can override it per race (CarState).
   // Leave it out for tyres without a coloured band (before 2011: Bridgestone, Goodyear).
   compound?: string;
@@ -153,11 +221,18 @@ export type CarSpec = {
     // the far rear endplate (the near one's perspective copy), drawn behind the wing surface (`top`)
     farFrom?: EndplateCopy;
     livery?: Accent[];
+    // false: the far rear endplate is drawn plain, in the wing colour, without the near one's colour blocks
+    farLivery?: false;
     // the wing elements between the endplates as the camera sees them from above; leave it out where the reference
     // photo sees the wing edge-on
     top?: string;
     elements: string[];
-    pylon: string;
+    // the main plane and DRS flap side-on (RearWingPlanes), where the car has them traced
+    planes?: RearWingPlanes;
+    // set by specSeenFrom for the LOW look: how far the planes show above the near endplate (photo px)
+    planesLift?: number;
+    // the pylon under the wing, where the photo shows one
+    pylon?: string;
     beam?: string; // lower (beam) wing, where the car has one
   };
   // A few ink lines only (ART-11).
@@ -207,6 +282,33 @@ export type CarSpec = {
   top?: { marks?: TopMarks; plan?: CarPlan };
 };
 
+// The lengths the modern planform (modernPlanFrom) is built from, m from the car's rear end: the axles, the overall
+// length (nose tip) and the helmet centre; `halo` for a 2018+ car. A traced car takes them from its side trace
+// (modernPlan); a car drawn only from above (TopOnlyCar) measures them on its reference photo.
+export type PlanLengths = {
+  rearAxle: number;
+  frontAxle: number;
+  length: number;
+  helmet: number;
+  halo: boolean;
+};
+
+// A car that is only ever seen from above (MangaCar view "top"), with no side trace: its planform in metres (built
+// with modernPlanFrom from lengths measured on the reference photo), paint, tyres and driver. Used where a scene needs
+// the car only on a top-down map (the 2021 Williams FW43B in shot 4.3). Tracing it from the side later turns it into
+// a CarSpec.
+export type TopOnlyCar = Pick<
+  CarSpec,
+  "name" | "reference" | "driver" | "paint" | "compound" | "tyreGrooves" | "shade"
+> & {
+  lengths: PlanLengths;
+  plan: CarPlan;
+  flap: string; // front-wing flap accent colour (CarSpec.frontWing.flap.color)
+};
+
+export const isTopOnly = (car: CarSpec | TopOnlyCar): car is TopOnlyCar =>
+  "plan" in car;
+
 export const CAR_UNITS_PER_METRE = 250;
 
 // Photo pixels per metre of this car's trace.
@@ -219,11 +321,24 @@ export const photoPxPerMetre = (car: CarSpec) =>
 // the traced height, the same proportion on every car. Where a car's nose or body is taller than that, it hides the
 // far wheel, as on a real side-on view.
 export const FAR_WHEEL_LIFT = 0.5;
-export const drawnFarWheels = (car: CarSpec): [Wheel, Wheel] =>
-  car.farWheels.map((w, i) => {
-    const near = car.nearWheels[i];
-    return { ...w, cy: near.cy - (near.cy - w.cy) * FAR_WHEEL_LIFT };
-  }) as [Wheel, Wheel];
+// Every far wheel is drawn at its near wheel's x, in every look (user review 2026-10-04): a traced horizontal offset
+// comes from the photo's yaw, not from the car, so it is dropped. `keepFarWheelX` keeps the traced x (the approved STR3).
+export const drawnFarWheels = (
+  car: CarSpec,
+  camera: FarSideCamera = "low",
+): [Wheel, Wheel] => {
+  const wheels =
+    car.farSide?.[camera]?.wheels ??
+    (car.farWheels.map((w, i) => {
+      const near = car.nearWheels[i];
+      return { ...w, cy: near.cy - (near.cy - w.cy) * FAR_WHEEL_LIFT };
+    }) as [Wheel, Wheel]);
+  if (car.keepFarWheelX) return wheels;
+  return wheels.map((w, i) => ({ ...w, cx: car.nearWheels[i].cx })) as [
+    Wheel,
+    Wheel,
+  ];
+};
 
 // Named points on the car, in metres from the car's origin (rear end, on the ground): x forward, y up.
 export type CarLandmark =

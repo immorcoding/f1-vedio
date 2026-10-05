@@ -52,7 +52,8 @@ const span = (
   cam: Camera,
 ): [number, number] => {
   if (camX === 0) return [base[0], base[1]];
-  const halfW = ((cam.cx + 400) * z) / cam.f; // half the visible width at depth z, m, with margin
+  // half the visible width at depth z, m, with margin (through pxPerMetre, so a dollied-back camera works too)
+  const halfW = (Math.max(cam.cx, 1920 - cam.cx) + 400) / cam.pxPerMetre(z);
   const lo = Math.floor((camX - halfW - origin) / period);
   const hi = Math.ceil((camX + halfW - origin) / period);
   return [lo, hi];
@@ -95,8 +96,25 @@ export const TracksideDefs: React.FC<{
   layout: TracksideLayout;
   camX: number;
   prefix: string;
-}> = ({ cam, layout, camX, prefix }) => (
+  /** Same as Background's `smear`: adds the motion-blur filter the stands and floodlight beams use. */
+  smear?: number;
+}> = ({ cam, layout, camX, prefix, smear = 0 }) => (
   <>
+    {smear > 0 ? (
+      // Blur along the track only (the filter works in the tilted camera group's own axes). A box smear of length
+      // L reads like a gaussian of σ ≈ L / 2.5.
+      <filter
+        id={`${prefix}-smear`}
+        x="-20%"
+        y="-5%"
+        width="140%"
+        height="110%"
+      >
+        <feGaussianBlur
+          stdDeviation={`${(smear * cam.pxPerMetre(STAND_Z)) / 2.5} 0`}
+        />
+      </filter>
+    ) : null}
     <clipPath id={`${prefix}-ground`}>
       <rect x={-200} y={cam.screenY(0, 13.9)} width={2320} height={800} />
     </clipPath>
@@ -182,7 +200,14 @@ export const Background: React.FC<{
   prefix: string;
   /** 0..1: how lit the hotel's gridshell is (1 = the settled frame). */
   hotelGlow?: number;
-}> = ({ cam, layout, camX, prefix, hotelGlow = 1 }) => {
+  /**
+   * Motion blur for fast tracking shots, m: how far the camera travels while one frame is exposed (0 = sharp, as in
+   * every shot that does not ask for it). At race speed the crowd (heads 0.55 m apart) and the floodlight beams move
+   * several of their own widths per frame and strobe; smeared, they stream as bands while the wall, posts and kerbs
+   * stay sharp and carry the speed (MOT-5). The beams are also dimmed to 40 %. Needs TracksideDefs with the same smear.
+   */
+  smear?: number;
+}> = ({ cam, layout, camX, prefix, hotelGlow = 1, smear = 0 }) => {
   const X = (x: number, z: number) => cam.screenX(x - camX, z);
   const visibleStands = layout.stands.filter((s) => {
     if (camX === 0) return true;
@@ -247,22 +272,24 @@ export const Background: React.FC<{
           />
         </>
       ) : null}
-      {visibleStands.map((s) => (
-        <Grandstand key={s.x0} cam={cam} stand={s} camX={camX} />
-      ))}
-      {/* floodlight beams falling from towers above the frame */}
-      {layout.beams.map(([bx, o]) => {
-        const x = X(bx, BEAM_Z);
-        if (camX !== 0 && (x < -1500 || x > 2200)) return null;
-        return (
-          <path
-            key={bx}
-            d={`M ${x} -60 L ${x + 900} ${cam.screenY(1, WALL_Z)} L ${x + 1200} ${cam.screenY(1, WALL_Z)} L ${x + 160} -60 Z`}
-            fill={PAPER}
-            opacity={0.16 * o}
-          />
-        );
-      })}
+      <g filter={smear > 0 ? `url(#${prefix}-smear)` : undefined}>
+        {visibleStands.map((s) => (
+          <Grandstand key={s.x0} cam={cam} stand={s} camX={camX} />
+        ))}
+        {/* floodlight beams falling from towers above the frame */}
+        {layout.beams.map(([bx, o]) => {
+          const x = X(bx, BEAM_Z);
+          if (camX !== 0 && (x < -1500 || x > 2200)) return null;
+          return (
+            <path
+              key={bx}
+              d={`M ${x} -60 L ${x + 900} ${cam.screenY(1, WALL_Z)} L ${x + 1200} ${cam.screenY(1, WALL_Z)} L ${x + 160} -60 Z`}
+              fill={PAPER}
+              opacity={0.16 * o * (smear > 0 ? 0.4 : 1)}
+            />
+          );
+        })}
+      </g>
       {/* catch fence on the wall: mesh, posts and cables run up out of the frame */}
       <g clipPath={`url(#${prefix}-fence)`} opacity={0.55}>
         <path
